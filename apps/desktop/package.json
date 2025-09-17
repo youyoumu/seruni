@@ -1,0 +1,24 @@
+{
+  "name": "desktop",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "electron": "^38.1.2",
+    "tsdown": "^0.15.2"
+  },
+  "dependencies": {
+    "detect-port": "^2.1.0",
+    "dotenv": "^17.2.2",
+    "hono": "^4.9.7",
+    "node-stream-zip": "^1.15.0",
+    "roarr": "^7.21.1",
+    "zod": "^4.1.9"
+  }
+}
