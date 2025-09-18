@@ -4,7 +4,6 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client"],
-    "moduleResolution": "bundler",
     "noEmit": true,
     "paths": {
       "#/*": ["./src/*"]

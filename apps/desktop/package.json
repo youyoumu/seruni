@@ -10,8 +10,10 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/preload": "workspace:*",
     "electron": "^38.1.2",
-    "tsdown": "^0.15.2"
+    "tsdown": "^0.15.2",
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "detect-port": "^2.1.0",
