@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --env-mode=loose",
     "typecheck": "turbo run typecheck",
     "format": "biome format",
     "format:fix": "biome format --write",
