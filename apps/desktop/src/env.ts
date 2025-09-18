@@ -7,6 +7,10 @@ import { app } from "electron";
 const validatedEnv = createEnv({
   server: {
     ROARR_LOG: z.stringbool(),
+    RENDERER_PORT: z
+      .string()
+      .default("3000")
+      .transform((v) => parseInt(v)),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
@@ -20,7 +24,7 @@ const constant = {
     "main.js",
   ),
   RENDERER_PATH: join(import.meta.dirname, "../../../packages/renderer/dist"),
-  RENDERER_URL: `http://localhost:${3000}`,
+  RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
 };
 
 export const env = {
