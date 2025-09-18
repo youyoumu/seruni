@@ -1,11 +1,10 @@
-import * as Solid from 'solid-js'
-import { createFileRoute } from '@tanstack/solid-router'
+import { createFileRoute } from "@tanstack/solid-router";
 
-import logo from '../logo.svg'
+import logo from "../logo.svg";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: IndexComponent,
-})
+});
 
 function IndexComponent() {
   return (
@@ -16,6 +15,7 @@ function IndexComponent() {
           class="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
           alt="logo"
         />
+
         <p>
           Edit <code>src/routes/index.tsx</code> and save to reload.
         </p>
@@ -37,5 +37,5 @@ function IndexComponent() {
         </a>
       </header>
     </div>
-  )
+  );
 }

@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!.devenv"]
+    "includes": ["**", "!.devenv", "!**/dist", "!**/routeTree.gen.ts"]
   },
   "formatter": {
     "enabled": true,
