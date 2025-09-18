@@ -2,7 +2,9 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "lib": ["EsNext"],
-    "#/*": ["./src/*"]
+    "paths": {
+      "#/*": ["./src/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

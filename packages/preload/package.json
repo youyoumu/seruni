@@ -5,6 +5,11 @@
   "scripts": {
     "build": "tsdown"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts"
+    }
+  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "electron": "^38.1.2",

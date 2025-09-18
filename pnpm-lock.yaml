@@ -26,6 +26,12 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.3
+        version: 1.19.3(hono@4.9.7)
+      '@t3-oss/env-core':
+        specifier: ^0.13.8
+        version: 0.13.8(typescript@5.9.2)(zod@4.1.9)
       detect-port:
         specifier: ^2.1.0
         version: 2.1.0
@@ -35,6 +41,9 @@ importers:
       hono:
         specifier: ^4.9.7
         version: 4.9.7
+      mime:
+        specifier: ^4.1.0
+        version: 4.1.0
       node-stream-zip:
         specifier: ^1.15.0
         version: 1.15.0
@@ -654,6 +663,12 @@ packages:
     resolution: {integrity: sha512-Z5kJ+wU3oA7MMIqVR9tyZRtjYPr4OC004Q4Rw7pgOKUOKkJfZ3O24nz3WYfGRpMDNmcOi3TwQOmgm7B7Tpii0w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@hono/node-server@1.19.3':
+    resolution: {integrity: sha512-Fjyxfux0rMPXMSob79OmddfpK5ArJa2xLkLCV+zamHkbeXQtSNKOi0keiBKyHZ/hCRKjigjmKGp4AJnDFq8PUw==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
     engines: {node: '>=18.18.0'}
@@ -1170,6 +1185,23 @@ packages:
   '@szmarczak/http-timer@4.0.6':
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}
     engines: {node: '>=10'}
+
+  '@t3-oss/env-core@0.13.8':
+    resolution: {integrity: sha512-L1inmpzLQyYu4+Q1DyrXsGJYCXbtXjC4cICw1uAKv0ppYPQv656lhZPU91Qd1VS6SO/bou1/q5ufVzBGbNsUpw==}
+    peerDependencies:
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0-beta.0
+    peerDependenciesMeta:
+      arktype:
+        optional: true
+      typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
+        optional: true
 
   '@tailwindcss/node@4.1.13':
     resolution: {integrity: sha512-eq3ouolC1oEFOAvOMOBAmfCIqZBJuvWvvYWh5h5iOYfe1HFC6+GZ6EIL0JdM3/niGRJmnrOc+8gl9/HGUaaptw==}
@@ -2393,6 +2425,11 @@ packages:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
 
+  mime@4.1.0:
+    resolution: {integrity: sha512-X5ju04+cAzsojXKes0B/S4tcYtFAJ6tTMuSPBEn9CPGlrWr8Fiw7qYeLT0XyH80HSoAoqWCaz+MWKh22P7G1cw==}
+    engines: {node: '>=16'}
+    hasBin: true
+
   mimic-response@1.0.1:
     resolution: {integrity: sha512-j5EctnkH7amfV/q5Hgmoal1g2QHFJRraOtmx0JpIqkxhBhI/lJSl1nMpQ45hVarwNETOoWEimndZ4QK0RHxuxQ==}
     engines: {node: '>=4'}
@@ -3509,6 +3546,10 @@ snapshots:
       '@eslint/core': 0.15.2
       levn: 0.4.1
 
+  '@hono/node-server@1.19.3(hono@4.9.7)':
+    dependencies:
+      hono: 4.9.7
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -3909,6 +3950,11 @@ snapshots:
   '@szmarczak/http-timer@4.0.6':
     dependencies:
       defer-to-connect: 2.0.1
+
+  '@t3-oss/env-core@0.13.8(typescript@5.9.2)(zod@4.1.9)':
+    optionalDependencies:
+      typescript: 5.9.2
+      zod: 4.1.9
 
   '@tailwindcss/node@4.1.13':
     dependencies:
@@ -5329,6 +5375,8 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.1
+
+  mime@4.1.0: {}
 
   mimic-response@1.0.1: {}
 

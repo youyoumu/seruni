@@ -2,7 +2,9 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "lib": ["es2022", "dom", "dom.iterable"],
-    "#/*": ["./src/*"]
+    "paths": {
+      "#/*": ["./src/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
