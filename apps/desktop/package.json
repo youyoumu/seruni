@@ -6,12 +6,16 @@
   "main": "dist/main.js",
   "scripts": {
     "start": "ROARR_LOG=true electron .",
-    "build": "tsdown"
+    "build": "tsdown",
+    "dev": "node script/dev.js",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@repo/preload": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "concurrently": "^9.2.1",
     "electron": "^38.1.2",
+    "nodemon": "^3.1.10",
     "tsdown": "^0.15.2",
     "typescript": "^5.9.2"
   },

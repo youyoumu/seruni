@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build && tsc",
+    "build": "vite build",
     "serve": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.6",

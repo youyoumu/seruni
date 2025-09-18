@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsdown"
+    "build": "tsdown",
+    "dev": "tsdown --watch src",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

@@ -1,7 +1,7 @@
 # Linting recipes
 
 lint:
-    pnpm exec biome lint --write
+    pnpm exec biome lint
 
-lint-files +ARGS:
-    pnpm exec biome lint --write {{ ARGS }}
+lint-fix:
+    pnpm exec biome lint --write

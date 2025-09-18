@@ -1,7 +1,7 @@
 # Formatting recipes
 
 format:
-    pnpm exec biome format --write
+    pnpm exec biome format
 
-format-files +ARGS:
-    pnpm exec biome format --write {{ ARGS }}
+format-fix:
+    pnpm exec biome format --write
