@@ -6,7 +6,8 @@
     "types": ["vite/client"],
     "noEmit": true,
     "paths": {
-      "#/*": ["./src/*"]
+      "#/*": ["./src/*"],
+      "#styled-system/*": ["./styled-system/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]
