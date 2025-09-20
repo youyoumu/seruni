@@ -6,6 +6,7 @@ mod lint './justfiles/lint.just'
 mod check './justfiles/check.just'
 mod add './justfiles/add.just'
 mod run './justfiles/run.just'
+mod exec './justfiles/exec.just'
 
 devenv:
     devenv shell -v
