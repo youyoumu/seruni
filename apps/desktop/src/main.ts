@@ -5,7 +5,7 @@ import { yomitanIPC } from "./ipc/yomitan";
 import { mainWindow } from "./window/main";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
-app.on("web-contents-created", (event, contents) => {
+app.on("web-contents-created", (_, contents) => {
   contents.on("devtools-opened", () =>
     contents.devToolsWebContents?.executeJavaScript(`
         (() => {
