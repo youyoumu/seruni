@@ -18,12 +18,13 @@ export const Spinner = (props: SpinnerProps) => {
   const [_localProps, rootProps] = splitProps(props, ["label"]);
   const localProps = mergeProps({ label: "Loading..." }, _localProps);
 
+  const defaultProps: StyledSpinnerProps = {
+    borderBottomColor: "transparent",
+    borderLeftColor: "transparent",
+  };
+
   return (
-    <StyledSpinner
-      borderBottomColor="transparent"
-      borderLeftColor="transparent"
-      {...rootProps}
-    >
+    <StyledSpinner {...defaultProps} {...rootProps}>
       <styled.span srOnly>{localProps.label}</styled.span>
     </StyledSpinner>
   );

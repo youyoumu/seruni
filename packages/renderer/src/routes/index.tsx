@@ -8,8 +8,8 @@ export const Route = createFileRoute("/")({
 
 function IndexComponent() {
   return (
-    <div class={css({ bg: "amber.light.8", p: "2" })}>
-      <Button>test</Button>
+    <div class={css({ bg: "bg.default", p: "2" })}>
+      <Button>test2</Button>
     </div>
   );
 }
