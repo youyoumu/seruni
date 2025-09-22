@@ -19,6 +19,9 @@ const ipcFromMainChannel = ipcFromMain.keyof();
 export type IPCFromMain = z.infer<typeof ipcFromMain>;
 export type IPCFromMainChannel = z.infer<typeof ipcFromMainChannel>;
 
+export type IPCRendererHandler<Channel extends IPCFromMainChannel> = (
+  payload: IPCFromMain[Channel]["output"],
+) => void;
 export type IPCRenderer = {
   send: (
     channel: IPCFromRendererChannel,
@@ -26,9 +29,16 @@ export type IPCRenderer = {
   ) => void;
   on: (
     channel: IPCFromMainChannel,
-    callback: (payload: IPCFromMain[IPCFromMainChannel]["output"]) => void,
+    handler: IPCRendererHandler<IPCFromMainChannel>,
+  ) => void;
+  removeListener: (
+    channel: IPCFromMainChannel,
+    handler: IPCRendererHandler<IPCFromMainChannel>,
   ) => void;
 };
+
+type Fn = () => void;
+const listenerMap = new WeakMap<Fn, Fn>();
 
 const ipcRenderer_: IPCRenderer = {
   send: (channel, ...args) => {
@@ -49,8 +59,23 @@ const ipcRenderer_: IPCRenderer = {
 
     ipcRenderer.send(channel, ...args);
   },
-  on: (channel, callback) => {
-    ipcRenderer.on(channel, (_, payload) => callback(payload));
+
+  on: (channel, handler) => {
+    const wrappedHandler = (
+      _: unknown,
+      payload: Parameters<typeof handler>[0],
+    ) => handler(payload);
+    listenerMap.set(handler as Fn, wrappedHandler as Fn);
+    ipcRenderer.on(channel, wrappedHandler);
+  },
+
+  removeListener: (channel, callback) => {
+    const wrappedHandler = listenerMap.get(callback as Fn);
+    if (wrappedHandler) {
+      ipcRenderer.removeListener(channel, wrappedHandler);
+      listenerMap.delete(callback as Fn);
+    }
+    ipcRenderer.removeListener(channel, (_, payload) => callback(payload));
   },
 };
 

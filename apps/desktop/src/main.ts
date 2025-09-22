@@ -2,6 +2,7 @@ import { app } from "electron";
 import { logIPC } from "./ipc/log";
 import { overlayIPC } from "./ipc/overlay";
 import { yomitanIPC } from "./ipc/yomitan";
+import { log } from "./util/logger";
 import { mainWindow } from "./window/main";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
@@ -26,4 +27,8 @@ app.whenReady().then(() => {
   yomitanIPC.register();
 
   mainWindow.open();
+
+  setInterval(() => {
+    log("test");
+  }, 2000);
 });
