@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
+import webfontDownload from "vite-plugin-webfont-dl";
 import "dotenv/config";
 
 const port = parseInt(process.env.GSM_RENDERER_PORT || "3000");
@@ -14,6 +15,9 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     solidPlugin(),
+    webfontDownload([
+      "https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap",
+    ]),
   ],
   resolve: {
     alias: {

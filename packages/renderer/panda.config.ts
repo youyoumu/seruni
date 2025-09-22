@@ -15,7 +15,13 @@ export default defineConfig({
 
   // Useful for theme customization
   theme: {
-    extend: {},
+    extend: {
+      tokens: {
+        fonts: {
+          nunito: { value: "var(--font-nunito)" },
+        },
+      },
+    },
   },
 
   // The output directory for your css system

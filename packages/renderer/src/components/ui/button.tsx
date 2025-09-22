@@ -24,7 +24,7 @@ export const Button = (props: ButtonProps) => {
   const trulyDisabled = () => localProps.loading || localProps.disabled;
 
   return (
-    <StyledButton disabled={trulyDisabled()} {...rest}>
+    <StyledButton disabled={trulyDisabled()} fontWeight="bold" {...rest}>
       <Show
         when={localProps.loading && !localProps.loadingText}
         fallback={localProps.loadingText || localProps.children}
