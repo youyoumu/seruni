@@ -6,7 +6,7 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland .",
+    "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland . | roarr",
     "build": "tsdown",
     "dev": "node script/dev.js",
     "typecheck": "tsc --noEmit"
@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
+    "@roarr/cli": "^5.12.4",
     "@t3-oss/env-core": "^0.13.8",
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",

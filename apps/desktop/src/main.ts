@@ -1,4 +1,5 @@
 import { app } from "electron";
+import { env } from "./env";
 import { logIPC } from "./ipc/log";
 import { overlayIPC } from "./ipc/overlay";
 import { yomitanIPC } from "./ipc/yomitan";
@@ -28,7 +29,10 @@ app.whenReady().then(() => {
 
   mainWindow.open();
 
+  log.debug(env, "env value");
   setInterval(() => {
-    log("test");
+    // const e = new Error("test");
+    // log.error({ error: e }, `Failed to shim: ${e.message}`);
+    log.info("test");
   }, 2000);
 });

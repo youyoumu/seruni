@@ -41,8 +41,8 @@ class YomitanExtension extends Extension {
           path.join(import.meta.dirname, "./yomitan-shim.js"),
         );
         log.info(`Shimmed: ${target}`);
-      } catch {
-        log.error(`Failed to shim ${target}`);
+      } catch (e) {
+        log.error({ error: e }, `Failed to shim: ${target}`);
       }
     }
     return extensionPath;

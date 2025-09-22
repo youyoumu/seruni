@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { app } from "electron";
 import z from "zod";
+import { log } from "./util/logger";
 
 const envJson = (() => {
   if (app.isPackaged) return {};
@@ -47,5 +48,3 @@ export const env = {
   ...validatedEnv,
   ...constant,
 } as const;
-
-console.log(env);
