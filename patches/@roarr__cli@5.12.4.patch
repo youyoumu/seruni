@@ -1,0 +1,15 @@
+diff --git a/dist/utilities/formatMessage.js b/dist/utilities/formatMessage.js
+index 0a29d18b62d220c9e1c6689e699aa03ed7df40df..4fadb860b45f9190a3f3653a1f81e7e76b9c4a75 100644
+--- a/dist/utilities/formatMessage.js
++++ b/dist/utilities/formatMessage.js
+@@ -24,8 +24,8 @@ const formatMessage = (message, { lastMessageTime, includeDate, useColors, chalk
+         formattedMessage = '[' + new Date(message.time).toISOString() + ']';
+     }
+     else {
+-        formattedMessage =
+-            '[' + new Date(message.time).toISOString().slice(11, -1) + ']';
++        const d = new Date(message.time);
++        formattedMessage = `[${d.toLocaleTimeString()}]`;
+     }
+     if (lastMessageTime) {
+         formattedMessage +=

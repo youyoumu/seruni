@@ -20,5 +20,10 @@
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@roarr/cli@5.12.4": "patches/@roarr__cli@5.12.4.patch"
+    }
   }
 }

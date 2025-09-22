@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@roarr/cli@5.12.4':
+    hash: tnuxefenjfvi6z5mxou7hfxsuq
+    path: patches/@roarr__cli@5.12.4.patch
+
 importers:
 
   .:
@@ -25,7 +30,7 @@ importers:
         version: 1.19.3(hono@4.9.7)
       '@roarr/cli':
         specifier: ^5.12.4
-        version: 5.12.4
+        version: 5.12.4(patch_hash=tnuxefenjfvi6z5mxou7hfxsuq)
       '@t3-oss/env-core':
         specifier: ^0.13.8
         version: 0.13.8(typescript@5.9.2)(zod@4.1.9)
@@ -3848,7 +3853,7 @@ snapshots:
     dependencies:
       quansync: 0.2.11
 
-  '@roarr/cli@5.12.4':
+  '@roarr/cli@5.12.4(patch_hash=tnuxefenjfvi6z5mxou7hfxsuq)':
     dependencies:
       chalk: 4.1.2
       dot-prop: 6.0.1
