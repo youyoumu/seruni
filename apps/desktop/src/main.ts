@@ -30,13 +30,13 @@ app.whenReady().then(() => {
   mainWindow.open();
 
   log.debug(env, "env value");
-  setInterval(() => {
-    log.trace("trace");
-    log.debug({ hello: "world" }, "debug");
-    log.info("info");
-    log.warn("warn");
-    const e = new Error("test");
-    log.error({ error: e }, `error: ${e.message}`);
-    log.fatal({ error: e }, `fatal: ${e.message}`);
-  }, 3000);
+  // setInterval(() => {
+  //   log.trace("trace");
+  //   log.debug({ hello: "world" }, "debug");
+  //   log.info("info");
+  //   log.warn("warn");
+  //   const e = new Error("test");
+  //   log.error({ error: e }, `error: ${e.message}`);
+  //   log.fatal({ error: e }, `fatal: ${e.message}`);
+  // }, 3000);
 });

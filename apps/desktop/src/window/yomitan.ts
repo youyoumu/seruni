@@ -1,5 +1,6 @@
 import { session } from "electron";
 import { yomitanExtension } from "#/extension/yomitan";
+import { log } from "#/util/logger";
 import { AppWindow } from "./_util";
 
 class YomitanWindow extends AppWindow {
@@ -19,11 +20,12 @@ class YomitanWindow extends AppWindow {
     await session.defaultSession.clearStorageData({
       storages: ["serviceworkers"],
     });
-    const ext = await session.defaultSession.loadExtension(
+    const ext = await session.defaultSession.extensions.loadExtension(
       yomitanExtension.getExtensionPath(),
     );
     const optionsPage = `chrome-extension://${ext.id}/settings.html`;
     await this.win?.loadURL(optionsPage);
+    log.info(`Opened Yomitan settings page: ${optionsPage}`);
     this.win?.show();
   }
 }

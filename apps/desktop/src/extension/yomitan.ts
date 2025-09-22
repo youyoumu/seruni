@@ -33,6 +33,17 @@ class YomitanExtension extends Extension {
     //shim some yomitan files
     const targets = [
       path.join(extensionPath, "js", "data", "permissions-util.js"),
+      path.join(extensionPath, "js", "data", "options-util.js"),
+      path.join(
+        extensionPath,
+        "js",
+        "pages",
+        "common",
+        "extension-content-controller.js",
+      ),
+      path.join(extensionPath, "js", "pages", "action-popup-main.js"),
+      path.join(extensionPath, "js", "background", "backend.js"),
+      path.join(extensionPath, "js", "display", "display.js"),
     ];
     for (const target of targets) {
       try {
@@ -40,11 +51,16 @@ class YomitanExtension extends Extension {
           target,
           path.join(import.meta.dirname, "./yomitan-shim.js"),
         );
-        log.info(`Shimmed: ${target}`);
+        log.debug(`Shimmed: ${target}`);
       } catch (e) {
         log.error({ error: e }, `Failed to shim: ${target}`);
       }
     }
+
+    //update permissions
+    this.updateManifestPermissions({
+      remove: ["contextMenus"],
+    });
     return extensionPath;
   }
 }

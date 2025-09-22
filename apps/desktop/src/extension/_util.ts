@@ -29,6 +29,47 @@ export class Extension {
     fs.writeFileSync(targetPath, combined, "utf-8");
   }
 
+  async updateManifestPermissions({
+    add = [],
+    remove = [],
+  }: {
+    add?: string[];
+    remove?: string[];
+  }) {
+    log.info(`Updating manifest.json for ${this.name}`);
+    const manifestPath = path.join(this.getExtensionPath(), "manifest.json");
+
+    if (!fs.existsSync(manifestPath)) {
+      throw new Error(`Manifest not found for ${this.name}`);
+    }
+
+    // Read and parse
+    const manifestRaw = fs.readFileSync(manifestPath, "utf-8");
+    const manifest = JSON.parse(manifestRaw);
+
+    // Ensure permissions array exists
+    if (!manifest.permissions) {
+      manifest.permissions = [];
+    }
+
+    // Add new permissions
+    for (const p of add) {
+      if (!manifest.permissions.includes(p)) {
+        manifest.permissions.push(p);
+      }
+    }
+
+    // Remove unwanted permissions
+    if (remove.length > 0) {
+      manifest.permissions = manifest.permissions.filter(
+        (p: string) => !remove.includes(p),
+      );
+    }
+
+    // Write back prettified JSON
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
+  }
+
   getExtensionPath() {
     return path.join(env.USER_DATA_PATH, "extension", this.name);
   }
@@ -38,6 +79,7 @@ export class Extension {
   }
 
   async downloadExtension() {
+    log.info(`Downloading ${this.name} extension`);
     const downloadPath = this.getDownloadPath();
     fs.mkdirSync(this.getExtensionPath(), { recursive: true });
     const downloadUrl =
@@ -52,16 +94,18 @@ export class Extension {
     }
 
     await writeFile(downloadPath, Readable.fromWeb(res.body as ReadableStream));
+    log.info(`Downloaded ${this.name} extension to ${downloadPath}`);
     return downloadPath;
   }
 
   async extractExtension() {
+    log.info(`Extracting ${this.name} extension`);
     fs.mkdirSync(this.getExtensionPath(), { recursive: true });
 
     const zip = new StreamZip.async({ file: this.getDownloadPath() });
     try {
       const count = await zip.extract(null, this.getExtensionPath());
-      log.info(`Extracted ${count} entries to ${this.getExtensionPath()}`);
+      log.debug(`Extracted ${count} entries to ${this.getExtensionPath()}`);
     } catch {
       log.error(
         `Failed to extract ${this.name} extension, check if ${this.getDownloadPath()} is downloaded correctly`,
@@ -70,11 +114,16 @@ export class Extension {
     } finally {
       await zip.close();
     }
+    log.info(`Extracted ${this.name} extension to ${this.getExtensionPath()}`);
     return this.getExtensionPath();
   }
 
   isInstalled() {
-    return fs.existsSync(path.join(this.getExtensionPath(), "manifest.json"));
+    const isInstalled = fs.existsSync(
+      path.join(this.getExtensionPath(), "manifest.json"),
+    );
+    log.info(`Extension ${this.name} is ${isInstalled ? "" : "not"} installed`);
+    return isInstalled;
   }
 
   async install() {

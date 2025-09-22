@@ -6,6 +6,13 @@ export function HomeTab() {
   return (
     <Flex gap="2">
       <Button>Open VN Overlay</Button>
+      <Button
+        onClick={() => {
+          ipcRenderer.send("yomitan:open");
+        }}
+      >
+        Open Yomitan Settings
+      </Button>
       <Sidebar />
     </Flex>
   );
