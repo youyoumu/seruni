@@ -31,8 +31,12 @@ app.whenReady().then(() => {
 
   log.debug(env, "env value");
   setInterval(() => {
-    // const e = new Error("test");
-    // log.error({ error: e }, `Failed to shim: ${e.message}`);
-    log.info("test");
-  }, 1000);
+    log.trace("trace");
+    log.debug({ hello: "world" }, "debug");
+    log.info("info");
+    log.warn("warn");
+    const e = new Error("test");
+    log.error({ error: e }, `error: ${e.message}`);
+    log.fatal({ error: e }, `fatal: ${e.message}`);
+  }, 3000);
 });

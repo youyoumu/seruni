@@ -19,8 +19,9 @@ export const log = log_.child<{
     },
   };
 
-  for (const [key, value] of Object.entries(message.context)) {
-    if (typeof value === "undefined") delete message.context[key];
+  for (const [key, value] of Object.entries(message_.context)) {
+    if (value === undefined)
+      delete message_.context[key as keyof typeof message_.context];
   }
 
   logIPC.send("log:send", message_);
