@@ -15,7 +15,6 @@ class MainWindow extends AppWindow {
     super.create();
 
     await this.waitForRenderer(env.RENDERER_URL);
-    console.log("DEBUG[504]: env.RENDERER_URL=", env.RENDERER_URL);
     await this.win?.loadURL(env.RENDERER_URL);
     this.win?.show();
   }

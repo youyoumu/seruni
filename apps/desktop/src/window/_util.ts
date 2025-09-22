@@ -17,7 +17,7 @@ export class AppWindow {
     this.options = options;
   }
 
-  create() {
+  async create() {
     this.win = new BrowserWindow(this.options);
 
     this.win.on("closed", () => {
@@ -25,9 +25,9 @@ export class AppWindow {
     });
   }
 
-  open() {
+  async open() {
     if (!this.win || this.win.isDestroyed()) {
-      this.create();
+      await this.create();
     }
     this.win?.show();
   }
