@@ -22,6 +22,17 @@ export default defineConfig({
         },
       },
     },
+    slotRecipes: {
+      //@ts-expect-error
+      drawer: {
+        jsx: [/^Drawer.*/],
+      },
+
+      //@ts-expect-error
+      tabs: {
+        jsx: [/^Tabs.*/],
+      },
+    },
   },
 
   // The output directory for your css system

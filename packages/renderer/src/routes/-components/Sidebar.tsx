@@ -4,12 +4,6 @@ import { Drawer } from "#/components/ui/drawer";
 import { IconButton } from "#/components/ui/icon-button";
 
 export function Sidebar(props: Drawer.RootProps) {
-  function _() {
-    // trigger pandacss
-    //@ts-expect-error
-    <Drawer />;
-  }
-
   return (
     <Drawer.Root {...props}>
       <Drawer.Trigger
