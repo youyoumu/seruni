@@ -34,5 +34,5 @@ app.whenReady().then(() => {
     // const e = new Error("test");
     // log.error({ error: e }, `Failed to shim: ${e.message}`);
     log.info("test");
-  }, 2000);
+  }, 1000);
 });

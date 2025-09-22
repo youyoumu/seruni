@@ -19,6 +19,7 @@ export default defineConfig({
       tokens: {
         fonts: {
           nunito: { value: "var(--font-nunito)" },
+          jetbrainsMono: { value: "var(--font-jetbrainsMono)" },
         },
       },
     },

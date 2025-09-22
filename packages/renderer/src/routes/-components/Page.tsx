@@ -15,8 +15,7 @@ export function Page() {
       bg="bg.default"
       color="fg.default"
       minH="screen"
-      p="2"
-      gap="2"
+      pt="2"
       fontFamily="nunito"
     >
       <Tabs.Root defaultValue="home">
@@ -28,10 +27,23 @@ export function Page() {
           </For>
           <Tabs.Indicator />
         </Tabs.List>
-        <Tabs.Content value="home">
+        <Tabs.Content
+          value="home"
+          px="2"
+          style={{
+            height: "calc(100vh - 56px)",
+          }}
+        >
           <HomeTab />
         </Tabs.Content>
-        <Tabs.Content value="console">
+        <Tabs.Content
+          value="console"
+          px="2"
+          style={{
+            height: "calc(100vh - 56px)",
+          }}
+          class="console-scrollbar"
+        >
           <ConsoleTab />
         </Tabs.Content>
       </Tabs.Root>
