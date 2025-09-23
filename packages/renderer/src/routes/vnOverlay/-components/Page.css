@@ -1,0 +1,13 @@
+html,
+body {
+  background-color: transparent;
+}
+
+.draggable {
+  -webkit-app-region: drag;
+  cursor: move !important; /* force cursor to show */
+}
+
+.not-draggable {
+  -webkit-app-region: no-drag;
+}
