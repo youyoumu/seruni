@@ -40,6 +40,11 @@ const constant = {
     "../../../packages/preload/dist",
     "main.js",
   ),
+  CHROME_PRELOAD_PATH: join(
+    import.meta.dirname,
+    "../../../packages/preload/dist",
+    "chrome.js",
+  ),
   RENDERER_PATH: join(import.meta.dirname, "../../../packages/renderer/dist"),
   RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
 };

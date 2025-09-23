@@ -1,16 +1,20 @@
-import path from "node:path";
 import { defineConfig } from "tsdown";
 
-export default defineConfig({
-  entry: ["src/main.ts"],
-  external: ["electron"],
-  noExternal: ["zod"],
-  treeshake: true,
-  format: "cjs",
-  outExtensions: () => ({
-    js: ".js",
-  }),
-  alias: {
-    "#": path.resolve(import.meta.dirname, "src/main"),
-  },
-});
+function from1Entry(entry: string) {
+  return defineConfig({
+    entry: [entry],
+    external: ["electron"],
+    noExternal: ["zod"],
+    treeshake: true,
+    format: "cjs",
+    outExtensions: () => ({
+      js: ".js",
+    }),
+    dts: {
+      cjsDefault: true,
+      parallel: true,
+    },
+  });
+}
+
+export default [from1Entry("src/main.ts"), from1Entry("src/chrome.ts")];

@@ -1,4 +1,5 @@
 import { session } from "electron";
+import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
 import { log } from "#/util/logger";
 import { AppWindow } from "./_util";
@@ -21,6 +22,21 @@ class YomitanWindow extends AppWindow {
       log.warn("Yomitan extension is installing, waiting for it to finish");
       return false;
     }
+    //TODO: clear service workers cache with force
+    session.defaultSession.clearStorageData({
+      storages: ["serviceworkers"],
+    });
+
+    session.defaultSession.registerPreloadScript({
+      type: "service-worker",
+      filePath: env.CHROME_PRELOAD_PATH,
+    });
+
+    session.defaultSession.registerPreloadScript({
+      type: "frame",
+      filePath: env.CHROME_PRELOAD_PATH,
+    });
+
     const ext = await session.defaultSession.extensions.loadExtension(
       yomitanExtension.getExtensionPath(),
     );

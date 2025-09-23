@@ -45,17 +45,18 @@ class YomitanExtension extends Extension {
       path.join(extensionPath, "js", "background", "backend.js"),
       path.join(extensionPath, "js", "display", "display.js"),
     ];
-    for (const target of targets) {
-      try {
-        Extension.shimFile(
-          target,
-          path.join(import.meta.dirname, "./yomitan-shim.js"),
-        );
-        log.debug(`Shimmed: ${target}`);
-      } catch (e) {
-        log.error({ error: e }, `Failed to shim: ${target}`);
-      }
-    }
+    //TODO: remove this
+    // for (const target of targets) {
+    //   try {
+    //     Extension.shimFile(
+    //       target,
+    //       path.join(import.meta.dirname, "./yomitan-shim.js"),
+    //     );
+    //     log.debug(`Shimmed: ${target}`);
+    //   } catch (e) {
+    //     log.error({ error: e }, `Failed to shim: ${target}`);
+    //   }
+    // }
 
     //update permissions
     this.updateManifestPermissions({

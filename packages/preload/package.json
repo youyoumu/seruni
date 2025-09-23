@@ -11,6 +11,10 @@
     ".": {
       "import": "./dist/main.js",
       "types": "./dist/main.d.ts"
+    },
+    "./chrome": {
+      "import": "./dist/chrome.js",
+      "types": "./dist/chrome.d.ts"
     }
   },
   "devDependencies": {
