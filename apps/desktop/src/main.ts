@@ -1,7 +1,7 @@
 import { app } from "electron";
 import { env } from "./env";
 import { logIPC } from "./ipc/log";
-import { overlayIPC } from "./ipc/overlay";
+import { vnOverlayIPC } from "./ipc/vnOverlay";
 import { yomitanIPC } from "./ipc/yomitan";
 import { log } from "./util/logger";
 import { mainWindow } from "./window/main";
@@ -24,7 +24,7 @@ app.on("web-contents-created", (_, contents) => {
 
 app.whenReady().then(() => {
   logIPC.register();
-  overlayIPC.register();
+  vnOverlayIPC.register();
   yomitanIPC.register();
 
   mainWindow.open();

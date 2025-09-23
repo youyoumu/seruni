@@ -1,11 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 import z from "zod";
 import { logIPC } from "./ipc/log.js";
-import { overlayIPC } from "./ipc/overlay.js";
+import { vnOverlayIPC } from "./ipc/vnOverlay.js";
 import { yomitanIPC } from "./ipc/yomitan.js";
 
 const ipcFromRenderer = z.object({
-  ...overlayIPC.renderer.shape,
+  ...vnOverlayIPC.renderer.shape,
   ...yomitanIPC.renderer.shape,
 });
 const ipcFromRendererChannel = ipcFromRenderer.keyof();

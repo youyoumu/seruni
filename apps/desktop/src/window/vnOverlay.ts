@@ -1,7 +1,7 @@
 import { env } from "#/env";
 import { AppWindow } from "./_util";
 
-class OverlayWindow extends AppWindow {
+class VnOverlayWindow extends AppWindow {
   constructor() {
     super({
       width: 800, // adjust to your VN text area
@@ -19,9 +19,9 @@ class OverlayWindow extends AppWindow {
   override async create() {
     super.create();
     this.win?.setIgnoreMouseEvents(false); // set true if you want clicks to pass through
-    this.win?.loadURL(`${env.RENDERER_URL}/overlay`);
+    this.win?.loadURL(`${env.RENDERER_URL}/vnOverlay`);
     return true;
   }
 }
 
-export const overlayWindow = new OverlayWindow();
+export const vnOverlayWindow = new VnOverlayWindow();
