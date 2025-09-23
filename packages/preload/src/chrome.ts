@@ -32,6 +32,7 @@ type CustomChrome = typeof customChrome;
 import { contextBridge } from "electron";
 
 function executeInMainWorld(customChrome: CustomChrome) {
+  // biome-ignore lint: safe any
   function deepMerge(target: any, source: any) {
     for (const key of Object.keys(source)) {
       if (
@@ -49,6 +50,7 @@ function executeInMainWorld(customChrome: CustomChrome) {
   }
 
   // detect global object (page vs SW)
+  // biome-ignore lint: safe any
   const globalObj: any =
     typeof window !== "undefined"
       ? window

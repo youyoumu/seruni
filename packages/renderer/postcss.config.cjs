@@ -3,4 +3,3 @@ module.exports = {
     "@pandacss/dev/postcss": {},
   },
 };
-
