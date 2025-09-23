@@ -9,9 +9,5 @@ export const tabs = {
   get(tabId: number, callback: (tab: object) => void) {},
   getCurrent(callback: (tab?: object) => void) {},
   getZoom(tabId: number, callback: (zoomFactor: number) => void) {},
-  MessageSendOptions: {},
-  onZoomChange: { addListener(callback: (zoomChangeInfo: object) => void) {} },
   remove(tabIds: number | number[], callback?: () => void) {},
-  Tab: {},
-  ZoomChangeInfo: {},
 };

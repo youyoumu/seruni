@@ -31,7 +31,6 @@ export const permissions = {
   // onRemoved: {
   //   addListener(callback: (permissions: object) => void) {},
   // },
-  // Permissions: {},
   // remove(permissions: object, callback: (removed: boolean) => void) {},
   // request(permissions: object, callback: (granted: boolean) => void) {},
 };
