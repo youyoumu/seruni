@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
@@ -10,6 +10,7 @@ import { log } from "#/util/logger";
 export class Extension {
   name: string;
   downloadUrl: string | (() => Promise<string>);
+  installingLock = false;
   constructor(options: {
     name: string;
     downloadUrl: string | (() => Promise<string>);
@@ -127,7 +128,51 @@ export class Extension {
   }
 
   async install() {
-    await this.downloadExtension();
-    await this.extractExtension();
+    if (this.installingLock) {
+      return;
+    }
+    this.installingLock = true;
+    log.info(`Installing ${this.name} extension`);
+    try {
+      await this.downloadExtension();
+      await this.extractExtension();
+      if (this.isInstalled()) {
+        log.info(`Installed ${this.name} extension`);
+      } else {
+        log.error(`Failed to install ${this.name} extension`);
+      }
+    } catch (e) {
+      log.error({ error: e }, `Failed to install ${this.name} extension`);
+    }
+
+    this.installingLock = false;
+  }
+
+  async reinstall() {
+    if (this.installingLock) {
+      return;
+    }
+    this.installingLock = true;
+    log.info(`Reinstalling ${this.name} extension`);
+
+    try {
+      // Remove old extracted extension folder
+      const extPath = this.getExtensionPath();
+      if (fs.existsSync(extPath)) {
+        await rm(extPath, { recursive: true, force: true });
+        log.info(`Removed old extension folder: ${extPath}`);
+      }
+
+      // Remove old zip if exists
+      const zipPath = this.getDownloadPath();
+      if (fs.existsSync(zipPath)) {
+        await rm(zipPath, { force: true });
+        log.info(`Removed old extension zip: ${zipPath}`);
+      }
+    } catch (e) {
+      log.error({ error: e }, `Failed to reinstall ${this.name} extension`);
+    }
+    this.installingLock = false;
+    await this.install();
   }
 }

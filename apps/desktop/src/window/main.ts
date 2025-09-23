@@ -16,7 +16,7 @@ class MainWindow extends AppWindow {
 
     await this.waitForRenderer(env.RENDERER_URL);
     await this.win?.loadURL(env.RENDERER_URL);
-    this.win?.show();
+    return true;
   }
 
   private async waitForRenderer(url: string, retries = 30, delay = 500) {

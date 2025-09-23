@@ -23,12 +23,16 @@ export class AppWindow {
     this.win.on("closed", () => {
       this.win = undefined;
     });
+    return true;
   }
 
   async open() {
+    let ready = true;
     if (!this.win || this.win.isDestroyed()) {
-      await this.create();
+      ready = await this.create();
     }
-    this.win?.show();
+    if (ready) {
+      this.win?.show();
+    }
   }
 }

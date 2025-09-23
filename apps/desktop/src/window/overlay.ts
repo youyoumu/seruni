@@ -16,10 +16,11 @@ class OverlayWindow extends AppWindow {
     });
   }
 
-  override create() {
+  override async create() {
     super.create();
     this.win?.setIgnoreMouseEvents(false); // set true if you want clicks to pass through
     this.win?.loadURL(`${env.RENDERER_URL}/overlay`);
+    return true;
   }
 }
 

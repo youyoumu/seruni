@@ -13,6 +13,13 @@ export function HomeTab() {
       >
         Open Yomitan Settings
       </Button>
+      <Button
+        onClick={() => {
+          ipcRenderer.send("yomitan:reinstall");
+        }}
+      >
+        Update Yomitan
+      </Button>
       <Sidebar />
     </Flex>
   );

@@ -17,16 +17,17 @@ class YomitanWindow extends AppWindow {
     if (!yomitanExtension.isInstalled()) {
       await yomitanExtension.install();
     }
-    await session.defaultSession.clearStorageData({
-      storages: ["serviceworkers"],
-    });
+    if (yomitanExtension.installingLock) {
+      log.warn("Yomitan extension is installing, waiting for it to finish");
+      return false;
+    }
     const ext = await session.defaultSession.extensions.loadExtension(
       yomitanExtension.getExtensionPath(),
     );
     const optionsPage = `chrome-extension://${ext.id}/settings.html`;
+    log.info(`Opening Yomitan settings page: ${optionsPage}`);
     await this.win?.loadURL(optionsPage);
-    log.info(`Opened Yomitan settings page: ${optionsPage}`);
-    this.win?.show();
+    return true;
   }
 }
 
