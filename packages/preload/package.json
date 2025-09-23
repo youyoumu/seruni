@@ -8,9 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
-    ".": {
-      "import": "./dist/main.js",
-      "types": "./dist/main.d.ts"
+    "./ipc": {
+      "import": "./dist/ipc.js",
+      "types": "./dist/ipc.d.ts"
     },
     "./chrome": {
       "import": "./dist/chrome.js",

@@ -17,4 +17,4 @@ function from1Entry(entry: string) {
   });
 }
 
-export default [from1Entry("src/main.ts"), from1Entry("src/chrome.ts")];
+export default [from1Entry("src/ipc.ts"), from1Entry("src/chrome.ts")];

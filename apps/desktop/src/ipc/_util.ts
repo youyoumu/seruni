@@ -3,7 +3,7 @@ import type {
   IPCFromMainChannel,
   IPCFromRenderer,
   IPCFromRendererChannel,
-} from "@repo/preload";
+} from "@repo/preload/ipc";
 import { type BrowserWindow, ipcMain } from "electron";
 
 type ChannelsWithPrefix<

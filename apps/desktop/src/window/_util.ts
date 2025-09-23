@@ -10,7 +10,7 @@ export class AppWindow {
     options = options ?? {};
     const overrideOptions: BrowserWindowOptions = {
       webPreferences: {
-        preload: env.PRELOAD_PATH,
+        preload: env.IPC_PRELOAD_PATH,
       },
     };
     Object.assign(options, overrideOptions);

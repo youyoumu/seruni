@@ -1,4 +1,4 @@
-import type { IPCRendererHandler } from "@repo/preload";
+import type { IPCRendererHandler } from "@repo/preload/ipc";
 import {
   createEffect,
   createSignal,

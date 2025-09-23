@@ -35,10 +35,10 @@ const constant = {
   USER_DATA_PATH,
   CACHE_PATH,
   //TODO: adjust for production path
-  PRELOAD_PATH: join(
+  IPC_PRELOAD_PATH: join(
     import.meta.dirname,
     "../../../packages/preload/dist",
-    "main.js",
+    "ipc.js",
   ),
   CHROME_PRELOAD_PATH: join(
     import.meta.dirname,
