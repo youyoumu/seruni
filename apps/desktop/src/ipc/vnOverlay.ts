@@ -1,20 +1,20 @@
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./_util";
 
-class VnOverlayIPC extends IPC<"vn:overlay"> {
+class VnOverlayIPC extends IPC<"vnOverlay"> {
   constructor() {
     super({
-      prefix: "vn:overlay",
+      prefix: "vnOverlay",
       win: () => vnOverlayWindow.win,
     });
   }
 
   override register() {
-    this.on("vn:overlay:open", () => {
+    this.on("vnOverlay:open", () => {
       vnOverlayWindow.open();
     });
 
-    this.on("vn:overlay:minimize", () => {
+    this.on("vnOverlay:minimize", () => {
       vnOverlayWindow.win?.minimize();
     });
   }

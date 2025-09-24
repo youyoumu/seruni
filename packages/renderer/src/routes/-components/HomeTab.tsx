@@ -7,7 +7,7 @@ export function HomeTab() {
     <Flex gap="2">
       <Button
         onClick={() => {
-          ipcRenderer.send("vn:overlay:open");
+          ipcRenderer.send("vnOverlay:open");
         }}
       >
         Open VN Overlay

@@ -3,7 +3,7 @@ import { simple } from "./_util.js";
 
 export const vnOverlayIPC = {
   renderer: z.object({
-    "vn:overlay:open": simple,
-    "vn:overlay:minimize": simple,
+    "vnOverlay:open": simple,
+    "vnOverlay:minimize": simple,
   }),
 };
