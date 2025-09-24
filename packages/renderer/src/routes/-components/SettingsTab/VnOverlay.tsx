@@ -1,6 +1,6 @@
 import { type ListCollection, parseColor } from "@ark-ui/solid";
 import { CheckIcon, ChevronsUpDownIcon, PipetteIcon } from "lucide-solid";
-import { createEffect, createSignal, For } from "solid-js";
+import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { ColorPicker } from "#/components/ui/color-picker";
 import { Heading } from "#/components/ui/heading";
@@ -38,8 +38,9 @@ export function VnOverlay() {
   const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
   const [font, setFont] = createSignal(fonts[0]);
 
+  let ready = false;
   createEffect(() => {
-    ipcRenderer.send("settings:setVnOverlaySettings", {
+    const payload = {
       settings: {
         windowColor: windowColor().toString("hexa"),
         backgroundColor: backgroundColor().toString("hexa"),
@@ -48,7 +49,21 @@ export function VnOverlay() {
         fontWeight: clamp(fontWeight(), 100, 900),
         font: font() ?? "",
       },
-    });
+    };
+    if (!ready) return;
+    ipcRenderer.send("settings:setVnOverlaySettings", payload);
+  });
+
+  onMount(async () => {
+    const settings = (await ipcRenderer.invoke("settings:getConfig")).window
+      .vn_overlay;
+    setWindowColor(parseColor(settings.windowColor));
+    setBackgroundColor(parseColor(settings.backgroundColor));
+    setTextColor(parseColor(settings.textColor));
+    setFontSize(settings.fontSize);
+    setFontWeight(settings.fontWeight);
+    setFont(settings.font);
+    ready = true;
   });
 
   return (

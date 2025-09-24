@@ -14,18 +14,30 @@ export function Page() {
   const defaultBackgroundColor = "#000000";
   const defaultTextColor = "#ffffff";
 
-  const [windowColor, setWindowColor] = createSignal("#ffffff");
-  const [backgroundColor, setBackgroundColor] = createSignal("#000000");
-  const [textColor, setTextColor] = createSignal("#ffffff");
+  const [windowColor, setWindowColor] = createSignal(defaultWindowColor);
+  const [backgroundColor, setBackgroundColor] = createSignal(
+    defaultBackgroundColor,
+  );
+  const [textColor, setTextColor] = createSignal(defaultTextColor);
   const [fontSize, setFontSize] = createSignal(defaultFontSize);
   const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
   const [font, setFont] = createSignal(fonts[0]);
+  const [ready, setReady] = createSignal(false);
 
   createEffect(() => {
     loadGoogleFont(font(), [100, 200, 300, 400, 500, 600, 700, 800, 900]);
   });
 
-  onMount(() => {
+  onMount(async () => {
+    const settings = (await ipcRenderer.invoke("settings:getConfig")).window
+      .vn_overlay;
+    setWindowColor(settings.windowColor ?? defaultWindowColor);
+    setBackgroundColor(settings.backgroundColor ?? defaultBackgroundColor);
+    setTextColor(settings.textColor ?? defaultTextColor);
+    setFontSize(settings.fontSize ?? defaultFontSize);
+    setFontWeight(settings.fontWeight ?? defaultFontWeight);
+    setFont(settings.font ?? fonts[0]);
+
     ipcRenderer.on("vnOverlay:setSettings", (payload) => {
       const settings = payload.settings;
       setWindowColor(settings.windowColor);
@@ -35,12 +47,14 @@ export function Page() {
       setFontWeight(settings.fontWeight);
       setFont(settings.font);
     });
+    setReady(true);
   });
 
   return (
     <Box
       h="svh"
       w="full"
+      hidden={!ready()}
       borderWidth="thin"
       _hover={{
         "& #settings": { opacity: 100 },

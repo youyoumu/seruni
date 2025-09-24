@@ -31,6 +31,11 @@ export type IPCRenderer = {
     ...args: IPCFromRenderer[C]["input"]
   ) => void;
 
+  invoke: <C extends IPCFromRendererChannel>(
+    channel: C,
+    ...args: IPCFromRenderer[C]["input"]
+  ) => Promise<IPCFromRenderer[C]["output"]>;
+
   on: <C extends IPCFromMainChannel>(
     channel: C,
     handler: IPCRendererHandler<C>,
@@ -63,6 +68,26 @@ const ipcRenderer_: IPCRenderer = {
     }
 
     ipcRenderer.send(channel, ...args);
+  },
+
+  //TODO: make this dry
+  invoke: async (channel, ...args) => {
+    //check if channel valid
+    const channelResult = ipcFromRendererChannel.safeParse(channel);
+    if (channelResult.error) {
+      console.error("Invalid channel", channelResult);
+      return;
+    }
+
+    //check if args valid
+    const argsResult =
+      ipcFromRenderer.shape[channel].shape.input.safeParse(args);
+    if (argsResult.error) {
+      console.error("Invalid args", argsResult);
+      return;
+    }
+
+    return await ipcRenderer.invoke(channel, ...args);
   },
 
   on: (channel, handler) => {

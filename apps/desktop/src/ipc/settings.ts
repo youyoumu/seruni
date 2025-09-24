@@ -28,6 +28,10 @@ class SettingsIPC extends IPC<"settings"> {
       });
       config.debouncedSet({ window: { vn_overlay: payload.settings } });
     });
+
+    this.handle("settings:getConfig", async () => {
+      return config.getAll();
+    });
   }
 }
 

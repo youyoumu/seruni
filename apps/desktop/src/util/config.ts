@@ -42,6 +42,10 @@ class Config2 extends Config<ConfigSchema> {
   override get(key: Paths<ConfigSchema>) {
     return super.get(key);
   }
+
+  getAll() {
+    return structuredClone(this.store);
+  }
 }
 
 export const config = new Config2();

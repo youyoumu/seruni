@@ -35,6 +35,18 @@ export class IPC<Prefix extends string> {
     );
   }
 
+  handle<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
+    channel: K,
+    listener: (
+      event: Electron.IpcMainInvokeEvent,
+      ...args: IPCFromRenderer[K]["input"]
+    ) => Promise<IPCFromRenderer[K]["output"]>,
+  ) {
+    ipcMain.handle(channel, async (event, ...args) => {
+      return await listener(event, ...(args as IPCFromRenderer[K]["input"]));
+    });
+  }
+
   register() {}
 
   send<K extends IPCFromMainChannel>(
