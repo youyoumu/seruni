@@ -1,13 +1,13 @@
-import { parseColor } from "@ark-ui/solid";
-import { PipetteIcon } from "lucide-solid";
+import { type ListCollection, parseColor } from "@ark-ui/solid";
+import { CheckIcon, ChevronsUpDownIcon, PipetteIcon } from "lucide-solid";
 import { createEffect, createSignal, For } from "solid-js";
-import { Box, Flex, Grid, HStack, Stack } from "styled-system/jsx";
-import { Button } from "#/components/ui/button";
+import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { ColorPicker } from "#/components/ui/color-picker";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { Input } from "#/components/ui/input";
 import { NumberInput } from "#/components/ui/number-input";
+import { createListCollection, Select } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 
 const fonts = [
@@ -29,17 +29,17 @@ export function VnOverlay() {
   const defaultFontSize = 24;
   const defaultFontWeight = 400;
 
-  const [windowColor, setWindowColor] = createSignal(parseColor("#ffffff"));
+  const [windowColor, setWindowColor] = createSignal(defaultWindowColor);
   const [backgroundColor, setBackgroundColor] = createSignal(
-    parseColor("#000000"),
+    defaultBackgroundColor,
   );
-  const [textColor, setTextColor] = createSignal(parseColor("#ffffff"));
+  const [textColor, setTextColor] = createSignal(defaultTextColor);
   const [fontSize, setFontSize] = createSignal(defaultFontSize);
   const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
   const [font, setFont] = createSignal(fonts[0]);
 
   createEffect(() => {
-    console.log(fontSize());
+    console.log(font());
   });
 
   return (
@@ -52,6 +52,20 @@ export function VnOverlay() {
         ></Box>
       </Stack>
       <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+        <Select_
+          label="Font"
+          placeholder="Select a Font"
+          value={[font() ?? ""]}
+          collection={createListCollection({
+            items: fonts.map((font) => ({
+              label: font,
+              value: font,
+            })),
+          })}
+          onValueChange={(e) => {
+            setFont(e.items[0]?.value);
+          }}
+        ></Select_>
         <NumberInput
           value={fontSize().toString()}
           clampValueOnBlur
@@ -113,6 +127,51 @@ export function VnOverlay() {
         />
       </Grid>
     </Stack>
+  );
+}
+
+export function Select_(
+  props: Select.RootProps & {
+    collection: ListCollection;
+    label: string;
+    itemGroupLabel?: string;
+    placeholder?: string;
+  },
+) {
+  return (
+    <Select.Root
+      positioning={{ sameWidth: true }}
+      width="2xs"
+      {...props}
+      collection={props.collection}
+    >
+      <Select.Label>{props.label}</Select.Label>
+      <Select.Control>
+        <Select.Trigger>
+          <Select.ValueText placeholder={props.placeholder} />
+          <ChevronsUpDownIcon />
+        </Select.Trigger>
+      </Select.Control>
+      <Select.Positioner>
+        <Select.Content>
+          <Select.ItemGroup>
+            <Select.ItemGroupLabel>
+              {props.itemGroupLabel}
+            </Select.ItemGroupLabel>
+            <For each={props.collection.items}>
+              {(item) => (
+                <Select.Item item={item}>
+                  <Select.ItemText>{item.label}</Select.ItemText>
+                  <Select.ItemIndicator>
+                    <CheckIcon />
+                  </Select.ItemIndicator>
+                </Select.Item>
+              )}
+            </For>
+          </Select.ItemGroup>
+        </Select.Content>
+      </Select.Positioner>
+    </Select.Root>
   );
 }
 
