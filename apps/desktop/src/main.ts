@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { env } from "./env";
 import { logIPC } from "./ipc/log";
+import { settingsIPC } from "./ipc/settings";
 import { vnOverlayIPC } from "./ipc/vnOverlay";
 import { yomitanIPC } from "./ipc/yomitan";
 import { log } from "./util/logger";
@@ -26,6 +27,7 @@ app.whenReady().then(() => {
   logIPC.register();
   vnOverlayIPC.register();
   yomitanIPC.register();
+  settingsIPC.register();
 
   mainWindow.open();
 

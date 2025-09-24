@@ -39,7 +39,16 @@ export function VnOverlay() {
   const [font, setFont] = createSignal(fonts[0]);
 
   createEffect(() => {
-    console.log(font());
+    ipcRenderer.send("settings:setVnOverlaySettings", {
+      settings: {
+        windowColor: windowColor().toString("hexa"),
+        backgroundColor: backgroundColor().toString("hexa"),
+        textColor: textColor().toString("hexa"),
+        fontSize: clamp(fontSize(), 1, 99),
+        fontWeight: clamp(fontWeight(), 100, 900),
+        font: font() ?? "",
+      },
+    });
   });
 
   return (

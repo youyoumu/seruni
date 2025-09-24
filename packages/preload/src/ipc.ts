@@ -1,12 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 import z from "zod";
 import { logIPC } from "./ipc/log.js";
+import { settingsIPC } from "./ipc/settings.js";
 import { vnOverlayIPC } from "./ipc/vnOverlay.js";
 import { yomitanIPC } from "./ipc/yomitan.js";
 
 const ipcFromRenderer = z.object({
   ...vnOverlayIPC.renderer.shape,
   ...yomitanIPC.renderer.shape,
+  ...settingsIPC.renderer.shape,
 });
 const ipcFromRendererChannel = ipcFromRenderer.keyof();
 export type IPCFromRenderer = z.infer<typeof ipcFromRenderer>;
@@ -14,6 +16,7 @@ export type IPCFromRendererChannel = z.infer<typeof ipcFromRendererChannel>;
 
 const ipcFromMain = z.object({
   ...logIPC.main.shape,
+  ...vnOverlayIPC.main.shape,
 });
 const ipcFromMainChannel = ipcFromMain.keyof();
 export type IPCFromMain = z.infer<typeof ipcFromMain>;
@@ -23,17 +26,19 @@ export type IPCRendererHandler<Channel extends IPCFromMainChannel> = (
   payload: IPCFromMain[Channel]["output"],
 ) => void;
 export type IPCRenderer = {
-  send: (
-    channel: IPCFromRendererChannel,
-    ...args: IPCFromRenderer[IPCFromRendererChannel]["input"]
+  send: <C extends IPCFromRendererChannel>(
+    channel: C,
+    ...args: IPCFromRenderer[C]["input"]
   ) => void;
-  on: (
-    channel: IPCFromMainChannel,
-    handler: IPCRendererHandler<IPCFromMainChannel>,
+
+  on: <C extends IPCFromMainChannel>(
+    channel: C,
+    handler: IPCRendererHandler<C>,
   ) => void;
-  removeListener: (
-    channel: IPCFromMainChannel,
-    handler: IPCRendererHandler<IPCFromMainChannel>,
+
+  removeListener: <C extends IPCFromMainChannel>(
+    channel: C,
+    handler: IPCRendererHandler<C>,
   ) => void;
 };
 

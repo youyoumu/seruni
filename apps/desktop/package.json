@@ -26,6 +26,7 @@
     "@t3-oss/env-core": "^0.13.8",
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
+    "es-toolkit": "^1.39.10",
     "hono": "^4.9.7",
     "mime": "^4.1.0",
     "node-stream-zip": "^1.15.0",

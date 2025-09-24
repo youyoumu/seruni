@@ -9,7 +9,7 @@
       "outputs": ["dist/**"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck", "@repo/preload#build"]
     },
     "dev": {
       "cache": false,

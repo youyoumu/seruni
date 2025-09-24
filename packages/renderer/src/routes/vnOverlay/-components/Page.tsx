@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onMount } from "solid-js";
 import "./Page.css";
 import { Settings } from "lucide-solid";
 import { css } from "styled-system/css";
@@ -23,6 +23,18 @@ export function Page() {
 
   createEffect(() => {
     loadGoogleFont(font(), [100, 200, 300, 400, 500, 600, 700, 800, 900]);
+  });
+
+  onMount(() => {
+    ipcRenderer.on("vnOverlay:setSettings", (payload) => {
+      const settings = payload.settings;
+      setWindowColor(settings.windowColor);
+      setBackgroundColor(settings.backgroundColor);
+      setTextColor(settings.textColor);
+      setFontSize(settings.fontSize);
+      setFontWeight(settings.fontWeight);
+      setFont(settings.font);
+    });
   });
 
   return (
