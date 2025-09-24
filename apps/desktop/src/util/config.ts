@@ -20,8 +20,9 @@ const configSchema = z.object({
 });
 
 type ConfigSchema = z.infer<typeof configSchema>;
+type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
 
-class Config2 extends Config<ConfigSchema> {
+class Config2 extends Config<ConfigSchemaPartial> {
   constructor() {
     super({
       projectName: app.getName(),
@@ -30,14 +31,12 @@ class Config2 extends Config<ConfigSchema> {
       fileExtension: "toml",
       deserialize: parse as typeof JSON.parse,
       serialize: stringify,
-      schema: z.toJSONSchema(configSchema).properties as Schema<ConfigSchema>,
+      schema: z.toJSONSchema(configSchema)
+        .properties as Schema<ConfigSchemaPartial>,
     });
   }
 
-  debouncedSet = debounce<(value: PartialDeep<ConfigSchema>) => void>(
-    this.set,
-    1000,
-  );
+  debouncedSet = debounce<(value: ConfigSchemaPartial) => void>(this.set, 1000);
 
   override get(key: Paths<ConfigSchema>) {
     return super.get(key);

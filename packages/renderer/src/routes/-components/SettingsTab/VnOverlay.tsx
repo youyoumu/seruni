@@ -55,14 +55,17 @@ export function VnOverlay() {
   });
 
   onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig")).window
-      .vn_overlay;
-    setWindowColor(parseColor(settings.windowColor));
-    setBackgroundColor(parseColor(settings.backgroundColor));
-    setTextColor(parseColor(settings.textColor));
-    setFontSize(settings.fontSize);
-    setFontWeight(settings.fontWeight);
-    setFont(settings.font);
+    const settings = (await ipcRenderer.invoke("settings:getConfig"))?.window
+      ?.vn_overlay;
+
+    settings?.windowColor && setWindowColor(parseColor(settings.windowColor));
+    settings?.backgroundColor &&
+      setBackgroundColor(parseColor(settings.backgroundColor));
+    settings?.textColor && setTextColor(parseColor(settings.textColor));
+    settings?.fontSize && setFontSize(settings.fontSize);
+    settings?.fontWeight && setFontWeight(settings.fontWeight);
+    settings?.font && setFont(settings.font);
+
     ready = true;
   });
 

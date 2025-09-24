@@ -29,23 +29,23 @@ export function Page() {
   });
 
   onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig")).window
-      .vn_overlay;
-    setWindowColor(settings.windowColor ?? defaultWindowColor);
-    setBackgroundColor(settings.backgroundColor ?? defaultBackgroundColor);
-    setTextColor(settings.textColor ?? defaultTextColor);
-    setFontSize(settings.fontSize ?? defaultFontSize);
-    setFontWeight(settings.fontWeight ?? defaultFontWeight);
-    setFont(settings.font ?? fonts[0]);
+    const settings = (await ipcRenderer.invoke("settings:getConfig"))?.window
+      ?.vn_overlay;
+    setWindowColor(settings?.windowColor ?? defaultWindowColor);
+    setBackgroundColor(settings?.backgroundColor ?? defaultBackgroundColor);
+    setTextColor(settings?.textColor ?? defaultTextColor);
+    setFontSize(settings?.fontSize ?? defaultFontSize);
+    setFontWeight(settings?.fontWeight ?? defaultFontWeight);
+    setFont(settings?.font ?? fonts[0]);
 
     ipcRenderer.on("vnOverlay:setSettings", (payload) => {
-      const settings = payload.settings;
-      setWindowColor(settings.windowColor);
-      setBackgroundColor(settings.backgroundColor);
-      setTextColor(settings.textColor);
-      setFontSize(settings.fontSize);
-      setFontWeight(settings.fontWeight);
-      setFont(settings.font);
+      const settings = payload?.settings;
+      settings?.windowColor && setWindowColor(settings.windowColor);
+      settings?.backgroundColor && setBackgroundColor(settings.backgroundColor);
+      settings?.textColor && setTextColor(settings.textColor);
+      settings?.fontSize && setFontSize(settings.fontSize);
+      settings?.fontWeight && setFontWeight(settings.fontWeight);
+      settings?.font && setFont(settings.font);
     });
     setReady(true);
   });
