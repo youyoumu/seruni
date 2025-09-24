@@ -1,12 +1,13 @@
 import { parseColor } from "@ark-ui/solid";
 import { PipetteIcon } from "lucide-solid";
 import { createEffect, createSignal, For } from "solid-js";
-import { Box, Flex, HStack, Stack } from "styled-system/jsx";
+import { Box, Flex, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { ColorPicker } from "#/components/ui/color-picker";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { Input } from "#/components/ui/input";
+import { NumberInput } from "#/components/ui/number-input";
 import { Text } from "#/components/ui/text";
 
 const fonts = [
@@ -16,6 +17,10 @@ const fonts = [
   "M PLUS Rounded 1c",
   "Sawarabi Mincho",
 ];
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
 export function VnOverlay() {
   const defaultWindowColor = parseColor("#ffffff");
@@ -33,32 +38,52 @@ export function VnOverlay() {
   const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
   const [font, setFont] = createSignal(fonts[0]);
 
-  // guard to make sure the color is not fully transparent
   createEffect(() => {
-    if (windowColor().getChannelValue("alpha") === 0) {
-      setWindowColor(windowColor().withChannelValue("alpha", 0.01));
-    }
-    if (backgroundColor().getChannelValue("alpha") === 0) {
-      setBackgroundColor(backgroundColor().withChannelValue("alpha", 0.01));
-    }
-    if (textColor().getChannelValue("alpha") === 0) {
-      setTextColor(textColor().withChannelValue("alpha", 0.01));
-    }
-  });
-
-  createEffect(() => {
-    console.log(textColor().toString("hex"));
+    console.log(fontSize());
   });
 
   return (
     <Stack gap="2" w="full">
-      <Heading size="2xl">VN Overlay Settings</Heading>
-      <Box borderBottomColor="border.default" borderBottomWidth="medium"></Box>
-      <Flex gap="2">
+      <Stack>
+        <Heading size="2xl">VN Overlay Settings</Heading>
+        <Box
+          borderBottomColor="border.default"
+          borderBottomWidth="medium"
+        ></Box>
+      </Stack>
+      <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+        <NumberInput
+          value={fontSize().toString()}
+          clampValueOnBlur
+          onValueChange={(e) => {
+            setFontSize(e.valueAsNumber);
+          }}
+          min={1}
+          max={99}
+          step={0.1}
+        >
+          Font Size
+        </NumberInput>
+        <NumberInput
+          value={fontWeight().toString()}
+          clampValueOnBlur
+          onValueChange={(e) => {
+            setFontWeight(e.valueAsNumber);
+          }}
+          min={100}
+          max={900}
+          step={100}
+        >
+          Font Weight
+        </NumberInput>
         <ColorPicker_
           value={windowColor()}
           onValueChange={(e) => {
-            setWindowColor(e.value);
+            if (e.value.getChannelValue("alpha") === 0) {
+              setWindowColor(e.value.withChannelValue("alpha", 0.01));
+            } else {
+              setWindowColor(e.value);
+            }
           }}
           label="Window Color"
         />
@@ -66,7 +91,11 @@ export function VnOverlay() {
         <ColorPicker_
           value={backgroundColor()}
           onValueChange={(e) => {
-            setBackgroundColor(e.value);
+            if (e.value.getChannelValue("alpha") === 0) {
+              setBackgroundColor(e.value.withChannelValue("alpha", 0.01));
+            } else {
+              setBackgroundColor(e.value);
+            }
           }}
           label="Background Color"
         />
@@ -74,11 +103,15 @@ export function VnOverlay() {
         <ColorPicker_
           value={textColor()}
           onValueChange={(e) => {
-            setTextColor(e.value);
+            if (e.value.getChannelValue("alpha") === 0) {
+              setTextColor(e.value.withChannelValue("alpha", 0.01));
+            } else {
+              setTextColor(e.value);
+            }
           }}
           label="Text Color"
         />
-      </Flex>
+      </Grid>
     </Stack>
   );
 }
