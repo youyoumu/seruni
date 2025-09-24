@@ -13,11 +13,11 @@ type ChannelsWithPrefix<
 
 export class IPC<Prefix extends string> {
   prefix: Prefix;
-  #win: () => BrowserWindow | undefined;
+  #win: () => (BrowserWindow | undefined)[] | undefined;
 
   constructor(options: {
     prefix: Prefix;
-    win: () => BrowserWindow | undefined;
+    win: () => (BrowserWindow | undefined)[] | undefined;
   }) {
     this.prefix = options.prefix;
     this.#win = options.win;
@@ -41,6 +41,8 @@ export class IPC<Prefix extends string> {
     channel: K,
     payload: IPCFromMain[K]["output"],
   ) {
-    this.#win()?.webContents.send(channel, payload);
+    this.#win()?.forEach((win) => {
+      win?.webContents.send(channel, payload);
+    });
   }
 }

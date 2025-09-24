@@ -7,7 +7,7 @@ class YomitanIPC extends IPC<"yomitan"> {
   constructor() {
     super({
       prefix: "yomitan",
-      win: () => yomitanWindow.win,
+      win: () => [yomitanWindow.win],
     });
   }
 

@@ -5,7 +5,7 @@ class VnOverlayIPC extends IPC<"vnOverlay"> {
   constructor() {
     super({
       prefix: "vnOverlay",
-      win: () => vnOverlayWindow.win,
+      win: () => [vnOverlayWindow.win],
     });
   }
 

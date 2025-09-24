@@ -5,7 +5,7 @@ class LogIPC extends IPC<"log"> {
   constructor() {
     super({
       prefix: "log",
-      win: () => mainWindow.win,
+      win: () => [mainWindow.win],
     });
   }
 }
