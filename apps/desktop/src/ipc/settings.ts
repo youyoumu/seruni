@@ -1,5 +1,6 @@
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
+import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "#/window/vnOverlay";
@@ -25,6 +26,7 @@ class SettingsIPC extends IPC<"settings"> {
       vnOverlayIPC.send("vnOverlay:setSettings", {
         ...payload,
       });
+      config.debouncedSet({ window: { vn_overlay: payload.settings } });
     });
   }
 }

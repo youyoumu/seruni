@@ -18,12 +18,14 @@
     "electron": "^38.1.2",
     "nodemon": "^3.1.10",
     "tsdown": "^0.15.2",
+    "type-fest": "^5.0.1",
     "typescript": "^5.9.2"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
     "@roarr/cli": "^5.12.4",
     "@t3-oss/env-core": "^0.13.8",
+    "conf": "^14.0.0",
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
     "es-toolkit": "^1.39.10",
@@ -31,6 +33,7 @@
     "mime": "^4.1.0",
     "node-stream-zip": "^1.15.0",
     "roarr": "^7.21.1",
+    "smol-toml": "^1.4.2",
     "zod": "^4.1.9"
   }
 }
