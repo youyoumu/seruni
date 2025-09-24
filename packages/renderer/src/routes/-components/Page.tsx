@@ -33,7 +33,7 @@ export function Page() {
         </Tabs.List>
         <Tabs.Content
           value="home"
-          px="2"
+          px="4"
           style={{
             height: "calc(100vh - 56px)",
           }}
@@ -42,7 +42,7 @@ export function Page() {
         </Tabs.Content>
         <Tabs.Content
           value="mining"
-          px="2"
+          px="4"
           style={{
             height: "calc(100vh - 56px)",
           }}
@@ -61,7 +61,7 @@ export function Page() {
         </Tabs.Content>
         <Tabs.Content
           value="settings"
-          px="2"
+          px="4"
           style={{
             height: "calc(100vh - 56px)",
           }}
