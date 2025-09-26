@@ -8,8 +8,6 @@ import { yomitanIPC } from "./ipc/yomitan";
 import { log } from "./util/logger";
 import { mainWindow } from "./window/main";
 
-console.log("DEBUG[560]: bootstraps");
-
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
   contents.on("devtools-opened", () =>
@@ -39,7 +37,7 @@ bootstrap();
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     log.warn("HMR update detected on the main process, reloading...");
-    IPC.unregisterAll();
+    app.exit(100);
   });
   import.meta.hot.accept();
 }
