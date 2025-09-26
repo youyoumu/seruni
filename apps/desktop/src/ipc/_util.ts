@@ -33,9 +33,7 @@ export class IPC<Prefix extends string> {
       ...args: IPCFromRenderer[K]["input"]
     ) => IPCFromRenderer[K]["output"],
   ) {
-    ipcMain.on(channel, (event, ...args) =>
-      listener(event, ...(args as IPCFromRenderer[K]["input"])),
-    );
+    ipcMain.on(channel, listener);
     this.#controller.signal.addEventListener(
       "abort",
       () => ipcMain.removeListener(channel, listener),
@@ -50,10 +48,7 @@ export class IPC<Prefix extends string> {
       ...args: IPCFromRenderer[K]["input"]
     ) => Promise<IPCFromRenderer[K]["output"]>,
   ) {
-    ipcMain.handle(channel, async (event, ...args) => {
-      return await listener(event, ...(args as IPCFromRenderer[K]["input"]));
-    });
-
+    ipcMain.handle(channel, listener);
     this.#controller.signal.addEventListener(
       "abort",
       () => ipcMain.removeHandler(channel),
@@ -88,4 +83,13 @@ export class IPC<Prefix extends string> {
       instance.register();
     }
   }
+}
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    IPC.unregisterAll();
+  });
+  import.meta.hot.accept((mod) => {
+    import.meta.hot?.invalidate();
+  });
 }

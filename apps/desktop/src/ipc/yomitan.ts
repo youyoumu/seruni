@@ -29,4 +29,17 @@ class YomitanIPC extends IPC<"yomitan"> {
   }
 }
 
-export const yomitanIPC = new YomitanIPC();
+let ipc = new YomitanIPC();
+export { ipc as yomitanIPC };
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    ipc.unregister();
+  });
+  import.meta.hot.accept((mod) => {
+    ipc = mod?.yomitanIPC;
+    ipc.register();
+  });
+}

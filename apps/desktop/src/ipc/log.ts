@@ -10,4 +10,17 @@ class LogIPC extends IPC<"log"> {
   }
 }
 
-export const logIPC = new LogIPC();
+let ipc = new LogIPC();
+export { ipc as logIPC };
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    ipc.unregister();
+  });
+  import.meta.hot.accept((mod) => {
+    ipc = mod?.logIPC;
+    ipc.register();
+  });
+}

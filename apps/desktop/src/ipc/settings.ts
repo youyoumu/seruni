@@ -35,4 +35,17 @@ class SettingsIPC extends IPC<"settings"> {
   }
 }
 
-export const settingsIPC = new SettingsIPC();
+let ipc = new SettingsIPC();
+export { ipc as settingsIPC };
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    ipc.unregister();
+  });
+  import.meta.hot.accept((mod) => {
+    ipc = mod?.settingsIPC;
+    ipc.register();
+  });
+}

@@ -20,4 +20,17 @@ class VnOverlayIPC extends IPC<"vnOverlay"> {
   }
 }
 
-export const vnOverlayIPC = new VnOverlayIPC();
+let ipc = new VnOverlayIPC();
+export { ipc as vnOverlayIPC };
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    ipc.unregister();
+  });
+  import.meta.hot.accept((mod) => {
+    ipc = mod?.vnOverlayIPC;
+    ipc.register();
+  });
+}
