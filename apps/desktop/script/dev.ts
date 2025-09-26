@@ -10,5 +10,5 @@ const viteServer = await createServer();
 
 const electronEnv = viteServer.environments.electron;
 if (electronEnv && isRunnableDevEnvironment(electronEnv)) {
-  await electronEnv.runner.import("#/main.ts");
+  await electronEnv.runner.import("/src/main.ts");
 }

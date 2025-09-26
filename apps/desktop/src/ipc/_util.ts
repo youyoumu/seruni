@@ -14,6 +14,8 @@ type ChannelsWithPrefix<
 export class IPC<Prefix extends string> {
   prefix: Prefix;
   #win: () => (BrowserWindow | undefined)[] | undefined;
+  #controller = new AbortController();
+  static #instances: Set<IPC<string>> = new Set();
 
   constructor(options: {
     prefix: Prefix;
@@ -21,6 +23,7 @@ export class IPC<Prefix extends string> {
   }) {
     this.prefix = options.prefix;
     this.#win = options.win;
+    IPC.#instances.add(this);
   }
 
   on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
@@ -32,6 +35,11 @@ export class IPC<Prefix extends string> {
   ) {
     ipcMain.on(channel, (event, ...args) =>
       listener(event, ...(args as IPCFromRenderer[K]["input"])),
+    );
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => ipcMain.removeListener(channel, listener),
+      { once: true },
     );
   }
 
@@ -45,9 +53,13 @@ export class IPC<Prefix extends string> {
     ipcMain.handle(channel, async (event, ...args) => {
       return await listener(event, ...(args as IPCFromRenderer[K]["input"]));
     });
-  }
 
-  register() {}
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => ipcMain.removeHandler(channel),
+      { once: true },
+    );
+  }
 
   send<K extends IPCFromMainChannel>(
     channel: K,
@@ -56,5 +68,24 @@ export class IPC<Prefix extends string> {
     this.#win()?.forEach((win) => {
       win?.webContents.send(channel, payload);
     });
+  }
+
+  register() {}
+
+  unregister() {
+    this.#controller.abort();
+  }
+
+  static unregisterAll() {
+    for (const instance of IPC.#instances) {
+      instance.unregister();
+    }
+    IPC.#instances.clear();
+  }
+
+  static registerAll() {
+    for (const instance of IPC.#instances) {
+      instance.register();
+    }
   }
 }

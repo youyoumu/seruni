@@ -1,11 +1,14 @@
 import { app } from "electron";
 import { env } from "./env";
+import { IPC } from "./ipc/_util";
 import { logIPC } from "./ipc/log";
 import { settingsIPC } from "./ipc/settings";
 import { vnOverlayIPC } from "./ipc/vnOverlay";
 import { yomitanIPC } from "./ipc/yomitan";
 import { log } from "./util/logger";
 import { mainWindow } from "./window/main";
+
+console.log("DEBUG[560]: bootstraps");
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
@@ -23,23 +26,20 @@ app.on("web-contents-created", (_, contents) => {
   );
 });
 
-app.whenReady().then(() => {
+export async function bootstrap() {
   log.debug(env, "env value");
+  IPC.registerAll();
 
-  logIPC.register();
-  vnOverlayIPC.register();
-  yomitanIPC.register();
-  settingsIPC.register();
-
+  await app.whenReady();
   mainWindow.open();
+}
 
-  // setInterval(() => {
-  //   log.trace("trace");
-  //   log.debug({ hello: "world" }, "debug");
-  //   log.info("info");
-  //   log.warn("warn");
-  //   const e = new Error("test");
-  //   log.error({ error: e }, `error: ${e.message}`);
-  //   log.fatal({ error: e }, `fatal: ${e.message}`);
-  // }, 3000);
-});
+bootstrap();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    log.warn("HMR update detected on the main process, reloading...");
+    IPC.unregisterAll();
+  });
+  import.meta.hot.accept();
+}
