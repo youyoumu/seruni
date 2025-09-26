@@ -8,7 +8,7 @@
   "scripts": {
     "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland . | roarr",
     "build": "tsdown",
-    "dev": "node script/dev.js",
+    "dev": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland ./script/dev.ts | roarr",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -19,7 +19,8 @@
     "nodemon": "^3.1.10",
     "tsdown": "^0.15.2",
     "type-fest": "^5.0.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vite": "npm:rolldown-vite@latest"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",

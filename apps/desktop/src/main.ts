@@ -24,6 +24,8 @@ app.on("web-contents-created", (_, contents) => {
 });
 
 app.whenReady().then(() => {
+  log.debug(env, "env value");
+
   logIPC.register();
   vnOverlayIPC.register();
   yomitanIPC.register();
@@ -31,7 +33,6 @@ app.whenReady().then(() => {
 
   mainWindow.open();
 
-  log.debug(env, "env value");
   // setInterval(() => {
   //   log.trace("trace");
   //   log.debug({ hello: "world" }, "debug");
