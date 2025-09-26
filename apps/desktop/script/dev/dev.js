@@ -11,7 +11,7 @@ const handleTerminationSignal = (signal) => {
 };
 
 function start() {
-  child = spawn("./script/dev.sh", { stdio: "inherit" });
+  child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
   child.on("close", (code) => {
     if (code === 100) {
       console.log("Restarting dev server");

@@ -8,7 +8,7 @@
   "scripts": {
     "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland . | roarr",
     "build": "tsdown",
-    "dev": "node ./script/dev.js",
+    "dev": "node ./script/dev/dev.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
