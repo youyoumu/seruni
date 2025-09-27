@@ -15,7 +15,7 @@ function createSettingsIPC() {
     constructor() {
       super({
         prefix: "settings",
-        win: () => [mainWindow.win, vnOverlayWindow.win],
+        win: () => [mainWindow().win, vnOverlayWindow().win],
       });
 
       this.dLogTrace = debounce((context: MessageContext, message: string) => {

@@ -8,7 +8,7 @@ function createLogIPC() {
     constructor() {
       super({
         prefix: "log",
-        win: () => [mainWindow.win],
+        win: () => [mainWindow().win],
       });
     }
   }

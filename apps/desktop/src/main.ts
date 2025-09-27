@@ -26,7 +26,7 @@ export async function bootstrap() {
   IPC().registerAll();
 
   await app.whenReady();
-  mainWindow.open();
+  mainWindow().open();
 }
 
 bootstrap();

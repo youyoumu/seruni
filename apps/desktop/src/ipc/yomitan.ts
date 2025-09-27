@@ -10,24 +10,24 @@ function createYomitanIPC() {
     constructor() {
       super({
         prefix: "yomitan",
-        win: () => [yomitanWindow.win],
+        win: () => [yomitanWindow().win],
       });
     }
 
     override register() {
       this.on("yomitan:open", () => {
         log.info("Opening Yomitan");
-        yomitanWindow.open();
+        yomitanWindow().open();
       });
 
       this.on("yomitan:minimize", () => {
-        yomitanWindow.win?.minimize();
+        yomitanWindow().win?.minimize();
       });
 
       this.on("yomitan:reinstall", async () => {
-        yomitanWindow.win?.close();
+        yomitanWindow().win?.close();
         await yomitanExtension.reinstall();
-        yomitanWindow.open();
+        yomitanWindow().open();
       });
     }
   }

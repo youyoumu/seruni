@@ -8,17 +8,17 @@ function createVnOverlayIPC() {
     constructor() {
       super({
         prefix: "vnOverlay",
-        win: () => [vnOverlayWindow.win],
+        win: () => [vnOverlayWindow().win],
       });
     }
 
     override register() {
       this.on("vnOverlay:open", () => {
-        vnOverlayWindow.open();
+        vnOverlayWindow().open();
       });
 
       this.on("vnOverlay:minimize", () => {
-        vnOverlayWindow.win?.minimize();
+        vnOverlayWindow().win?.minimize();
       });
     }
   }
