@@ -2,11 +2,14 @@ import { signal } from "alien-signals";
 import { session } from "electron";
 import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
+import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { AppWindow } from "./_util";
 
 function createYomitanWindow() {
   class YomitanWindow extends AppWindow() {
+    preloadScriptIds: string[] = [];
+
     constructor() {
       super({
         width: 1200,
@@ -25,19 +28,23 @@ function createYomitanWindow() {
         return false;
       }
       //TODO: clear service workers cache with force
-      session.defaultSession.clearStorageData({
+      await session.defaultSession.clearStorageData({
         storages: ["serviceworkers"],
       });
 
-      session.defaultSession.registerPreloadScript({
-        type: "service-worker",
-        filePath: env.CHROME_PRELOAD_PATH,
-      });
+      this.preloadScriptIds.push(
+        session.defaultSession.registerPreloadScript({
+          type: "service-worker",
+          filePath: env.CHROME_PRELOAD_PATH,
+        }),
+      );
 
-      session.defaultSession.registerPreloadScript({
-        type: "frame",
-        filePath: env.CHROME_PRELOAD_PATH,
-      });
+      this.preloadScriptIds.push(
+        session.defaultSession.registerPreloadScript({
+          type: "frame",
+          filePath: env.CHROME_PRELOAD_PATH,
+        }),
+      );
 
       const ext = await session.defaultSession.extensions.loadExtension(
         yomitanExtension.getExtensionPath(),
@@ -53,3 +60,17 @@ function createYomitanWindow() {
 }
 
 export const yomitanWindow = signal(createYomitanWindow());
+
+if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+    mod?.yomitanWindow().open();
+  });
+  import.meta.hot.dispose(() => {
+    yomitanWindow().win?.close();
+    yomitanWindow().preloadScriptIds.forEach((id) => {
+      session.defaultSession.unregisterPreloadScript(id);
+    });
+  });
+}
