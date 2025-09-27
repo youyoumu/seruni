@@ -26,6 +26,7 @@
     "@hono/node-server": "^1.19.3",
     "@roarr/cli": "^5.12.4",
     "@t3-oss/env-core": "^0.13.8",
+    "alien-signals": "^2.0.8",
     "conf": "^14.0.0",
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",

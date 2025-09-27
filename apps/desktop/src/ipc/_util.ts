@@ -11,7 +11,7 @@ type ChannelsWithPrefix<
   Prefix extends string,
 > = All extends `${Prefix}:${string}` ? All : never;
 
-export class IPC<Prefix extends string> {
+export const IPC = class IPC<Prefix extends string> {
   prefix: Prefix;
   #win: () => (BrowserWindow | undefined)[] | undefined;
   #controller = new AbortController();
@@ -83,13 +83,4 @@ export class IPC<Prefix extends string> {
       instance.register();
     }
   }
-}
-
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    IPC.unregisterAll();
-  });
-  import.meta.hot.accept((mod) => {
-    import.meta.hot?.invalidate();
-  });
-}
+};
