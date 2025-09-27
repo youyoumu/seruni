@@ -9,15 +9,21 @@ function createAppWindowClass() {
     options: BrowserWindowOptions;
     win: BrowserWindow | undefined;
 
-    constructor(options: BrowserWindowOptions) {
-      options = options ?? {};
-      const overrideOptions: BrowserWindowOptions = {
+    constructor(options: BrowserWindowOptions = {}) {
+      const defaultOptions: BrowserWindowOptions = {
         webPreferences: {
           preload: env.IPC_PRELOAD_PATH,
         },
       };
-      Object.assign(options, overrideOptions);
-      this.options = options;
+
+      this.options = {
+        ...defaultOptions,
+        ...options,
+        webPreferences: {
+          ...defaultOptions.webPreferences,
+          ...options.webPreferences,
+        },
+      };
     }
 
     async create() {

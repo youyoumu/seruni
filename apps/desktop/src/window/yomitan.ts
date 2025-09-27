@@ -15,6 +15,9 @@ function createYomitanWindow() {
         width: 1200,
         height: 800,
         show: false,
+        webPreferences: {
+          preload: undefined,
+        },
       });
     }
 
