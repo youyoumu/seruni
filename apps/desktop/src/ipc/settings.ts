@@ -41,8 +41,7 @@ function createSettingsIPC() {
   return new SettingsIPC();
 }
 
-const ipc = signal(createSettingsIPC());
-export { ipc as settingsIPC };
+export const settingsIPC = signal(createSettingsIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -53,6 +52,6 @@ if (import.meta.hot) {
     mod?.settingsIPC().register();
   });
   import.meta.hot.dispose(() => {
-    ipc().unregister();
+    settingsIPC().unregister();
   });
 }

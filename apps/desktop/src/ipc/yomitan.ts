@@ -35,8 +35,7 @@ function createYomitanIPC() {
   return new YomitanIPC();
 }
 
-const ipc = signal(createYomitanIPC());
-export { ipc as yomitanIPC };
+export const yomitanIPC = signal(createYomitanIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -47,6 +46,6 @@ if (import.meta.hot) {
     mod?.yomitanIPC().register();
   });
   import.meta.hot.dispose(() => {
-    ipc().unregister();
+    yomitanIPC().unregister();
   });
 }

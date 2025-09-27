@@ -25,8 +25,7 @@ function createVnOverlayIPC() {
   return new VnOverlayIPC();
 }
 
-const ipc = signal(createVnOverlayIPC());
-export { ipc as vnOverlayIPC };
+export const vnOverlayIPC = signal(createVnOverlayIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -37,6 +36,6 @@ if (import.meta.hot) {
     mod?.vnOverlayIPC().register();
   });
   import.meta.hot.dispose(() => {
-    ipc().unregister();
+    vnOverlayIPC().unregister();
   });
 }

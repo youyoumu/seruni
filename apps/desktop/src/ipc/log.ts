@@ -15,8 +15,7 @@ function createLogIPC() {
   return new LogIPC();
 }
 
-const ipc = signal(createLogIPC());
-export { ipc as logIPC };
+export const logIPC = signal(createLogIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -27,6 +26,6 @@ if (import.meta.hot) {
     mod?.logIPC().register();
   });
   import.meta.hot.dispose(() => {
-    ipc().unregister();
+    logIPC().unregister();
   });
 }

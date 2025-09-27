@@ -13,82 +13,85 @@ type ChannelsWithPrefix<
   Prefix extends string,
 > = All extends `${Prefix}:${string}` ? All : never;
 
-class IPC<Prefix extends string> {
-  prefix: Prefix;
-  #win: () => (BrowserWindow | undefined)[] | undefined;
-  #controller = new AbortController();
-  static #instances: Set<IPC<string>> = new Set();
-
-  constructor(options: {
+function createIPCClass() {
+  class IPC<Prefix extends string> {
     prefix: Prefix;
-    win: () => (BrowserWindow | undefined)[] | undefined;
-  }) {
-    this.prefix = options.prefix;
-    this.#win = options.win;
-    IPC.#instances.add(this);
-  }
+    #win: () => (BrowserWindow | undefined)[] | undefined;
+    #controller = new AbortController();
+    static #instances: Set<IPC<string>> = new Set();
 
-  on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
-    channel: K,
-    listener: (
-      event: Electron.IpcMainEvent,
-      ...args: IPCFromRenderer[K]["input"]
-    ) => IPCFromRenderer[K]["output"],
-  ) {
-    ipcMain.on(channel, listener);
-    this.#controller.signal.addEventListener(
-      "abort",
-      () => ipcMain.removeListener(channel, listener),
-      { once: true },
-    );
-  }
-
-  handle<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
-    channel: K,
-    listener: (
-      event: Electron.IpcMainInvokeEvent,
-      ...args: IPCFromRenderer[K]["input"]
-    ) => Promise<IPCFromRenderer[K]["output"]>,
-  ) {
-    ipcMain.handle(channel, listener);
-    this.#controller.signal.addEventListener(
-      "abort",
-      () => ipcMain.removeHandler(channel),
-      { once: true },
-    );
-  }
-
-  send<K extends IPCFromMainChannel>(
-    channel: K,
-    payload: IPCFromMain[K]["output"],
-  ) {
-    this.#win()?.forEach((win) => {
-      win?.webContents.send(channel, payload);
-    });
-  }
-
-  register() {}
-
-  unregister() {
-    this.#controller.abort();
-  }
-
-  static unregisterAll() {
-    for (const instance of IPC.#instances) {
-      instance.unregister();
+    constructor(options: {
+      prefix: Prefix;
+      win: () => (BrowserWindow | undefined)[] | undefined;
+    }) {
+      this.prefix = options.prefix;
+      this.#win = options.win;
+      IPC.#instances.add(this);
     }
-    IPC.#instances.clear();
-  }
 
-  static registerAll() {
-    for (const instance of IPC.#instances) {
-      instance.register();
+    on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
+      channel: K,
+      listener: (
+        event: Electron.IpcMainEvent,
+        ...args: IPCFromRenderer[K]["input"]
+      ) => IPCFromRenderer[K]["output"],
+    ) {
+      ipcMain.on(channel, listener);
+      this.#controller.signal.addEventListener(
+        "abort",
+        () => ipcMain.removeListener(channel, listener),
+        { once: true },
+      );
+    }
+
+    handle<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
+      channel: K,
+      listener: (
+        event: Electron.IpcMainInvokeEvent,
+        ...args: IPCFromRenderer[K]["input"]
+      ) => Promise<IPCFromRenderer[K]["output"]>,
+    ) {
+      ipcMain.handle(channel, listener);
+      this.#controller.signal.addEventListener(
+        "abort",
+        () => ipcMain.removeHandler(channel),
+        { once: true },
+      );
+    }
+
+    send<K extends IPCFromMainChannel>(
+      channel: K,
+      payload: IPCFromMain[K]["output"],
+    ) {
+      this.#win()?.forEach((win) => {
+        win?.webContents.send(channel, payload);
+      });
+    }
+
+    register() {}
+
+    unregister() {
+      this.#controller.abort();
+    }
+
+    static unregisterAll() {
+      for (const instance of IPC.#instances) {
+        instance.unregister();
+      }
+      IPC.#instances.clear();
+    }
+
+    static registerAll() {
+      for (const instance of IPC.#instances) {
+        instance.register();
+      }
     }
   }
+
+  return IPC;
 }
 
-const IPC_ = signal(IPC);
-export { IPC_ as IPC };
+export const IPC = signal(createIPCClass());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
