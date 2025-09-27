@@ -14,21 +14,23 @@ const preloadConfig = defineConfig({
 const libConfig = defineConfig({
   external: ["electron"],
   report: false,
-  unbundle: true,
   dts: true,
 });
 
 export default [
   defineConfig({
     ...preloadConfig,
-    entry: ["src/ipc.ts"],
+    entry: ["src/__preload/ipc.ts"],
   }),
   defineConfig({
     ...preloadConfig,
-    entry: ["src/chrome.ts"],
+    entry: ["src/__preload/chrome.ts"],
   }),
   defineConfig({
     ...libConfig,
-    entry: ["src/ipc.ts"],
+    entry: {
+      ipc: "src/ipc/index.ts",
+      chrome: "src/chrome/index.ts",
+    },
   }),
 ];

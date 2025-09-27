@@ -7,6 +7,10 @@
     "dev": "tsdown --watch src",
     "typecheck": "tsc --noEmit"
   },
+  "exports": {
+    "./ipc": "./dist/ipc.js",
+    "./chrome": "./dist/chrome.js"
+  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "electron": "^38.1.2",

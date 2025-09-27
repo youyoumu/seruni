@@ -1,35 +1,6 @@
-import { action } from "./chrome/action";
-import { commands } from "./chrome/commands";
-import { contextMenus } from "./chrome/contextMenus";
-import { declarativeNetRequest } from "./chrome/declarativeNetRequest";
-import { extension } from "./chrome/extension";
-import { i18n } from "./chrome/i18n";
-import { offscreen } from "./chrome/offscreen";
-import { omnibox } from "./chrome/omnibox";
-import { permissions } from "./chrome/permissions";
-import { runtime } from "./chrome/runtime";
-import { storage } from "./chrome/storage";
-import { tabs } from "./chrome/tabs";
-import { windows } from "./chrome/windows";
-
-const customChrome = {
-  // action,
-  // commands,
-  // contextMenus,
-  // declarativeNetRequest,
-  // extension,
-  // i18n,
-  // offscreen,
-  // omnibox,
-  permissions,
-  runtime,
-  // storage,
-  tabs,
-  // windows,
-};
-type CustomChrome = typeof customChrome;
-
 import { contextBridge } from "electron";
+import type { CustomChrome } from "#/chrome";
+import { customChrome } from "#/chrome";
 
 function executeInMainWorld(customChrome: CustomChrome) {
   // biome-ignore lint: safe any

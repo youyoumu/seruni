@@ -1,10 +1,13 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { ipcRenderer } from "electron";
 import z from "zod";
-import { logIPC } from "./ipc/log.js";
-import { settingsIPC } from "./ipc/settings.js";
-import { vnOverlayIPC } from "./ipc/vnOverlay.js";
-import { yomitanIPC } from "./ipc/yomitan.js";
+import { logIPC } from "./log.js";
+import { settingsIPC } from "./settings.js";
+import { vnOverlayIPC } from "./vnOverlay.js";
+import { yomitanIPC } from "./yomitan.js";
 
+export { logIPC, settingsIPC, vnOverlayIPC, yomitanIPC };
+
+//  ──────────────────────── From Renderer To Main ────────────────────────
 const ipcFromRenderer = z.object({
   ...vnOverlayIPC.renderer.shape,
   ...yomitanIPC.renderer.shape,
@@ -13,7 +16,9 @@ const ipcFromRenderer = z.object({
 const ipcFromRendererChannel = ipcFromRenderer.keyof();
 export type IPCFromRenderer = z.infer<typeof ipcFromRenderer>;
 export type IPCFromRendererChannel = z.infer<typeof ipcFromRendererChannel>;
+//  ──────────────────────── From Renderer To Main ────────────────────────
 
+//  ──────────────────────── From Main To Renderer ────────────────────────
 const ipcFromMain = z.object({
   ...logIPC.main.shape,
   ...vnOverlayIPC.main.shape,
@@ -21,6 +26,7 @@ const ipcFromMain = z.object({
 const ipcFromMainChannel = ipcFromMain.keyof();
 export type IPCFromMain = z.infer<typeof ipcFromMain>;
 export type IPCFromMainChannel = z.infer<typeof ipcFromMainChannel>;
+//  ──────────────────────── From Main To Renderer ────────────────────────
 
 export type IPCRendererHandler<Channel extends IPCFromMainChannel> = (
   payload: IPCFromMain[Channel]["output"],
@@ -50,7 +56,7 @@ export type IPCRenderer = {
 type Fn = () => void;
 const listenerMap = new WeakMap<Fn, Fn>();
 
-const ipcRenderer_: IPCRenderer = {
+export const ipcRenderer_: IPCRenderer = {
   send: (channel, ...args) => {
     //check if channel valid
     const channelResult = ipcFromRendererChannel.safeParse(channel);
@@ -108,5 +114,3 @@ const ipcRenderer_: IPCRenderer = {
     ipcRenderer.removeListener(channel, (_, payload) => callback(payload));
   },
 };
-
-contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer_);
