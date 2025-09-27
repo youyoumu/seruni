@@ -7,16 +7,6 @@
     "dev": "tsdown --watch src",
     "typecheck": "tsc --noEmit"
   },
-  "exports": {
-    "./ipc": {
-      "import": "./dist/ipc.js",
-      "types": "./dist/ipc.d.ts"
-    },
-    "./chrome": {
-      "import": "./dist/chrome.js",
-      "types": "./dist/chrome.d.ts"
-    }
-  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "electron": "^38.1.2",

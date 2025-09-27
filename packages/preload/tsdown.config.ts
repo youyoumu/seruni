@@ -1,20 +1,34 @@
 import { defineConfig } from "tsdown";
 
-function from1Entry(entry: string) {
-  return defineConfig({
-    entry: [entry],
-    external: ["electron"],
-    noExternal: ["zod"],
-    treeshake: true,
-    format: "cjs",
-    outExtensions: () => ({
-      js: ".js",
-    }),
-    dts: {
-      cjsDefault: true,
-      parallel: true,
-    },
-  });
-}
+const preloadConfig = defineConfig({
+  external: ["electron"],
+  report: false,
+  noExternal: ["zod"],
+  format: ["commonjs"],
+  outExtensions: () => ({
+    js: ".js",
+  }),
+  outDir: "dist/__preload",
+});
 
-export default [from1Entry("src/ipc.ts"), from1Entry("src/chrome.ts")];
+const libConfig = defineConfig({
+  external: ["electron"],
+  report: false,
+  unbundle: true,
+  dts: true,
+});
+
+export default [
+  defineConfig({
+    ...preloadConfig,
+    entry: ["src/ipc.ts"],
+  }),
+  defineConfig({
+    ...preloadConfig,
+    entry: ["src/chrome.ts"],
+  }),
+  defineConfig({
+    ...libConfig,
+    entry: ["src/ipc.ts"],
+  }),
+];
