@@ -3,16 +3,19 @@ import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./_util";
 
-class LogIPC extends IPC()<"log"> {
-  constructor() {
-    super({
-      prefix: "log",
-      win: () => [mainWindow.win],
-    });
+function createLogIPC() {
+  class LogIPC extends IPC()<"log"> {
+    constructor() {
+      super({
+        prefix: "log",
+        win: () => [mainWindow.win],
+      });
+    }
   }
+  return new LogIPC();
 }
 
-const ipc = signal(new LogIPC());
+const ipc = signal(createLogIPC());
 export { ipc as logIPC };
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
@@ -21,5 +24,9 @@ if (import.meta.hot) {
   hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta.url, mod);
+    mod?.logIPC().register();
+  });
+  import.meta.hot.dispose(() => {
+    ipc().unregister();
   });
 }

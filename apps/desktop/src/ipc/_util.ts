@@ -96,9 +96,6 @@ if (import.meta.hot) {
   hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta.url, mod);
-  });
-
-  import.meta.hot.dispose(() => {
     import.meta.hot?.invalidate();
   });
 }
