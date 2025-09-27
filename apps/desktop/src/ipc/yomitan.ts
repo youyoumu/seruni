@@ -1,9 +1,11 @@
+import { signal } from "alien-signals";
 import { yomitanExtension } from "#/extension/yomitan";
+import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { yomitanWindow } from "../window/yomitan";
 import { IPC } from "./_util";
 
-class YomitanIPC extends IPC<"yomitan"> {
+class YomitanIPC extends IPC()<"yomitan"> {
   constructor() {
     super({
       prefix: "yomitan",
@@ -29,17 +31,14 @@ class YomitanIPC extends IPC<"yomitan"> {
   }
 }
 
-let ipc = new YomitanIPC();
+const ipc = signal(new YomitanIPC());
 export { ipc as yomitanIPC };
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    ipc.unregister();
-  });
+  hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
-    ipc = mod?.yomitanIPC;
-    ipc.register();
+    hmr.update(import.meta.url, mod);
   });
 }

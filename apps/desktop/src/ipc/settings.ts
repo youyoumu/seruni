@@ -1,13 +1,15 @@
+import { signal } from "alien-signals";
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
 import { config } from "#/util/config";
+import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "#/window/vnOverlay";
 import { IPC } from "./_util";
 import { vnOverlayIPC } from "./vnOverlay";
 
-class SettingsIPC extends IPC<"settings"> {
+class SettingsIPC extends IPC()<"settings"> {
   dLogTrace;
   constructor() {
     super({
@@ -23,7 +25,7 @@ class SettingsIPC extends IPC<"settings"> {
   override register() {
     this.on("settings:setVnOverlaySettings", (_, payload) => {
       this.dLogTrace(payload, "settings:setVnOverlaySettings");
-      vnOverlayIPC.send("vnOverlay:setSettings", {
+      vnOverlayIPC().send("vnOverlay:setSettings", {
         ...payload,
       });
       config.debouncedSet({ window: { vn_overlay: payload.settings } });
@@ -35,17 +37,14 @@ class SettingsIPC extends IPC<"settings"> {
   }
 }
 
-let ipc = new SettingsIPC();
+const ipc = signal(new SettingsIPC());
 export { ipc as settingsIPC };
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    ipc.unregister();
-  });
+  hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
-    ipc = mod?.settingsIPC;
-    ipc.register();
+    hmr.update(import.meta.url, mod);
   });
 }

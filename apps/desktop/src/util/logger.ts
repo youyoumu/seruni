@@ -24,6 +24,6 @@ export const log = log_.child<{
       delete message_.context[key as keyof typeof message_.context];
   }
 
-  logIPC.send("log:send", message_);
+  logIPC().send("log:send", message_);
   return message_;
 });

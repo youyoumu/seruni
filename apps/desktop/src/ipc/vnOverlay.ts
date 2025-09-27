@@ -1,7 +1,9 @@
+import { signal } from "alien-signals";
+import { hmr } from "#/util/hmr";
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./_util";
 
-class VnOverlayIPC extends IPC<"vnOverlay"> {
+class VnOverlayIPC extends IPC()<"vnOverlay"> {
   constructor() {
     super({
       prefix: "vnOverlay",
@@ -20,17 +22,14 @@ class VnOverlayIPC extends IPC<"vnOverlay"> {
   }
 }
 
-let ipc = new VnOverlayIPC();
+const ipc = signal(new VnOverlayIPC());
 export { ipc as vnOverlayIPC };
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    ipc.unregister();
-  });
+  hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
-    ipc = mod?.vnOverlayIPC;
-    ipc.register();
+    hmr.update(import.meta.url, mod);
   });
 }

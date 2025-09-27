@@ -4,14 +4,16 @@ import type {
   IPCFromRenderer,
   IPCFromRendererChannel,
 } from "@repo/preload/ipc";
+import { signal } from "alien-signals";
 import { type BrowserWindow, ipcMain } from "electron";
+import { hmr } from "#/util/hmr";
 
 type ChannelsWithPrefix<
   All extends string,
   Prefix extends string,
 > = All extends `${Prefix}:${string}` ? All : never;
 
-export const IPC = class IPC<Prefix extends string> {
+class IPC<Prefix extends string> {
   prefix: Prefix;
   #win: () => (BrowserWindow | undefined)[] | undefined;
   #controller = new AbortController();
@@ -83,4 +85,20 @@ export const IPC = class IPC<Prefix extends string> {
       instance.register();
     }
   }
-};
+}
+
+const IPC_ = signal(IPC);
+export { IPC_ as IPC };
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+  });
+
+  import.meta.hot.dispose(() => {
+    import.meta.hot?.invalidate();
+  });
+}

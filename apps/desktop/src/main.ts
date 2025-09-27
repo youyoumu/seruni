@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { env } from "./env";
-import { IPC } from "./ipc/_util";
+import { IPC } from "./ipc";
+import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
 import { mainWindow } from "./window/main";
 
@@ -22,7 +23,7 @@ app.on("web-contents-created", (_, contents) => {
 
 export async function bootstrap() {
   log.debug(env, "env value");
-  IPC.registerAll();
+  IPC().registerAll();
 
   await app.whenReady();
   mainWindow.open();
@@ -30,10 +31,16 @@ export async function bootstrap() {
 
 bootstrap();
 
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
 if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+  });
+
   import.meta.hot.dispose(() => {
     log.warn("HMR update detected on the main process, reloading...");
     app.exit(100);
   });
-  import.meta.hot.accept();
 }
