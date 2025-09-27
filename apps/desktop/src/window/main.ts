@@ -1,6 +1,9 @@
 import { signal } from "alien-signals";
-import { net } from "electron";
+import { app } from "electron";
+import { delay } from "es-toolkit";
 import { env } from "#/env";
+import { hmr } from "#/util/hmr";
+import { log } from "#/util/logger";
 import { AppWindow } from "./_util";
 
 function createMainWindow() {
@@ -15,19 +18,20 @@ function createMainWindow() {
 
     override async create() {
       super.create();
+      console.log("DEBUG[621]: super.create=", super.create);
 
       await this.waitForRenderer(env.RENDERER_URL);
       await this.win?.loadURL(env.RENDERER_URL);
       return true;
     }
 
-    async waitForRenderer(url: string, retries = 30, delay = 500) {
+    async waitForRenderer(url: string, retries = 30, delayMs = 500) {
       for (let i = 0; i < retries; i++) {
         try {
           await this.ping(url);
           return;
         } catch {
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          await delay(delayMs);
         }
       }
       throw new Error(
@@ -35,19 +39,13 @@ function createMainWindow() {
       );
     }
 
-    ping(url: string): Promise<void> {
-      return new Promise((resolve, reject) => {
-        const request = net.request({ url, method: "HEAD" });
-        request.on("response", (res) => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
-            resolve();
-          } else {
-            reject(new Error(`Bad status: ${res.statusCode}`));
-          }
-        });
-        request.on("error", reject);
-        request.end();
-      });
+    async ping(url: string): Promise<void> {
+      log.trace({ url }, "pinging");
+      const res = await fetch(url, { method: "GET" });
+      if (res.ok) {
+        return;
+      }
+      throw new Error(`Bad status: ${res.status} ${res.statusText}`);
     }
   }
 
@@ -55,3 +53,21 @@ function createMainWindow() {
 }
 
 export const mainWindow = signal(createMainWindow());
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+    mod?.mainWindow().open();
+  });
+  import.meta.hot.dispose(() => {
+    const listener = () => {};
+    app.on("window-all-closed", listener);
+    mainWindow().win?.close();
+    setTimeout(() => {
+      app.removeListener("window-all-closed", listener);
+    }, 2000);
+  });
+}
