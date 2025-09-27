@@ -1,24 +1,24 @@
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
+import path from "node:path";
 import chokidar from "chokidar";
 
-let child;
+let child: ChildProcess | null;
 
 function build() {
   if (child) {
     console.log("Building is already in progress");
     return;
   }
-  child = spawn("tsdown", { stdio: "inherit" });
+  child = spawn("tsdown", ["--no-clean"], { stdio: "inherit" });
   child.on("exit", () => {
     child = null;
   });
 }
 
 chokidar
-  .watch("./src")
+  .watch(path.resolve(path.join(import.meta.dirname, "../src/")))
   .on("ready", () => {
     console.log("Watching for changes");
-    build();
   })
   .on("change", (path) => {
     console.log(`Change detected on ${path}`);

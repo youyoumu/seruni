@@ -3,6 +3,7 @@ import { env } from "./env";
 import { IPC } from "./ipc";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
+import { connectControl } from "./websocket/dev";
 import { mainWindow } from "./window/main";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
@@ -30,6 +31,7 @@ export async function bootstrap() {
 }
 
 bootstrap();
+connectControl();
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -41,6 +43,7 @@ if (import.meta.hot) {
 
   import.meta.hot.dispose(() => {
     log.warn("HMR update detected on the main process, reloading...");
+    //TODO: exit with WS
     app.exit(100);
   });
 }

@@ -8,7 +8,7 @@ const preloadConfig = defineConfig({
   outExtensions: () => ({
     js: ".js",
   }),
-  outDir: "dist/__preload",
+  outDir: "dist/_preload",
 });
 
 const libConfig = defineConfig({
@@ -20,11 +20,11 @@ const libConfig = defineConfig({
 export default [
   defineConfig({
     ...preloadConfig,
-    entry: ["src/__preload/ipc.ts"],
+    entry: ["src/_preload/ipc.ts"],
   }),
   defineConfig({
     ...preloadConfig,
-    entry: ["src/__preload/chrome.ts"],
+    entry: ["src/_preload/chrome.ts"],
   }),
   defineConfig({
     ...libConfig,

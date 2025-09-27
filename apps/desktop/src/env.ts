@@ -47,11 +47,11 @@ async function createEnv_() {
     //TODO: adjust for production path
     IPC_PRELOAD_PATH: join(
       import.meta.dirname,
-      "../../../packages/preload/dist/__preload/ipc.js",
+      "../../../packages/preload/dist/_preload/ipc.js",
     ),
     CHROME_PRELOAD_PATH: join(
       import.meta.dirname,
-      "../../../packages/preload/dist/__preload/chrome.js",
+      "../../../packages/preload/dist/_preload/chrome.js",
     ),
     RENDERER_PATH: join(import.meta.dirname, "../../../packages/renderer/dist"),
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,

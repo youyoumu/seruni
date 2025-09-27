@@ -8,12 +8,14 @@
   "scripts": {
     "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland . | roarr",
     "build": "tsdown",
-    "dev": "node ./script/dev/dev.js",
+    "dev": "node ./script/dev/dev.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@repo/preload": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/ws": "^8.18.1",
+    "chokidar": "^4.0.3",
     "concurrently": "^9.2.1",
     "electron": "^38.1.2",
     "nodemon": "^3.1.10",
