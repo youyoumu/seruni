@@ -1,8 +1,11 @@
 type Signal = (value?: any) => any;
 type Module = Record<string, Signal>;
+type Cleanup = (() => Promise<void>) | (() => void);
+type Effect = (() => Promise<Cleanup>) | (() => Cleanup);
 
 class HMR {
   store = new Map<string, Module>();
+  effects = new Map<string, Cleanup[]>();
 
   async register(url: string) {
     if (this.store.has(url)) return;
@@ -18,6 +21,7 @@ class HMR {
     const stored = this.store.get(url);
 
     if (!stored) {
+      // validate & store initial
       for (const key of Object.keys(module)) {
         if (typeof module[key] !== "function") {
           //TODO: use logger
@@ -27,16 +31,19 @@ class HMR {
       }
       this.store.set(url, module);
     } else {
+      // merge new keys
       for (const key of Object.keys(module)) {
         if (!Object.hasOwn(stored, key) && module[key]) {
           stored[key] = module[key];
         }
       }
+      // remove missing keys
       for (const key of Object.keys(stored)) {
         if (!Object.hasOwn(module, key)) {
           if (stored[key]) stored[key](undefined);
         }
       }
+      // update existing
       for (const key of Object.keys(module)) {
         if (stored[key] && module[key]) {
           if (typeof module[key] !== "function") {
@@ -49,6 +56,25 @@ class HMR {
         }
       }
     }
+  }
+
+  async runEffect(url: string, effect: Effect) {
+    // dispose previous effects for this url before re-running
+    this.dispose(url);
+
+    const cleanups: Cleanup[] = [];
+    const cleanup = await effect();
+    if (cleanup) cleanups.push(cleanup);
+
+    this.effects.set(url, cleanups);
+  }
+
+  async dispose(url: string) {
+    for (const cleanup of this.effects.get(url) || []) {
+      await cleanup();
+    }
+
+    this.effects.delete(url);
   }
 }
 
