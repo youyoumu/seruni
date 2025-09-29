@@ -1,6 +1,6 @@
 import path from "node:path";
 import { log } from "#/util/logger";
-import { Extension } from "./_util";
+import { Extension } from "./base";
 
 class YomitanExtension extends Extension {
   constructor() {

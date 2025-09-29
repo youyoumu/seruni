@@ -1,7 +1,7 @@
 import { signal } from "alien-signals";
 import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
-import { IPC } from "./_util";
+import { IPC } from "./base";
 
 function createLogIPC() {
   class LogIPC extends IPC()<"log"> {

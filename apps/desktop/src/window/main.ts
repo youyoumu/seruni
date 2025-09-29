@@ -4,7 +4,7 @@ import { delay } from "es-toolkit";
 import { env } from "#/env";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
-import { AppWindow } from "./_util";
+import { AppWindow } from "./base";
 
 function createMainWindow() {
   class MainWindow extends AppWindow() {

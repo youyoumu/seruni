@@ -4,7 +4,7 @@ import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
-import { AppWindow } from "./_util";
+import { AppWindow } from "./base";
 
 function createYomitanWindow() {
   class YomitanWindow extends AppWindow() {

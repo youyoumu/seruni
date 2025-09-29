@@ -1,7 +1,7 @@
 import { signal } from "alien-signals";
 import { hmr } from "#/util/hmr";
 import { vnOverlayWindow } from "../window/vnOverlay";
-import { IPC } from "./_util";
+import { IPC } from "./base";
 
 function createVnOverlayIPC() {
   class VnOverlayIPC extends IPC()<"vnOverlay"> {

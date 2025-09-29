@@ -6,7 +6,7 @@ import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "#/window/vnOverlay";
-import { IPC } from "./_util";
+import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 
 function createSettingsIPC() {

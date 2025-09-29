@@ -1,7 +1,7 @@
 import { signal } from "alien-signals";
 import { env } from "#/env";
 import { hmr } from "#/util/hmr";
-import { AppWindow } from "./_util";
+import { AppWindow } from "./base";
 
 function createVnOverlayWindow() {
   class VnOverlayWindow extends AppWindow() {
