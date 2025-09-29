@@ -4,6 +4,7 @@ import { log } from "#/util/logger";
 
 //TODO: make classes for WS
 export function connectControl() {
+  //TODO: use port from env.json
   const ws = new WebSocket("ws://localhost:3001");
 
   ws.on("open", () => {
