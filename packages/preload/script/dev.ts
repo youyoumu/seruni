@@ -1,3 +1,5 @@
+//TODO: this script is not needed anymore
+
 import { type ChildProcess, spawn } from "node:child_process";
 import path from "node:path";
 import chokidar from "chokidar";

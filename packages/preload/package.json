@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "dev": "node script/dev.ts",
+    "dev": "tsdown --watch src",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
