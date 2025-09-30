@@ -23,6 +23,10 @@ const wsClient = createSocketClient("ws://localhost:3001", {});
 wsClient.socket.on("connect", () => {
   console.log(`WS client connected with id ${wsClient.socket.id}`);
 });
+wsClient.on("dev:restart", (callback) => {
+  restarting = true;
+  callback();
+});
 
 const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
   process.on(signal, () => {
@@ -36,13 +40,10 @@ function start() {
   child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
   child.on("close", (code) => {
     if (restarting) {
+      console.log("Restarting dev server");
       restarting = false;
       start();
       return;
-    }
-    if (code === 100) {
-      console.log("Restarting dev server");
-      return start();
     }
     if (code === null) {
       process.exit(1);
@@ -52,16 +53,6 @@ function start() {
 
   handleTerminationSignal("SIGINT");
   handleTerminationSignal("SIGTERM");
-}
-
-function restart() {
-  if (wsClient.socket.connected) {
-    restarting = true;
-    //TODO: real filename, optional ack
-    wsClient.emit("dev:fileChange", { fileName: "ipc.js" }, () => {});
-  } else {
-    console.log("WS Client not connected");
-  }
 }
 
 function watch() {
@@ -91,13 +82,19 @@ function handleFileEvent(filePath: string) {
   try {
     const newHash = hashFile(filePath);
     const oldHash = fileHashes.get(filePath);
+    const fileName = path.basename(filePath);
 
     if (newHash !== oldHash) {
-      console.log(
-        `Hash changed for ${path.basename(filePath)}: ${oldHash} → ${newHash}`,
-      );
+      console.log(`Hash changed for ${fileName}: ${oldHash} → ${newHash}`);
       fileHashes.set(filePath, newHash);
-      restart();
+
+      if (wsClient.socket.connected) {
+        restarting = true;
+        //TODO: real filename, optional ack
+        wsClient.emit("dev:fileChange", { fileName }, () => {});
+      } else {
+        console.log("WS Client not connected, failed to emit");
+      }
     } else {
       console.log(`Hash unchanged for ${path.basename(filePath)}`);
     }

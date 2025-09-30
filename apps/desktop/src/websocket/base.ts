@@ -5,8 +5,11 @@ import type {
   WsFromServerEvent,
 } from "@repo/preload/websocket";
 import { signal } from "alien-signals";
+import { isJSONValue } from "es-toolkit";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
+import type { JsonValue, Writable } from "type-fest";
 import { hmr } from "#/util/hmr";
+import { log } from "#/util/logger";
 
 export type WsServerAck<Event extends WsFromServerEvent> = (
   data: WsFromServer[Event]["output"],
@@ -50,10 +53,35 @@ function createAppWebsocketClass() {
         ]
       ) => void,
     ) {
-      AppWebsocket.socket.on(event as string, listener);
+      const wrapped = (
+        ...args: [
+          ...WsFromClient[Event]["input"],
+          callback: WsServerCallback<Event>,
+        ]
+      ) => {
+        const data: Writable<JsonValue> = [];
+        for (let i = 0; i < args.length; i++) {
+          if (isJSONValue(args[i])) {
+            data.push(args[i] as JsonValue);
+          }
+        }
+
+        log.trace(
+          {
+            event,
+            data,
+          },
+          "WS on",
+        );
+
+        listener(...args);
+      };
+
+      AppWebsocket.socket.on(event as string, wrapped);
+
       this.#controller.signal.addEventListener(
         "abort",
-        () => AppWebsocket.socket.off(event as string, listener),
+        () => AppWebsocket.socket.off(event as string, wrapped),
         { once: true },
       );
     }
@@ -62,6 +90,19 @@ function createAppWebsocketClass() {
       event: Event,
       ...args: [...WsFromServer[Event]["input"], ack: WsServerAck<Event>]
     ) {
+      const data: Writable<JsonValue> = [];
+      for (let i = 0; i < args.length; i++) {
+        if (isJSONValue(args[i])) {
+          data.push(args[i] as JsonValue);
+        }
+      }
+      log.trace(
+        {
+          event,
+          data,
+        },
+        "WS emit",
+      );
       AppWebsocket.socket.emit(event, ...args);
     }
 

@@ -14,8 +14,9 @@ function createDevWS() {
       await super.register();
       this.on("dev:fileChange", ({ fileName }) => {
         if (fileName === "ipc.js") {
-          //TODO: exit with WS
-          app.exit(100);
+          this.emit("dev:restart", () => {
+            app.exit();
+          });
         }
       });
     }

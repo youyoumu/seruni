@@ -1,10 +1,9 @@
 import { app } from "electron";
-import { Server } from "socket.io";
 import { env } from "./env";
 import { IPC } from "./ipc";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
-import { AppWebsocket } from "./websocket";
+import { AppWebsocket, devWS } from "./websocket";
 import { mainWindow } from "./window/main";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
@@ -46,7 +45,8 @@ if (import.meta.hot) {
 
   import.meta.hot.dispose(() => {
     log.warn("HMR update detected on the main process, reloading...");
-    //TODO: exit with WS
-    app.exit(100);
+    devWS().emit("dev:restart", () => {
+      app.exit();
+    });
   });
 }

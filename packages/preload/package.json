@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsdown",
     "build:noclean": "tsdown --no-clean",
-    "dev": "tsdown --watch src",
+    "dev": "tsdown --watch src --no-clean",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
