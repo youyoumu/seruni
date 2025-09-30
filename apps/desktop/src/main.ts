@@ -25,8 +25,8 @@ app.on("web-contents-created", (_, contents) => {
 export async function bootstrap() {
   log.debug(env, "env value");
   IPC().registerAll();
-  //TODO: port from env or file
-  AppWebsocket().io.listen(3001);
+  AppWebsocket().io.listen(env.WS_PORT);
+  log.info(`Websocket server listening on port ${env.WS_PORT}`);
   AppWebsocket().registerAll();
 
   await app.whenReady();

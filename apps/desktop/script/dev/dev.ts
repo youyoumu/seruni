@@ -1,9 +1,20 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
-import path from "node:path";
+import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
 import chokidar from "chokidar";
+
+const envJson = (() => {
+  try {
+    return JSON.parse(
+      readFileSync(join(import.meta.dirname, "../../env.json"), "utf-8"),
+    );
+  } catch {
+    console.error("Failed to read env.json");
+    return {};
+  }
+})();
 
 let child: ChildProcess;
 let restarting = false;
@@ -18,7 +29,7 @@ const ipcPath = path.join(
   "../../../../packages/preload/dist/_preload/ipc.js",
 );
 
-const wsClient = createSocketClient("ws://localhost:3001", {});
+const wsClient = createSocketClient(`ws://localhost:${envJson.WS_PORT}`, {});
 
 wsClient.socket.on("connect", () => {
   console.log(`WS client connected with id ${wsClient.socket.id}`);

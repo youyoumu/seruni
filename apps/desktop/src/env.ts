@@ -20,14 +20,16 @@ async function createEnv_() {
   const validatedEnv = createEnv({
     server: {
       ROARR_LOG: z.boolean().default(true),
-      //TODO: make this configurable
+      //TODO: make this dynamic with file state
       RENDERER_PORT: z.number().default(3000),
+      WS_PORT: z.number().default(3001),
       DEV: z.boolean().default(false),
     },
     runtimeEnv: envJson,
     emptyStringAsUndefined: true,
   });
 
+  //TODO: set user data path to root repo during development
   const USER_DATA_PATH = app.getPath("userData");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   // register effect (with cleanup)
