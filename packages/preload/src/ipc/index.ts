@@ -29,7 +29,7 @@ export type IPCFromMainChannel = z.infer<typeof ipcFromMainChannel>;
 //  ──────────────────────── From Main To Renderer ────────────────────────
 
 export type IPCRendererHandler<Channel extends IPCFromMainChannel> = (
-  payload: IPCFromMain[Channel]["output"],
+  ...payload: IPCFromMain[Channel]["input"]
 ) => void;
 export type IPCRenderer = {
   send: <C extends IPCFromRendererChannel>(
@@ -99,8 +99,8 @@ export const ipcRenderer_: IPCRenderer = {
   on: (channel, handler) => {
     const wrappedHandler = (
       _: unknown,
-      payload: Parameters<typeof handler>[0],
-    ) => handler(payload);
+      ...payload: Parameters<typeof handler>
+    ) => handler(...payload);
     listenerMap.set(handler as Fn, wrappedHandler as Fn);
     ipcRenderer.on(channel, wrappedHandler);
   },

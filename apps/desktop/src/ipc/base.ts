@@ -61,11 +61,10 @@ function createIPCClass() {
 
     send<K extends IPCFromMainChannel>(
       channel: K,
-      //TODO: switch to input
-      payload: IPCFromMain[K]["output"],
+      ...payload: IPCFromMain[K]["input"]
     ) {
       this.#win()?.forEach((win) => {
-        win?.webContents.send(channel, payload);
+        win?.webContents.send(channel, ...payload);
       });
     }
 

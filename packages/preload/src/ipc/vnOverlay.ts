@@ -15,8 +15,8 @@ export const vnOverlaySettings = z.object({
 export const vnOverlayIPC = {
   main: z.object({
     "vnOverlay:setSettings": z.object({
-      input: z.tuple([]),
-      output: vnOverlaySettings,
+      input: z.tuple([vnOverlaySettings]),
+      output: z.void(),
     }),
   }),
   renderer: z.object({
