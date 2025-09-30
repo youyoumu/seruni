@@ -29,9 +29,20 @@ async function createEnv_() {
     emptyStringAsUndefined: true,
   });
 
-  //TODO: set user data path to root repo during development
+  if (validatedEnv.DEV) {
+    await hmr.runEffect(import.meta.url, () => {
+      const original = app.getPath("userData");
+      app.setPath("userData", join(import.meta.dirname, "../.userData"));
+
+      return () => {
+        app.setPath("userData", original);
+      };
+    });
+  }
+
   const USER_DATA_PATH = app.getPath("userData");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
+  const TEMP_PATH = join(USER_DATA_PATH, "temp");
   // register effect (with cleanup)
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;
@@ -44,8 +55,10 @@ async function createEnv_() {
   });
 
   const constant = {
+    ELECTRON_PATH: app.getPath("userData"),
     USER_DATA_PATH,
     CACHE_PATH,
+    TEMP_PATH,
     //TODO: adjust for production path
     IPC_PRELOAD_PATH: join(
       import.meta.dirname,
