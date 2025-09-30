@@ -1,5 +1,6 @@
 import fs from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type {
   WsFromClient,
   WsFromClientEvent,
@@ -147,7 +148,14 @@ function createAppWebsocketClass() {
     static async assignPort() {
       const port = await getPort();
       fs.mkdirSync(env.TEMP_PATH, { recursive: true });
-      await writeFile(env.PORT_FILE_PATH, port.toString(), "utf8");
+
+      //TODO: move to util
+      async function atomicWriteFile(filePath: string, content: string) {
+        const tmp = join(env.TEMP_PATH, `.tmp-${Date.now()}-${Math.random()}`);
+        await writeFile(tmp, content, "utf8");
+        await rename(tmp, filePath); // atomic replace
+      }
+      await atomicWriteFile(env.PORT_FILE_PATH, port.toString());
       return port;
     }
 

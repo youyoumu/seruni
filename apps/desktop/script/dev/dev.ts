@@ -1,11 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
-import { readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { constants, readFileSync } from "node:fs";
+import { access, readFile } from "node:fs/promises";
 import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
 import chokidar from "chokidar";
 
+//TODO: make more structured
 const envJson = (() => {
   try {
     return JSON.parse(
@@ -50,6 +51,55 @@ async function setupWsClient() {
   wsClient.on("dev:restart", (callback) => {
     restarting = true;
     callback?.();
+  });
+}
+
+async function ensureExists(filePath: string) {
+  try {
+    await access(filePath, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function setupFileWatcher(filePath: string) {
+  const watcher = chokidar.watch(filePath, { persistent: true });
+
+  // Create a promise + resolver pair
+  const { promise, resolve } = Promise.withResolvers<void>();
+
+  const exists = await ensureExists(filePath);
+
+  if (exists) {
+    watcher.on("change", () => {
+      resolve();
+      watcher.close();
+    });
+  } else {
+    watcher.on("add", () => {
+      resolve();
+      watcher.close();
+    });
+  }
+
+  return {
+    waitForChange() {
+      return promise;
+    },
+    close() {
+      watcher.close();
+    },
+  };
+}
+
+function waitForFileAdd(filePath: string) {
+  return new Promise<void>((resolve) => {
+    const watcher = chokidar.watch(filePath, { persistent: true });
+    watcher.on("add", () => {
+      watcher.close();
+      resolve();
+    });
   });
 }
 
@@ -127,11 +177,17 @@ function handleFileEvent(filePath: string) {
   }
 }
 
-start();
-// TODO: no timeout
-setTimeout(() => {
+async function init() {
+  const { waitForChange } = await setupFileWatcher(wsPortFilePath);
+  start();
+  await waitForFileAdd(ipcPath);
+
   const initialHash = hashFile(ipcPath);
   fileHashes.set(ipcPath, initialHash);
-}, 2000);
-setTimeout(watch, 4000);
-setTimeout(setupWsClient, 4000);
+
+  watch();
+  await waitForChange();
+  await setupWsClient();
+}
+
+init();

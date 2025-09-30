@@ -18,7 +18,6 @@ function createMainWindow() {
 
     override async create() {
       super.create();
-      console.log("DEBUG[621]: super.create=", super.create);
 
       await this.waitForRenderer(env.RENDERER_URL);
       await this.win?.loadURL(env.RENDERER_URL);
