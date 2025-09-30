@@ -30,6 +30,7 @@
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
     "es-toolkit": "^1.39.10",
+    "get-port": "^7.1.0",
     "hono": "^4.9.7",
     "mime": "^4.1.0",
     "node-stream-zip": "^1.15.0",

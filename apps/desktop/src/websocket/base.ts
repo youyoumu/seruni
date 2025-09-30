@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import type {
   WsFromClient,
   WsFromClientEvent,
@@ -6,8 +8,10 @@ import type {
 } from "@repo/preload/websocket";
 import { signal } from "alien-signals";
 import { isJSONValue } from "es-toolkit";
+import getPort from "get-port";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
+import { env } from "#/env";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 
@@ -131,10 +135,25 @@ function createAppWebsocketClass() {
       AppWebsocket.#instances.clear();
     }
 
-    static registerAll() {
+    static async registerAll() {
+      const port = await AppWebsocket.assignPort();
+      AppWebsocket.io.listen(port);
+      log.info(`Websocket server listening on port ${port}`);
       for (const instance of AppWebsocket.#instances) {
         instance.register();
       }
+    }
+
+    static async assignPort() {
+      const port = await getPort();
+      fs.mkdirSync(env.TEMP_PATH, { recursive: true });
+      await writeFile(env.PORT_FILE_PATH, port.toString(), "utf8");
+      return port;
+    }
+
+    static async readAssignedPort() {
+      const data = await readFile(env.PORT_FILE_PATH, "utf8");
+      return Number(data.trim());
     }
   }
 

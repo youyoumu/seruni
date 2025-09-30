@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
 import chokidar from "chokidar";
@@ -28,16 +29,29 @@ const ipcPath = path.join(
   import.meta.dirname,
   "../../../../packages/preload/dist/_preload/ipc.js",
 );
+const wsPortFilePath = join(
+  import.meta.dirname,
+  "../../.userData/temp/ws_port.txt",
+);
 
-const wsClient = createSocketClient(`ws://localhost:${envJson.WS_PORT}`, {});
+async function readAssignedPort() {
+  const data = await readFile(wsPortFilePath, "utf8");
+  return Number(data.trim());
+}
 
-wsClient.socket.on("connect", () => {
-  console.log(`WS client connected with id ${wsClient.socket.id}`);
-});
-wsClient.on("dev:restart", (callback) => {
-  restarting = true;
-  callback?.();
-});
+let wsClient: ReturnType<typeof createSocketClient> | undefined;
+async function setupWsClient() {
+  const port = await readAssignedPort();
+  wsClient = createSocketClient(`ws://localhost:${port}`, {});
+
+  wsClient.socket.on("connect", () => {
+    console.log(`WS client connected with id ${wsClient?.socket.id}`);
+  });
+  wsClient.on("dev:restart", (callback) => {
+    restarting = true;
+    callback?.();
+  });
+}
 
 const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
   process.on(signal, () => {
@@ -99,7 +113,7 @@ function handleFileEvent(filePath: string) {
       console.log(`Hash changed for ${fileName}: ${oldHash} → ${newHash}`);
       fileHashes.set(filePath, newHash);
 
-      if (wsClient.socket.connected) {
+      if (wsClient?.socket.connected) {
         restarting = true;
         wsClient.emit("dev:fileChange", { fileName });
       } else {
@@ -114,8 +128,10 @@ function handleFileEvent(filePath: string) {
 }
 
 start();
+// TODO: no timeout
 setTimeout(() => {
   const initialHash = hashFile(ipcPath);
   fileHashes.set(ipcPath, initialHash);
 }, 2000);
 setTimeout(watch, 4000);
+setTimeout(setupWsClient, 4000);

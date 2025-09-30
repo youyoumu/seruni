@@ -25,10 +25,7 @@ app.on("web-contents-created", (_, contents) => {
 export async function bootstrap() {
   log.debug(env, "env value");
   IPC().registerAll();
-  AppWebsocket().io.listen(env.WS_PORT);
-  log.info(`Websocket server listening on port ${env.WS_PORT}`);
-  AppWebsocket().registerAll();
-
+  await AppWebsocket().registerAll();
   await app.whenReady();
   mainWindow().open();
 }
