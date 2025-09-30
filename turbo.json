@@ -8,8 +8,11 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**"]
     },
+    "build:noclean": {
+      "dependsOn": ["^build:noclean"]
+    },
     "typecheck": {
-      "dependsOn": ["^typecheck", "@repo/preload#build"]
+      "dependsOn": ["^typecheck", "@repo/preload#build:noclean"]
     },
     "dev": {
       "cache": false,
