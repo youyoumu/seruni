@@ -2,12 +2,11 @@ import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { createSocketClient } from "@repo/preload/websocket";
 import chokidar from "chokidar";
-import WebSocket, { WebSocketServer } from "ws";
 
 let child: ChildProcess;
 let restarting = false;
-let wsClient: WebSocket;
 const fileHashes = new Map();
 
 const preloadDir = path.join(
@@ -19,11 +18,10 @@ const ipcPath = path.join(
   "../../../../packages/preload/dist/_preload/ipc.js",
 );
 
-const wss = new WebSocketServer({ port: 3001 });
+const wsClient = createSocketClient("ws://localhost:3001", {});
 
-wss.on("connection", (socket) => {
-  wsClient = socket;
-  console.log("Electron connected to control WS");
+wsClient.socket.on("connect", () => {
+  console.log(`WS client connected with id ${wsClient.socket.id}`);
 });
 
 const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
@@ -57,20 +55,12 @@ function start() {
 }
 
 function restart() {
-  if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+  if (wsClient.socket.connected) {
     restarting = true;
-    wsClient.send(
-      JSON.stringify({
-        type: "file_change",
-        payload: {
-          name: "ipc_preload",
-        },
-      }),
-    );
+    //TODO: real filename, optional ack
+    wsClient.emit("dev:fileChange", { fileName: "ipc.js" }, () => {});
   } else {
-    console.log("Electron not connected, forcing kill");
-    restarting = true;
-    child.kill("SIGKILL");
+    console.log("WS Client not connected");
   }
 }
 

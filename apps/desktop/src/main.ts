@@ -1,9 +1,10 @@
 import { app } from "electron";
+import { Server } from "socket.io";
 import { env } from "./env";
 import { IPC } from "./ipc";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
-import { connectControl } from "./websocket/dev";
+import { AppWebsocket } from "./websocket";
 import { mainWindow } from "./window/main";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
@@ -25,13 +26,15 @@ app.on("web-contents-created", (_, contents) => {
 export async function bootstrap() {
   log.debug(env, "env value");
   IPC().registerAll();
+  //TODO: port from env or file
+  AppWebsocket().io.listen(3001);
+  AppWebsocket().registerAll();
 
   await app.whenReady();
   mainWindow().open();
 }
 
 bootstrap();
-connectControl();
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

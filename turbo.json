@@ -16,7 +16,7 @@
       "persistent": true
     },
     "desktop#dev": {
-      "dependsOn": ["@repo/preload#build"]
+      "dependsOn": ["@repo/preload#build:noclean"]
     }
   }
 }

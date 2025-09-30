@@ -1,30 +1,26 @@
+import { signal } from "alien-signals";
 import { app } from "electron";
-import WebSocket from "ws";
-import { log } from "#/util/logger";
+import { AppWebsocket } from "./base";
 
-//TODO: make classes for WS
-export function connectControl() {
-  //TODO: use port from env.json
-  const ws = new WebSocket("ws://localhost:3001");
-
-  ws.on("open", () => {
-    console.log("Connected to parent WS server");
-  });
-
-  //TODO: make type for WS
-  ws.on("message", (msg) => {
-    const data = JSON.parse(msg.toString());
-    if (data?.type === "file_change") {
-      if (data?.payload?.name === "ipc_preload") {
-        log.debug(data, "WS message");
-        //TODO: exit with WS
-        app.exit(100);
-      }
+function createDevWS() {
+  class DevWS extends AppWebsocket()<"dev"> {
+    constructor() {
+      super({
+        prefix: "dev",
+      });
     }
-  });
 
-  ws.on("close", () => {
-    // Parent died? Quit too
-    app.exit();
-  });
+    override async register() {
+      await super.register();
+      this.on("dev:fileChange", ({ fileName }) => {
+        if (fileName === "ipc.js") {
+          //TODO: exit with WS
+          app.exit(100);
+        }
+      });
+    }
+  }
+  return new DevWS();
 }
+
+export const devWS = signal(createDevWS());

@@ -31,6 +31,7 @@ export default [
     entry: {
       ipc: "src/ipc/index.ts",
       chrome: "src/chrome/index.ts",
+      websocket: "src/websocket/index.ts",
     },
   }),
 ];

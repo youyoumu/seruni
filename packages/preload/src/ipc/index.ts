@@ -111,6 +111,5 @@ export const ipcRenderer_: IPCRenderer = {
       ipcRenderer.removeListener(channel, wrappedHandler);
       listenerMap.delete(callback as Fn);
     }
-    ipcRenderer.removeListener(channel, (_, payload) => callback(payload));
   },
 };

@@ -4,19 +4,25 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
+    "build:noclean": "tsdown --no-clean",
     "dev": "tsdown --watch src",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
     "./ipc": "./dist/ipc.js",
-    "./chrome": "./dist/chrome.js"
+    "./chrome": "./dist/chrome.js",
+    "./websocket": "./dist/websocket.js"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "chokidar": "^4.0.3",
     "electron": "^38.2.0",
     "tsdown": "^0.15.5",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^4.1.11"
   }
 }
