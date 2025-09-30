@@ -49,7 +49,7 @@ function createAppWebsocketClass() {
       listener: (
         ...args: [
           ...WsFromClient[Event]["input"],
-          callback: WsServerCallback<Event>,
+          callback?: WsServerCallback<Event>,
         ]
       ) => void,
     ) {
@@ -88,12 +88,12 @@ function createAppWebsocketClass() {
 
     emit<Event extends WsFromServerEvent>(
       event: Event,
-      ...args: [...WsFromServer[Event]["input"], ack: WsServerAck<Event>]
+      ...args: [...WsFromServer[Event]["input"], ack?: WsServerAck<Event>]
     ) {
       const data: Writable<JsonValue> = [];
       for (let i = 0; i < args.length; i++) {
         if (isJSONValue(args[i])) {
-          data.push(args[i] as JsonValue);
+          data.push(args[i] as unknown as JsonValue);
         }
       }
       log.trace(

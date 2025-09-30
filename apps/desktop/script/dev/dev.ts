@@ -25,7 +25,7 @@ wsClient.socket.on("connect", () => {
 });
 wsClient.on("dev:restart", (callback) => {
   restarting = true;
-  callback();
+  callback?.();
 });
 
 const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
@@ -90,8 +90,7 @@ function handleFileEvent(filePath: string) {
 
       if (wsClient.socket.connected) {
         restarting = true;
-        //TODO: real filename, optional ack
-        wsClient.emit("dev:fileChange", { fileName }, () => {});
+        wsClient.emit("dev:fileChange", { fileName });
       } else {
         console.log("WS Client not connected, failed to emit");
       }

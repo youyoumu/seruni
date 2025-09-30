@@ -31,13 +31,13 @@ export type WsClientCallback<Event extends WsFromServerEvent> = (
   data: WsFromServer[Event]["output"],
 ) => void;
 export type WsClientListener<Event extends WsFromServerEvent> = (
-  ...args: [...WsFromServer[Event]["input"], callback: WsClientCallback<Event>]
+  ...args: [...WsFromServer[Event]["input"], callback?: WsClientCallback<Event>]
 ) => void;
 export type WsClient = {
   socket: Socket<DefaultEventsMap, DefaultEventsMap>;
   emit: <Event extends WsFromClientEvent>(
     event: Event,
-    ...args: [...WsFromClient[Event]["input"], ack: WsClientAck<Event>]
+    ...args: [...WsFromClient[Event]["input"], ack?: WsClientAck<Event>]
   ) => WsFromClient[Event]["output"];
 
   on: <Event extends WsFromServerEvent>(
