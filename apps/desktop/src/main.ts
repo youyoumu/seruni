@@ -1,4 +1,5 @@
 import { app } from "electron";
+import { prepareAllClient } from "./client";
 import { env } from "./env";
 import { IPC } from "./ipc";
 import { hmr } from "./util/hmr";
@@ -27,7 +28,8 @@ export async function bootstrap() {
   IPC().registerAll();
   await AppWebsocket().registerAll();
   await app.whenReady();
-  mainWindow().open();
+  await mainWindow().open();
+  await prepareAllClient();
 }
 
 bootstrap();

@@ -30,15 +30,18 @@
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
     "es-toolkit": "^1.39.10",
+    "fast-sort": "^3.4.1",
     "get-port": "^7.1.0",
     "hono": "^4.9.7",
     "mime": "^4.1.0",
     "node-stream-zip": "^1.15.0",
+    "obs-websocket-js": "^5.0.6",
     "roarr": "^7.21.1",
     "smol-toml": "^1.4.2",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "ws": "^8.18.3",
+    "yanki-connect": "^3.0.5",
     "zod": "^4.1.9"
   }
 }
