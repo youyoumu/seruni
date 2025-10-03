@@ -13,6 +13,9 @@ export function createTextractorClient() {
       try {
         //TODO: configure port
         this.client = new WebSocket("ws://127.0.0.1:6677");
+        this.client.on("error", (e) => {
+          log.error({ error: e }, "Failed to connect to textractor");
+        });
         this.client.on("open", () => {
           log.info("Connected to textractor");
         });

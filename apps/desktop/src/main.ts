@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { prepareAllClient } from "./client";
+import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
 import { IPC } from "./ipc";
 import { hmr } from "./util/hmr";
@@ -44,6 +44,7 @@ if (import.meta.hot) {
 
   import.meta.hot.dispose(() => {
     log.warn("HMR update detected on the main process, reloading...");
+    textractorClient().client?.close();
     devWS().emit("dev:restart", () => {
       app.exit();
     });

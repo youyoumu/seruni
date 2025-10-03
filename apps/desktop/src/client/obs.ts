@@ -22,6 +22,16 @@ export function createObsClient() {
         log.error({ error: e }, "Failed to connect to OBS");
       }
     }
+
+    saveReplayBuffer() {
+      const { promise, resolve } = Promise.withResolvers<string>();
+      this.client?.on("ReplayBufferSaved", ({ savedReplayPath }) => {
+        log.debug({ savedReplayPath }, "ReplayBufferSaved");
+        resolve(savedReplayPath);
+      });
+      this.client?.call("SaveReplayBuffer");
+      return promise;
+    }
   }
 
   return new ObsClient();

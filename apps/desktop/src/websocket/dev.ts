@@ -1,5 +1,6 @@
 import { signal } from "alien-signals";
 import { app } from "electron";
+import { hmr } from "#/util/hmr";
 import { AppWebsocket } from "./base";
 
 function createDevWS() {
@@ -25,3 +26,10 @@ function createDevWS() {
 }
 
 export const devWS = signal(createDevWS());
+
+if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+  });
+}
