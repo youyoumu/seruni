@@ -24,12 +24,20 @@ export function createObsClient() {
     }
 
     saveReplayBuffer() {
-      const { promise, resolve } = Promise.withResolvers<string>();
-      this.client?.on("ReplayBufferSaved", ({ savedReplayPath }) => {
+      const { promise, resolve, reject } = Promise.withResolvers<string>();
+
+      const handler = ({ savedReplayPath }: { savedReplayPath: string }) => {
         log.debug({ savedReplayPath }, "ReplayBufferSaved");
+        this.client?.off("ReplayBufferSaved", handler);
         resolve(savedReplayPath);
+      };
+
+      this.client?.on("ReplayBufferSaved", handler);
+      this.client?.call("SaveReplayBuffer").catch((e) => {
+        this.client?.off("ReplayBufferSaved", handler);
+        reject(e);
       });
-      this.client?.call("SaveReplayBuffer");
+
       return promise;
     }
   }
