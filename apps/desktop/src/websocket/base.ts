@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { mkdirSync } from "node:fs";
+import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   WsFromClient,
@@ -13,7 +13,6 @@ import getPort from "get-port";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
 import { env } from "#/env";
-import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 
 export type WsServerAck<Event extends WsFromServerEvent> = (
@@ -108,6 +107,7 @@ function createAppWebsocketClass() {
         },
         "WS emit",
       );
+
       AppWebsocket.socket.emit(event, ...args);
     }
 
@@ -121,6 +121,7 @@ function createAppWebsocketClass() {
 
     static async prepare() {
       if (AppWebsocket.socket) return;
+      console.log("DEBUG[676]: AppWebsocket.socket=", AppWebsocket.socket);
       const { promise, resolve } = Promise.withResolvers<void>();
       AppWebsocket.io.on("connection", (socket) => {
         AppWebsocket.socket = socket;
@@ -147,7 +148,7 @@ function createAppWebsocketClass() {
 
     static async assignPort() {
       const port = await getPort();
-      fs.mkdirSync(env.TEMP_PATH, { recursive: true });
+      mkdirSync(env.TEMP_PATH, { recursive: true });
 
       //TODO: move to util
       async function atomicWriteFile(filePath: string, content: string) {
@@ -163,19 +164,13 @@ function createAppWebsocketClass() {
       const data = await readFile(env.PORT_FILE_PATH, "utf8");
       return Number(data.trim());
     }
+
+    static async deletePortFile() {
+      await unlink(env.PORT_FILE_PATH);
+    }
   }
 
   return AppWebsocket;
 }
 
 export const AppWebsocket = signal(createAppWebsocketClass());
-
-//  ───────────────────────────────── HMR ─────────────────────────────────
-
-if (import.meta.hot) {
-  hmr.register(import.meta.url);
-  import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
-    import.meta.hot?.invalidate();
-  });
-}

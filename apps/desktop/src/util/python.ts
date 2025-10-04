@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "./logger";

@@ -48,6 +48,12 @@ async function setupWsClient() {
   wsClient.socket.on("connect", () => {
     console.log(`WS client connected with id ${wsClient?.socket.id}`);
   });
+  wsClient.socket.on("disconnect", async () => {
+    console.log(`WS client disconnected`);
+    const { waitForChange } = await setupFileWatcher(wsPortFilePath);
+    await waitForChange();
+    setupWsClient();
+  });
   wsClient.on("dev:restart", (callback) => {
     restarting = true;
     callback?.();
