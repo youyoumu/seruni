@@ -30,6 +30,7 @@
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
     "es-toolkit": "^1.39.10",
+    "execa": "^9.6.0",
     "fast-sort": "^3.4.1",
     "get-port": "^7.1.0",
     "hono": "^4.9.7",

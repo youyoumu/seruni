@@ -2,8 +2,14 @@ import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
-import { extractAudio, extractImage, getFileDuration } from "#/util/ffmpeg";
+import {
+  cropAudioToLastVadEnd,
+  extractAudio,
+  extractImage,
+  getFileDuration,
+} from "#/util/ffmpeg";
 import { log } from "#/util/logger";
+import { python } from "#/util/python";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -91,12 +97,43 @@ export function createAnkiClient() {
 
       log.debug({ noteInfo }, "noteInfo");
 
+      let audioStage1Path: string;
       try {
-        extractAudio({ filePath: savedReplayPath, offsetSeconds });
+        audioStage1Path = await extractAudio({
+          filePath: savedReplayPath,
+          offsetSeconds,
+        });
       } catch (e) {
         log.error({ error: e }, "Failed to extract audio");
+        return;
       }
+
+      let audioStage1VadData: {
+        start: number;
+        end: number;
+      }[];
       try {
+        audioStage1VadData = JSON.parse(await python([audioStage1Path]));
+      } catch (e) {
+        log.error({ error: e }, "Failed to extract audio VAD data");
+        return;
+      }
+
+      let audioStage2Path: string;
+      try {
+        audioStage2Path = await cropAudioToLastVadEnd({
+          inputPath: audioStage1Path,
+          vadData: audioStage1VadData,
+        });
+      } catch (e) {
+        log.error({ error: e }, "Failed to crop audio");
+        return;
+      }
+
+      log.info(audioStage2Path);
+
+      try {
+        //TODO: offset
         extractImage(savedReplayPath);
       } catch (e) {
         log.error({ error: e }, "Failed to extract image");

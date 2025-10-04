@@ -1,5 +1,8 @@
 import { execSync, spawn } from "node:child_process";
-import path from "node:path";
+import { randomUUID } from "node:crypto";
+import path, { join } from "node:path";
+import { execa } from "execa";
+import { env } from "#/env";
 import { log } from "./logger";
 
 export function getFileDuration(filePath: string): number | null {
@@ -28,7 +31,7 @@ export async function extractAudio({
     `${path.basename(filePath, path.extname(filePath))}.wav`,
   );
 
-  await new Promise<void>((resolve, reject) => {
+  return await new Promise<string>((resolve, reject) => {
     const ffmpeg = spawn("ffmpeg", [
       "-y", // overwrite existing
       "-i",
@@ -55,12 +58,54 @@ export async function extractAudio({
     ffmpeg.on("close", (code) => {
       if (code === 0) {
         log.debug(`WAV file created at: ${outPath}`);
-        resolve();
+        resolve(outPath);
       } else {
         reject(new Error(`ffmpeg exited with code ${code}`));
       }
     });
   });
+}
+
+interface VadSegment {
+  start: number;
+  end: number;
+}
+
+export async function cropAudioToLastVadEnd({
+  inputPath,
+  vadData,
+}: {
+  inputPath: string;
+  vadData: VadSegment[];
+}): Promise<string> {
+  if (!vadData.length) {
+    throw new Error("No VAD segments found");
+  }
+
+  // Find the last VAD segment end time
+  const lastEnd = vadData[vadData.length - 1]?.end;
+  if (!lastEnd) {
+    throw new Error("No last VAD segment end time found");
+  }
+  const outputPath = join(env.TEMP_PATH, `${randomUUID()}.wav`);
+
+  // FFmpeg command:
+  // -y: overwrite
+  // -i: input file
+  // -t: duration (seconds)
+  // -acodec copy: copy audio codec (no re-encoding)
+  await execa("ffmpeg", [
+    "-y",
+    "-i",
+    inputPath,
+    "-t",
+    lastEnd.toString(),
+    "-acodec",
+    "copy",
+    outputPath,
+  ]);
+
+  return outputPath;
 }
 
 export async function extractImage(filePath: string) {
