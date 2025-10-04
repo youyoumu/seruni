@@ -1,6 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { readFile, unlink } from "node:fs/promises";
 import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
 import chokidar from "chokidar";
@@ -28,28 +27,16 @@ const ipcPath = path.join(
   import.meta.dirname,
   "../../../../packages/preload/dist/_preload/ipc.js",
 );
-const wsPortFilePath = join(
-  import.meta.dirname,
-  "../../.userData/temp/ws_port.txt",
-);
-
-async function readAssignedPort() {
-  const data = await readFile(wsPortFilePath, "utf8");
-  return Number(data.trim());
-}
 
 let wsClient: ReturnType<typeof createSocketClient> | undefined;
 async function setupWsClient() {
-  await waitForFileAdd(wsPortFilePath);
-  const port = await readAssignedPort();
-  wsClient = createSocketClient(`ws://localhost:${port}`, {});
+  wsClient = createSocketClient(`ws://localhost:${envJson.WS_PORT}`, {});
 
   wsClient.socket.on("connect", () => {
     console.log(`WS client connected with id ${wsClient?.socket.id}`);
   });
   wsClient.socket.on("disconnect", async () => {
     console.log(`WS client disconnected`);
-    setupWsClient();
   });
   wsClient.on("dev:restart", (callback) => {
     restarting = true;
@@ -76,9 +63,6 @@ const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
 };
 
 async function start() {
-  try {
-    await unlink(wsPortFilePath);
-  } catch {}
   child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
   child.on("close", (code) => {
     if (restarting) {

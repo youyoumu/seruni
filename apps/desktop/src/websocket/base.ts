@@ -1,6 +1,3 @@
-import { mkdirSync } from "node:fs";
-import { readFile, rename, unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type {
   WsFromClient,
   WsFromClientEvent,
@@ -9,7 +6,6 @@ import type {
 } from "@repo/preload/websocket";
 import { signal } from "alien-signals";
 import { isJSONValue } from "es-toolkit";
-import getPort from "get-port";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
 import { env } from "#/env";
@@ -137,35 +133,11 @@ function createAppWebsocketClass() {
     }
 
     static async registerAll() {
-      const port = await AppWebsocket.assignPort();
-      AppWebsocket.io.listen(port);
-      log.info(`Websocket server listening on port ${port}`);
+      AppWebsocket.io.listen(env.WS_PORT);
+      log.info(`Websocket server listening on port ${env.WS_PORT}`);
       for (const instance of AppWebsocket.#instances) {
         instance.register();
       }
-    }
-
-    static async assignPort() {
-      const port = await getPort();
-      mkdirSync(env.TEMP_PATH, { recursive: true });
-
-      //TODO: move to util
-      async function atomicWriteFile(filePath: string, content: string) {
-        const tmp = join(env.TEMP_PATH, `.tmp-${Date.now()}-${Math.random()}`);
-        await writeFile(tmp, content, "utf8");
-        await rename(tmp, filePath); // atomic replace
-      }
-      await atomicWriteFile(env.PORT_FILE_PATH, port.toString());
-      return port;
-    }
-
-    static async readAssignedPort() {
-      const data = await readFile(env.PORT_FILE_PATH, "utf8");
-      return Number(data.trim());
-    }
-
-    static async deletePortFile() {
-      await unlink(env.PORT_FILE_PATH);
     }
   }
 

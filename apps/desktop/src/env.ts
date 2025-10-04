@@ -23,6 +23,7 @@ async function createEnv_() {
       //TODO: make this dynamic with file state
       RENDERER_PORT: z.number().default(3000),
       DEV: z.boolean().default(false),
+      WS_PORT: z.number().default(45626),
     },
     runtimeEnv: envJson,
     emptyStringAsUndefined: true,
@@ -42,7 +43,6 @@ async function createEnv_() {
   const USER_DATA_PATH = app.getPath("userData");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
-  const PORT_FILE_PATH = join(TEMP_PATH, "ws_port.txt");
   // register effect (with cleanup)
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;
@@ -59,7 +59,6 @@ async function createEnv_() {
     USER_DATA_PATH,
     CACHE_PATH,
     TEMP_PATH,
-    PORT_FILE_PATH,
     //TODO: adjust for production path
     IPC_PRELOAD_PATH: join(
       import.meta.dirname,
