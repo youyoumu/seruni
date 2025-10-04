@@ -20,7 +20,6 @@ async function createEnv_() {
   const validatedEnv = createEnv({
     server: {
       ROARR_LOG: z.boolean().default(true),
-      //TODO: make this dynamic with file state
       RENDERER_PORT: z.number().default(3000),
       DEV: z.boolean().default(false),
       WS_PORT: z.number().default(45626),
