@@ -121,7 +121,6 @@ function createAppWebsocketClass() {
 
     static async prepare() {
       if (AppWebsocket.socket) return;
-      console.log("DEBUG[676]: AppWebsocket.socket=", AppWebsocket.socket);
       const { promise, resolve } = Promise.withResolvers<void>();
       AppWebsocket.io.on("connection", (socket) => {
         AppWebsocket.socket = socket;

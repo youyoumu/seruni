@@ -45,7 +45,6 @@ if (import.meta.hot) {
   import.meta.hot.dispose(async () => {
     log.warn("HMR update detected on the main process, reloading...");
     textractorClient().client?.close();
-    await AppWebsocket().deletePortFile();
     await devWS().register();
     devWS().emit("dev:restart", () => {
       app.exit();
