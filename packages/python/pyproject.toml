@@ -1,0 +1,9 @@
+[project]
+name = "python"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = ["silero-vad>=6.0.0", "soundfile>=0.13.1"]
+
+[dependency-groups]
+dev = ["pyright>=1.1.406", "ruff>=0.13.3"]

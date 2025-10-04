@@ -48,3 +48,4 @@ devenv.local.nix
 .pre-commit-config.yaml
 
 .userData
+__pycache__
