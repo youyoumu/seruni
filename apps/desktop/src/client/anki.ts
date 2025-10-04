@@ -17,43 +17,97 @@ export function createAnkiClient() {
   class AnkiClient {
     client: YankiConnect | undefined;
     lastAddedNote: number | undefined;
-    constructor() {}
+    reconnecting = false;
+    retryCount = 0;
+    maxRetries = Infinity;
+    retryTimer: NodeJS.Timeout | null = null;
+    monitorStarted = false;
 
     async prepare() {
+      await this.connect();
+    }
+
+    async connect() {
+      if (this.reconnecting) return;
+      this.reconnecting = false;
+
       try {
         this.client = new YankiConnect();
+        // Try to verify connection
+        await this.client.deck.deckNames();
         this.lastAddedNote = await this.getLastAddedNote();
-        log.info("Connected to Anki connect");
-      } catch (e) {
-        log.error({ error: e }, "Failed to connect to Anki connect");
+        this.retryCount = 0;
+        log.info("Connected to AnkiConnect");
+        if (this.monitorStarted) this.monitor();
+      } catch (error) {
+        log.error({ error }, "Failed to connect to AnkiConnect");
+        this.handleDisconnect();
       }
     }
 
+    handleDisconnect() {
+      if (this.reconnecting) return;
+      this.reconnecting = true;
+      this.scheduleReconnect();
+    }
+
+    scheduleReconnect() {
+      if (this.retryCount >= this.maxRetries) {
+        log.error(
+          "Max retries reached. Stopping AnkiConnect reconnection attempts.",
+        );
+        return;
+      }
+
+      const delayMs = Math.min(10000, 1000 * 2 ** this.retryCount);
+      log.info(`Reconnecting to AnkiConnect in ${delayMs / 1000} seconds...`);
+      this.retryCount++;
+
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.retryTimer = setTimeout(() => {
+        this.reconnecting = false;
+        this.connect();
+      }, delayMs);
+    }
+
     async getLastAddedNote() {
-      const res = await this.client?.note.findNotes({
-        query: "added:1",
-      });
+      if (!this.client) throw new Error("Anki client not connected");
+      const res = await this.client.note.findNotes({ query: "added:1" });
       return sort(res ?? []).desc()[0];
     }
 
     async monitor() {
-      if (!this.client) return;
+      this.monitorStarted = true;
       while (true) {
-        let lastAddedNote: number | undefined;
+        if (!this.client) {
+          log.warn("Anki client unavailable, pausing...");
+          this.handleDisconnect();
+          break;
+        }
+
         try {
-          lastAddedNote = await this.getLastAddedNote();
-        } catch (e) {
-          log.error({ error: e }, "Failed to get last added note");
+          const lastAddedNote = await this.getLastAddedNote();
+          if (
+            lastAddedNote &&
+            (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
+          ) {
+            this.lastAddedNote = lastAddedNote;
+            this.handleNewNote(lastAddedNote);
+          }
+        } catch (error) {
+          log.error({ error }, "Failed to get last added note");
+          this.handleDisconnect();
+          break;
         }
-        if (
-          lastAddedNote &&
-          (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
-        ) {
-          this.lastAddedNote = lastAddedNote;
-          this.handleNewNote(lastAddedNote);
-        }
-        delay(1000);
+
+        await delay(1000);
       }
+    }
+
+    close() {
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.client = undefined;
+      this.reconnecting = false;
     }
 
     async handleNewNote(noteId: number) {

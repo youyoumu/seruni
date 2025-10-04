@@ -49,7 +49,6 @@ export function createObsClient() {
     handleDisconnect() {
       if (this.reconnecting) return;
       this.reconnecting = true;
-
       this.scheduleReconnect();
     }
 
