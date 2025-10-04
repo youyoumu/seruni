@@ -71,6 +71,14 @@ async function createEnv_() {
     ),
     RENDERER_PATH: join(import.meta.dirname, "../../../packages/renderer/dist"),
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
+    PYTHON_BIN_PATH: join(
+      import.meta.dirname,
+      "../../../packages/python/.venv/bin/python",
+    ),
+    PYTHON_ENTRY_PATH: join(
+      import.meta.dirname,
+      "../../../packages/python/src/main.py",
+    ),
   };
 
   return {

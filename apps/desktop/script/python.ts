@@ -11,17 +11,26 @@ const pythonEntryPath = path.join(
   "../../../packages/python/src/main.py",
 );
 
-export async function runPython() {
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(pythonBinPath, [pythonEntryPath]);
+const inputPath = path.join(
+  import.meta.dirname,
+  "../../../packages/python/src/sample.wav",
+);
 
-    child.stdout.on("data", (d) => console.log(d.toString()));
+export async function runPython() {
+  return await new Promise<string>((resolve, reject) => {
+    const child = spawn(pythonBinPath, [pythonEntryPath, inputPath]);
+
+    let output = "";
+    child.stdout.on("data", (d) => {
+      output += d.toString();
+      console.log(d.toString());
+    });
     child.stderr.on("data", (d) => console.log(d.toString()));
 
     child.on("close", (code) => {
       if (code === 0) {
         console.log(`Child process exited with code ${code}`);
-        resolve();
+        resolve(output);
       } else {
         reject(new Error(`Child process exited with code ${code}`));
       }
@@ -29,4 +38,6 @@ export async function runPython() {
   });
 }
 
-runPython();
+const output = await runPython();
+const parsedOutput = JSON.parse(output);
+console.log("DEBUG[672]: parsedOutput=", parsedOutput);
