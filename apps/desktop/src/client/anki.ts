@@ -65,19 +65,21 @@ export function createAnkiClient() {
         "history",
       );
 
-      const savedReplayPath = await obsClient().saveReplayBuffer();
-      if (!savedReplayPath) return;
-      // 1. File end = now (after save finishes)
+      let savedReplayPath: string | undefined;
+      try {
+        savedReplayPath = await obsClient().saveReplayBuffer();
+      } catch (e) {
+        log.error({ error: e }, "Failed to save replay buffer");
+        return;
+      }
+
       const fileEnd = new Date();
-
-      // 2. Duration from metadata
       const duration = getFileDuration(savedReplayPath); // e.g. 19.98s
-      if (!duration) return;
-
-      // 3. File start = end - duration
+      if (!duration) {
+        log.warn("Failed to get duration");
+        return;
+      }
       const fileStart = new Date(fileEnd.getTime() - duration * 1000);
-
-      // 4. Compute offset for note
       const offsetSeconds = Math.max(
         0,
         Math.floor((history.time.getTime() - fileStart.getTime()) / 1000),
@@ -89,19 +91,15 @@ export function createAnkiClient() {
 
       log.debug({ noteInfo }, "noteInfo");
 
-      if (savedReplayPath) {
-        try {
-          extractAudio({ filePath: savedReplayPath, offsetSeconds });
-        } catch (e) {
-          log.error({ error: e }, "Failed to extract audio");
-        }
-        try {
-          extractImage(savedReplayPath);
-        } catch (e) {
-          log.error({ error: e }, "Failed to extract image");
-        }
-      } else {
-        log.warn("No saved replay path");
+      try {
+        extractAudio({ filePath: savedReplayPath, offsetSeconds });
+      } catch (e) {
+        log.error({ error: e }, "Failed to extract audio");
+      }
+      try {
+        extractImage(savedReplayPath);
+      } catch (e) {
+        log.error({ error: e }, "Failed to extract image");
       }
     }
   }
