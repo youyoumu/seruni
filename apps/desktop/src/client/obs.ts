@@ -5,25 +5,83 @@ import { log } from "../util/logger";
 export function createObsClient() {
   class ObsClient {
     client: OBSWebSocket | undefined;
-    constructor() {}
+    //TODO: configure port
+    url = "ws://127.0.0.1:7274";
+    reconnecting = false;
+    retryCount = 0;
+    maxRetries = Infinity; // keep trying forever
+    retryTimer: NodeJS.Timeout | null = null;
 
     async prepare() {
+      await this.connect();
+    }
+
+    async connect() {
+      if (this.reconnecting) return;
+      this.reconnecting = false;
+
+      this.client = new OBSWebSocket();
+
       try {
-        this.client = new OBSWebSocket();
-        //TODO: configure port
-        await this.client.connect("ws://127.0.0.1:7274");
+        await this.client.connect(this.url);
         log.info("Connected to OBS");
-        log.info("Starting Replay Buffer");
-        const res = await this.client?.call("GetReplayBufferStatus");
-        if (!res?.outputActive) {
-          this.client?.call("StartReplayBuffer");
+
+        // Reset retry state
+        this.retryCount = 0;
+
+        // Auto-start Replay Buffer if not active
+        log.info("Ensuring Replay Buffer is active...");
+        const res = await this.client.call("GetReplayBufferStatus");
+        if (!res.outputActive) {
+          await this.client.call("StartReplayBuffer");
+          log.info("Replay Buffer started");
         }
-      } catch (e) {
-        log.error({ error: e }, "Failed to connect to OBS");
+
+        // Listen for disconnections
+        this.client.on("ConnectionClosed", () => this.handleDisconnect());
+        this.client.on("ConnectionError", () => this.handleDisconnect());
+      } catch (error) {
+        log.error({ error }, "Failed to connect to OBS");
+        this.handleDisconnect();
       }
     }
 
+    handleDisconnect() {
+      if (this.reconnecting) return;
+      this.reconnecting = true;
+
+      this.scheduleReconnect();
+    }
+
+    scheduleReconnect() {
+      if (this.retryCount >= this.maxRetries) {
+        log.error("Max retries reached. Stopping OBS reconnect attempts.");
+        return;
+      }
+
+      const delay = Math.min(10000, 1000 * 2 ** this.retryCount); // exponential backoff
+      log.info(`Reconnecting to OBS in ${delay / 1000} seconds...`);
+      this.retryCount++;
+
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.retryTimer = setTimeout(() => {
+        this.reconnecting = false;
+        this.connect();
+      }, delay);
+    }
+
+    close() {
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      if (this.client) {
+        this.client.disconnect().catch(() => {});
+        this.client = undefined;
+      }
+      this.reconnecting = false;
+    }
+
     saveReplayBuffer() {
+      if (!this.client) throw new Error("OBS client not connected");
+
       const { promise, resolve, reject } = Promise.withResolvers<string>();
 
       const handler = ({ savedReplayPath }: { savedReplayPath: string }) => {
@@ -32,8 +90,9 @@ export function createObsClient() {
         resolve(savedReplayPath);
       };
 
-      this.client?.on("ReplayBufferSaved", handler);
-      this.client?.call("SaveReplayBuffer").catch((e) => {
+      this.client.on("ReplayBufferSaved", handler);
+
+      this.client.call("SaveReplayBuffer").catch((e) => {
         this.client?.off("ReplayBufferSaved", handler);
         reject(e);
       });
