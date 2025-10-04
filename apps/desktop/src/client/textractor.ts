@@ -17,7 +17,7 @@ export function createTextractorClient() {
           log.error({ error: e }, "Failed to connect to textractor");
         });
         this.client.on("open", () => {
-          log.info("Connected to textractor");
+          log.info("Connected to Textractor");
         });
 
         this.client.on("message", (data) => {
@@ -25,7 +25,7 @@ export function createTextractorClient() {
           const text = Buffer.isBuffer(data)
             ? data.toString("utf8")
             : data.toString();
-          log.debug({ text }, "Received from textractor");
+          log.debug({ text }, "Received from Textractor");
           this.history.push({ time: new Date(), text });
         });
       } catch (e) {

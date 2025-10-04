@@ -23,6 +23,7 @@ export function createAnkiClient() {
       try {
         this.client = new YankiConnect();
         this.lastAddedNote = await this.getLastAddedNote();
+        log.info("Connected to Anki connect");
       } catch (e) {
         log.error({ error: e }, "Failed to connect to Anki connect");
       }
@@ -38,7 +39,12 @@ export function createAnkiClient() {
     async monitor() {
       if (!this.client) return;
       while (true) {
-        const lastAddedNote = await this.getLastAddedNote();
+        let lastAddedNote: number | undefined;
+        try {
+          lastAddedNote = await this.getLastAddedNote();
+        } catch (e) {
+          log.error({ error: e }, "Failed to get last added note");
+        }
         if (
           lastAddedNote &&
           (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
@@ -80,15 +86,17 @@ export function createAnkiClient() {
       }
 
       const fileEnd = new Date();
-      const duration = getFileDuration(savedReplayPath); // e.g. 19.98s
-      if (!duration) {
-        log.warn("Failed to get duration");
+      let durationSeconds: number;
+      try {
+        durationSeconds = await getFileDuration(savedReplayPath);
+      } catch (e) {
+        log.error({ error: e }, "Failed to get duration");
         return;
       }
-      const fileStart = new Date(fileEnd.getTime() - duration * 1000);
-      const offsetSeconds = Math.max(
+      const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
+      const offsetMs = Math.max(
         0,
-        Math.floor((history.time.getTime() - fileStart.getTime()) / 1000),
+        Math.floor(history.time.getTime() - fileStart.getTime()),
       );
 
       const noteInfo = ((await this.client?.note.notesInfo({
@@ -101,7 +109,7 @@ export function createAnkiClient() {
       try {
         audioStage1Path = await extractAudio({
           filePath: savedReplayPath,
-          offsetSeconds,
+          offsetMs,
         });
       } catch (e) {
         log.error({ error: e }, "Failed to extract audio");

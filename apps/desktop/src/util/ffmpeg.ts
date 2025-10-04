@@ -1,69 +1,54 @@
-import { execSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path, { join } from "node:path";
 import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "./logger";
 
-export function getFileDuration(filePath: string): number | null {
-  try {
-    const output = execSync(
-      `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-    )
-      .toString()
-      .trim();
-    return parseFloat(output);
-  } catch (e) {
-    log.error({ error: e }, "Failed to read duration");
-    return null;
-  }
+export async function getFileDuration(filePath: string): Promise<number> {
+  const { stdout, stderr } = await execa("ffprobe", [
+    "-v",
+    "quiet",
+    "-show_entries",
+    "format=duration",
+    "-of",
+    "csv=p=0",
+    filePath,
+  ]);
+  log.trace({ stdout, stderr }, "ffprobe");
+  return parseFloat(stdout.trim());
 }
 
+//TODO: offset start
 export async function extractAudio({
   filePath,
-  offsetSeconds,
+  offsetMs,
 }: {
   filePath: string;
-  offsetSeconds: number;
+  offsetMs: number;
 }) {
   const outPath = path.join(
     path.dirname(filePath),
     `${path.basename(filePath, path.extname(filePath))}.wav`,
   );
 
-  return await new Promise<string>((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
-      "-y", // overwrite existing
-      "-i",
-      filePath, // input file
-      "-ss",
-      String(offsetSeconds),
-      "-vn", // no video
-      "-acodec",
-      "pcm_s16le", // WAV codec
-      "-ar",
-      "44100", // sample rate
-      "-ac",
-      "2", // stereo
-      outPath,
-    ]);
+  const { stdout, stderr } = await execa("ffmpeg", [
+    "-y", // overwrite existing
+    "-i",
+    filePath, // input file
+    "-ss",
+    `${offsetMs}ms`,
+    "-vn", // no video
+    "-acodec",
+    "pcm_s16le", // WAV codec
+    "-ar",
+    "44100", // sample rate
+    "-ac",
+    "2", // stereo
+    outPath,
+  ]);
+  log.trace({ stdout, stderr }, "ffmpeg");
 
-    ffmpeg.stdout.on("data", (d) =>
-      log.trace({ stdout: d.toString() }, "ffmpeg"),
-    );
-    ffmpeg.stderr.on("data", (d) =>
-      log.trace({ stderr: d.toString() }, "ffmpeg"),
-    );
-
-    ffmpeg.on("close", (code) => {
-      if (code === 0) {
-        log.debug(`WAV file created at: ${outPath}`);
-        resolve(outPath);
-      } else {
-        reject(new Error(`ffmpeg exited with code ${code}`));
-      }
-    });
-  });
+  return outPath;
 }
 
 interface VadSegment {
@@ -71,6 +56,7 @@ interface VadSegment {
   end: number;
 }
 
+//TODO: offset
 export async function cropAudioToLastVadEnd({
   inputPath,
   vadData,
@@ -94,7 +80,7 @@ export async function cropAudioToLastVadEnd({
   // -i: input file
   // -t: duration (seconds)
   // -acodec copy: copy audio codec (no re-encoding)
-  await execa("ffmpeg", [
+  const { stdout, stderr } = await execa("ffmpeg", [
     "-y",
     "-i",
     inputPath,
@@ -104,6 +90,7 @@ export async function cropAudioToLastVadEnd({
     "copy",
     outputPath,
   ]);
+  log.trace({ stdout, stderr }, "ffmpeg");
 
   return outputPath;
 }
@@ -114,33 +101,17 @@ export async function extractImage(filePath: string) {
     `${path.basename(filePath, path.extname(filePath))}.jpeg`,
   );
 
-  // Extract first frame as JPEG
-  await new Promise<void>((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
-      "-y", // overwrite existing
-      "-i",
-      filePath, // input file
-      "-frames:v",
-      "1",
-      "-q:v", // quality
-      "2",
-      outPath,
-    ]);
+  const { stdout, stderr } = await execa("ffmpeg", [
+    "-y", // overwrite existing
+    "-i",
+    filePath, // input file
+    "-frames:v",
+    "1",
+    "-q:v", // quality
+    "2",
+    outPath,
+  ]);
+  log.trace({ stdout, stderr }, "ffmpeg");
 
-    ffmpeg.stdout.on("data", (d) =>
-      log.trace({ stdout: d.toString() }, "ffmpeg"),
-    );
-    ffmpeg.stderr.on("data", (d) =>
-      log.trace({ stderr: d.toString() }, "ffmpeg"),
-    );
-
-    ffmpeg.on("close", (code) => {
-      if (code === 0) {
-        log.debug(`JPEG file created at: ${outPath}`);
-        resolve();
-      } else {
-        reject(new Error(`ffmpeg exited with code ${code}`));
-      }
-    });
-  });
+  return outPath;
 }
