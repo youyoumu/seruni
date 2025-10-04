@@ -106,15 +106,20 @@ export function ConsoleTab() {
 
             return (
               <Box>
-                <HStack>
-                  <Box>[{new Date(log.time).toLocaleTimeString()}]</Box>
-                  <Box width="[56px]">
-                    <Box class={logLevelCva({ logLevel })}>{logLevel}</Box>
-                  </Box>
+                <HStack alignItems="start">
+                  <HStack alignItems="center">
+                    <Box whiteSpace="nowrap" fontSize="xs" color="gray.light.9">
+                      [{new Date(log.time).toLocaleTimeString()}]
+                    </Box>
+                    <Box width="[53px]">
+                      <Box class={logLevelCva({ logLevel })}>{logLevel}</Box>
+                    </Box>
+                  </HStack>
                   <Box>{log.message}</Box>
                 </HStack>
                 <Show when={debugString}>
                   <Box
+                    class="console-scrollbar"
                     my="2"
                     as="pre"
                     p="2"
@@ -123,9 +128,10 @@ export function ConsoleTab() {
                     borderRadius="sm"
                     fontSize="xs"
                     whiteSpace="pre-wrap"
-                    overflowX="auto"
+                    overflow="auto"
+                    color="gray.light.8"
                   >
-                    {debugString}
+                    <Box maxH="[20svh]">{debugString}</Box>
                   </Box>
                 </Show>
               </Box>
