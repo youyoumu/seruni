@@ -20,6 +20,7 @@ export function createAnkiClient() {
     reconnecting = false;
     retryCount = 0;
     maxRetries = Infinity;
+    maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
     monitorStarted = false;
 
@@ -59,7 +60,7 @@ export function createAnkiClient() {
         return;
       }
 
-      const delayMs = Math.min(10000, 1000 * 2 ** this.retryCount);
+      const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
       log.info(`Reconnecting to AnkiConnect in ${delayMs / 1000} seconds...`);
       this.retryCount++;
 

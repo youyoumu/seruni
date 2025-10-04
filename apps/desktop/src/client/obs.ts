@@ -10,6 +10,7 @@ export function createObsClient() {
     reconnecting = false;
     retryCount = 0;
     maxRetries = Infinity; // keep trying forever
+    maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
 
     async prepare() {
@@ -58,7 +59,7 @@ export function createObsClient() {
         return;
       }
 
-      const delay = Math.min(10000, 1000 * 2 ** this.retryCount); // exponential backoff
+      const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
       log.info(`Reconnecting to OBS in ${delay / 1000} seconds...`);
       this.retryCount++;
 

@@ -9,6 +9,7 @@ export function createTextractorClient() {
     retryCount = 0;
     maxRetries = Infinity; // retry forever
     retryTimer: NodeJS.Timeout | null = null;
+    maxDelay = 16000;
     url = "ws://127.0.0.1:6677";
     reconnecting = false; // 👈 prevents double reconnect
 
@@ -46,10 +47,12 @@ export function createTextractorClient() {
         });
 
         this.client.on("close", (code, reason) => {
-          log.warn(
-            { code, reason: reason.toString() },
-            "Textractor socket closed",
-          );
+          if (!this.reconnecting) {
+            log.warn(
+              { code, reason: reason.toString() },
+              "Textractor socket closed",
+            );
+          }
           handleDisconnect();
         });
       } catch (e) {
@@ -64,7 +67,7 @@ export function createTextractorClient() {
         return;
       }
 
-      const delay = Math.min(10000, 1000 * 2 ** this.retryCount); // exponential backoff
+      const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
       log.info(`Reconnecting to Textractor in ${delay / 1000} seconds...`);
       this.retryCount++;
 
