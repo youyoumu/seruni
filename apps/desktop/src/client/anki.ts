@@ -1,9 +1,8 @@
-import { execSync, spawn } from "node:child_process";
-import path from "node:path";
 import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
+import { extractAudio, extractImage, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
@@ -72,7 +71,7 @@ export function createAnkiClient() {
       const fileEnd = new Date();
 
       // 2. Duration from metadata
-      const duration = this.getFileDuration(savedReplayPath); // e.g. 19.98s
+      const duration = getFileDuration(savedReplayPath); // e.g. 19.98s
       if (!duration) return;
 
       // 3. File start = end - duration
@@ -92,116 +91,18 @@ export function createAnkiClient() {
 
       if (savedReplayPath) {
         try {
-          this.extractAudio({ filePath: savedReplayPath, offsetSeconds });
+          extractAudio({ filePath: savedReplayPath, offsetSeconds });
         } catch (e) {
-          log.error({ error: e }, "Failed to create WAV file");
+          log.error({ error: e }, "Failed to extract audio");
         }
         try {
-          this.extractImage(savedReplayPath);
+          extractImage(savedReplayPath);
         } catch (e) {
-          log.error({ error: e }, "Failed to create JPEG file");
+          log.error({ error: e }, "Failed to extract image");
         }
       } else {
         log.warn("No saved replay path");
       }
-    }
-
-    getFileDuration(filePath: string): number | null {
-      try {
-        const output = execSync(
-          `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-        )
-          .toString()
-          .trim();
-        return parseFloat(output);
-      } catch (e) {
-        log.error({ error: e }, "Failed to read duration");
-        return null;
-      }
-    }
-
-    async extractAudio({
-      filePath,
-      offsetSeconds,
-    }: {
-      filePath: string;
-      offsetSeconds: number;
-    }) {
-      const outPath = path.join(
-        path.dirname(filePath),
-        `${path.basename(filePath, path.extname(filePath))}.wav`,
-      );
-
-      await new Promise<void>((resolve, reject) => {
-        const ffmpeg = spawn("ffmpeg", [
-          "-y", // overwrite existing
-          "-i",
-          filePath, // input file
-          "-ss",
-          String(offsetSeconds),
-          "-vn", // no video
-          "-acodec",
-          "pcm_s16le", // WAV codec
-          "-ar",
-          "44100", // sample rate
-          "-ac",
-          "2", // stereo
-          outPath,
-        ]);
-
-        ffmpeg.stdout.on("data", (d) =>
-          log.trace({ stdout: d.toString() }, "ffmpeg"),
-        );
-        ffmpeg.stderr.on("data", (d) =>
-          log.trace({ stderr: d.toString() }, "ffmpeg"),
-        );
-
-        ffmpeg.on("close", (code) => {
-          if (code === 0) {
-            log.debug(`WAV file created at: ${outPath}`);
-            resolve();
-          } else {
-            reject(new Error(`ffmpeg exited with code ${code}`));
-          }
-        });
-      });
-    }
-
-    async extractImage(filePath: string) {
-      const outPath = path.join(
-        path.dirname(filePath),
-        `${path.basename(filePath, path.extname(filePath))}.jpeg`,
-      );
-
-      // Extract first frame as JPEG
-      await new Promise<void>((resolve, reject) => {
-        const ffmpeg = spawn("ffmpeg", [
-          "-y", // overwrite existing
-          "-i",
-          filePath, // input file
-          "-frames:v",
-          "1",
-          "-q:v", // quality
-          "2",
-          outPath,
-        ]);
-
-        ffmpeg.stdout.on("data", (d) =>
-          log.trace({ stdout: d.toString() }, "ffmpeg"),
-        );
-        ffmpeg.stderr.on("data", (d) =>
-          log.trace({ stderr: d.toString() }, "ffmpeg"),
-        );
-
-        ffmpeg.on("close", (code) => {
-          if (code === 0) {
-            log.debug(`JPEG file created at: ${outPath}`);
-            resolve();
-          } else {
-            reject(new Error(`ffmpeg exited with code ${code}`));
-          }
-        });
-      });
     }
   }
 
