@@ -1,3 +1,4 @@
+import { unlink } from "node:fs/promises";
 import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
@@ -111,6 +112,7 @@ export function createAnkiClient() {
     }
 
     async handleNewNote(noteId: number) {
+      //get history
       const now = new Date();
       const history = sort(textractorClient().history)
         .desc(({ time }) => time)
@@ -118,11 +120,9 @@ export function createAnkiClient() {
           //TODO: better support non latest history
           return time <= now && true;
         });
-
       if (!history) {
         throw new Error("Failed to find history");
       }
-
       log.debug(
         {
           text: history?.text,
@@ -131,20 +131,22 @@ export function createAnkiClient() {
         "Using history",
       );
 
+      // save replay buffer
       let savedReplayPath: string | undefined;
       try {
         savedReplayPath = await obsClient().saveReplayBuffer();
       } catch {
         throw new Error("Failed to save replay buffer");
       }
-      const fileEnd = new Date();
 
+      // calculate offset
+      const fileEnd = new Date();
       let durationSeconds: number;
       try {
         durationSeconds = await getFileDuration(savedReplayPath);
-      } catch (e) {
-        log.error({ error: e }, "Failed to get duration");
-        return;
+      } catch {
+        unlink(savedReplayPath).catch();
+        throw new Error("Failed to get duration");
       }
       const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
       const offsetMs = Math.max(
@@ -155,9 +157,9 @@ export function createAnkiClient() {
       const noteInfo = ((await this.client?.note.notesInfo({
         notes: [noteId],
       })) ?? [])[0];
-
       log.debug({ noteInfo }, "noteInfo");
 
+      // create wav file for vad
       let audioStage1Path: string;
       try {
         audioStage1Path = await ffmpeg({
@@ -166,9 +168,11 @@ export function createAnkiClient() {
           format: "wav",
         });
       } catch {
+        unlink(savedReplayPath).catch();
         throw new Error("Failed to extract audio");
       }
 
+      // generate vad data
       let audioStage1VadData: {
         start: number;
         end: number;
@@ -176,15 +180,16 @@ export function createAnkiClient() {
       try {
         audioStage1VadData = JSON.parse(await python([audioStage1Path]));
       } catch {
+        unlink(savedReplayPath).catch();
         throw new Error("Failed to extract audio VAD data");
       }
-
       const lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
       if (!lastEnd) {
         //TODO: handle no audio
         throw new Error("No last VAD segment end time found");
       }
 
+      // generate audio file
       let audioStage2Path: string;
       try {
         audioStage2Path = await ffmpeg({
@@ -193,9 +198,14 @@ export function createAnkiClient() {
           format: "opus",
         });
       } catch {
+        unlink(audioStage1Path).catch();
+        unlink(savedReplayPath).catch();
         throw new Error("Failed to crop audio");
+      } finally {
+        unlink(audioStage1Path).catch();
       }
 
+      // generate image file
       let imagePath: string;
       try {
         imagePath = await ffmpeg({
@@ -204,7 +214,10 @@ export function createAnkiClient() {
           format: "webp",
         });
       } catch {
+        unlink(savedReplayPath).catch();
         throw new Error("Failed to extract image");
+      } finally {
+        unlink(savedReplayPath).catch();
       }
     }
   }
