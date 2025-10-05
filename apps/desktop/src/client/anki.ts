@@ -1,4 +1,5 @@
 import { unlink } from "node:fs/promises";
+import { basename } from "node:path";
 import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
@@ -145,7 +146,7 @@ export function createAnkiClient() {
       try {
         durationSeconds = await getFileDuration(savedReplayPath);
       } catch {
-        unlink(savedReplayPath).catch();
+        unlink(savedReplayPath).catch(() => {});
         throw new Error("Failed to get duration");
       }
       const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
@@ -168,7 +169,7 @@ export function createAnkiClient() {
           format: "wav",
         });
       } catch {
-        unlink(savedReplayPath).catch();
+        unlink(savedReplayPath).catch(() => {});
         throw new Error("Failed to extract audio");
       }
 
@@ -180,7 +181,7 @@ export function createAnkiClient() {
       try {
         audioStage1VadData = JSON.parse(await python([audioStage1Path]));
       } catch {
-        unlink(savedReplayPath).catch();
+        unlink(savedReplayPath).catch(() => {});
         throw new Error("Failed to extract audio VAD data");
       }
       let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
@@ -198,10 +199,10 @@ export function createAnkiClient() {
             format: "opus",
           });
         } catch {
-          unlink(savedReplayPath).catch();
+          unlink(savedReplayPath).catch(() => {});
           throw new Error("Failed to crop audio");
         } finally {
-          unlink(audioStage1Path).catch();
+          unlink(audioStage1Path).catch(() => {});
         }
       }
 
@@ -218,12 +219,42 @@ export function createAnkiClient() {
           format: "webp",
         });
       } catch {
-        unlink(savedReplayPath).catch();
+        unlink(savedReplayPath).catch(() => {});
         throw new Error("Failed to extract image");
       } finally {
-        unlink(audioStage1Path).catch();
-        unlink(savedReplayPath).catch();
+        unlink(audioStage1Path).catch(() => {});
+        unlink(savedReplayPath).catch(() => {});
       }
+
+      await this.client?.note.updateNoteFields({
+        note: {
+          id: noteId,
+          fields: {},
+          picture: [
+            {
+              path: imagePath,
+              filename: basename(imagePath),
+              //TODO: configurable
+              fields: ["Picture"],
+            },
+          ],
+          ...(audioStage2Path && {
+            audio: [
+              {
+                path: audioStage2Path,
+                filename: basename(audioStage2Path),
+                //TODO: configurable
+                fields: ["SentenceAudio"],
+              },
+            ],
+          }),
+        },
+      });
+
+      unlink(imagePath).catch(() => {});
+      if (audioStage2Path) unlink(audioStage2Path).catch(() => {});
+
+      await this.client?.graphical.guiEditNote({ note: noteId });
     }
   }
 
