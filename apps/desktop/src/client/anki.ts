@@ -210,7 +210,7 @@ export function createAnkiClient() {
       try {
         imagePath = await ffmpeg({
           inputPath: savedReplayPath,
-          seekMs: offsetMs,
+          seekMs: offsetMs + lastEnd * 1000,
           format: "webp",
         });
       } catch {
