@@ -2,12 +2,7 @@ import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
-import {
-  cropAudioToLastVadEnd,
-  extractAudio,
-  extractImage,
-  getFileDuration,
-} from "#/util/ffmpeg";
+import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
 import { obsClient } from "./obs";
@@ -93,7 +88,11 @@ export function createAnkiClient() {
             (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
           ) {
             this.lastAddedNote = lastAddedNote;
-            this.handleNewNote(lastAddedNote);
+            try {
+              this.handleNewNote(lastAddedNote);
+            } catch (e) {
+              log.error({ error: e }, "Failed to handle new note");
+            }
           }
         } catch (error) {
           log.error({ error }, "Failed to get last added note");
@@ -121,26 +120,25 @@ export function createAnkiClient() {
         });
 
       if (!history) {
-        log.warn("Failed to find history");
-        return;
+        throw new Error("Failed to find history");
       }
 
       log.debug(
         {
-          history: { text: history?.text, time: history?.time?.toDateString() },
+          text: history?.text,
+          time: history?.time?.toLocaleDateString(),
         },
-        "history",
+        "Using history",
       );
 
       let savedReplayPath: string | undefined;
       try {
         savedReplayPath = await obsClient().saveReplayBuffer();
-      } catch (e) {
-        log.error({ error: e }, "Failed to save replay buffer");
-        return;
+      } catch {
+        throw new Error("Failed to save replay buffer");
       }
-
       const fileEnd = new Date();
+
       let durationSeconds: number;
       try {
         durationSeconds = await getFileDuration(savedReplayPath);
@@ -162,13 +160,13 @@ export function createAnkiClient() {
 
       let audioStage1Path: string;
       try {
-        audioStage1Path = await extractAudio({
-          filePath: savedReplayPath,
-          offsetMs,
+        audioStage1Path = await ffmpeg({
+          inputPath: savedReplayPath,
+          seekMs: offsetMs,
+          format: "wav",
         });
-      } catch (e) {
-        log.error({ error: e }, "Failed to extract audio");
-        return;
+      } catch {
+        throw new Error("Failed to extract audio");
       }
 
       let audioStage1VadData: {
@@ -177,29 +175,36 @@ export function createAnkiClient() {
       }[];
       try {
         audioStage1VadData = JSON.parse(await python([audioStage1Path]));
-      } catch (e) {
-        log.error({ error: e }, "Failed to extract audio VAD data");
-        return;
+      } catch {
+        throw new Error("Failed to extract audio VAD data");
+      }
+
+      const lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
+      if (!lastEnd) {
+        //TODO: handle no audio
+        throw new Error("No last VAD segment end time found");
       }
 
       let audioStage2Path: string;
       try {
-        audioStage2Path = await cropAudioToLastVadEnd({
+        audioStage2Path = await ffmpeg({
           inputPath: audioStage1Path,
-          vadData: audioStage1VadData,
+          durationMs: lastEnd * 1000,
+          format: "opus",
         });
-      } catch (e) {
-        log.error({ error: e }, "Failed to crop audio");
-        return;
+      } catch {
+        throw new Error("Failed to crop audio");
       }
 
-      log.info(audioStage2Path);
-
+      let imagePath: string;
       try {
-        //TODO: offset
-        extractImage(savedReplayPath);
-      } catch (e) {
-        log.error({ error: e }, "Failed to extract image");
+        imagePath = await ffmpeg({
+          inputPath: savedReplayPath,
+          seekMs: offsetMs,
+          format: "webp",
+        });
+      } catch {
+        throw new Error("Failed to extract image");
       }
     }
   }
