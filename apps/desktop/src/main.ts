@@ -24,12 +24,15 @@ app.on("web-contents-created", (_, contents) => {
 });
 
 export async function bootstrap() {
-  log.debug(env, "env value");
-  IPC().registerAll();
-  await AppWebsocket().registerAll();
   await app.whenReady();
+  IPC().registerAll();
   await mainWindow().open();
-  await prepareAllClient();
+
+  setTimeout(async () => {
+    log.debug(env, "env value");
+    await AppWebsocket().registerAll();
+    await prepareAllClient();
+  }, 1000);
 }
 
 bootstrap();
