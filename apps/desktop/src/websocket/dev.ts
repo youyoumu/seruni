@@ -1,5 +1,6 @@
 import { signal } from "alien-signals";
 import { app } from "electron";
+import { textractorClient } from "#/client";
 import { AppWebsocket } from "./base";
 
 function createDevWS() {
@@ -14,6 +15,7 @@ function createDevWS() {
       await super.register();
       this.on("dev:fileChange", ({ fileName }) => {
         if (fileName === "ipc.js") {
+          textractorClient().client?.close();
           this.emit("dev:restart", () => {
             app.exit();
           });

@@ -6,6 +6,7 @@ import { Box } from "styled-system/jsx";
 import { fonts, loadGoogleFont } from "./utils/fonts";
 
 export function Page() {
+  const [text, setText] = createSignal("");
   const [showSettings, setShowSettings] = createSignal(false);
 
   const defaultFontSize = 24;
@@ -47,6 +48,11 @@ export function Page() {
       settings?.fontWeight && setFontWeight(settings.fontWeight);
       settings?.font && setFont(settings.font);
     });
+
+    ipcRenderer.on("vnOverlay:sendText", (payload) => {
+      setText(payload?.text);
+    });
+
     setReady(true);
   });
 
@@ -90,7 +96,7 @@ export function Page() {
           }}
           px="2"
         >
-          これは日本語のサンプルテキストです。 This is sample text for learners.
+          {text()}
         </Box>
       </Box>
 

@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { signal } from "alien-signals";
 import { WebSocket } from "ws";
+import { vnOverlayIPC } from "#/ipc";
 import { log } from "../util/logger";
 
 export function createTextractorClient() {
   class TextractorClient {
-    history: { time: Date; text: string }[] = [];
+    history: { time: Date; text: string; uuid: string }[] = [];
     client: WebSocket | undefined;
     retryCount = 0;
     maxRetries = Infinity; // retry forever
@@ -32,7 +34,9 @@ export function createTextractorClient() {
             ? data.toString("utf8")
             : data.toString();
           log.debug({ text }, "Received from Textractor");
-          this.history.push({ time: new Date(), text });
+          const payload = { time: new Date(), text, uuid: randomUUID() };
+          this.history.push(payload);
+          vnOverlayIPC().send("vnOverlay:sendText", payload);
         });
 
         const handleDisconnect = () => {

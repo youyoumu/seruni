@@ -18,6 +18,16 @@ export const vnOverlayIPC = {
       input: z.tuple([vnOverlaySettings]),
       output: z.void(),
     }),
+    "vnOverlay:sendText": z.object({
+      input: z.tuple([
+        z.object({
+          time: z.date(),
+          text: z.string(),
+          uuid: z.string(),
+        }),
+      ]),
+      output: z.void(),
+    }),
   }),
   renderer: z.object({
     "vnOverlay:open": simple,
