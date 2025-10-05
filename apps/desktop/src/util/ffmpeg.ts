@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import path, { join } from "node:path";
+import { format } from "date-fns";
 import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "./logger";
@@ -27,7 +27,7 @@ export async function extractAudio({
   offsetMs: number;
 }) {
   const outPath = path.join(
-    path.dirname(filePath),
+    env.TEMP_PATH,
     `${path.basename(filePath, path.extname(filePath))}.wav`,
   );
 
@@ -73,21 +73,26 @@ export async function cropAudioToLastVadEnd({
   if (!lastEnd) {
     throw new Error("No last VAD segment end time found");
   }
-  const outputPath = join(env.TEMP_PATH, `${randomUUID()}.wav`);
 
-  // FFmpeg command:
-  // -y: overwrite
-  // -i: input file
-  // -t: duration (seconds)
-  // -acodec copy: copy audio codec (no re-encoding)
+  const outputPath = join(
+    env.TEMP_PATH,
+    `${format(new Date(), "yyyyMMdd_HHmmss_SSS")}.opus`,
+  );
+
   const { stdout, stderr } = await execa("ffmpeg", [
     "-y",
     "-i",
     inputPath,
     "-t",
     lastEnd.toString(),
-    "-acodec",
-    "copy",
+    "-ac",
+    "2", // 1 = mono, 2 = stereo
+    "-ar",
+    "48000", // Opus requires 48kHz input
+    "-c:a",
+    "libopus", // use the Opus codec
+    "-b:a",
+    "32k", // bitrate (32 kbps is great for speech)
     outputPath,
   ]);
   log.trace({ stdout, stderr }, "ffmpeg");
@@ -97,8 +102,8 @@ export async function cropAudioToLastVadEnd({
 
 export async function extractImage(filePath: string) {
   const outPath = path.join(
-    path.dirname(filePath),
-    `${path.basename(filePath, path.extname(filePath))}.jpeg`,
+    env.TEMP_PATH,
+    `${format(new Date(), "yyyyMMdd_HHmmss_SSS")}.webp`,
   );
 
   const { stdout, stderr } = await execa("ffmpeg", [
@@ -106,12 +111,12 @@ export async function extractImage(filePath: string) {
     "-i",
     filePath, // input file
     "-frames:v",
-    "1",
-    "-q:v", // quality
-    "2",
+    "1", // only 1 frame
+    "-q:v",
+    "60", // quality (1-100, worst to best)
     outPath,
   ]);
-  log.trace({ stdout, stderr }, "ffmpeg");
+  log.trace({ stdout, stderr }, "ffmpeg extractImage");
 
   return outPath;
 }
