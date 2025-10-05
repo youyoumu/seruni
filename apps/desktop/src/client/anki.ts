@@ -183,40 +183,45 @@ export function createAnkiClient() {
         unlink(savedReplayPath).catch();
         throw new Error("Failed to extract audio VAD data");
       }
-      const lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
-      if (!lastEnd) {
-        //TODO: handle no audio
-        throw new Error("No last VAD segment end time found");
+      let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
+      if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1.5) {
+        lastEnd = undefined;
       }
 
       // generate audio file
-      let audioStage2Path: string;
-      try {
-        audioStage2Path = await ffmpeg({
-          inputPath: audioStage1Path,
-          durationMs: lastEnd * 1000,
-          format: "opus",
-        });
-      } catch {
-        unlink(audioStage1Path).catch();
-        unlink(savedReplayPath).catch();
-        throw new Error("Failed to crop audio");
-      } finally {
-        unlink(audioStage1Path).catch();
+      let audioStage2Path: string | null = null;
+      if (lastEnd) {
+        try {
+          audioStage2Path = await ffmpeg({
+            inputPath: audioStage1Path,
+            durationMs: lastEnd * 1000,
+            format: "opus",
+          });
+        } catch {
+          unlink(savedReplayPath).catch();
+          throw new Error("Failed to crop audio");
+        } finally {
+          unlink(audioStage1Path).catch();
+        }
       }
 
       // generate image file
       let imagePath: string;
       try {
+        const extraSeek = Math.max(
+          0,
+          Math.floor(now.getTime() - history.time.getTime()),
+        );
         imagePath = await ffmpeg({
           inputPath: savedReplayPath,
-          seekMs: offsetMs + lastEnd * 1000,
+          seekMs: offsetMs + extraSeek,
           format: "webp",
         });
       } catch {
         unlink(savedReplayPath).catch();
         throw new Error("Failed to extract image");
       } finally {
+        unlink(audioStage1Path).catch();
         unlink(savedReplayPath).catch();
       }
     }
