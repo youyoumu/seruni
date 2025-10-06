@@ -1,8 +1,17 @@
 import { intervalToDuration } from "date-fns";
+import { liveQuery } from "dexie";
 import { ListRestartIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-solid";
-import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
+import { texthoookerDB } from "#/lib/db";
 
 export function MiningTab() {
   const vnDialogues = [
@@ -25,7 +34,16 @@ export function MiningTab() {
 
   const [timer, setTimer] = createSignal(0);
   const [timerRunning, setTimerRunning] = createSignal(false);
-  const [texts, setTexts] = createSignal<string[]>(vnDialogues);
+  const [texts, setTexts] = createSignal<{ text: string; uuid: string }[]>(
+    // vnDialogues.map((text) => ({ text, uuid: crypto.randomUUID() })),
+    [],
+  );
+  const textObservable = liveQuery(() => texthoookerDB.text.toArray());
+  textObservable.subscribe({
+    next: (result) => {
+      setTexts(result);
+    },
+  });
 
   const isNotJapaneseRegex =
     /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
@@ -37,7 +55,7 @@ export function MiningTab() {
 
   const characterCount = () =>
     texts()
-      .map((text) => getCharacterCount(text))
+      .map((item) => getCharacterCount(item.text))
       .reduce((a, b) => a + b, 0);
 
   const formattedDuration = () => {
@@ -64,6 +82,15 @@ export function MiningTab() {
       setTimer((prev) => prev + 1);
     }, 1000);
     onCleanup(() => clearInterval(interval)); // auto-clears when paused or unmounted
+  });
+
+  onMount(async () => {
+    ipcRenderer.on("vnOverlay:sendText", (payload) => {
+      texthoookerDB.text.add({
+        text: payload.text,
+        uuid: payload.uuid,
+      });
+    });
   });
 
   return (
@@ -112,7 +139,7 @@ export function MiningTab() {
           class={css({ h: "5", w: "5", cursor: "pointer" })}
           onClick={() => {
             setTimer(0);
-            setTexts([]);
+            texthoookerDB.text.clear();
           }}
         ></ListRestartIcon>
       </HStack>
@@ -128,7 +155,7 @@ export function MiningTab() {
                 borderBottomWidth="thin"
               >
                 <Box as="p" fontSize="xl" flex="1">
-                  {item}
+                  {item.text}
                 </Box>
                 <TrashIcon
                   class={css({
@@ -137,6 +164,9 @@ export function MiningTab() {
                     cursor: "pointer",
                     color: "fg.error",
                   })}
+                  onClick={() => {
+                    texthoookerDB.text.where("uuid").equals(item.uuid).delete();
+                  }}
                 ></TrashIcon>
               </HStack>
             );

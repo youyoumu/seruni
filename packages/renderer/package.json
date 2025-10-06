@@ -17,6 +17,7 @@
     "@tanstack/solid-router": "^1.121.3",
     "@tanstack/solid-router-devtools": "^1.121.3",
     "date-fns": "^4.1.0",
+    "dexie": "^4.2.0",
     "dotenv": "^17.2.2",
     "json-stringify-pretty-compact": "^4.0.0",
     "lucide-solid": "^0.544.0",
