@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ark-ui/solid": "^5.25.0",
+    "@solid-primitives/storage": "^4.3.3",
     "@tanstack/router-plugin": "^1.121.3",
     "@tanstack/solid-router": "^1.121.3",
     "@tanstack/solid-router-devtools": "^1.121.3",

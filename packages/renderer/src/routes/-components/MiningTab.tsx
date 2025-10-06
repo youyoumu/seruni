@@ -1,3 +1,4 @@
+import { makePersisted } from "@solid-primitives/storage";
 import { intervalToDuration } from "date-fns";
 import { liveQuery } from "dexie";
 import { ListRestartIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-solid";
@@ -32,7 +33,9 @@ export function MiningTab() {
     "……ねえ、私のこと、どう思ってるの？",
   ];
 
-  const [timer, setTimer] = createSignal(0);
+  const [timer, setTimer] = makePersisted(createSignal(0), {
+    name: "texthookerTimer",
+  });
   const [timerRunning, setTimerRunning] = createSignal(false);
   const [texts, setTexts] = createSignal<{ text: string; uuid: string }[]>(
     // vnDialogues.map((text) => ({ text, uuid: crypto.randomUUID() })),
@@ -86,6 +89,7 @@ export function MiningTab() {
 
   onMount(async () => {
     ipcRenderer.on("vnOverlay:sendText", (payload) => {
+      if (!timerRunning()) return;
       texthoookerDB.text.add({
         text: payload.text,
         uuid: payload.uuid,
