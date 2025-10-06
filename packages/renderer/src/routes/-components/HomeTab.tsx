@@ -1,5 +1,6 @@
 import { Flex } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
+import { appToaster } from "./AppToaster";
 import { Sidebar } from "./Sidebar";
 
 export function HomeTab() {
@@ -25,6 +26,17 @@ export function HomeTab() {
         }}
       >
         Update Yomitan
+      </Button>
+
+      <Button
+        onClick={() => {
+          appToaster.info({
+            title: "Info",
+            description: "This is an info toast.",
+          });
+        }}
+      >
+        Toast
       </Button>
       <Sidebar />
     </Flex>

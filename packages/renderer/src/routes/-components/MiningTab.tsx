@@ -13,6 +13,7 @@ import {
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { texthoookerDB } from "#/lib/db";
+import { appToaster } from "./AppToaster";
 
 export function MiningTab() {
   const vnDialogues = [
@@ -89,7 +90,12 @@ export function MiningTab() {
 
   onMount(async () => {
     ipcRenderer.on("vnOverlay:sendText", (payload) => {
-      if (!timerRunning()) return;
+      if (!timerRunning()) {
+        appToaster.info({
+          description: "Timer is paused",
+        });
+        return;
+      }
       texthoookerDB.text.add({
         text: payload.text,
         uuid: payload.uuid,

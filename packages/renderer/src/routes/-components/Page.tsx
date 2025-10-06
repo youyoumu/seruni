@@ -1,6 +1,11 @@
+import { XIcon } from "lucide-solid";
 import { For } from "solid-js";
 import { Flex } from "styled-system/jsx";
+import { Button } from "#/components/ui/button";
+import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
+import { Toast } from "#/components/ui/toast";
+import { AppToaster } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
@@ -69,6 +74,7 @@ export function Page() {
           <SettingsTab />
         </Tabs.Content>
       </Tabs.Root>
+      <AppToaster />
     </Flex>
   );
 }
