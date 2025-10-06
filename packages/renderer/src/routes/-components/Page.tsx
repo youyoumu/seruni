@@ -44,7 +44,7 @@ export function Page() {
           value="mining"
           px="4"
           style={{
-            height: "calc(100vh - 56px)",
+            height: "calc(100vh - 64px)",
           }}
         >
           <MiningTab />
