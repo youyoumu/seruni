@@ -16,6 +16,8 @@ export default defineConfig({
     electron: {
       resolve: {
         builtins: ["electron", /^node:.*/],
+        external: true,
+        noExternal: true,
       },
       build: {
         lib: {
@@ -44,6 +46,10 @@ export default defineConfig({
         await fs.copy(
           resolve(__dirname, "../../packages/renderer/dist"),
           resolve(outDir, "renderer"),
+        );
+        await fs.copy(
+          resolve(__dirname, "../../packages/python/src"),
+          resolve(outDir, "python"),
         );
 
         const packageJson = JSON.parse(
