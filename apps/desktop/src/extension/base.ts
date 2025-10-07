@@ -123,7 +123,6 @@ export class Extension {
     const isInstalled = fs.existsSync(
       path.join(this.getExtensionPath(), "manifest.json"),
     );
-    log.info(`Extension ${this.name} is ${isInstalled ? "" : "not"} installed`);
     return isInstalled;
   }
 

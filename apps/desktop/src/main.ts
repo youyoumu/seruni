@@ -6,6 +6,7 @@ import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
 import { AppWebsocket, devWS } from "./websocket";
 import { mainWindow } from "./window/main";
+import { yomitanWindow } from "./window/yomitan";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
@@ -26,13 +27,14 @@ app.on("web-contents-created", (_, contents) => {
 export async function bootstrap() {
   await app.whenReady();
   IPC().registerAll();
+  await yomitanWindow().loadYomitan();
   await mainWindow().open();
 
   setTimeout(async () => {
     log.debug(env, "env value");
     await AppWebsocket().registerAll();
     await prepareAllClient();
-  }, 1000);
+  }, 2000);
 }
 
 bootstrap();

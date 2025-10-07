@@ -30,6 +30,19 @@ function createYomitanWindow() {
         log.warn("Yomitan extension is installing, waiting for it to finish");
         return false;
       }
+
+      const ext = await this.loadYomitan();
+      if (!ext) return false;
+      const optionsPage = `chrome-extension://${ext.id}/settings.html`;
+      log.info(`Opening Yomitan settings page: ${optionsPage}`);
+      await this.win?.loadURL(optionsPage);
+      return true;
+    }
+
+    async loadYomitan() {
+      if (!yomitanExtension.isInstalled()) {
+        return;
+      }
       //TODO: clear service workers cache with force
       await session.defaultSession.clearStorageData({
         storages: ["serviceworkers"],
@@ -49,13 +62,9 @@ function createYomitanWindow() {
         }),
       );
 
-      const ext = await session.defaultSession.extensions.loadExtension(
+      return await session.defaultSession.extensions.loadExtension(
         yomitanExtension.getExtensionPath(),
       );
-      const optionsPage = `chrome-extension://${ext.id}/settings.html`;
-      log.info(`Opening Yomitan settings page: ${optionsPage}`);
-      await this.win?.loadURL(optionsPage);
-      return true;
     }
   }
 
