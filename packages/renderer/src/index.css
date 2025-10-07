@@ -4,3 +4,26 @@
   --font-nunito: "Nunito", sans-serif;
   --font-jetbrainsMono: "JetBrains Mono", monospace;
 }
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--colors-bg-emphasized);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: var(--colors-bg-emphasized);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--colors-gray-10);
+  border-radius: 0px;
+  border: 0px solid var(--colors-bg-emphasized);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--colors-gray-8);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}

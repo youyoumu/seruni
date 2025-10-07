@@ -157,7 +157,14 @@ export function MiningTab() {
           }}
         ></ListRestartIcon>
       </HStack>
-      <Stack gap="12" overflow="auto" p="4" pb="64" ref={textContainerRef}>
+      <Stack
+        gap="12"
+        overflow="auto"
+        p="4"
+        pb="64"
+        ref={textContainerRef}
+        class="custom-scrollbar"
+      >
         <For each={texts()}>
           {(item) => {
             return (

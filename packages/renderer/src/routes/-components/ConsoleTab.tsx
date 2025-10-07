@@ -1,4 +1,5 @@
 import type { IPCRendererHandler } from "@repo/preload/ipc";
+import stringify from "json-stringify-pretty-compact";
 import {
   createEffect,
   createSignal,
@@ -7,10 +8,8 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { Box, HStack } from "styled-system/jsx";
-import "./ConsoleTab.css";
-import stringify from "json-stringify-pretty-compact";
 import { cva } from "styled-system/css";
+import { Box, HStack } from "styled-system/jsx";
 
 const MAX_LOGS = 100;
 
@@ -68,7 +67,7 @@ export function ConsoleTab() {
     >
       <Box
         ref={logsRef}
-        class="console-scrollbar"
+        class="custom-scrollbar"
         h="full"
         overflow="auto"
         lineHeight="tight"
@@ -119,7 +118,7 @@ export function ConsoleTab() {
                 </HStack>
                 <Show when={debugString}>
                   <Box
-                    class="console-scrollbar"
+                    class="custom-scrollbar"
                     my="2"
                     as="pre"
                     p="2"
