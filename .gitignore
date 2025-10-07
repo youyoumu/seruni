@@ -50,3 +50,5 @@ devenv.local.nix
 .userData
 __pycache__
 *.wav
+
+release
