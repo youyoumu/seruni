@@ -15,6 +15,7 @@ const configSchema = z.object({
       windowColor: z.string(),
       backgroundColor: z.string(),
       textColor: z.string(),
+      opacity: z.number(),
     }),
   }),
 });
@@ -22,7 +23,7 @@ const configSchema = z.object({
 type ConfigSchema = z.infer<typeof configSchema>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
 
-class Config2 extends Config<ConfigSchemaPartial> {
+class Config_ extends Config<ConfigSchema> {
   constructor() {
     super({
       projectName: app.getName(),
@@ -31,8 +32,20 @@ class Config2 extends Config<ConfigSchemaPartial> {
       fileExtension: "toml",
       deserialize: parse as typeof JSON.parse,
       serialize: stringify,
-      schema: z.toJSONSchema(configSchema)
-        .properties as Schema<ConfigSchemaPartial>,
+      schema: z.toJSONSchema(configSchema).properties as Schema<ConfigSchema>,
+      defaults: {
+        window: {
+          vn_overlay: {
+            font: "'Noto Sans JP'",
+            fontSize: 24,
+            fontWeight: 400,
+            windowColor: "#ffffff",
+            backgroundColor: "#000000",
+            textColor: "#ffffff",
+            opacity: 0.5,
+          },
+        },
+      },
     });
   }
 
@@ -47,4 +60,4 @@ class Config2 extends Config<ConfigSchemaPartial> {
   }
 }
 
-export const config = new Config2();
+export const config = new Config_();

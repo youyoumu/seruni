@@ -23,19 +23,13 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function VnOverlay() {
-  const defaultWindowColor = parseColor("#ffffff");
-  const defaultBackgroundColor = parseColor("#000000");
-  const defaultTextColor = parseColor("#ffffff");
-  const defaultFontSize = 24;
-  const defaultFontWeight = 400;
-
-  const [windowColor, setWindowColor] = createSignal(defaultWindowColor);
+  const [windowColor, setWindowColor] = createSignal(parseColor("#ffffff"));
   const [backgroundColor, setBackgroundColor] = createSignal(
-    defaultBackgroundColor,
+    parseColor("#000000"),
   );
-  const [textColor, setTextColor] = createSignal(defaultTextColor);
-  const [fontSize, setFontSize] = createSignal(defaultFontSize);
-  const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
+  const [textColor, setTextColor] = createSignal(parseColor("#ffffff"));
+  const [fontSize, setFontSize] = createSignal(24);
+  const [fontWeight, setFontWeight] = createSignal(400);
   const [font, setFont] = createSignal(fonts[0]);
 
   let ready = false;
@@ -55,16 +49,15 @@ export function VnOverlay() {
   });
 
   onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig"))?.window
-      ?.vn_overlay;
+    const settings = (await ipcRenderer.invoke("settings:getConfig")).window
+      .vn_overlay;
 
-    settings?.windowColor && setWindowColor(parseColor(settings.windowColor));
-    settings?.backgroundColor &&
-      setBackgroundColor(parseColor(settings.backgroundColor));
-    settings?.textColor && setTextColor(parseColor(settings.textColor));
-    settings?.fontSize && setFontSize(settings.fontSize);
-    settings?.fontWeight && setFontWeight(settings.fontWeight);
-    settings?.font && setFont(settings.font);
+    setWindowColor(parseColor(settings.windowColor));
+    setBackgroundColor(parseColor(settings.backgroundColor));
+    setTextColor(parseColor(settings.textColor));
+    setFontSize(settings.fontSize);
+    setFontWeight(settings.fontWeight);
+    setFont(settings.font);
 
     ready = true;
   });
