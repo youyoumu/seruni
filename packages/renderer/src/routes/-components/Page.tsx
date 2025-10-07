@@ -60,7 +60,6 @@ export function Page() {
           style={{
             height: "calc(100vh - 56px)",
           }}
-          class="console-scrollbar"
         >
           <ConsoleTab />
         </Tabs.Content>

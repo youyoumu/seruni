@@ -48,6 +48,7 @@ export function MiningTab() {
       setTexts(result);
     },
   });
+  let textContainerRef: HTMLDivElement | undefined;
 
   const isNotJapaneseRegex =
     /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
@@ -90,6 +91,9 @@ export function MiningTab() {
 
   onMount(async () => {
     ipcRenderer.on("vnOverlay:sendText", (payload) => {
+      if (textContainerRef) {
+        textContainerRef.scrollTop = textContainerRef.scrollHeight;
+      }
       if (!timerRunning()) {
         appToaster.info({
           description: "Timer is paused",
@@ -153,7 +157,7 @@ export function MiningTab() {
           }}
         ></ListRestartIcon>
       </HStack>
-      <Stack gap="12" overflow="auto" p="4" pb="64">
+      <Stack gap="12" overflow="auto" p="4" pb="64" ref={textContainerRef}>
         <For each={texts()}>
           {(item) => {
             return (
