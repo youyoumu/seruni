@@ -5,9 +5,11 @@ import { app } from "electron";
 import z from "zod";
 import { hmr } from "./util/hmr";
 
+process.env.ROARR_LOG = "true";
+
 async function createEnv_() {
   const envJson = (() => {
-    if (app.isPackaged) return {};
+    if (app.isPackaged || process.env.NODE_ENV === "production") return {};
     try {
       return JSON.parse(
         readFileSync(join(import.meta.dirname, "../env.json"), "utf-8"),
