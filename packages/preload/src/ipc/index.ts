@@ -6,7 +6,12 @@ import { settingsIPC } from "./settings";
 import { vnOverlayIPC } from "./vnOverlay";
 import { yomitanIPC } from "./yomitan";
 
-export { logIPC, settingsIPC, vnOverlayIPC, yomitanIPC };
+export * from "./_shared";
+export * from "./general";
+export * from "./log";
+export * from "./settings";
+export * from "./vnOverlay";
+export * from "./yomitan";
 
 //  ──────────────────────── From Renderer To Main ────────────────────────
 const ipcFromRenderer = z.object({

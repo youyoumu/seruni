@@ -1,3 +1,4 @@
+import { configSchema } from "@repo/preload/ipc";
 import Config, { type Schema } from "conf";
 import { app } from "electron";
 import { debounce } from "es-toolkit";
@@ -5,20 +6,6 @@ import { parse, stringify } from "smol-toml";
 import type { PartialDeep, Paths } from "type-fest";
 import z from "zod";
 import { env } from "#/env";
-
-const configSchema = z.object({
-  window: z.object({
-    vn_overlay: z.object({
-      font: z.string(),
-      fontSize: z.number(),
-      fontWeight: z.number(),
-      windowColor: z.string(),
-      backgroundColor: z.string(),
-      textColor: z.string(),
-      opacity: z.number(),
-    }),
-  }),
-});
 
 type ConfigSchema = z.infer<typeof configSchema>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
