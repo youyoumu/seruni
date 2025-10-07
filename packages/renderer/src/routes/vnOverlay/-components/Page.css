@@ -8,7 +8,6 @@ body {
 }
 
 .not-draggable {
-  user-select: none;
   app-region: no-drag;
 }
 

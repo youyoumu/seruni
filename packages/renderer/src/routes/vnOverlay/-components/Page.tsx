@@ -2,13 +2,13 @@ import { createEffect, createSignal, onMount } from "solid-js";
 import "./Page.css";
 
 import { FloatingPanel } from "@ark-ui/solid/floating-panel";
-import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { Box } from "styled-system/jsx";
+import { Text } from "#/components/ui/text";
 import { fonts, loadGoogleFont } from "./utils/fonts";
 
 export function Page() {
-  const [text, setText] = createSignal("");
+  const [text, setText] = createSignal("おはよう、昨日はよく眠れた？");
 
   const defaultFontSize = 24;
   const defaultFontWeight = 400;
@@ -63,80 +63,83 @@ export function Page() {
       w="full"
       borderWidth="thin"
       borderStyle="solid"
-      style={{
-        "border-color": windowColor(),
-      }}
+      borderColor="border.default"
+      overflow="hidden"
+      rounded="md"
+      bg="bg.subtle"
       hidden={!ready()}
+      opacity={{
+        base: 0.5,
+        _hover: 1,
+      }}
+      class="draggable"
     >
-      <Box
-        style={{
-          "background-color": windowColor(),
-        }}
-        class="draggable"
-        h="4"
-        w="4"
-      ></Box>
       <FloatingPanel.Root
         minSize={{ width: 100, height: 100 }}
         defaultOpen={true}
         allowOverflow={false}
       >
-        <Portal>
-          <FloatingPanel.Positioner>
-            <FloatingPanel.Content
+        <FloatingPanel.Positioner>
+          <FloatingPanel.Content
+            class={`${css({
+              display: "flex",
+              flexDirection: "column",
+              borderWidth: "thin",
+              borderStyle: "solid",
+              borderColor: "border.default",
+              shadow: "sm",
+              rounded: "md",
+              overflow: "hidden",
+            })} not-draggable`}
+          >
+            <FloatingPanel.DragTrigger
               class={css({
-                display: "flex",
-                flexDirection: "column",
+                bg: "bg.emphasized",
+                borderBottomWidth: "thin",
+                borderStyle: "solid",
+                borderColor: "border.default",
               })}
             >
-              <FloatingPanel.DragTrigger
-                style={{
-                  "background-color": windowColor(),
-                }}
-              >
-                <FloatingPanel.Header
-                  class={css({
-                    display: "flex",
-                    justifyContent: "end",
-                    h: "4",
-                  })}
-                ></FloatingPanel.Header>
-              </FloatingPanel.DragTrigger>
-
-              <FloatingPanel.Body
-                style={{
-                  "background-color": backgroundColor(),
-                }}
+              <FloatingPanel.Header
                 class={css({
-                  w: "full",
-                  h: "full",
+                  display: "flex",
+                  justifyContent: "end",
+                  h: "5",
                 })}
-              >
-                <Box
-                  as="p"
-                  style={{
-                    "font-size": `${fontSize()}px`,
-                    "font-weight": `${fontWeight()}`,
-                    "font-family": `${font()}`,
-                    color: textColor(),
-                  }}
-                  px="2"
-                >
-                  {text()}
-                </Box>
-              </FloatingPanel.Body>
+              ></FloatingPanel.Header>
+            </FloatingPanel.DragTrigger>
 
-              <FloatingPanel.ResizeTrigger axis="n" />
-              <FloatingPanel.ResizeTrigger axis="e" />
-              <FloatingPanel.ResizeTrigger axis="w" />
-              <FloatingPanel.ResizeTrigger axis="s" />
-              <FloatingPanel.ResizeTrigger axis="ne" />
-              <FloatingPanel.ResizeTrigger axis="se" />
-              <FloatingPanel.ResizeTrigger axis="sw" />
-              <FloatingPanel.ResizeTrigger axis="nw" />
-            </FloatingPanel.Content>
-          </FloatingPanel.Positioner>
-        </Portal>
+            <FloatingPanel.Body
+              class={css({
+                w: "full",
+                h: "full",
+                bg: "bg.default",
+              })}
+            >
+              <Text
+                as="p"
+                style={{
+                  "font-size": `${fontSize()}px`,
+                  "font-weight": `${fontWeight()}`,
+                  "font-family": `${font()}`,
+                  color: textColor(),
+                }}
+                px="2"
+              >
+                {text()}
+              </Text>
+            </FloatingPanel.Body>
+
+            <FloatingPanel.ResizeTrigger axis="n" />
+            <FloatingPanel.ResizeTrigger axis="e" />
+            <FloatingPanel.ResizeTrigger axis="w" />
+            <FloatingPanel.ResizeTrigger axis="s" />
+            <FloatingPanel.ResizeTrigger axis="ne" />
+            <FloatingPanel.ResizeTrigger axis="se" />
+            <FloatingPanel.ResizeTrigger axis="sw" />
+            <FloatingPanel.ResizeTrigger axis="nw" />
+          </FloatingPanel.Content>
+        </FloatingPanel.Positioner>
       </FloatingPanel.Root>
     </Box>
   );
