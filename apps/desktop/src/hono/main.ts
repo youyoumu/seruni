@@ -29,8 +29,12 @@ app.get("*", async (c) => {
   return c.html(html);
 });
 
-log(`Starting HTTP server on port ${3000}`);
-serve({
-  fetch: app.fetch,
-  port: env.RENDERER_PORT,
-});
+export function serveHttp() {
+  if (!env.DEV) {
+    log(`Starting HTTP server on port ${env.RENDERER_PORT}`);
+    serve({
+      fetch: app.fetch,
+      port: env.RENDERER_PORT,
+    });
+  }
+}

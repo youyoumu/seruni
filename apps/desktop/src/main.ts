@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
+import { serveHttp } from "./hono/main";
 import { IPC } from "./ipc";
 import { generalIPC } from "./ipc/general";
 import { hmr } from "./util/hmr";
@@ -28,6 +29,7 @@ app.on("web-contents-created", (_, contents) => {
 export async function bootstrap() {
   await app.whenReady();
   IPC().registerAll();
+  serveHttp();
   await yomitanWindow().loadYomitan();
   await mainWindow().open();
   await generalIPC().ready.promise;

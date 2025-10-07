@@ -20,15 +20,16 @@ async function createEnv_() {
   const validatedEnv = createEnv({
     server: {
       ROARR_LOG: z.boolean().default(true),
-      RENDERER_PORT: z.number().default(3000),
+      RENDERER_PORT: z.number().default(56435),
       DEV: z.boolean().default(false),
       WS_PORT: z.number().default(45626),
     },
     runtimeEnv: envJson,
     emptyStringAsUndefined: true,
   });
+  const DEV = validatedEnv.DEV;
 
-  if (validatedEnv.DEV) {
+  if (DEV) {
     await hmr.runEffect(import.meta.url, () => {
       const original = app.getPath("userData");
       app.setPath("userData", join(import.meta.dirname, "../.userData"));
@@ -58,16 +59,21 @@ async function createEnv_() {
     USER_DATA_PATH,
     CACHE_PATH,
     TEMP_PATH,
-    //TODO: adjust for production path
-    IPC_PRELOAD_PATH: join(
-      import.meta.dirname,
-      "../../../packages/preload/dist/_preload/ipc.js",
-    ),
-    CHROME_PRELOAD_PATH: join(
-      import.meta.dirname,
-      "../../../packages/preload/dist/_preload/chrome.js",
-    ),
-    RENDERER_PATH: join(import.meta.dirname, "../../../packages/renderer/dist"),
+    IPC_PRELOAD_PATH: DEV
+      ? join(
+          import.meta.dirname,
+          "../../../packages/preload/dist/_preload/ipc.js",
+        )
+      : join(import.meta.dirname, "_preload/ipc.js"),
+    CHROME_PRELOAD_PATH: DEV
+      ? join(
+          import.meta.dirname,
+          "../../../packages/preload/dist/_preload/chrome.js",
+        )
+      : join(import.meta.dirname, "_preload/chrome.js"),
+    RENDERER_PATH: DEV
+      ? join(import.meta.dirname, "../../../packages/renderer/dist")
+      : join(import.meta.dirname, "renderer"),
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
     PYTHON_BIN_PATH: join(
       import.meta.dirname,
