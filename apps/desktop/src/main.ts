@@ -2,6 +2,7 @@ import { app } from "electron";
 import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
 import { IPC } from "./ipc";
+import { generalIPC } from "./ipc/general";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
 import { AppWebsocket, devWS } from "./websocket";
@@ -29,12 +30,11 @@ export async function bootstrap() {
   IPC().registerAll();
   await yomitanWindow().loadYomitan();
   await mainWindow().open();
+  await generalIPC().ready.promise;
 
-  setTimeout(async () => {
-    log.debug(env, "env value");
-    await AppWebsocket().registerAll();
-    await prepareAllClient();
-  }, 2000);
+  log.debug(env, "env value");
+  await AppWebsocket().registerAll();
+  await prepareAllClient();
 }
 
 bootstrap();

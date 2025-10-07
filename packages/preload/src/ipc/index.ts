@@ -1,5 +1,6 @@
 import { ipcRenderer } from "electron";
 import z from "zod";
+import { generalIPC } from "./general.js";
 import { logIPC } from "./log.js";
 import { settingsIPC } from "./settings.js";
 import { vnOverlayIPC } from "./vnOverlay.js";
@@ -9,6 +10,7 @@ export { logIPC, settingsIPC, vnOverlayIPC, yomitanIPC };
 
 //  ──────────────────────── From Renderer To Main ────────────────────────
 const ipcFromRenderer = z.object({
+  ...generalIPC.renderer.shape,
   ...vnOverlayIPC.renderer.shape,
   ...yomitanIPC.renderer.shape,
   ...settingsIPC.renderer.shape,
