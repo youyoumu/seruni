@@ -6,8 +6,8 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland . | roarr",
-    "build": "tsdown",
+    "start": "ROARR_LOG=true ${ELECTRON_BIN:-electron} --ozone-platform=wayland dist | roarr",
+    "build": "vite build",
     "dev": "node ./script/dev/dev.ts",
     "typecheck": "tsc --noEmit"
   },
