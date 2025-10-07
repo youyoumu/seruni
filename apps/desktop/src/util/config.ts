@@ -23,7 +23,7 @@ class Config_ extends Config<ConfigSchema> {
       defaults: {
         window: {
           vn_overlay: {
-            font: "'Noto Sans JP'",
+            font: "Noto Sans JP",
             fontSize: 24,
             fontWeight: 400,
             windowColor: "#ffffff",

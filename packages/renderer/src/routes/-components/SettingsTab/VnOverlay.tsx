@@ -23,6 +23,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function VnOverlay() {
+  const [opacity, setOpacity] = createSignal(1);
   const [windowColor, setWindowColor] = createSignal(parseColor("#ffffff"));
   const [backgroundColor, setBackgroundColor] = createSignal(
     parseColor("#000000"),
@@ -41,7 +42,7 @@ export function VnOverlay() {
       fontSize: clamp(fontSize(), 1, 99),
       fontWeight: clamp(fontWeight(), 100, 900),
       font: font() ?? "",
-      opacity: 1,
+      opacity: opacity(),
     };
     if (!ready) return;
     ipcRenderer.send("settings:setVnOverlaySettings", payload);
@@ -51,6 +52,7 @@ export function VnOverlay() {
     const settings = (await ipcRenderer.invoke("settings:getConfig")).window
       .vn_overlay;
 
+    setOpacity(settings.opacity);
     setWindowColor(parseColor(settings.windowColor));
     setBackgroundColor(parseColor(settings.backgroundColor));
     setTextColor(parseColor(settings.textColor));
@@ -108,6 +110,18 @@ export function VnOverlay() {
           step={100}
         >
           Font Weight
+        </NumberInput>
+        <NumberInput
+          value={opacity().toString()}
+          clampValueOnBlur
+          onValueChange={(e) => {
+            setOpacity(e.valueAsNumber);
+          }}
+          min={0.05}
+          max={1}
+          step={0.05}
+        >
+          Opacity
         </NumberInput>
         <ColorPicker_
           value={windowColor()}
