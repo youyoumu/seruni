@@ -1,14 +1,13 @@
-import { readFileSync } from "node:fs";
+import { cp, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import fs from "fs-extra";
 import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [],
   resolve: {
     alias: {
-      "#": resolve(__dirname, "./src"),
+      "#": resolve(import.meta.dirname, "./src"),
     },
   },
   appType: "custom",
@@ -16,8 +15,8 @@ export default defineConfig({
     electron: {
       resolve: {
         builtins: ["electron", /^node:.*/],
-        external: true,
-        noExternal: true,
+        external: command === "build" ? true : undefined,
+        noExternal: command === "build" ? true : undefined,
       },
       build: {
         lib: {
@@ -25,12 +24,6 @@ export default defineConfig({
           formats: ["es"], // output ESM for your target
         },
       },
-      //TODO: this already the default, try createFetchableDevEnvironment later
-      // dev: {
-      //   createEnvironment(name, config) {
-      //     return createRunnableDevEnvironment(name, config);
-      //   },
-      // },
     },
   },
   builder: {
@@ -38,22 +31,25 @@ export default defineConfig({
       if (builder.environments.electron) {
         await builder.build(builder.environments.electron);
 
-        const outDir = resolve(__dirname, "dist");
-        await fs.copy(
-          resolve(__dirname, "../../packages/preload/dist/_preload/"),
+        const outDir = resolve(import.meta.dirname, "dist");
+        await cp(
+          resolve(import.meta.dirname, "../../packages/preload/dist/_preload/"),
           resolve(outDir, "_preload"),
+          { recursive: true },
         );
-        await fs.copy(
-          resolve(__dirname, "../../packages/renderer/dist"),
+        await cp(
+          resolve(import.meta.dirname, "../../packages/renderer/dist/"),
           resolve(outDir, "renderer"),
+          { recursive: true },
         );
-        await fs.copy(
-          resolve(__dirname, "../../packages/python/src"),
+        await cp(
+          resolve(import.meta.dirname, "../../packages/python/src/"),
           resolve(outDir, "python"),
+          { recursive: true },
         );
 
         const packageJson = JSON.parse(
-          readFileSync(resolve(__dirname, "package.json"), "utf-8"),
+          await readFile(resolve(import.meta.dirname, "package.json"), "utf-8"),
         );
         const customPkg = {
           name: packageJson.name,
@@ -63,10 +59,11 @@ export default defineConfig({
           type: "module",
         };
 
-        await fs.writeJSON(resolve(outDir, "package.json"), customPkg, {
-          spaces: 2,
-        });
+        await writeFile(
+          resolve(outDir, "package.json"),
+          JSON.stringify(customPkg, null, 2),
+        );
       }
     },
   },
-});
+}));
