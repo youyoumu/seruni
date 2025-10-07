@@ -107,6 +107,11 @@ export default defineConfig({
       },
 
       //@ts-expect-error
+      dialog: {
+        jsx: [/^Dialog.*/],
+      },
+
+      //@ts-expect-error
       tabs: {
         jsx: [/^Tabs.*/],
       },

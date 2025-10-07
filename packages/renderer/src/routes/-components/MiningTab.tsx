@@ -1,17 +1,27 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { intervalToDuration } from "date-fns";
 import { liveQuery } from "dexie";
-import { ListRestartIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-solid";
+import {
+  ListRestartIcon,
+  PauseIcon,
+  PlayIcon,
+  TrashIcon,
+  XIcon,
+} from "lucide-solid";
 import {
   createEffect,
   createSignal,
   For,
+  type JSX,
   onCleanup,
   onMount,
   Show,
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
+import { Button } from "#/components/ui/button";
+import { Dialog } from "#/components/ui/dialog";
+import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { appToaster } from "./AppToaster";
@@ -97,7 +107,7 @@ export function MiningTab() {
       }
       if (!timerRunning()) {
         appToaster.info({
-          description: "Timer is paused",
+          description: "Received text but timer is paused",
         });
         return;
       }
@@ -110,7 +120,7 @@ export function MiningTab() {
 
   return (
     <Stack h="full">
-      <HStack justifyContent="end" pb="6">
+      <HStack justifyContent="end" pb="4">
         <Text fontWeight="semibold">
           {characterCount()} characters in {formattedDuration()}
         </Text>
@@ -130,29 +140,41 @@ export function MiningTab() {
           })}
         ></Box>
         <Show when={!timerRunning()}>
-          <PlayIcon
-            class={css({ h: "5", w: "5", cursor: "pointer" })}
+          <IconButton
+            size="xs"
             onClick={() => {
               setTimerRunning((prev) => !prev);
             }}
-          ></PlayIcon>
+          >
+            <PlayIcon></PlayIcon>
+          </IconButton>
         </Show>
         <Show when={timerRunning()}>
-          <PauseIcon
-            class={css({ h: "5", w: "5", cursor: "pointer" })}
+          <IconButton
+            size="xs"
             onClick={() => {
               setTimerRunning((prev) => !prev);
             }}
-          ></PauseIcon>
+          >
+            <PauseIcon></PauseIcon>
+          </IconButton>
         </Show>
-        <ListRestartIcon
-          class={css({ h: "5", w: "5", cursor: "pointer" })}
-          onClick={() => {
+        <ResetTextButton
+          trigger={(onClick) => (
+            <IconButton size="xs" onClick={onClick}>
+              <ListRestartIcon></ListRestartIcon>
+            </IconButton>
+          )}
+          onConfirm={() => {
             setTimer(0);
             texthoookerDB.text.clear();
+            appToaster.info({
+              description: "Stats have been reset.",
+            });
           }}
-        ></ListRestartIcon>
+        />
       </HStack>
+
       <Stack
         gap="12"
         overflow="auto"
@@ -191,5 +213,65 @@ export function MiningTab() {
         </For>
       </Stack>
     </Stack>
+  );
+}
+
+function ResetTextButton(props: {
+  trigger: (onClick: () => void) => JSX.Element;
+  onConfirm?: () => void;
+}) {
+  const [open, setOpen] = createSignal(false);
+
+  return (
+    <Dialog.Root open={open()} onOpenChange={() => setOpen(false)}>
+      <Dialog.Trigger asChild={() => props.trigger(() => setOpen(true))} />
+      <Dialog.Backdrop />
+      <Dialog.Positioner>
+        <Dialog.Content>
+          <Stack gap="8" p="6">
+            <Stack gap="1">
+              <Dialog.Title>Reset Stats?</Dialog.Title>
+              <Dialog.Description>
+                This will reset the characters count and timer
+              </Dialog.Description>
+            </Stack>
+            <Stack gap="3" direction="row" width="full">
+              <Dialog.CloseTrigger
+                asChild={(closeTriggerProps) => (
+                  <Button {...closeTriggerProps()} variant="outline" flex="1">
+                    Cancel
+                  </Button>
+                )}
+              />
+
+              <Button
+                flex="1"
+                onClick={() => {
+                  props.onConfirm?.();
+                  setOpen(false);
+                }}
+              >
+                Confirm
+              </Button>
+            </Stack>
+          </Stack>
+          <Dialog.CloseTrigger
+            asChild={(closeTriggerProps) => (
+              <IconButton
+                {...closeTriggerProps()}
+                aria-label="Close Dialog"
+                variant="ghost"
+                size="sm"
+                position="absolute"
+                top="2"
+                right="2"
+              >
+                <XIcon />
+              </IconButton>
+            )}
+          />
+        </Dialog.Content>
+      </Dialog.Positioner>
+    </Dialog.Root>
   );
 }
