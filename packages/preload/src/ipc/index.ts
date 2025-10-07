@@ -1,10 +1,10 @@
 import { ipcRenderer } from "electron";
 import z from "zod";
-import { generalIPC } from "./general.js";
-import { logIPC } from "./log.js";
-import { settingsIPC } from "./settings.js";
-import { vnOverlayIPC } from "./vnOverlay.js";
-import { yomitanIPC } from "./yomitan.js";
+import { generalIPC } from "./general";
+import { logIPC } from "./log";
+import { settingsIPC } from "./settings";
+import { vnOverlayIPC } from "./vnOverlay";
+import { yomitanIPC } from "./yomitan";
 
 export { logIPC, settingsIPC, vnOverlayIPC, yomitanIPC };
 

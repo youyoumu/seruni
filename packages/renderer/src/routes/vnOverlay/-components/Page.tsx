@@ -10,20 +10,12 @@ import { fonts, loadGoogleFont } from "./utils/fonts";
 export function Page() {
   const [text, setText] = createSignal("おはよう、昨日はよく眠れた？");
 
-  const defaultFontSize = 24;
-  const defaultFontWeight = 400;
-  const defaultWindowColor = "#ffffff";
-  const defaultBackgroundColor = "#000000";
-  const defaultTextColor = "#ffffff";
-
-  const [windowColor, setWindowColor] = createSignal(defaultWindowColor);
-  const [backgroundColor, setBackgroundColor] = createSignal(
-    defaultBackgroundColor,
-  );
-  const [textColor, setTextColor] = createSignal(defaultTextColor);
-  const [fontSize, setFontSize] = createSignal(defaultFontSize);
-  const [fontWeight, setFontWeight] = createSignal(defaultFontWeight);
-  const [font, setFont] = createSignal(fonts[0]);
+  const [windowColor, setWindowColor] = createSignal("#ffffff");
+  const [backgroundColor, setBackgroundColor] = createSignal("#000000");
+  const [textColor, setTextColor] = createSignal("#ffffff");
+  const [fontSize, setFontSize] = createSignal(24);
+  const [fontWeight, setFontWeight] = createSignal(400);
+  const [font, setFont] = createSignal("");
   const [ready, setReady] = createSignal(false);
 
   createEffect(() => {
@@ -33,21 +25,20 @@ export function Page() {
   onMount(async () => {
     const settings = (await ipcRenderer.invoke("settings:getConfig"))?.window
       ?.vn_overlay;
-    setWindowColor(settings?.windowColor ?? defaultWindowColor);
-    setBackgroundColor(settings?.backgroundColor ?? defaultBackgroundColor);
-    setTextColor(settings?.textColor ?? defaultTextColor);
-    setFontSize(settings?.fontSize ?? defaultFontSize);
-    setFontWeight(settings?.fontWeight ?? defaultFontWeight);
-    setFont(settings?.font ?? fonts[0]);
+    setWindowColor(settings.windowColor);
+    setBackgroundColor(settings.backgroundColor);
+    setTextColor(settings.textColor);
+    setFontSize(settings.fontSize);
+    setFontWeight(settings.fontWeight);
+    setFont(settings.font);
 
     ipcRenderer.on("vnOverlay:setSettings", (payload) => {
-      const settings = payload?.settings;
-      settings?.windowColor && setWindowColor(settings.windowColor);
-      settings?.backgroundColor && setBackgroundColor(settings.backgroundColor);
-      settings?.textColor && setTextColor(settings.textColor);
-      settings?.fontSize && setFontSize(settings.fontSize);
-      settings?.fontWeight && setFontWeight(settings.fontWeight);
-      settings?.font && setFont(settings.font);
+      setWindowColor(payload.windowColor);
+      setBackgroundColor(payload.backgroundColor);
+      setTextColor(payload.textColor);
+      setFontSize(payload.fontSize);
+      setFontWeight(payload.fontWeight);
+      setFont(payload.font);
     });
 
     ipcRenderer.on("vnOverlay:sendText", (payload) => {

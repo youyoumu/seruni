@@ -1,16 +1,6 @@
 import z from "zod";
-import { simple } from "./_util.js";
-
-export const vnOverlaySettings = z.object({
-  settings: z.object({
-    font: z.string(),
-    fontSize: z.number(),
-    fontWeight: z.number(),
-    windowColor: z.string(),
-    backgroundColor: z.string(),
-    textColor: z.string(),
-  }),
-});
+import { vnOverlaySettings } from "./_shared";
+import { simple } from "./_util";
 
 export const vnOverlayIPC = {
   main: z.object({

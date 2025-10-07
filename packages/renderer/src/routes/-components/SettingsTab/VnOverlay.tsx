@@ -35,14 +35,13 @@ export function VnOverlay() {
   let ready = false;
   createEffect(() => {
     const payload = {
-      settings: {
-        windowColor: windowColor().toString("hexa"),
-        backgroundColor: backgroundColor().toString("hexa"),
-        textColor: textColor().toString("hexa"),
-        fontSize: clamp(fontSize(), 1, 99),
-        fontWeight: clamp(fontWeight(), 100, 900),
-        font: font() ?? "",
-      },
+      windowColor: windowColor().toString("hexa"),
+      backgroundColor: backgroundColor().toString("hexa"),
+      textColor: textColor().toString("hexa"),
+      fontSize: clamp(fontSize(), 1, 99),
+      fontWeight: clamp(fontWeight(), 100, 900),
+      font: font() ?? "",
+      opacity: 1,
     };
     if (!ready) return;
     ipcRenderer.send("settings:setVnOverlaySettings", payload);

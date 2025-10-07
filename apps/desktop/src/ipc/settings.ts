@@ -29,7 +29,7 @@ function createSettingsIPC() {
         vnOverlayIPC().send("vnOverlay:setSettings", {
           ...payload,
         });
-        config.debouncedSet({ window: { vn_overlay: payload.settings } });
+        config.debouncedSet({ window: { vn_overlay: payload } });
       });
 
       this.handle("settings:getConfig", async () => {
