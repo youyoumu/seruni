@@ -12,6 +12,7 @@ import {
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
+import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { appToaster } from "./AppToaster";
 
@@ -109,15 +110,10 @@ export function MiningTab() {
 
   return (
     <Stack h="full">
-      <HStack
-        justifyContent="end"
-        borderColor="border.default"
-        borderBottomWidth="thin"
-        pb="4"
-      >
-        <Box>
+      <HStack justifyContent="end" pb="6">
+        <Text fontWeight="semibold">
           {characterCount()} characters in {formattedDuration()}
-        </Box>
+        </Text>
         <Box
           class={css({
             bg: "border.default",
@@ -125,7 +121,7 @@ export function MiningTab() {
             w: "0.5",
           })}
         ></Box>
-        <Box>{speed()} characters/hour</Box>
+        <Text fontWeight="semibold">{speed()} characters/hour</Text>
         <Box
           class={css({
             bg: "border.default",
@@ -175,9 +171,9 @@ export function MiningTab() {
                 borderColor="border.default"
                 borderBottomWidth="thin"
               >
-                <Box as="p" fontSize="xl" flex="1">
+                <Text as="p" fontSize="xl" flex="1">
                   {item.text}
-                </Box>
+                </Text>
                 <TrashIcon
                   class={css({
                     h: "5",
