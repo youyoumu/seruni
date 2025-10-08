@@ -1,6 +1,9 @@
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { createGunzip } from "node:zlib";
 import { execa } from "execa";
+import tar from "tar-stream";
 import { env } from "#/env";
 import { log } from "./logger";
 
@@ -57,10 +60,50 @@ export async function downloadPython() {
 
   const assetRes = await fetch(asset.browser_download_url);
   const buffer = await assetRes.arrayBuffer();
-  const outputPath = join(env.TEMP_PATH, asset.name);
+  const outputPath = join(env.PYTHON_EXTRACT_PATH, asset.name);
   await writeFile(outputPath, Buffer.from(buffer));
 
   log.info(`Downloaded ${outputPath} successfully!`);
 
   return outputPath;
+}
+
+export async function extractPython({ tarPath }: { tarPath: string }) {
+  log.info(`Extracting ${tarPath}`);
+  await mkdir(env.PYTHON_EXTRACT_PATH, { recursive: true });
+
+  return new Promise<void>((resolve, reject) => {
+    const extract = tar.extract();
+    const gunzip = createGunzip();
+    const stream = createReadStream(tarPath).pipe(gunzip).pipe(extract);
+
+    extract.on("entry", async (header, stream, next) => {
+      const outPath = join(env.PYTHON_EXTRACT_PATH, header.name);
+
+      if (header.type === "directory") {
+        await mkdir(outPath, { recursive: true });
+        stream.resume();
+        next();
+      } else if (header.type === "file") {
+        await mkdir(dirname(outPath), { recursive: true });
+        const writeStream = createWriteStream(outPath);
+        stream.pipe(writeStream);
+        writeStream.on("finish", next);
+      } else {
+        // ignore symlink, etc.
+        stream.resume();
+        next();
+      }
+    });
+
+    extract.on("finish", () => {
+      log.info(`Extracted to ${env.PYTHON_EXTRACT_PATH}`);
+      resolve();
+    });
+
+    stream.on("error", (err) => {
+      log.error(`Failed to extract ${tarPath}: ${err.message}`);
+      reject(err);
+    });
+  });
 }

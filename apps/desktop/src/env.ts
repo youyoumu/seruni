@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { app } from "electron";
@@ -46,6 +47,10 @@ async function createEnv_() {
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
   const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
+
+  await mkdir(CACHE_PATH, { recursive: true });
+  await mkdir(TEMP_PATH, { recursive: true });
+  await mkdir(PYTHON_EXTRACT_PATH, { recursive: true });
   // register effect (with cleanup)
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;

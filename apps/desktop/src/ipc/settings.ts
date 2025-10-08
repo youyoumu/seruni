@@ -4,7 +4,7 @@ import type { MessageContext } from "roarr";
 import { config } from "#/util/config";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
-import { downloadPython } from "#/util/python";
+import { downloadPython, extractPython } from "#/util/python";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "#/window/vnOverlay";
 import { IPC } from "./base";
@@ -39,7 +39,7 @@ function createSettingsIPC() {
 
       this.on("settings:installPython", async (_) => {
         const outputPath = await downloadPython();
-        console.log("DEBUG[683]: outputPath=", outputPath);
+        await extractPython({ tarPath: outputPath });
       });
     }
   }
