@@ -64,7 +64,12 @@ export async function downloadPython() {
     throw new Error(`No suffix found for platform ${process.platform}`);
   }
 
-  const asset = releaseData.assets.find((item) => item.name.includes(suffix));
+  const pythonVersion = "3.13"; // or "3.13.0"
+  const asset = releaseData.assets.find(
+    (item) =>
+      item.name.startsWith(`cpython-${pythonVersion}`) &&
+      item.name.includes(suffix),
+  );
   if (!asset) {
     throw new Error("No matching Python build found for your platform.");
   }
