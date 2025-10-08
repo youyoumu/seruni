@@ -4,7 +4,7 @@ import type { MessageContext } from "roarr";
 import { config } from "#/util/config";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
-import { downloadPython, extractPython } from "#/util/python";
+import { downloadPython, extractPython, python } from "#/util/python";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "#/window/vnOverlay";
 import { IPC } from "./base";
@@ -40,6 +40,10 @@ function createSettingsIPC() {
       this.on("settings:installPython", async (_) => {
         const outputPath = await downloadPython();
         await extractPython({ tarPath: outputPath });
+      });
+
+      this.on("settings:runPython", async (_, payload) => {
+        await python(payload);
       });
     }
   }

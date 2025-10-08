@@ -6,7 +6,7 @@ import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
-import { python } from "#/util/python";
+import { python, pythonEntry } from "#/util/python";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -179,7 +179,7 @@ export function createAnkiClient() {
         end: number;
       }[];
       try {
-        audioStage1VadData = JSON.parse(await python([audioStage1Path]));
+        audioStage1VadData = JSON.parse(await pythonEntry([audioStage1Path]));
       } catch {
         unlink(savedReplayPath).catch(() => {});
         throw new Error("Failed to extract audio VAD data");

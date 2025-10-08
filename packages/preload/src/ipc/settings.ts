@@ -13,5 +13,9 @@ export const settingsIPC = {
       output: configSchema,
     }),
     "settings:installPython": simple,
+    "settings:runPython": z.object({
+      input: z.tuple([z.array(z.string())]),
+      output: z.void(),
+    }),
   }),
 };
