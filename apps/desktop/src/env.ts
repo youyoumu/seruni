@@ -56,12 +56,17 @@ async function createEnv_() {
     win32: join(PYTHON_EXTRACT_PATH, "python/python.exe"),
     linux: join(PYTHON_EXTRACT_PATH, "python/bin/python"),
   };
-  const pythonBinPath = pythonBinPathMap[process.platform];
-  if (!pythonBinPath) {
+  const PYTHON_BIN_PATH = pythonBinPathMap[process.platform];
+  if (!PYTHON_BIN_PATH) {
     throw new Error(
       `No python bin path found for platform ${process.platform}`,
     );
   }
+  const PYTHON_BIN_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/python/.venv/bin/python",
+  );
+
   // register effect (with cleanup)
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;
@@ -95,12 +100,13 @@ async function createEnv_() {
       ? join(import.meta.dirname, "../../../packages/renderer/dist")
       : join(import.meta.dirname, "renderer"),
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
-    PYTHON_BIN_PATH: DEV
-      ? join(import.meta.dirname, "../../../packages/python/.venv/bin/python")
-      : pythonBinPath,
+    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH : PYTHON_BIN_PATH,
     PYTHON_ENTRY_PATH: DEV
       ? join(import.meta.dirname, "../../../packages/python/src/main.py")
-      : join(import.meta.dirname, "python/main.py"),
+      : join(import.meta.dirname, "python/src/main.py"),
+    PYTHON_PACKAGE_PATH: DEV
+      ? join(import.meta.dirname, "../../../packages/python")
+      : join(import.meta.dirname, "python"),
   };
 
   return {

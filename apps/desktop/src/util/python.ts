@@ -104,3 +104,8 @@ export async function extractPython({ tarPath }: { tarPath: string }) {
     throw err;
   }
 }
+
+export async function installPythonDeps() {
+  await python(["-m", "pip", "install", "uv"]);
+  await python(["-m", "uv", "pip", "install", env.PYTHON_PACKAGE_PATH]);
+}

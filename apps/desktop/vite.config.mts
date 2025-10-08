@@ -44,7 +44,12 @@ export default defineConfig(({ command }) => ({
         );
         await cp(
           resolve(import.meta.dirname, "../../packages/python/src/"),
-          resolve(outDir, "python"),
+          resolve(outDir, "python/src/"),
+          { recursive: true },
+        );
+        await cp(
+          resolve(import.meta.dirname, "../../packages/python/pyproject.toml"),
+          resolve(outDir, "python/pyproject.toml"),
           { recursive: true },
         );
 
