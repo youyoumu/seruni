@@ -45,6 +45,7 @@ async function createEnv_() {
   const USER_DATA_PATH = app.getPath("userData");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
+  const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
   // register effect (with cleanup)
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;
@@ -61,6 +62,7 @@ async function createEnv_() {
     USER_DATA_PATH,
     CACHE_PATH,
     TEMP_PATH,
+    PYTHON_EXTRACT_PATH,
     IPC_PRELOAD_PATH: DEV
       ? join(
           import.meta.dirname,
@@ -77,6 +79,7 @@ async function createEnv_() {
       ? join(import.meta.dirname, "../../../packages/renderer/dist")
       : join(import.meta.dirname, "renderer"),
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
+    //TODO: adjust per os
     PYTHON_BIN_PATH: DEV
       ? join(import.meta.dirname, "../../../packages/python/.venv/bin/python")
       : join(USER_DATA_PATH, "python/.venv/bin/python"),

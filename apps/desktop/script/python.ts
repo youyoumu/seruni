@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const pythonBinPath = path.join(
@@ -37,7 +38,3 @@ export async function runPython() {
     });
   });
 }
-
-const output = await runPython();
-const parsedOutput = JSON.parse(output);
-console.log("DEBUG[672]: parsedOutput=", parsedOutput);

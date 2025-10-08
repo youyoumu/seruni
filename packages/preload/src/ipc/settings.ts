@@ -1,5 +1,6 @@
 import z from "zod";
 import { configSchema, vnOverlaySettings } from "./_shared";
+import { simple } from "./_util";
 
 export const settingsIPC = {
   renderer: z.object({
@@ -11,5 +12,6 @@ export const settingsIPC = {
       input: z.tuple([]),
       output: configSchema,
     }),
+    "settings:installPython": simple,
   }),
 };

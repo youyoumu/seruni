@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "./logger";
@@ -15,4 +17,50 @@ export async function python(params: string[]) {
     "python",
   );
   return stdout;
+}
+
+export async function downloadPython() {
+  const res = await fetch(
+    "https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json",
+  );
+  if (!res.ok) throw new Error("Failed to fetch python version");
+  const { release_url } = (await res.json()) as { release_url: string };
+  const tag = release_url.split("/").pop();
+  if (!tag) throw new Error("Failed to extract release tag");
+  const apiUrl = `https://api.github.com/repos/astral-sh/python-build-standalone/releases/tags/${tag}`;
+  const releaseRes = await fetch(apiUrl, {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (!releaseRes.ok)
+    throw new Error(`Failed to fetch release data for ${tag}`);
+
+  const releaseData = (await releaseRes.json()) as {
+    assets: { name: string; browser_download_url: string }[];
+  };
+
+  const pythonReleaseSuffix: Partial<Record<NodeJS.Platform, string>> = {
+    win32: "x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+    linux: "x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+  };
+
+  const suffix = pythonReleaseSuffix[process.platform];
+  if (!suffix) {
+    throw new Error(`No suffix found for platform ${process.platform}`);
+  }
+
+  const asset = releaseData.assets.find((item) => item.name.includes(suffix));
+  if (!asset) {
+    throw new Error("No matching Python build found for your platform.");
+  }
+
+  log.info(`Downloading ${asset.name} from ${asset.browser_download_url}`);
+
+  const assetRes = await fetch(asset.browser_download_url);
+  const buffer = await assetRes.arrayBuffer();
+  const outputPath = join(env.TEMP_PATH, asset.name);
+  await writeFile(outputPath, Buffer.from(buffer));
+
+  log.info(`Downloaded ${outputPath} successfully!`);
+
+  return outputPath;
 }

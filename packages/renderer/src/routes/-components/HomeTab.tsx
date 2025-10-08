@@ -38,6 +38,13 @@ export function HomeTab() {
       >
         Toast
       </Button>
+      <Button
+        onClick={() => {
+          ipcRenderer.send("settings:installPython");
+        }}
+      >
+        Install python
+      </Button>
       <Sidebar />
     </Flex>
   );

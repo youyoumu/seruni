@@ -19,7 +19,7 @@ function createVnOverlayWindow() {
 
     override async create() {
       super.create();
-      this.win?.setIgnoreMouseEvents(true); // set true if you want clicks to pass through
+      // this.win?.setIgnoreMouseEvents(true); // set true if you want clicks to pass through
       await this.win?.loadURL(`${env.RENDERER_URL}/vnOverlay`);
       this.win?.setTitle("VN Overlay");
       return true;
