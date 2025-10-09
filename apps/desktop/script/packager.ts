@@ -7,4 +7,5 @@ await packager({
   dir: "./dist",
   out: "./release",
   platform: ["win32"],
+  icon: "./icons/seruni.ico",
 });
