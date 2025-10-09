@@ -193,9 +193,11 @@ export function MiningTab() {
                 borderColor="border.default"
                 borderBottomWidth="thin"
               >
+                {"\n"}
                 <Text as="p" fontSize="xl" flex="1">
                   {item.text}
                 </Text>
+                {"\n"}
                 <TrashIcon
                   class={css({
                     h: "5",
