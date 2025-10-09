@@ -64,6 +64,8 @@ export function ConsoleTab() {
       overflow="hidden"
       borderWidth="thin"
       bg="bg.subtle"
+      maxW="8xl"
+      mx="auto"
     >
       <Box
         ref={logsRef}

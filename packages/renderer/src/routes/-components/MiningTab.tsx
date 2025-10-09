@@ -119,7 +119,7 @@ export function MiningTab() {
   });
 
   return (
-    <Stack h="full">
+    <Stack h="full" maxW="8xl" mx="auto">
       <HStack justifyContent="end" pb="4">
         <Text fontWeight="semibold">
           {characterCount()} characters in {formattedDuration()}

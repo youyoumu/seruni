@@ -1,5 +1,6 @@
 import { createEffect, createSignal, For, onMount } from "solid-js";
 import { css } from "styled-system/css";
+import { HStack } from "styled-system/jsx";
 import { Tabs } from "#/components/ui/tabs";
 import { AppToaster } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
@@ -42,20 +43,23 @@ export function Page() {
           pt="4"
           pb="2"
           ref={tabListRef}
-          // justifyContent="center"
+          justifyContent="center"
         >
-          <For each={options}>
-            {(option) => (
-              <Tabs.Trigger
-                value={option.id}
-                class={css({
-                  fontSize: "lg",
-                })}
-              >
-                {option.label}
-              </Tabs.Trigger>
-            )}
-          </For>
+          <HStack maxW="8xl" w="full">
+            <For each={options}>
+              {(option) => (
+                <Tabs.Trigger
+                  value={option.id}
+                  class={css({
+                    fontSize: "lg",
+                  })}
+                >
+                  {option.label}
+                </Tabs.Trigger>
+              )}
+            </For>
+          </HStack>
+
           <Tabs.Indicator />
         </Tabs.List>
         <Tabs.Content
