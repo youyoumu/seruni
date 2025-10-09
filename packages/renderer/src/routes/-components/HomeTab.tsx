@@ -13,20 +13,6 @@ export function HomeTab() {
       >
         Open VN Overlay
       </Button>
-      <Button
-        onClick={() => {
-          ipcRenderer.send("yomitan:open");
-        }}
-      >
-        Open Yomitan Settings
-      </Button>
-      <Button
-        onClick={() => {
-          ipcRenderer.send("yomitan:reinstall");
-        }}
-      >
-        Update Yomitan
-      </Button>
 
       <Button
         onClick={() => {
