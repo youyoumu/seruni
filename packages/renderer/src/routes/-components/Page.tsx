@@ -67,7 +67,7 @@ export function Page() {
           value="settings"
           px="4"
           style={{
-            height: "calc(100vh - 56px)",
+            height: "calc(100vh - 64px)",
           }}
         >
           <SettingsTab />

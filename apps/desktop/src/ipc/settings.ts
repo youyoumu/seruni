@@ -1,6 +1,7 @@
 import { signal } from "alien-signals";
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
+import { env } from "#/env";
 import { config } from "#/util/config";
 import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
@@ -40,6 +41,10 @@ function createSettingsIPC() {
 
       this.handle("settings:getConfig", async () => {
         return config.store;
+      });
+
+      this.handle("settings:getEnv", async () => {
+        return env;
       });
 
       this.on("settings:installPython", async (_) => {

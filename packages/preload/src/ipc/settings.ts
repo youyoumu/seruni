@@ -16,6 +16,13 @@ export const settingsIPC = {
       input: z.tuple([]),
       output: configSchema,
     }),
+    "settings:getEnv": z.object({
+      input: z.tuple([]),
+      output: z.record(
+        z.string(),
+        z.union([z.string(), z.number(), z.boolean()]),
+      ),
+    }),
     "settings:installPython": simple,
     "settings:runPython": z.object({
       input: z.tuple([z.array(z.string())]),
