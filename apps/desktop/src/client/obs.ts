@@ -2,6 +2,7 @@ import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
+import type { Status } from "./_util";
 
 export function createObsClient() {
   class ObsClient {
@@ -12,6 +13,7 @@ export function createObsClient() {
     maxRetries = Infinity; // keep trying forever
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
+    status: Status = "disconnected";
 
     async prepare() {
       await this.connect();
@@ -19,6 +21,7 @@ export function createObsClient() {
 
     async connect() {
       if (this.reconnecting) return;
+      this.status = "connecting";
       this.reconnecting = false;
 
       this.client = new OBSWebSocket();
@@ -26,6 +29,7 @@ export function createObsClient() {
       try {
         await this.client.connect(this.url());
         log.info(`Connected to OBS on ${this.url()}`);
+        this.status = "connected";
 
         // Reset retry state
         this.retryCount = 0;

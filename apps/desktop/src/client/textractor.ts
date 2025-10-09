@@ -4,6 +4,7 @@ import { WebSocket } from "ws";
 import { vnOverlayIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
+import type { Status } from "./_util";
 
 export function createTextractorClient() {
   class TextractorClient {
@@ -16,6 +17,7 @@ export function createTextractorClient() {
     url = () =>
       `ws://127.0.0.1:${config.store.textractor.textractorWebSocketPort}`;
     reconnecting = false;
+    status: Status = "disconnected";
 
     prepare() {
       this.connect();
@@ -24,10 +26,12 @@ export function createTextractorClient() {
     connect() {
       try {
         this.reconnecting = false;
+        this.status = "connecting";
         this.client = new WebSocket(this.url());
 
         this.client.on("open", () => {
           log.info(`Connected to Textractor on ${this.url()}`);
+          this.status = "connected";
           this.retryCount = 0;
         });
 
@@ -41,15 +45,9 @@ export function createTextractorClient() {
           vnOverlayIPC().send("vnOverlay:sendText", payload);
         });
 
-        const handleDisconnect = () => {
-          if (this.reconnecting) return;
-          this.reconnecting = true;
-          this.scheduleReconnect();
-        };
-
         this.client.on("error", (err) => {
           log.error({ error: err }, "Textractor socket error");
-          handleDisconnect();
+          this.handleDisconnect();
         });
 
         this.client.on("close", (code, reason) => {
@@ -59,7 +57,7 @@ export function createTextractorClient() {
               "Textractor socket closed",
             );
           }
-          handleDisconnect();
+          this.handleDisconnect();
         });
       } catch (e) {
         log.error(
@@ -68,6 +66,12 @@ export function createTextractorClient() {
         );
         this.scheduleReconnect();
       }
+    }
+
+    handleDisconnect() {
+      if (this.reconnecting) return;
+      this.reconnecting = true;
+      this.scheduleReconnect();
     }
 
     scheduleReconnect() {

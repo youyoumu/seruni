@@ -1,4 +1,5 @@
 import { signal } from "alien-signals";
+import { ankiClient, obsClient, textractorClient } from "#/client";
 import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
@@ -16,6 +17,14 @@ function createGeneralIPC() {
     override register() {
       this.on("general:ready", (_) => {
         this.ready.resolve(true);
+      });
+
+      this.handle("general:getClientStatus", async () => {
+        return {
+          anki: ankiClient().status,
+          obs: obsClient().status,
+          textractor: textractorClient().status,
+        };
       });
     }
   }

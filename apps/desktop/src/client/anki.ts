@@ -8,6 +8,7 @@ import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
+import type { Status } from "./_util";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -21,6 +22,7 @@ export function createAnkiClient() {
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
     monitorStarted = false;
+    status: Status = "disconnected";
 
     async prepare() {
       await this.connect();
@@ -28,6 +30,7 @@ export function createAnkiClient() {
 
     async connect() {
       if (this.reconnecting) return;
+      this.status = "connecting";
       this.reconnecting = false;
 
       try {
@@ -38,6 +41,7 @@ export function createAnkiClient() {
         await this.client.deck.deckNames();
         this.lastAddedNote = await this.getLastAddedNote();
         this.retryCount = 0;
+        this.status = "connected";
         log.info(
           `Connected to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
         );
