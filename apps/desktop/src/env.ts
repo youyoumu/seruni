@@ -65,6 +65,8 @@ async function createEnv_() {
     import.meta.dirname,
     "../../../packages/python/.venv/bin/python",
   );
+  const PYTHON_BIN_PATH_DEV2 = PYTHON_BIN_PATH;
+
   const PYTHON_ENTRY_PATH = join(import.meta.dirname, "python/src/main.py");
   const PYTHON_ENTRY_PATH_DEV = join(
     import.meta.dirname,
@@ -107,7 +109,7 @@ async function createEnv_() {
     TEMP_PATH,
 
     PYTHON_EXTRACT_PATH,
-    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH_DEV : PYTHON_BIN_PATH,
+    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH_DEV2 : PYTHON_BIN_PATH,
     PYTHON_ENTRY_PATH: DEV ? PYTHON_ENTRY_PATH_DEV : PYTHON_ENTRY_PATH,
     PYTHON_PACKAGE_PATH: DEV ? PYTHON_PACKAGE_PATH_DEV : PYTHON_PACKAGE_PATH,
 
