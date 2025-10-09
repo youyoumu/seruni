@@ -52,3 +52,4 @@ __pycache__
 *.wav
 
 release
+python.egg-info
