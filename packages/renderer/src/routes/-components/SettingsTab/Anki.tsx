@@ -2,16 +2,19 @@ import { createEffect, createSignal, onMount } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
+import { NumberInput } from "#/components/ui/number-input";
 
 export function Anki() {
   const [pictureField, setPictureField] = createSignal("");
   const [sentenceAudioField, setSentenceAudioField] = createSignal("");
+  const [ankiConnectPort, setAnkiConnectPort] = createSignal(8765);
 
   let ready = false;
   createEffect(() => {
     const payload = {
       pictureField: pictureField(),
       sentenceAudioField: sentenceAudioField(),
+      ankiConnectPort: ankiConnectPort(),
     };
     if (!ready) return;
     ipcRenderer.send("settings:setSettings", {
@@ -23,6 +26,7 @@ export function Anki() {
     const settings = (await ipcRenderer.invoke("settings:getConfig")).anki;
     setPictureField(settings.pictureField);
     setSentenceAudioField(settings.sentenceAudioField);
+    setAnkiConnectPort(settings.ankiConnectPort);
 
     ready = true;
   });
@@ -60,6 +64,18 @@ export function Anki() {
             }}
           />
         </Field.Root>
+        <NumberInput
+          value={ankiConnectPort().toString()}
+          clampValueOnBlur
+          onValueChange={(e) => {
+            setAnkiConnectPort(e.valueAsNumber);
+          }}
+          min={1023}
+          max={65535}
+          step={1}
+        >
+          AnkiConnect Port
+        </NumberInput>
       </Grid>
     </Stack>
   );

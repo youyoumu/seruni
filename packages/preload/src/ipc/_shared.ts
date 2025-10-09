@@ -17,5 +17,6 @@ export const configSchema = z.object({
   anki: z.object({
     pictureField: z.string(),
     sentenceAudioField: z.string(),
+    ankiConnectPort: z.number(),
   }),
 });

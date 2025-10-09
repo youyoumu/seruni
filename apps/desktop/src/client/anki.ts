@@ -31,15 +31,22 @@ export function createAnkiClient() {
       this.reconnecting = false;
 
       try {
-        this.client = new YankiConnect();
+        this.client = new YankiConnect({
+          port: config.store.anki.ankiConnectPort,
+        });
         // Try to verify connection
         await this.client.deck.deckNames();
         this.lastAddedNote = await this.getLastAddedNote();
         this.retryCount = 0;
-        log.info("Connected to AnkiConnect");
+        log.info(
+          `Connected to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
+        );
         if (this.monitorStarted) this.monitor();
       } catch (error) {
-        log.error({ error }, "Failed to connect to AnkiConnect");
+        log.error(
+          { error },
+          `Failed to connect to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
+        );
         this.handleDisconnect();
       }
     }

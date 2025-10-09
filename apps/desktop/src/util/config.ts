@@ -35,6 +35,7 @@ class Config_ extends Config<ConfigSchema> {
         anki: {
           pictureField: "Picture",
           sentenceAudioField: "SentenceAudio",
+          ankiConnectPort: 8765,
         },
       },
     });
