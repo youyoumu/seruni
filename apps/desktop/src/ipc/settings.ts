@@ -39,7 +39,7 @@ function createSettingsIPC() {
       });
 
       this.handle("settings:getConfig", async () => {
-        return config.getAll();
+        return config.store;
       });
 
       this.on("settings:installPython", async (_) => {

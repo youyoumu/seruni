@@ -42,12 +42,8 @@ class Config_ extends Config<ConfigSchema> {
 
   debouncedSet = debounce<(value: ConfigSchemaPartial) => void>(this.set, 1000);
 
-  override get(key: Paths<ConfigSchema>) {
-    return super.get(key);
-  }
-
-  getAll() {
-    return structuredClone(this.store);
+  override get() {
+    throw new Error("Use store instead");
   }
 }
 
