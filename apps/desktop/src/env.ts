@@ -36,7 +36,6 @@ async function createEnv_() {
     await hmr.runEffect(import.meta.url, () => {
       const original = app.getPath("userData");
       app.setPath("userData", join(import.meta.dirname, "../.userData"));
-
       return () => {
         app.setPath("userData", original);
       };
@@ -66,14 +65,37 @@ async function createEnv_() {
     import.meta.dirname,
     "../../../packages/python/.venv/bin/python",
   );
+  const PYTHON_ENTRY_PATH = join(import.meta.dirname, "python/src/main.py");
+  const PYTHON_ENTRY_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/python/src/main.py",
+  );
+  const PYTHON_PACKAGE_PATH = join(import.meta.dirname, "python");
+  const PYTHON_PACKAGE_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/python",
+  );
 
-  // register effect (with cleanup)
+  const IPC_PRELOAD_PATH = join(import.meta.dirname, "_preload/ipc.js");
+  const IPC_PRELOAD_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/preload/dist/_preload/ipc.js",
+  );
+  const CHROME_PRELOAD_PATH = join(import.meta.dirname, "_preload/chrome.js");
+  const CHROME_PRELOAD_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/preload/dist/_preload/chrome.js",
+  );
+  const RENDERER_PATH = join(import.meta.dirname, "renderer");
+  const RENDERER_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/renderer/dist",
+  );
+
   await hmr.runEffect(import.meta.url, () => {
     const original = USER_DATA_PATH;
     app.setPath("userData", join(USER_DATA_PATH, "Default"));
-
     return () => {
-      // restore on cleanup
       app.setPath("userData", original);
     };
   });
@@ -83,30 +105,16 @@ async function createEnv_() {
     USER_DATA_PATH,
     CACHE_PATH,
     TEMP_PATH,
+
     PYTHON_EXTRACT_PATH,
-    IPC_PRELOAD_PATH: DEV
-      ? join(
-          import.meta.dirname,
-          "../../../packages/preload/dist/_preload/ipc.js",
-        )
-      : join(import.meta.dirname, "_preload/ipc.js"),
-    CHROME_PRELOAD_PATH: DEV
-      ? join(
-          import.meta.dirname,
-          "../../../packages/preload/dist/_preload/chrome.js",
-        )
-      : join(import.meta.dirname, "_preload/chrome.js"),
-    RENDERER_PATH: DEV
-      ? join(import.meta.dirname, "../../../packages/renderer/dist")
-      : join(import.meta.dirname, "renderer"),
+    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH_DEV : PYTHON_BIN_PATH,
+    PYTHON_ENTRY_PATH: DEV ? PYTHON_ENTRY_PATH_DEV : PYTHON_ENTRY_PATH,
+    PYTHON_PACKAGE_PATH: DEV ? PYTHON_PACKAGE_PATH_DEV : PYTHON_PACKAGE_PATH,
+
+    IPC_PRELOAD_PATH: DEV ? IPC_PRELOAD_PATH_DEV : IPC_PRELOAD_PATH,
+    CHROME_PRELOAD_PATH: DEV ? CHROME_PRELOAD_PATH_DEV : CHROME_PRELOAD_PATH,
+    RENDERER_PATH: DEV ? RENDERER_PATH_DEV : RENDERER_PATH,
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
-    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH : PYTHON_BIN_PATH,
-    PYTHON_ENTRY_PATH: DEV
-      ? join(import.meta.dirname, "../../../packages/python/src/main.py")
-      : join(import.meta.dirname, "python/src/main.py"),
-    PYTHON_PACKAGE_PATH: DEV
-      ? join(import.meta.dirname, "../../../packages/python")
-      : join(import.meta.dirname, "python"),
   };
 
   return {
