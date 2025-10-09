@@ -14,4 +14,8 @@ export const configSchema = z.object({
   window: z.object({
     vn_overlay: vnOverlaySettings,
   }),
+  anki: z.object({
+    pictureField: z.string(),
+    sentenceAudioField: z.string(),
+  }),
 });

@@ -4,6 +4,7 @@ import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
+import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
@@ -236,8 +237,7 @@ export function createAnkiClient() {
             {
               path: imagePath,
               filename: basename(imagePath),
-              //TODO: configurable
-              fields: ["Picture"],
+              fields: [config.store.anki.pictureField],
             },
           ],
           ...(audioStage2Path && {
@@ -245,8 +245,7 @@ export function createAnkiClient() {
               {
                 path: audioStage2Path,
                 filename: basename(audioStage2Path),
-                //TODO: configurable
-                fields: ["SentenceAudio"],
+                fields: [config.store.anki.sentenceAudioField],
               },
             ],
           }),

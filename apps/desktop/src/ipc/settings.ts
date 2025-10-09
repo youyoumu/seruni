@@ -25,6 +25,11 @@ function createSettingsIPC() {
     }
 
     override register() {
+      this.on("settings:setSettings", (_, payload) => {
+        this.dLogTrace(payload, "settings:setSettings");
+        config.debouncedSet(payload);
+      });
+
       this.on("settings:setVnOverlaySettings", (_, payload) => {
         this.dLogTrace(payload, "settings:setVnOverlaySettings");
         vnOverlayIPC().send("vnOverlay:setSettings", {

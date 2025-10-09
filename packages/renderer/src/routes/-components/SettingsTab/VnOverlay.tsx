@@ -66,11 +66,14 @@ export function VnOverlay() {
   return (
     <Stack gap="2" w="full">
       <Stack>
-        <Heading size="2xl">VN Overlay Settings</Heading>
-        <Box
+        <Heading
+          size="2xl"
           borderBottomColor="border.default"
           borderBottomWidth="medium"
-        ></Box>
+          pb="2"
+        >
+          VN Overlay
+        </Heading>
       </Stack>
       <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Select_

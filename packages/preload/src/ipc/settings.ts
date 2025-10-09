@@ -4,6 +4,10 @@ import { simple } from "./_util";
 
 export const settingsIPC = {
   renderer: z.object({
+    "settings:setSettings": z.object({
+      input: z.tuple([configSchema.partial()]),
+      output: z.void(),
+    }),
     "settings:setVnOverlaySettings": z.object({
       input: z.tuple([vnOverlaySettings]),
       output: z.void(),

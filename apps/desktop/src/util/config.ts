@@ -32,6 +32,10 @@ class Config_ extends Config<ConfigSchema> {
             opacity: 0.5,
           },
         },
+        anki: {
+          pictureField: "Picture",
+          sentenceAudioField: "SentenceAudio",
+        },
       },
     });
   }
