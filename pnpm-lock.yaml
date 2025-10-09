@@ -104,6 +104,9 @@ importers:
       '@repo/preload':
         specifier: workspace:*
         version: link:../../packages/preload
+      '@repo/renderer':
+        specifier: workspace:*
+        version: link:../../packages/renderer
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
