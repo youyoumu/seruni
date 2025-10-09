@@ -4,7 +4,7 @@ import { Heading } from "#/components/ui/heading";
 
 export function Yomitan() {
   return (
-    <Stack gap="2" w="full">
+    <Stack gap="4" w="full">
       <Stack>
         <Heading
           size="2xl"
@@ -15,7 +15,7 @@ export function Yomitan() {
           Yomitan
         </Heading>
       </Stack>
-      <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+      <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Button
           onClick={() => {
             ipcRenderer.send("yomitan:open");

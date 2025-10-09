@@ -27,7 +27,7 @@ export function Textractor() {
   });
 
   return (
-    <Stack gap="2" w="full">
+    <Stack gap="4" w="full">
       <Stack>
         <Heading
           size="2xl"
@@ -38,7 +38,7 @@ export function Textractor() {
           Textractor
         </Heading>
       </Stack>
-      <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+      <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <NumberInput
           value={textractorWebSocketPort().toString()}
           clampValueOnBlur

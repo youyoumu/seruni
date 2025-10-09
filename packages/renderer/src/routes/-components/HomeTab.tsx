@@ -24,20 +24,6 @@ export function HomeTab() {
       >
         Toast
       </Button>
-      <Button
-        onClick={() => {
-          ipcRenderer.send("settings:installPython");
-        }}
-      >
-        Install python
-      </Button>
-      <Button
-        onClick={() => {
-          ipcRenderer.send("settings:runPython", ["--version"]);
-        }}
-      >
-        Run python
-      </Button>
       <Sidebar />
     </Flex>
   );

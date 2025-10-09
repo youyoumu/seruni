@@ -32,7 +32,7 @@ export function Anki() {
   });
 
   return (
-    <Stack gap="2" w="full">
+    <Stack gap="4" w="full">
       <Stack>
         <Heading
           size="2xl"
@@ -43,7 +43,7 @@ export function Anki() {
           Anki
         </Heading>
       </Stack>
-      <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+      <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Field.Root>
           <Field.Label>Picture Field</Field.Label>
           <Field.Input

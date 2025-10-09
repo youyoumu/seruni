@@ -64,7 +64,7 @@ export function VnOverlay() {
   });
 
   return (
-    <Stack gap="2" w="full">
+    <Stack gap="4" w="full">
       <Stack>
         <Heading
           size="2xl"
