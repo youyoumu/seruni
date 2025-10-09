@@ -1,5 +1,5 @@
-import { For, onMount } from "solid-js";
-import { Flex } from "styled-system/jsx";
+import { createEffect, createSignal, For, onMount } from "solid-js";
+import { css } from "styled-system/css";
 import { Tabs } from "#/components/ui/tabs";
 import { AppToaster } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
@@ -19,19 +19,41 @@ export function Page() {
     ipcRenderer.send("general:ready");
   });
 
+  let tabListRef: HTMLDivElement | undefined;
+  const [tabListHeight, setTabListHeight] = createSignal(0);
+  const contentHeight = (gap = 8) => `calc(100vh - ${tabListHeight() + gap}px)`;
+
+  createEffect(() => {
+    // console.log(tabListHeight());
+  });
+
+  onMount(() => {
+    setTabListHeight(tabListRef?.clientHeight ?? 0);
+    tabListRef?.addEventListener("resize", () => {
+      setTabListHeight(tabListRef?.clientHeight ?? 0);
+    });
+  });
+
   return (
-    <Flex
-      bg="bg.default"
-      color="fg.default"
-      minH="screen"
-      pt="2"
-      fontFamily="nunito"
-    >
+    <>
       <Tabs.Root defaultValue="home">
-        <Tabs.List px="2">
+        <Tabs.List
+          px="2"
+          pt="4"
+          pb="2"
+          ref={tabListRef}
+          // justifyContent="center"
+        >
           <For each={options}>
             {(option) => (
-              <Tabs.Trigger value={option.id}>{option.label}</Tabs.Trigger>
+              <Tabs.Trigger
+                value={option.id}
+                class={css({
+                  fontSize: "lg",
+                })}
+              >
+                {option.label}
+              </Tabs.Trigger>
             )}
           </For>
           <Tabs.Indicator />
@@ -40,7 +62,7 @@ export function Page() {
           value="home"
           px="4"
           style={{
-            height: "calc(100vh - 56px)",
+            height: contentHeight(),
           }}
         >
           <HomeTab />
@@ -49,7 +71,7 @@ export function Page() {
           value="mining"
           px="4"
           style={{
-            height: "calc(100vh - 64px)",
+            height: contentHeight(16),
           }}
         >
           <MiningTab />
@@ -58,7 +80,7 @@ export function Page() {
           value="console"
           px="2"
           style={{
-            height: "calc(100vh - 56px)",
+            height: contentHeight(),
           }}
         >
           <ConsoleTab />
@@ -67,13 +89,13 @@ export function Page() {
           value="settings"
           px="4"
           style={{
-            height: "calc(100vh - 64px)",
+            height: contentHeight(16),
           }}
         >
           <SettingsTab />
         </Tabs.Content>
       </Tabs.Root>
       <AppToaster />
-    </Flex>
+    </>
   );
 }

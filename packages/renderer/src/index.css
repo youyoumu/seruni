@@ -27,3 +27,12 @@
   width: 10px;
   height: 10px;
 }
+
+html {
+  overflow: hidden;
+}
+
+body {
+  background: var(--colors-bg-default);
+  font-family: var(--font-nunito);
+}
