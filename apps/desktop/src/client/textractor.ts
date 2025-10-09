@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { signal } from "alien-signals";
 import { WebSocket } from "ws";
 import { vnOverlayIPC } from "#/ipc";
+import { config } from "#/util/config";
 import { log } from "../util/logger";
 
 export function createTextractorClient() {
@@ -9,11 +10,12 @@ export function createTextractorClient() {
     history: { time: Date; text: string; uuid: string }[] = [];
     client: WebSocket | undefined;
     retryCount = 0;
-    maxRetries = Infinity; // retry forever
+    maxRetries = Infinity;
     retryTimer: NodeJS.Timeout | null = null;
     maxDelay = 16000;
-    url = "ws://127.0.0.1:6677";
-    reconnecting = false; // 👈 prevents double reconnect
+    url = () =>
+      `ws://127.0.0.1:${config.store.textractor.textractorWebSocketPort}`;
+    reconnecting = false;
 
     prepare() {
       this.connect();
@@ -22,10 +24,10 @@ export function createTextractorClient() {
     connect() {
       try {
         this.reconnecting = false;
-        this.client = new WebSocket(this.url);
+        this.client = new WebSocket(this.url());
 
         this.client.on("open", () => {
-          log.info("Connected to Textractor");
+          log.info(`Connected to Textractor on ${this.url()}`);
           this.retryCount = 0;
         });
 
@@ -60,7 +62,10 @@ export function createTextractorClient() {
           handleDisconnect();
         });
       } catch (e) {
-        log.error({ error: e }, "Failed to create Textractor connection");
+        log.error(
+          { error: e },
+          `Failed to connect to Textractor on ${this.url()}`,
+        );
         this.scheduleReconnect();
       }
     }

@@ -22,4 +22,7 @@ export const configSchema = z.object({
   obs: z.object({
     obsWebSocketPort: z.number(),
   }),
+  textractor: z.object({
+    textractorWebSocketPort: z.number(),
+  }),
 });

@@ -40,6 +40,9 @@ class Config_ extends Config<ConfigSchema> {
         obs: {
           obsWebSocketPort: 7274,
         },
+        textractor: {
+          textractorWebSocketPort: 6677,
+        },
       },
     });
   }
