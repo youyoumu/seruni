@@ -1,12 +1,12 @@
 import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
+import { config } from "#/util/config";
 import { log } from "../util/logger";
 
 export function createObsClient() {
   class ObsClient {
     client: OBSWebSocket | undefined;
-    //TODO: configure port
-    url = "ws://127.0.0.1:7274";
+    url = () => `ws://127.0.0.1:${config.store.obs.obsWebSocketPort}`;
     reconnecting = false;
     retryCount = 0;
     maxRetries = Infinity; // keep trying forever
@@ -24,8 +24,8 @@ export function createObsClient() {
       this.client = new OBSWebSocket();
 
       try {
-        await this.client.connect(this.url);
-        log.info("Connected to OBS");
+        await this.client.connect(this.url());
+        log.info(`Connected to OBS on ${this.url()}`);
 
         // Reset retry state
         this.retryCount = 0;
@@ -42,7 +42,7 @@ export function createObsClient() {
         this.client.on("ConnectionClosed", () => this.handleDisconnect());
         this.client.on("ConnectionError", () => this.handleDisconnect());
       } catch (error) {
-        log.error({ error }, "Failed to connect to OBS");
+        log.error({ error }, `Failed to connect to OBS on ${this.url()}`);
         this.handleDisconnect();
       }
     }

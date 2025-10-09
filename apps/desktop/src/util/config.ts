@@ -3,7 +3,7 @@ import Config, { type Schema } from "conf";
 import { app } from "electron";
 import { debounce } from "es-toolkit";
 import { parse, stringify } from "smol-toml";
-import type { PartialDeep, Paths } from "type-fest";
+import type { PartialDeep } from "type-fest";
 import z from "zod";
 import { env } from "#/env";
 
@@ -36,6 +36,9 @@ class Config_ extends Config<ConfigSchema> {
           pictureField: "Picture",
           sentenceAudioField: "SentenceAudio",
           ankiConnectPort: 8765,
+        },
+        obs: {
+          obsWebSocketPort: 7274,
         },
       },
     });

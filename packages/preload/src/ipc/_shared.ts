@@ -19,4 +19,7 @@ export const configSchema = z.object({
     sentenceAudioField: z.string(),
     ankiConnectPort: z.number(),
   }),
+  obs: z.object({
+    obsWebSocketPort: z.number(),
+  }),
 });
