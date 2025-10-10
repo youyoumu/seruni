@@ -190,8 +190,8 @@ export function createAnkiClient() {
         // save replay buffer
         try {
           savedReplayPath = await obsClient().saveReplayBuffer();
-        } catch {
-          throw new Error("Failed to save replay buffer");
+        } catch (e) {
+          throw new Error("Failed to save replay buffer", { cause: e });
         }
 
         // calculate offset
@@ -199,8 +199,8 @@ export function createAnkiClient() {
         let durationSeconds: number;
         try {
           durationSeconds = await getFileDuration(savedReplayPath);
-        } catch {
-          throw new Error("Failed to get duration");
+        } catch (e) {
+          throw new Error("Failed to get duration", { cause: e });
         }
         const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
         const offsetMs = Math.max(
@@ -215,8 +215,8 @@ export function createAnkiClient() {
             seekMs: offsetMs,
             format: "wav",
           });
-        } catch {
-          throw new Error("Failed to extract audio");
+        } catch (e) {
+          throw new Error("Failed to extract audio", { cause: e });
         }
 
         // generate vad data
@@ -228,8 +228,8 @@ export function createAnkiClient() {
           audioStage1VadData = JSON.parse(
             await python.runEntry([audioStage1Path]),
           );
-        } catch {
-          throw new Error("Failed to extract audio VAD data");
+        } catch (e) {
+          throw new Error("Failed to extract audio VAD data", { cause: e });
         }
         let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
         if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1.5) {
@@ -247,8 +247,8 @@ export function createAnkiClient() {
                 format: "opus",
               });
               return audioStage2Path;
-            } catch {
-              throw new Error("Failed to crop audio");
+            } catch (e) {
+              throw new Error("Failed to crop audio", { cause: e });
             }
           }
         })();
@@ -267,8 +267,8 @@ export function createAnkiClient() {
               format: "webp",
             });
             return imagePath;
-          } catch {
-            throw new Error("Failed to extract image");
+          } catch (e) {
+            throw new Error("Failed to extract image", { cause: e });
           }
         })();
 
