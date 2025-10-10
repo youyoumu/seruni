@@ -30,6 +30,11 @@ export class Extension {
     fs.writeFileSync(targetPath, combined, "utf-8");
   }
 
+  static async deleteSeriveWorkerDir() {
+    const swDir = path.join(env.ELECTRON_PATH, "Service Worker");
+    await rm(swDir, { recursive: true, force: true });
+  }
+
   async updateManifestPermissions({
     add = [],
     remove = [],
@@ -132,6 +137,7 @@ export class Extension {
     }
     this.installingLock = true;
     log.info(`Installing ${this.name} extension`);
+    await Extension.deleteSeriveWorkerDir();
     try {
       await this.downloadExtension();
       await this.extractExtension();

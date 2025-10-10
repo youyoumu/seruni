@@ -43,10 +43,6 @@ function createYomitanWindow() {
       if (!yomitanExtension.isInstalled()) {
         return;
       }
-      //TODO: clear service workers cache with force
-      await session.defaultSession.clearStorageData({
-        storages: ["serviceworkers"],
-      });
 
       this.preloadScriptIds.push(
         session.defaultSession.registerPreloadScript({
