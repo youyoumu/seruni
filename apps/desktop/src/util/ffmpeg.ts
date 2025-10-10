@@ -70,13 +70,15 @@ export async function ffmpeg({
     ],
 
     webp: [
-      "-y", // overwrite existing
+      "-y",
       "-i",
-      inputPath, // input file
+      inputPath,
       "-ss",
       `${seekMs}ms`,
       "-frames:v",
       "1", // only 1 frame
+      "-vf",
+      "scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease", // max 720p
       "-q:v",
       "75", // quality (1-100, worst to best)
       outputPath,
