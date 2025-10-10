@@ -162,6 +162,9 @@ export function createAnkiClient() {
         this.textUuidQueue[history.uuid] = promise;
       }
 
+      let savedReplayPath: string | undefined;
+      let audioStage1Path: string | undefined;
+
       try {
         // if text is already processed, reuse the media file
         if (alreadyProcessed) {
@@ -185,7 +188,6 @@ export function createAnkiClient() {
         }
 
         // save replay buffer
-        let savedReplayPath: string | undefined;
         try {
           savedReplayPath = await obsClient().saveReplayBuffer();
         } catch {
@@ -198,7 +200,6 @@ export function createAnkiClient() {
         try {
           durationSeconds = await getFileDuration(savedReplayPath);
         } catch {
-          this.rm(savedReplayPath);
           throw new Error("Failed to get duration");
         }
         const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
@@ -208,7 +209,6 @@ export function createAnkiClient() {
         );
 
         // create wav file for vad
-        let audioStage1Path: string;
         try {
           audioStage1Path = await ffmpeg({
             inputPath: savedReplayPath,
@@ -216,7 +216,6 @@ export function createAnkiClient() {
             format: "wav",
           });
         } catch {
-          this.rm(savedReplayPath);
           throw new Error("Failed to extract audio");
         }
 
@@ -230,7 +229,6 @@ export function createAnkiClient() {
             await python.runEntry([audioStage1Path]),
           );
         } catch {
-          this.rm(savedReplayPath);
           throw new Error("Failed to extract audio VAD data");
         }
         let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
@@ -250,10 +248,7 @@ export function createAnkiClient() {
               });
               return audioStage2Path;
             } catch {
-              this.rm(savedReplayPath);
               throw new Error("Failed to crop audio");
-            } finally {
-              this.rm(audioStage1Path);
             }
           }
         })();
@@ -273,11 +268,7 @@ export function createAnkiClient() {
             });
             return imagePath;
           } catch {
-            this.rm(savedReplayPath);
             throw new Error("Failed to extract image");
-          } finally {
-            this.rm(audioStage1Path);
-            this.rm(savedReplayPath);
           }
         })();
 
@@ -305,6 +296,9 @@ export function createAnkiClient() {
       } catch (e) {
         resolve(undefined);
         throw e;
+      } finally {
+        if (savedReplayPath) this.rm(savedReplayPath);
+        if (audioStage1Path) this.rm(audioStage1Path);
       }
     }
 
