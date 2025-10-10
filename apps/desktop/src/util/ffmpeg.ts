@@ -65,7 +65,7 @@ export async function ffmpeg({
       "-c:a",
       "libopus", // use the Opus codec
       "-b:a",
-      "32k", // bitrate (32 kbps is great for speech)
+      "64k", // bitrate (32 kbps is great for speech)
       outputPath,
     ],
 
