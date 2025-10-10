@@ -1,3 +1,5 @@
+import { readdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { app } from "electron";
 import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
@@ -37,6 +39,12 @@ export async function bootstrap() {
   log.debug(env, "env value");
   await AppWebsocket().registerAll();
   await prepareAllClient();
+
+  // remove everything inside temp dir
+  const files = await readdir(env.TEMP_PATH);
+  for (const file of files) {
+    rm(join(env.TEMP_PATH, file), { recursive: true });
+  }
 }
 
 bootstrap();
