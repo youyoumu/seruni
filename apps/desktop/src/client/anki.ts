@@ -13,6 +13,13 @@ import type { Status } from "./_util";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
+type TextUuidQueueResult =
+  | {
+      sentenceAudioPath: string | undefined | null;
+      picturePath: string | undefined | null;
+    }
+  | undefined;
+
 export function createAnkiClient() {
   class AnkiClient {
     client: YankiConnect | undefined;
@@ -24,14 +31,7 @@ export function createAnkiClient() {
     retryTimer: NodeJS.Timeout | null = null;
     monitorStarted = false;
     status: Status = "disconnected";
-    lastTextUuid = "";
-    lastMediaPath: {
-      sentenceAudio: string | undefined | null;
-      picture: string | undefined | null;
-    } = {
-      sentenceAudio: undefined,
-      picture: undefined,
-    };
+    textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
 
     async prepare() {
       await this.connect();
@@ -138,7 +138,7 @@ export function createAnkiClient() {
       const now = new Date();
       const history = sort(textractorClient().history)
         .desc(({ time }) => time)
-        .find(({ time, text, uuid }) => {
+        .find(({ time, uuid }) => {
           return time <= now && uuid === miningIPC().textUuid;
         });
       if (!history) {
@@ -152,142 +152,146 @@ export function createAnkiClient() {
         "Using history",
       );
 
-      // if text is the same as last time, reuse the media file
-      if (this.lastTextUuid === history.uuid) {
-        log.debug(
-          {
-            ...this.lastMediaPath,
-          },
-          "Reusing media files",
-        );
-        await this.updateNoteMedia({
-          noteId,
-          picturePath: this.lastMediaPath.picture,
-          sentenceAudioPath: this.lastMediaPath.sentenceAudio,
-        });
+      const alreadyProcessed = !!this.textUuidQueue[history.uuid];
+      const { promise, resolve } = Promise.withResolvers<TextUuidQueueResult>();
+      if (!alreadyProcessed) {
+        this.textUuidQueue[history.uuid] = promise;
+      }
 
-        await this.client?.graphical.guiEditNote({ note: noteId });
-        return;
-      } else {
+      try {
+        // if text is already processed, reuse the media file
+        if (alreadyProcessed) {
+          log.info("Trying to reuse media files");
+          const result = await this.textUuidQueue[history.uuid];
+          if (result) {
+            log.debug(
+              {
+                ...result,
+              },
+              "Reusing media files",
+            );
+            await this.updateNoteMedia({
+              noteId,
+              picturePath: result.picturePath,
+              sentenceAudioPath: result.sentenceAudioPath,
+            });
+            await this.client?.graphical.guiEditNote({ note: noteId });
+            return;
+          }
+        }
         //TODO: clear temp dir every start
-        if (this.lastMediaPath.picture)
-          unlink(this.lastMediaPath.picture).catch(() => {});
-        if (this.lastMediaPath.sentenceAudio)
-          unlink(this.lastMediaPath.sentenceAudio).catch(() => {});
-        this.lastMediaPath = {
-          sentenceAudio: undefined,
-          picture: undefined,
-        };
-      }
-      this.lastTextUuid = history.uuid;
 
-      // save replay buffer
-      let savedReplayPath: string | undefined;
-      try {
-        savedReplayPath = await obsClient().saveReplayBuffer();
-      } catch {
-        throw new Error("Failed to save replay buffer");
-      }
-
-      // calculate offset
-      const fileEnd = new Date();
-      let durationSeconds: number;
-      try {
-        durationSeconds = await getFileDuration(savedReplayPath);
-      } catch {
-        unlink(savedReplayPath).catch(() => {});
-        throw new Error("Failed to get duration");
-      }
-      const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
-      const offsetMs = Math.max(
-        0,
-        Math.floor(history.time.getTime() - fileStart.getTime()),
-      );
-
-      // create wav file for vad
-      let audioStage1Path: string;
-      try {
-        audioStage1Path = await ffmpeg({
-          inputPath: savedReplayPath,
-          seekMs: offsetMs,
-          format: "wav",
-        });
-      } catch {
-        unlink(savedReplayPath).catch(() => {});
-        throw new Error("Failed to extract audio");
-      }
-
-      // generate vad data
-      let audioStage1VadData: {
-        start: number;
-        end: number;
-      }[];
-      try {
-        audioStage1VadData = JSON.parse(
-          await python.runEntry([audioStage1Path]),
-        );
-      } catch {
-        unlink(savedReplayPath).catch(() => {});
-        throw new Error("Failed to extract audio VAD data");
-      }
-      let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
-      if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1.5) {
-        lastEnd = undefined;
-      }
-
-      // generate audio file
-      let audioStage2Path: string | null = null;
-      if (lastEnd) {
+        // save replay buffer
+        let savedReplayPath: string | undefined;
         try {
-          audioStage2Path = await ffmpeg({
-            inputPath: audioStage1Path,
-            durationMs: lastEnd * 1000,
-            format: "opus",
+          savedReplayPath = await obsClient().saveReplayBuffer();
+        } catch {
+          throw new Error("Failed to save replay buffer");
+        }
+
+        // calculate offset
+        const fileEnd = new Date();
+        let durationSeconds: number;
+        try {
+          durationSeconds = await getFileDuration(savedReplayPath);
+        } catch {
+          unlink(savedReplayPath).catch(() => {});
+          throw new Error("Failed to get duration");
+        }
+        const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
+        const offsetMs = Math.max(
+          0,
+          Math.floor(history.time.getTime() - fileStart.getTime()),
+        );
+
+        // create wav file for vad
+        let audioStage1Path: string;
+        try {
+          audioStage1Path = await ffmpeg({
+            inputPath: savedReplayPath,
+            seekMs: offsetMs,
+            format: "wav",
           });
         } catch {
           unlink(savedReplayPath).catch(() => {});
-          throw new Error("Failed to crop audio");
+          throw new Error("Failed to extract audio");
+        }
+
+        // generate vad data
+        let audioStage1VadData: {
+          start: number;
+          end: number;
+        }[];
+        try {
+          audioStage1VadData = JSON.parse(
+            await python.runEntry([audioStage1Path]),
+          );
+        } catch {
+          unlink(savedReplayPath).catch(() => {});
+          throw new Error("Failed to extract audio VAD data");
+        }
+        let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
+        if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1.5) {
+          lastEnd = undefined;
+        }
+
+        // generate audio file
+        let audioStage2Path: string | null = null;
+        if (lastEnd) {
+          try {
+            audioStage2Path = await ffmpeg({
+              inputPath: audioStage1Path,
+              durationMs: lastEnd * 1000,
+              format: "opus",
+            });
+          } catch {
+            unlink(savedReplayPath).catch(() => {});
+            throw new Error("Failed to crop audio");
+          } finally {
+            unlink(audioStage1Path).catch(() => {});
+          }
+        }
+
+        // generate image file
+        let imagePath: string;
+        try {
+          const extraSeek = Math.max(
+            0,
+            Math.floor(now.getTime() - history.time.getTime()),
+          );
+          imagePath = await ffmpeg({
+            inputPath: savedReplayPath,
+            seekMs: offsetMs + extraSeek,
+            format: "webp",
+          });
+        } catch {
+          unlink(savedReplayPath).catch(() => {});
+          throw new Error("Failed to extract image");
         } finally {
           unlink(audioStage1Path).catch(() => {});
+          unlink(savedReplayPath).catch(() => {});
         }
-      }
 
-      // generate image file
-      let imagePath: string;
-      try {
-        const extraSeek = Math.max(
-          0,
-          Math.floor(now.getTime() - history.time.getTime()),
-        );
-        imagePath = await ffmpeg({
-          inputPath: savedReplayPath,
-          seekMs: offsetMs + extraSeek,
-          format: "webp",
+        await this.updateNoteMedia({
+          noteId,
+          picturePath: imagePath,
+          sentenceAudioPath: audioStage2Path,
         });
-      } catch {
-        unlink(savedReplayPath).catch(() => {});
-        throw new Error("Failed to extract image");
-      } finally {
-        unlink(audioStage1Path).catch(() => {});
-        unlink(savedReplayPath).catch(() => {});
+
+        const noteInfo = ((await this.client?.note.notesInfo({
+          notes: [noteId],
+        })) ?? [])[0];
+        log.debug({ noteInfo }, "noteInfo");
+
+        await this.client?.graphical.guiEditNote({ note: noteId });
+        resolve({
+          sentenceAudioPath: audioStage2Path,
+          picturePath: imagePath,
+        });
+      } catch (e) {
+        resolve(undefined);
+        throw e;
       }
-
-      await this.updateNoteMedia({
-        noteId,
-        picturePath: imagePath,
-        sentenceAudioPath: audioStage2Path,
-      });
-
-      const noteInfo = ((await this.client?.note.notesInfo({
-        notes: [noteId],
-      })) ?? [])[0];
-      log.debug({ noteInfo }, "noteInfo");
-      this.lastMediaPath = {
-        sentenceAudio: audioStage2Path,
-        picture: imagePath,
-      };
-
-      await this.client?.graphical.guiEditNote({ note: noteId });
     }
 
     async updateNoteMedia({
