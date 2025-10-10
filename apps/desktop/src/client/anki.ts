@@ -179,7 +179,6 @@ export function createAnkiClient() {
             return;
           }
         }
-        //TODO: clear temp dir every start
 
         // save replay buffer
         let savedReplayPath: string | undefined;
