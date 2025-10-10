@@ -4,6 +4,7 @@ import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
+import { miningIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
@@ -129,9 +130,8 @@ export function createAnkiClient() {
       const now = new Date();
       const history = sort(textractorClient().history)
         .desc(({ time }) => time)
-        .find(({ time, text }) => {
-          //TODO: better support non latest history
-          return time <= now && true;
+        .find(({ time, text, uuid }) => {
+          return time <= now && uuid === miningIPC().textUuid;
         });
       if (!history) {
         throw new Error("Failed to find history");

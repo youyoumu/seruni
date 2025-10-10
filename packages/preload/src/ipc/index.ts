@@ -2,6 +2,7 @@ import { ipcRenderer } from "electron";
 import z from "zod";
 import { generalIPC } from "./general";
 import { logIPC } from "./log";
+import { miningIPC } from "./mining";
 import { settingsIPC } from "./settings";
 import { vnOverlayIPC } from "./vnOverlay";
 import { yomitanIPC } from "./yomitan";
@@ -9,6 +10,7 @@ import { yomitanIPC } from "./yomitan";
 export * from "./_shared";
 export * from "./general";
 export * from "./log";
+export * from "./mining";
 export * from "./settings";
 export * from "./vnOverlay";
 export * from "./yomitan";
@@ -19,6 +21,7 @@ const ipcFromRenderer = z.object({
   ...vnOverlayIPC.renderer.shape,
   ...yomitanIPC.renderer.shape,
   ...settingsIPC.renderer.shape,
+  ...miningIPC.renderer.shape,
 });
 const ipcFromRendererChannel = ipcFromRenderer.keyof();
 export type IPCFromRenderer = z.infer<typeof ipcFromRenderer>;

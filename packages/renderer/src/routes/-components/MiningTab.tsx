@@ -53,6 +53,7 @@ export function MiningTab() {
     // vnDialogues.map((text) => ({ text, uuid: crypto.randomUUID() })),
     [],
   );
+  const [textUuid, setTextUuid] = createSignal("");
   const textObservable = liveQuery(() => texthoookerDB.text.toArray());
   textObservable.subscribe({
     next: (result) => {
@@ -189,9 +190,17 @@ export function MiningTab() {
               <HStack
                 alignItems="center"
                 gap="4"
-                pb="2"
+                p="2"
                 borderColor="border.default"
                 borderBottomWidth="thin"
+                onMouseEnter={() => {
+                  ipcRenderer
+                    .invoke("mining:setTextUuid", { uuid: item.uuid })
+                    .then(({ uuid }) => {
+                      setTextUuid(uuid);
+                    });
+                }}
+                bg={item.uuid === textUuid() ? "bg.subtle" : undefined}
               >
                 {"\n"}
                 <Text as="p" fontSize="xl" flex="1">

@@ -1,38 +1,30 @@
 import { signal } from "alien-signals";
-import { ankiClient, obsClient, textractorClient } from "#/client";
 import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
-function createGeneralIPC() {
-  class GeneralIPC extends IPC()<"general"> {
-    ready = Promise.withResolvers<boolean>();
+function createMiningIPC() {
+  class MiningIPC extends IPC()<"mining"> {
+    textUuid = "";
     constructor() {
       super({
-        prefix: "general",
+        prefix: "mining",
         win: () => [mainWindow().win],
       });
     }
 
     override register() {
-      this.on("general:ready", (_) => {
-        this.ready.resolve(true);
-      });
-
-      this.handle("general:getClientStatus", async () => {
-        return {
-          anki: ankiClient().status,
-          obs: obsClient().status,
-          textractor: textractorClient().status,
-        };
+      this.handle("mining:setTextUuid", async (_, { uuid }) => {
+        this.textUuid = uuid;
+        return { uuid: this.textUuid };
       });
     }
   }
 
-  return new GeneralIPC();
+  return new MiningIPC();
 }
 
-export const generalIPC = signal(createGeneralIPC());
+export const miningIPC = signal(createMiningIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -40,9 +32,9 @@ if (import.meta.hot) {
   hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta.url, mod);
-    mod?.generalIPC().register();
+    mod?.miningIPC().register();
   });
   import.meta.hot.dispose(() => {
-    generalIPC().unregister();
+    miningIPC().unregister();
   });
 }
