@@ -38,10 +38,10 @@ export async function ffmpeg({
   const params = {
     wav: [
       "-y", // overwrite existing
-      "-i",
-      inputPath, // input file
       "-ss",
       `${seekMs}ms`,
+      "-i",
+      inputPath, // input file
       "-vn", // no video
       "-acodec",
       "pcm_s16le", // WAV codec
@@ -71,10 +71,10 @@ export async function ffmpeg({
 
     webp: [
       "-y",
-      "-i",
-      inputPath,
       "-ss",
       `${seekMs}ms`,
+      "-i",
+      inputPath,
       "-frames:v",
       "1", // only 1 frame
       "-vf",

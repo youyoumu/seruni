@@ -235,41 +235,52 @@ export function createAnkiClient() {
         }
 
         // generate audio file
-        let audioStage2Path: string | null = null;
-        if (lastEnd) {
-          try {
-            audioStage2Path = await ffmpeg({
-              inputPath: audioStage1Path,
-              durationMs: lastEnd * 1000,
-              format: "opus",
-            });
-          } catch {
-            unlink(savedReplayPath).catch(() => {});
-            throw new Error("Failed to crop audio");
-          } finally {
-            unlink(audioStage1Path).catch(() => {});
+        const audioStage2PathPromise = (async () => {
+          let audioStage2Path: string | null = null;
+          if (lastEnd) {
+            try {
+              audioStage2Path = await ffmpeg({
+                inputPath: audioStage1Path,
+                durationMs: lastEnd * 1000,
+                format: "opus",
+              });
+              return audioStage2Path;
+            } catch {
+              unlink(savedReplayPath).catch(() => {});
+              throw new Error("Failed to crop audio");
+            } finally {
+              unlink(audioStage1Path).catch(() => {});
+            }
           }
-        }
+        })();
 
         // generate image file
-        let imagePath: string;
-        try {
-          const extraSeek = Math.max(
-            0,
-            Math.floor(now.getTime() - history.time.getTime()),
-          );
-          imagePath = await ffmpeg({
-            inputPath: savedReplayPath,
-            seekMs: offsetMs + extraSeek,
-            format: "webp",
-          });
-        } catch {
-          unlink(savedReplayPath).catch(() => {});
-          throw new Error("Failed to extract image");
-        } finally {
-          unlink(audioStage1Path).catch(() => {});
-          unlink(savedReplayPath).catch(() => {});
-        }
+        const imagePathPromise = (async () => {
+          let imagePath: string;
+          try {
+            const extraSeek = Math.max(
+              0,
+              Math.floor(now.getTime() - history.time.getTime()),
+            );
+            imagePath = await ffmpeg({
+              inputPath: savedReplayPath,
+              seekMs: offsetMs + extraSeek,
+              format: "webp",
+            });
+            return imagePath;
+          } catch {
+            unlink(savedReplayPath).catch(() => {});
+            throw new Error("Failed to extract image");
+          } finally {
+            unlink(audioStage1Path).catch(() => {});
+            unlink(savedReplayPath).catch(() => {});
+          }
+        })();
+
+        const [audioStage2Path, imagePath] = await Promise.all([
+          audioStage2PathPromise,
+          imagePathPromise,
+        ]);
 
         await this.updateNoteMedia({
           noteId,
