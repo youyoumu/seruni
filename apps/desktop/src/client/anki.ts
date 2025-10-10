@@ -160,29 +160,10 @@ export function createAnkiClient() {
           },
           "Reusing media files",
         );
-        await this.client?.note.updateNoteFields({
-          note: {
-            id: noteId,
-            fields: {},
-            ...(this.lastMediaPath.picture && {
-              picture: [
-                {
-                  path: this.lastMediaPath.picture,
-                  filename: basename(this.lastMediaPath.picture),
-                  fields: [config.store.anki.pictureField],
-                },
-              ],
-            }),
-            ...(this.lastMediaPath.sentenceAudio && {
-              audio: [
-                {
-                  path: this.lastMediaPath.sentenceAudio,
-                  filename: basename(this.lastMediaPath.sentenceAudio),
-                  fields: [config.store.anki.sentenceAudioField],
-                },
-              ],
-            }),
-          },
+        await this.updateNoteMedia({
+          noteId,
+          picturePath: this.lastMediaPath.picture,
+          sentenceAudioPath: this.lastMediaPath.sentenceAudio,
         });
 
         await this.client?.graphical.guiEditNote({ note: noteId });
@@ -291,27 +272,10 @@ export function createAnkiClient() {
         unlink(savedReplayPath).catch(() => {});
       }
 
-      await this.client?.note.updateNoteFields({
-        note: {
-          id: noteId,
-          fields: {},
-          picture: [
-            {
-              path: imagePath,
-              filename: basename(imagePath),
-              fields: [config.store.anki.pictureField],
-            },
-          ],
-          ...(audioStage2Path && {
-            audio: [
-              {
-                path: audioStage2Path,
-                filename: basename(audioStage2Path),
-                fields: [config.store.anki.sentenceAudioField],
-              },
-            ],
-          }),
-        },
+      await this.updateNoteMedia({
+        noteId,
+        picturePath: imagePath,
+        sentenceAudioPath: audioStage2Path,
       });
 
       const noteInfo = ((await this.client?.note.notesInfo({
@@ -324,6 +288,41 @@ export function createAnkiClient() {
       };
 
       await this.client?.graphical.guiEditNote({ note: noteId });
+    }
+
+    async updateNoteMedia({
+      noteId,
+      picturePath,
+      sentenceAudioPath,
+    }: {
+      noteId: number;
+      picturePath: string | undefined | null;
+      sentenceAudioPath: string | undefined | null;
+    }) {
+      await this.client?.note.updateNoteFields({
+        note: {
+          id: noteId,
+          fields: {},
+          ...(picturePath && {
+            picture: [
+              {
+                path: picturePath,
+                filename: basename(picturePath),
+                fields: [config.store.anki.pictureField],
+              },
+            ],
+          }),
+          ...(sentenceAudioPath && {
+            audio: [
+              {
+                path: sentenceAudioPath,
+                filename: basename(sentenceAudioPath),
+                fields: [config.store.anki.sentenceAudioField],
+              },
+            ],
+          }),
+        },
+      });
     }
   }
 
