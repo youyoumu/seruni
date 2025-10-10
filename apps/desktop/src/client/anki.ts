@@ -4,6 +4,7 @@ import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
+import { env } from "#/env";
 import { miningIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
@@ -307,7 +308,7 @@ export function createAnkiClient() {
       picturePath: string | undefined | null;
       sentenceAudioPath: string | undefined | null;
     }) {
-      await this.client?.note.updateNoteFields({
+      await this.client?.note.updateNote({
         note: {
           id: noteId,
           fields: {},
@@ -329,6 +330,7 @@ export function createAnkiClient() {
               },
             ],
           }),
+          tags: [env.APP_NAME],
         },
       });
     }

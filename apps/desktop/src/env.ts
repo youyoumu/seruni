@@ -103,6 +103,7 @@ async function createEnv_() {
   });
 
   const constant = {
+    APP_NAME: "Seruni",
     ELECTRON_PATH: app.getPath("userData"),
     USER_DATA_PATH,
     CACHE_PATH,
