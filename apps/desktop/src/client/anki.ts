@@ -24,6 +24,14 @@ export function createAnkiClient() {
     retryTimer: NodeJS.Timeout | null = null;
     monitorStarted = false;
     status: Status = "disconnected";
+    lastTextUuid = "";
+    lastMediaPath: {
+      sentenceAudio: string | undefined | null;
+      picture: string | undefined | null;
+    } = {
+      sentenceAudio: undefined,
+      picture: undefined,
+    };
 
     async prepare() {
       await this.connect();
@@ -144,6 +152,54 @@ export function createAnkiClient() {
         "Using history",
       );
 
+      // if text is the same as last time, reuse the media file
+      if (this.lastTextUuid === history.uuid) {
+        log.debug(
+          {
+            ...this.lastMediaPath,
+          },
+          "Reusing media files",
+        );
+        await this.client?.note.updateNoteFields({
+          note: {
+            id: noteId,
+            fields: {},
+            ...(this.lastMediaPath.picture && {
+              picture: [
+                {
+                  path: this.lastMediaPath.picture,
+                  filename: basename(this.lastMediaPath.picture),
+                  fields: [config.store.anki.pictureField],
+                },
+              ],
+            }),
+            ...(this.lastMediaPath.sentenceAudio && {
+              audio: [
+                {
+                  path: this.lastMediaPath.sentenceAudio,
+                  filename: basename(this.lastMediaPath.sentenceAudio),
+                  fields: [config.store.anki.sentenceAudioField],
+                },
+              ],
+            }),
+          },
+        });
+
+        await this.client?.graphical.guiEditNote({ note: noteId });
+        return;
+      } else {
+        //TODO: clear temp dir every start
+        if (this.lastMediaPath.picture)
+          unlink(this.lastMediaPath.picture).catch(() => {});
+        if (this.lastMediaPath.sentenceAudio)
+          unlink(this.lastMediaPath.sentenceAudio).catch(() => {});
+        this.lastMediaPath = {
+          sentenceAudio: undefined,
+          picture: undefined,
+        };
+      }
+      this.lastTextUuid = history.uuid;
+
       // save replay buffer
       let savedReplayPath: string | undefined;
       try {
@@ -166,11 +222,6 @@ export function createAnkiClient() {
         0,
         Math.floor(history.time.getTime() - fileStart.getTime()),
       );
-
-      const noteInfo = ((await this.client?.note.notesInfo({
-        notes: [noteId],
-      })) ?? [])[0];
-      log.debug({ noteInfo }, "noteInfo");
 
       // create wav file for vad
       let audioStage1Path: string;
@@ -263,8 +314,14 @@ export function createAnkiClient() {
         },
       });
 
-      unlink(imagePath).catch(() => {});
-      if (audioStage2Path) unlink(audioStage2Path).catch(() => {});
+      const noteInfo = ((await this.client?.note.notesInfo({
+        notes: [noteId],
+      })) ?? [])[0];
+      log.debug({ noteInfo }, "noteInfo");
+      this.lastMediaPath = {
+        sentenceAudio: audioStage2Path,
+        picture: imagePath,
+      };
 
       await this.client?.graphical.guiEditNote({ note: noteId });
     }
