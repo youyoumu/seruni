@@ -237,16 +237,14 @@ export function createAnkiClient() {
         }
 
         // generate audio file
-        const audioStage2PathPromise = (async () => {
-          let audioStage2Path: string | null = null;
+        const audioStage2PathPromise = (() => {
           if (lastEnd) {
             try {
-              audioStage2Path = await ffmpeg({
+              return ffmpeg({
                 inputPath: audioStage1Path,
                 durationMs: lastEnd * 1000,
                 format: "opus",
               });
-              return audioStage2Path;
             } catch (e) {
               throw new Error("Failed to crop audio", { cause: e });
             }
@@ -254,19 +252,17 @@ export function createAnkiClient() {
         })();
 
         // generate image file
-        const imagePathPromise = (async () => {
-          let imagePath: string;
+        const imagePathPromise = (() => {
           try {
             const extraSeek = Math.max(
               0,
               Math.floor(now.getTime() - history.time.getTime()),
             );
-            imagePath = await ffmpeg({
+            return ffmpeg({
               inputPath: savedReplayPath,
               seekMs: offsetMs + extraSeek,
               format: "webp",
             });
-            return imagePath;
           } catch (e) {
             throw new Error("Failed to extract image", { cause: e });
           }
