@@ -1,4 +1,4 @@
-import { unlink } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { basename } from "node:path";
 import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
@@ -133,6 +133,10 @@ export function createAnkiClient() {
       this.reconnecting = false;
     }
 
+    rm(path: string) {
+      rm(path, { force: true });
+    }
+
     async handleNewNote(noteId: number) {
       //get history
       const now = new Date();
@@ -194,7 +198,7 @@ export function createAnkiClient() {
         try {
           durationSeconds = await getFileDuration(savedReplayPath);
         } catch {
-          unlink(savedReplayPath).catch(() => {});
+          this.rm(savedReplayPath);
           throw new Error("Failed to get duration");
         }
         const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
@@ -212,7 +216,7 @@ export function createAnkiClient() {
             format: "wav",
           });
         } catch {
-          unlink(savedReplayPath).catch(() => {});
+          this.rm(savedReplayPath);
           throw new Error("Failed to extract audio");
         }
 
@@ -226,7 +230,7 @@ export function createAnkiClient() {
             await python.runEntry([audioStage1Path]),
           );
         } catch {
-          unlink(savedReplayPath).catch(() => {});
+          this.rm(savedReplayPath);
           throw new Error("Failed to extract audio VAD data");
         }
         let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
@@ -246,10 +250,10 @@ export function createAnkiClient() {
               });
               return audioStage2Path;
             } catch {
-              unlink(savedReplayPath).catch(() => {});
+              this.rm(savedReplayPath);
               throw new Error("Failed to crop audio");
             } finally {
-              unlink(audioStage1Path).catch(() => {});
+              this.rm(audioStage1Path);
             }
           }
         })();
@@ -269,11 +273,11 @@ export function createAnkiClient() {
             });
             return imagePath;
           } catch {
-            unlink(savedReplayPath).catch(() => {});
+            this.rm(savedReplayPath);
             throw new Error("Failed to extract image");
           } finally {
-            unlink(audioStage1Path).catch(() => {});
-            unlink(savedReplayPath).catch(() => {});
+            this.rm(audioStage1Path);
+            this.rm(savedReplayPath);
           }
         })();
 
