@@ -125,7 +125,7 @@ export function createAnkiClient() {
                   return {
                     success: {
                       title: "Note Has Been Updated",
-                      description: `Updated note with id: ${lastAddedNote}.${result?.reuseMedia ? " Reusing media files from previous note." : undefined}`,
+                      description: `Updated note with id: ${lastAddedNote}.${result?.reuseMedia ? " Reusing media files from previous note." : ""}`,
                     },
                   };
                 })(),
@@ -331,7 +331,7 @@ export function createAnkiClient() {
       picturePath: string | undefined | null;
       sentenceAudioPath: string | undefined | null;
     }) {
-      await this.client?.note.updateNote({
+      await this.client?.note.updateNoteFields({
         note: {
           id: noteId,
           fields: {},
@@ -353,8 +353,11 @@ export function createAnkiClient() {
               },
             ],
           }),
-          tags: [env.APP_NAME],
         },
+      });
+      await this.client?.note.addTags({
+        notes: [noteId],
+        tags: env.APP_NAME,
       });
     }
   }
