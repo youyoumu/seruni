@@ -111,14 +111,40 @@ export function HomeTab() {
 
         <Button
           onClick={() => {
-            appToaster.info({
-              title: "Info",
-              description: "This is an info toast.",
-            });
+            // appToaster.create({
+            //   title: "Info",
+            //   description: "This is an info toast.",
+            //   action: {
+            //     label: "Action",
+            //     onClick: () => {
+            //       console.log("clicked");
+            //     },
+            //   },
+            //   type: "loading",
+            //   // duration: Infinity,
+            // });
+            appToaster.promise(
+              new Promise((resolve, reject) => setTimeout(resolve, 1000)),
+              {
+                loading: {
+                  title: "Loading",
+                  description: "This is a loading toast.",
+                },
+                success: {
+                  title: "Success",
+                  description: "This is a success toast.",
+                },
+                error: {
+                  title: "Error",
+                  description: "This is an error toast.",
+                },
+              },
+            );
           }}
         >
           Toast
         </Button>
+
         <Sidebar />
       </HStack>
     </Stack>

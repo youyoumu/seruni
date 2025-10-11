@@ -1,8 +1,28 @@
-import { createEffect, createSignal, For, onMount } from "solid-js";
-import { css } from "styled-system/css";
-import { HStack } from "styled-system/jsx";
+import {
+  CheckIcon,
+  InfoIcon,
+  OctagonXIcon,
+  ShieldAlertIcon,
+  XIcon,
+} from "lucide-solid";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Match,
+  onMount,
+  Switch,
+} from "solid-js";
+import { css, cva } from "styled-system/css";
+import { HStack, Stack } from "styled-system/jsx";
+import { Button } from "#/components/ui/button";
+import { Icon } from "#/components/ui/icon";
+import { IconButton } from "#/components/ui/icon-button";
+import { Spinner } from "#/components/ui/spinner";
 import { Tabs } from "#/components/ui/tabs";
-import { AppToaster } from "./AppToaster";
+import { Toast } from "#/components/ui/toast";
+import { appToaster, type ToastType } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
@@ -101,5 +121,99 @@ export function Page() {
       </Tabs.Root>
       <AppToaster />
     </>
+  );
+}
+
+const toasterRoot = cva({
+  base: {
+    borderLeftWidth: "medium",
+  },
+  variants: {
+    type: {
+      info: {
+        borderColor: "fg.default",
+      },
+      error: {
+        borderColor: "fg.error",
+      },
+      warning: {
+        borderColor: "yellow.light.a10",
+      },
+      success: {
+        borderColor: "grass.dark.a10",
+      },
+      loading: {
+        borderColor: "fg.subtle",
+      },
+    },
+  },
+});
+
+export function AppToaster() {
+  return (
+    <Toast.Toaster toaster={appToaster}>
+      {(toast) => {
+        const type = createMemo(() => toast().type) as () => ToastType;
+        return (
+          <Toast.Root class={toasterRoot({ type: type() })}>
+            <HStack>
+              <Switch>
+                <Match when={type() === "info"}>
+                  <Icon asChild={(props) => <InfoIcon {...props()} />} />
+                </Match>
+
+                <Match when={type() === "error"}>
+                  <Icon
+                    class={css({ color: "fg.error" })}
+                    asChild={(props) => <OctagonXIcon {...props()} />}
+                  />
+                </Match>
+
+                <Match when={type() === "warning"}>
+                  <Icon
+                    class={css({ color: "yellow.dark.a10" })}
+                    asChild={(props) => <ShieldAlertIcon {...props()} />}
+                  />
+                </Match>
+
+                <Match when={type() === "success"}>
+                  <Icon
+                    class={css({ color: "grass.dark.a10" })}
+                    asChild={(props) => <CheckIcon {...props()} />}
+                  />
+                </Match>
+
+                <Match when={type() === "loading"}>
+                  <Icon
+                    asChild={(props) => (
+                      <Spinner borderColor="fg.subtle" {...props()} />
+                    )}
+                  />
+                </Match>
+              </Switch>
+
+              <Stack gap="0" alignItems="start">
+                <Toast.Title>{toast().title}</Toast.Title>
+                <Toast.Description>{toast().description}</Toast.Description>
+                <Toast.ActionTrigger
+                  asChild={(actionProps) => (
+                    <Button {...actionProps()} variant="link" size="sm">
+                      {toast().action?.label}
+                    </Button>
+                  )}
+                />
+              </Stack>
+            </HStack>
+            <Toast.CloseTrigger
+              asChild={(closeProps) => (
+                <IconButton {...closeProps()} size="sm" variant="link">
+                  <XIcon />
+                </IconButton>
+              )}
+            />
+          </Toast.Root>
+        );
+      }}
+    </Toast.Toaster>
   );
 }
