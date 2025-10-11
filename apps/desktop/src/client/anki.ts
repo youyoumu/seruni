@@ -121,11 +121,11 @@ export function createAnkiClient() {
 
               logIPC().sendToastPromise(
                 (async () => {
-                  await this.handleNewNote(lastAddedNote);
+                  const result = await this.handleNewNote(lastAddedNote);
                   return {
                     success: {
                       title: "Note Has Been Updated",
-                      description: `Updated note with id: ${lastAddedNote}.`,
+                      description: `Updated note with id: ${lastAddedNote}.${result?.reuseMedia ? " Reusing media files from previous note." : undefined}`,
                     },
                   };
                 })(),
@@ -210,7 +210,9 @@ export function createAnkiClient() {
               sentenceAudioPath: result.sentenceAudioPath,
             });
             await this.client?.graphical.guiEditNote({ note: noteId });
-            return;
+            return {
+              reuseMedia: true,
+            };
           }
         }
 
