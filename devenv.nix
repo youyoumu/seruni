@@ -40,6 +40,7 @@ in
   packages = [
     fhs
     nix-electron
+    pkgs-unstable.graphviz
   ];
   languages.javascript.enable = true;
   languages.javascript.package = pkgs-unstable.nodejs_22;

@@ -53,3 +53,4 @@ __pycache__
 
 .release
 python.egg-info
+.graphviz.*.html

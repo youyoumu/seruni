@@ -10,3 +10,6 @@ mod exec './justfiles/exec.just'
 
 devenv:
     devenv shell -v
+
+graph task:
+    pnpx turbo run {{ task }} --graph .graphviz.{{ task }}.html
