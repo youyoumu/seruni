@@ -5,7 +5,7 @@ import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { env } from "#/env";
-import { miningIPC } from "#/ipc";
+import { logIPC, miningIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
@@ -113,7 +113,20 @@ export function createAnkiClient() {
           ) {
             this.lastAddedNote = lastAddedNote;
             try {
-              this.handleNewNote(lastAddedNote);
+              logIPC().sendToastPromise(this.handleNewNote(lastAddedNote), {
+                loading: {
+                  title: "Processing New Note...",
+                  description: `Detected new note with id: ${lastAddedNote}.`,
+                },
+                success: {
+                  title: "Note Has Been Updated",
+                  description: `Updated note with id: ${lastAddedNote}.`,
+                },
+                error: {
+                  title: "Error",
+                  description: "Failed to process new note",
+                },
+              });
             } catch (e) {
               log.error({ error: e }, "Failed to handle new note");
             }
