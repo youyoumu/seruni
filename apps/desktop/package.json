@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production ${ELECTRON_BIN:-electron} --ozone-platform=wayland dist | roarr",
     "build": "vite build",
     "dev": "node ./script/dev/dev.ts",
-    "package": "node ./script/packager.ts",
+    "package": "node ./script/package.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

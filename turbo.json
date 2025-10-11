@@ -17,6 +17,9 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "package": {
+      "dependsOn": ["desktop#build", "^package"]
     }
   }
 }

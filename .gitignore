@@ -51,5 +51,5 @@ devenv.local.nix
 __pycache__
 *.wav
 
-release
+.release
 python.egg-info

@@ -13,7 +13,7 @@
       "!**/dist",
       "!**/routeTree.gen.ts",
       "!**/.turbo",
-      "!**/release",
+      "!**/.release",
       "!**/.userData",
       "!**/.venv"
     ]
