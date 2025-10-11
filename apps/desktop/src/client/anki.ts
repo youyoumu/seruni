@@ -113,20 +113,33 @@ export function createAnkiClient() {
           ) {
             this.lastAddedNote = lastAddedNote;
             try {
-              logIPC().sendToastPromise(this.handleNewNote(lastAddedNote), {
-                loading: {
-                  title: "Processing New Note...",
-                  description: `Detected new note with id: ${lastAddedNote}.`,
+              const noteInfo = ((await this.client?.note.notesInfo({
+                notes: [lastAddedNote],
+              })) ?? [])[0];
+              log.debug({ noteInfo }, "noteInfo");
+              //TODO: display note info on toast
+
+              logIPC().sendToastPromise(
+                (async () => {
+                  await this.handleNewNote(lastAddedNote);
+                  return {
+                    success: {
+                      title: "Note Has Been Updated",
+                      description: `Updated note with id: ${lastAddedNote}.`,
+                    },
+                  };
+                })(),
+                {
+                  loading: {
+                    title: "Processing New Note...",
+                    description: `Detected new note with id: ${lastAddedNote}.`,
+                  },
+                  error: {
+                    title: "Error",
+                    description: "Failed to process new note",
+                  },
                 },
-                success: {
-                  title: "Note Has Been Updated",
-                  description: `Updated note with id: ${lastAddedNote}.`,
-                },
-                error: {
-                  title: "Error",
-                  description: "Failed to process new note",
-                },
-              });
+              );
             } catch (e) {
               log.error({ error: e }, "Failed to handle new note");
             }
@@ -292,11 +305,6 @@ export function createAnkiClient() {
           picturePath: imagePath,
           sentenceAudioPath: audioStage2Path,
         });
-
-        const noteInfo = ((await this.client?.note.notesInfo({
-          notes: [noteId],
-        })) ?? [])[0];
-        log.debug({ noteInfo }, "noteInfo");
 
         await this.client?.graphical.guiEditNote({ note: noteId });
         resolve({

@@ -1,3 +1,4 @@
+import type { ToastPromiseOptions } from "@repo/preload/ipc";
 import {
   CheckIcon,
   InfoIcon,
@@ -159,12 +160,18 @@ export function AppToaster() {
       });
     });
 
-    ipcRenderer.on("log:toastPromise", ({ loading, success, error, uuid }) => {
-      appToaster.promise(ipcRenderer.invoke("log:toastPromise", { uuid }), {
-        loading,
-        success,
-        error,
-      });
+    ipcRenderer.on("log:toastPromise", ({ loading, error, uuid }) => {
+      let result: Omit<Omit<ToastPromiseOptions, "loading">, "error">;
+      appToaster.promise(
+        async () => {
+          result = await ipcRenderer.invoke("log:toastPromise", { uuid });
+        },
+        {
+          loading,
+          error,
+          success: () => result.success,
+        },
+      );
     });
   });
 

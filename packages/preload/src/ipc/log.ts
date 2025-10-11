@@ -1,5 +1,22 @@
 import z from "zod";
 
+const toastPromiseOptions = z.object({
+  loading: z.object({
+    title: z.string(),
+    description: z.string(),
+  }),
+  success: z.object({
+    title: z.string(),
+    description: z.string(),
+  }),
+  error: z.object({
+    title: z.string(),
+    description: z.string(),
+  }),
+});
+
+export type ToastPromiseOptions = z.infer<typeof toastPromiseOptions>;
+
 export const logIPC = {
   main: z.object({
     "log:send": z.object({
@@ -28,18 +45,8 @@ export const logIPC = {
       input: z.tuple([
         z.object({
           uuid: z.string(),
-          loading: z.object({
-            title: z.string(),
-            description: z.string(),
-          }),
-          success: z.object({
-            title: z.string(),
-            description: z.string(),
-          }),
-          error: z.object({
-            title: z.string(),
-            description: z.string(),
-          }),
+          loading: toastPromiseOptions.shape.loading,
+          error: toastPromiseOptions.shape.error,
         }),
       ]),
       output: z.void(),
@@ -53,7 +60,9 @@ export const logIPC = {
           uuid: z.string(),
         }),
       ]),
-      output: z.void(),
+      output: z.object({
+        success: toastPromiseOptions.shape.success,
+      }),
     }),
   }),
 };

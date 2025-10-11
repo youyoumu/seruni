@@ -1,11 +1,17 @@
+import type { ToastPromiseOptions } from "@repo/preload/ipc";
 import { signal } from "alien-signals";
 import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
+type ToastPromiseResultOptions = Omit<
+  Omit<ToastPromiseOptions, "loading">,
+  "error"
+>;
+
 function createLogIPC() {
   class LogIPC extends IPC()<"log"> {
-    toastPromise: Record<string, Promise<void>> = {};
+    toastPromise: Record<string, Promise<ToastPromiseResultOptions>> = {};
     constructor() {
       super({
         prefix: "log",
@@ -16,27 +22,24 @@ function createLogIPC() {
     override register() {
       this.handle("log:toastPromise", async (_, { uuid }) => {
         if (this.toastPromise[uuid]) {
-          await this.toastPromise[uuid];
+          return await this.toastPromise[uuid];
         }
+        return {
+          success: {
+            title: "Invalid Toast Promise UUID",
+            description: "Invalid Toast Promise UUID",
+          },
+          error: {
+            title: "Invalid Toast Promise UUID",
+            description: "Invalid Toast Promise UUID",
+          },
+        };
       });
     }
 
     sendToastPromise(
-      promise: Promise<void>,
-      toast: {
-        loading: {
-          title: string;
-          description: string;
-        };
-        success: {
-          title: string;
-          description: string;
-        };
-        error: {
-          title: string;
-          description: string;
-        };
-      },
+      promise: Promise<ToastPromiseResultOptions>,
+      toast: Omit<ToastPromiseOptions, "success">,
     ) {
       const uuid = crypto.randomUUID();
       this.toastPromise[uuid] = promise;
