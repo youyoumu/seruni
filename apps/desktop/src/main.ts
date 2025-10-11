@@ -4,7 +4,7 @@ import { app } from "electron";
 import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
 import { serveHttp } from "./hono/main";
-import { IPC } from "./ipc";
+import { IPC, logIPC } from "./ipc";
 import { generalIPC } from "./ipc/general";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";

@@ -22,6 +22,7 @@ const ipcFromRenderer = z.object({
   ...yomitanIPC.renderer.shape,
   ...settingsIPC.renderer.shape,
   ...miningIPC.renderer.shape,
+  ...logIPC.renderer.shape,
 });
 const ipcFromRendererChannel = ipcFromRenderer.keyof();
 export type IPCFromRenderer = z.infer<typeof ipcFromRenderer>;

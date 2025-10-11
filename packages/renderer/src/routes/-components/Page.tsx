@@ -150,6 +150,24 @@ const toasterRoot = cva({
 });
 
 export function AppToaster() {
+  onMount(() => {
+    ipcRenderer.on("log:toast", ({ title, description, type }) => {
+      appToaster.create({
+        title,
+        description,
+        type,
+      });
+    });
+
+    ipcRenderer.on("log:toastPromise", ({ loading, success, error, uuid }) => {
+      appToaster.promise(ipcRenderer.invoke("log:toastPromise", { uuid }), {
+        loading,
+        success,
+        error,
+      });
+    });
+  });
+
   return (
     <Toast.Toaster toaster={appToaster}>
       {(toast) => {

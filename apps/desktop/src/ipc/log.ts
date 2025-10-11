@@ -5,10 +5,44 @@ import { IPC } from "./base";
 
 function createLogIPC() {
   class LogIPC extends IPC()<"log"> {
+    toastPromise: Record<string, Promise<void>> = {};
     constructor() {
       super({
         prefix: "log",
         win: () => [mainWindow().win],
+      });
+    }
+
+    override register() {
+      this.handle("log:toastPromise", async (_, { uuid }) => {
+        if (this.toastPromise[uuid]) {
+          await this.toastPromise[uuid];
+        }
+      });
+    }
+
+    sendToastPromise(
+      promise: Promise<void>,
+      toast: {
+        loading: {
+          title: string;
+          description: string;
+        };
+        success: {
+          title: string;
+          description: string;
+        };
+        error: {
+          title: string;
+          description: string;
+        };
+      },
+    ) {
+      const uuid = crypto.randomUUID();
+      this.toastPromise[uuid] = promise;
+      this.send("log:toastPromise", {
+        uuid,
+        ...toast,
       });
     }
   }
