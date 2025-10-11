@@ -12,7 +12,10 @@
       "!.devenv",
       "!**/dist",
       "!**/routeTree.gen.ts",
-      "!**/.turbo"
+      "!**/.turbo",
+      "!**/release",
+      "!**/.userData",
+      "!**/.venv"
     ]
   },
   "formatter": {
