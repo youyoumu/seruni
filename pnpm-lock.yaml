@@ -188,6 +188,9 @@ importers:
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
+      fast-sort:
+        specifier: ^3.4.1
+        version: 3.4.1
       json-stringify-pretty-compact:
         specifier: ^4.0.0
         version: 4.0.0

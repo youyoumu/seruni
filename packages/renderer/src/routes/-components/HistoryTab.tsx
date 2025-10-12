@@ -1,4 +1,6 @@
 import type { AnkiHistory } from "@repo/preload/ipc";
+import { format, formatRelative } from "date-fns";
+import { sort } from "fast-sort";
 import { PauseIcon, PlayIcon } from "lucide-solid";
 import {
   createEffect,
@@ -31,7 +33,7 @@ export function HistoryTab() {
   createEffect(async () => {
     if (store.client.anki.status === "connected") {
       const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
-      setHistory(data);
+      setHistory(sort(data).desc((item) => item.id));
     }
   });
 
@@ -46,6 +48,7 @@ export function HistoryTab() {
       >
         <For each={history()}>
           {(item) => {
+            const time = formatRelative(new Date(item.id), new Date());
             return (
               <Stack
                 borderColor="border.default"
@@ -67,6 +70,9 @@ export function HistoryTab() {
                     h="full"
                     justifyContent="center"
                   >
+                    <Text size="xs" color="fg.muted">
+                      {time}
+                    </Text>
                     {/* TODO: support sentence card */}
                     <Text size="6xl">{item.word}</Text>
                     <Show when={item.sentenceAudioPath}>
