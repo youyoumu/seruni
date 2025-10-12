@@ -1,100 +1,86 @@
 import { ZapIcon, ZapOffIcon } from "lucide-solid";
-import {
-  type Accessor,
-  createEffect,
-  createSignal,
-  onCleanup,
-  onMount,
-} from "solid-js";
+import { createEffect, Match, onCleanup, onMount, Switch } from "solid-js";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
+import { type ClientStatus, setStore, store } from "#/lib/store";
 import { appToaster } from "./AppToaster";
-import { NotificationHistory } from "./NotificationHistory";
 
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-type Status = "connected" | "disconnected" | "connecting";
-
 export function HomeTab() {
-  const [ankiStatus, setAnkiStatus] = createSignal<Status>("disconnected");
-  const [obsStatus, setObsStatus] = createSignal<Status>("disconnected");
-  const [textractorStatus, setTextractorStatus] =
-    createSignal<Status>("disconnected");
-
   onMount(() => {
     const id = setInterval(() => {
       ipcRenderer.invoke("general:getClientStatus").then((status) => {
-        setAnkiStatus(status.anki);
-        setObsStatus(status.obs);
-        setTextractorStatus(status.textractor);
+        setStore("client", "anki", "status", status.anki);
+        setStore("client", "obs", "status", status.obs);
+        setStore("client", "textractor", "status", status.textractor);
       });
     }, 1000);
     onCleanup(() => clearInterval(id));
   });
 
-  createEffect(() => {
-    // console.log("ankiStatus", ankiStatus());
-  });
+  createEffect(() => {});
 
-  function icon(signal: Accessor<Status>) {
-    switch (signal()) {
-      case "connected":
-        return (
+  function Icon(props: { status: ClientStatus }) {
+    return (
+      <Switch fallback={null}>
+        <Match when={props.status === "connected"}>
           <Alert.Icon
             color="colorPalette.default"
             asChild={(iconProps) => <ZapIcon {...iconProps()} />}
           />
-        );
-      case "disconnected":
-        return (
+        </Match>
+
+        <Match when={props.status === "disconnected"}>
           <Alert.Icon
             color="fg.error"
             asChild={(iconProps) => <ZapOffIcon {...iconProps()} />}
           />
-        );
-      case "connecting":
-        return (
+        </Match>
+
+        <Match when={props.status === "connecting"}>
           <Alert.Icon
             borderColor="colorPalette.subtle"
             asChild={(iconProps) => <Spinner {...iconProps()} />}
           />
-        );
-    }
+        </Match>
+      </Switch>
+    );
   }
 
   return (
     <Stack gap="4" maxW="8xl" mx="auto">
       <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Alert.Root>
-          {icon(ankiStatus)}
+          <Icon status={store.client.anki.status} />
           <Alert.Content>
             <Alert.Title>Anki</Alert.Title>
             <Alert.Description>
-              Status: {capitalize(ankiStatus())}
+              Status: {capitalize(store.client.anki.status)}
             </Alert.Description>
           </Alert.Content>
         </Alert.Root>
 
         <Alert.Root>
-          {icon(obsStatus)}
+          <Icon status={store.client.obs.status} />
           <Alert.Content>
             <Alert.Title>OBS</Alert.Title>
             <Alert.Description>
-              Status: {capitalize(obsStatus())}
+              Status: {capitalize(store.client.obs.status)}
             </Alert.Description>
           </Alert.Content>
         </Alert.Root>
 
         <Alert.Root>
-          {icon(textractorStatus)}
+          <Icon status={store.client.obs.status} />
           <Alert.Content>
             <Alert.Title>Textractor</Alert.Title>
             <Alert.Description>
-              Status: {capitalize(textractorStatus())}
+              Status: {capitalize(store.client.obs.status)}
             </Alert.Description>
           </Alert.Content>
         </Alert.Root>
@@ -144,8 +130,6 @@ export function HomeTab() {
         >
           Toast
         </Button>
-
-        <NotificationHistory />
       </HStack>
     </Stack>
   );

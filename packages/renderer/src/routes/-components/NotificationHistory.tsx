@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-solid";
-import { For, Show } from "solid-js";
+import { type Component, For, Show } from "solid-js";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
@@ -39,13 +39,16 @@ const notificationCard = cva({
   },
 });
 
-export function NotificationHistory(props: Drawer.RootProps) {
+export function NotificationHistory(
+  props: Drawer.RootProps & {
+    trigger: Component;
+  },
+) {
+  const Trigger = props.trigger;
   return (
     <Drawer.Root {...props}>
       <Drawer.Trigger
-        asChild={(triggerProps) => (
-          <Button {...triggerProps()}>Open Drawer</Button>
-        )}
+        asChild={(triggerProps) => <Trigger {...triggerProps()}></Trigger>}
       />
       <Drawer.Backdrop />
       <Drawer.Positioner>
