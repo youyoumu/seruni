@@ -1,4 +1,5 @@
 import { signal } from "alien-signals";
+import { obsClient } from "#/client";
 import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
@@ -17,6 +18,19 @@ function createMiningIPC() {
       this.handle("mining:setTextUuid", async (_, { uuid }) => {
         this.textUuid = uuid;
         return { uuid: this.textUuid };
+      });
+      this.handle("mining:getSourceScreenshot", async () => {
+        const currentProgramScene = await obsClient()
+          .client?.call("GetCurrentProgramScene")
+          .catch(() => {});
+        const sourceScreenshot = await obsClient()
+          .client?.call("GetSourceScreenshot", {
+            imageFormat: "jpeg",
+            sourceUuid: currentProgramScene?.sceneUuid,
+          })
+          .catch(() => {});
+
+        return { image: sourceScreenshot?.imageData ?? null };
       });
     }
   }

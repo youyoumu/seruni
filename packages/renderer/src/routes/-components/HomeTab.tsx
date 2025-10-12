@@ -1,9 +1,19 @@
-import { ZapIcon, ZapOffIcon } from "lucide-solid";
-import { createEffect, Match, onCleanup, onMount, Switch } from "solid-js";
+import { ImageOffIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
+import {
+  createEffect,
+  createSignal,
+  Match,
+  onCleanup,
+  onMount,
+  Switch,
+} from "solid-js";
+import { css } from "styled-system/css";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
+import { Heading } from "#/components/ui/heading";
 import { Spinner } from "#/components/ui/spinner";
+import { Icon } from "#/components/ui/styled/icon";
 import { type ClientStatus, setStore, store } from "#/lib/store";
 import { appToaster } from "./AppToaster";
 
@@ -12,6 +22,9 @@ function capitalize(str: string) {
 }
 
 export function HomeTab() {
+  const [sourceScreenshot, setSourceScreenshot] = createSignal<string | null>(
+    null,
+  );
   onMount(() => {
     const id = setInterval(() => {
       ipcRenderer.invoke("general:getClientStatus").then((status) => {
@@ -20,12 +33,22 @@ export function HomeTab() {
         setStore("client", "textractor", "status", status.textractor);
       });
     }, 1000);
-    onCleanup(() => clearInterval(id));
+
+    const id2 = setInterval(() => {
+      ipcRenderer.invoke("mining:getSourceScreenshot").then(({ image }) => {
+        setSourceScreenshot(image);
+      });
+    }, 8000);
+
+    onCleanup(() => {
+      clearInterval(id);
+      clearInterval(id2);
+    });
   });
 
   createEffect(() => {});
 
-  function Icon(props: { status: ClientStatus }) {
+  function StatusIcon(props: { status: ClientStatus }) {
     return (
       <Switch fallback={null}>
         <Match when={props.status === "connected"}>
@@ -56,7 +79,7 @@ export function HomeTab() {
     <Stack gap="4" maxW="8xl" mx="auto">
       <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Alert.Root>
-          <Icon status={store.client.anki.status} />
+          <StatusIcon status={store.client.anki.status} />
           <Alert.Content>
             <Alert.Title>Anki</Alert.Title>
             <Alert.Description>
@@ -66,7 +89,7 @@ export function HomeTab() {
         </Alert.Root>
 
         <Alert.Root>
-          <Icon status={store.client.obs.status} />
+          <StatusIcon status={store.client.obs.status} />
           <Alert.Content>
             <Alert.Title>OBS</Alert.Title>
             <Alert.Description>
@@ -76,15 +99,51 @@ export function HomeTab() {
         </Alert.Root>
 
         <Alert.Root>
-          <Icon status={store.client.obs.status} />
+          <StatusIcon status={store.client.textractor.status} />
           <Alert.Content>
             <Alert.Title>Textractor</Alert.Title>
             <Alert.Description>
-              Status: {capitalize(store.client.obs.status)}
+              Status: {capitalize(store.client.textractor.status)}
             </Alert.Description>
           </Alert.Content>
         </Alert.Root>
       </Grid>
+      <Stack>
+        <Heading size="lg">OBS Preview</Heading>
+        <Switch>
+          <Match when={sourceScreenshot()}>
+            <img
+              src={sourceScreenshot() ?? ""}
+              class={css({
+                width: "md",
+                aspectRatio: "16 / 9",
+                objectFit: "contain",
+                borderColor: "border.default",
+                borderWidth: "thin",
+                rounded: "md",
+              })}
+            />
+          </Match>
+          <Match when={!sourceScreenshot()}>
+            <Stack
+              width="md"
+              aspectRatio="16 / 9"
+              borderColor="border.default"
+              borderWidth="thin"
+              rounded="md"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <Icon
+                color="fg.muted"
+                width="[72px]"
+                height="[72px]"
+                asChild={(iconProps) => <ImageOffIcon {...iconProps()} />}
+              />
+            </Stack>
+          </Match>
+        </Switch>
+      </Stack>
 
       <HStack>
         <Button

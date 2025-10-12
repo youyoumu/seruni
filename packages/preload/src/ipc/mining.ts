@@ -12,5 +12,11 @@ export const miningIPC = {
         uuid: z.string(),
       }),
     }),
+    "mining:getSourceScreenshot": z.object({
+      input: z.tuple([]),
+      output: z.object({
+        image: z.string().nullable(),
+      }),
+    }),
   }),
 };
