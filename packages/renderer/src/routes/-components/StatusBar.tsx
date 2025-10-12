@@ -52,46 +52,47 @@ export function StatusBar() {
       position="fixed"
       bottom="0"
       w="full"
-      justifyContent="end"
-      p="1"
-      gap="4"
-      px="4"
+      justifyContent="center"
     >
-      <HStack gap="1.5" cursor="default">
-        <StatusIcon status={store.client.anki.status} />
-        <Text size="xs">Anki</Text>
+      <HStack w="full" maxW="8xl" justifyContent="end" p="1" gap="4" px="4">
+        <HStack gap="1.5" cursor="default">
+          <StatusIcon status={store.client.anki.status} />
+          <Text size="xs">Anki</Text>
+        </HStack>
+        <HStack gap="1.5" cursor="default">
+          <StatusIcon status={store.client.obs.status} />
+          <Text size="xs">OBS</Text>
+        </HStack>
+        <HStack gap="1.5" cursor="default">
+          <StatusIcon status={store.client.textractor.status} />
+          <Text size="xs">Textractor</Text>
+        </HStack>
+        <NotificationHistory
+          trigger={(props) => (
+            <Icon
+              cursor="pointer"
+              size="sm"
+              asChild={(iconProps) => (
+                <Switch>
+                  <Match
+                    when={
+                      store.notifications.filter(({ id }) => id).length === 0
+                    }
+                  >
+                    <BellIcon {...iconProps()} />
+                  </Match>
+                  <Match
+                    when={store.notifications.filter(({ id }) => id).length > 0}
+                  >
+                    <BellDotIcon {...iconProps()} />
+                  </Match>
+                </Switch>
+              )}
+              {...props}
+            />
+          )}
+        />
       </HStack>
-      <HStack gap="1.5" cursor="default">
-        <StatusIcon status={store.client.obs.status} />
-        <Text size="xs">OBS</Text>
-      </HStack>
-      <HStack gap="1.5" cursor="default">
-        <StatusIcon status={store.client.textractor.status} />
-        <Text size="xs">Textractor</Text>
-      </HStack>
-      <NotificationHistory
-        trigger={(props) => (
-          <Icon
-            cursor="pointer"
-            size="sm"
-            asChild={(iconProps) => (
-              <Switch>
-                <Match
-                  when={store.notifications.filter(({ id }) => id).length === 0}
-                >
-                  <BellIcon {...iconProps()} />
-                </Match>
-                <Match
-                  when={store.notifications.filter(({ id }) => id).length > 0}
-                >
-                  <BellDotIcon {...iconProps()} />
-                </Match>
-              </Switch>
-            )}
-            {...props}
-          />
-        )}
-      />
     </HStack>
   );
 }

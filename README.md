@@ -17,3 +17,9 @@
 - edit existing media files
 - more history on console
 - download ffmpeg
+- nsfw blur
+- crop image
+- crop audio
+- open in anki
+- show recent
+- delete card

@@ -74,7 +74,9 @@ export function HistoryTab() {
                       {time}
                     </Text>
                     {/* TODO: support sentence card */}
-                    <Text size="6xl">{item.word}</Text>
+                    <Text size="6xl" lineClamp="1">
+                      {item.word}
+                    </Text>
                     <Show when={item.sentenceAudioPath}>
                       <AudioButton
                         src={`${ankiMediaUrl()}/media/${item.sentenceAudioPath}`}
@@ -174,7 +176,7 @@ export function AudioButton(props: AudioButtonProps) {
 
   return (
     <Stack alignItems="center">
-      <IconButton size="sm" onClick={toggle}>
+      <IconButton size="xs" onClick={toggle}>
         <Switch>
           <Match when={playing()}>
             <PauseIcon />
