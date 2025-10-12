@@ -15,6 +15,7 @@ import {
   ToasterIcon,
 } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
+import { HistoryTab } from "./HistoryTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
 import { SettingsTab } from "./SettingsTab";
@@ -24,6 +25,7 @@ export function Page() {
   const options = [
     { id: "home", label: "Home" },
     { id: "mining", label: "Mining" },
+    { id: "history", label: "History" },
     { id: "console", label: "Console" },
     { id: "settings", label: "Settings" },
   ];
@@ -92,6 +94,15 @@ export function Page() {
           }}
         >
           <MiningTab />
+        </Tabs.Content>
+        <Tabs.Content
+          value="history"
+          px="4"
+          style={{
+            height: contentHeight(16),
+          }}
+        >
+          <HistoryTab />
         </Tabs.Content>
         <Tabs.Content
           value="console"
