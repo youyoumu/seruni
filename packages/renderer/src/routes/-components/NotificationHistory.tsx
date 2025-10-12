@@ -1,12 +1,12 @@
 import { XIcon } from "lucide-solid";
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Drawer } from "#/components/ui/drawer";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
-import { store } from "#/lib/store";
+import { setStore, store } from "#/lib/store";
 import { type AppToastType, ToasterIcon } from "./AppToaster";
 
 const notificationCard = cva({
@@ -70,30 +70,44 @@ export function NotificationHistory(props: Drawer.RootProps) {
             <For each={store.notifications}>
               {(item) => {
                 return (
-                  <Stack
-                    class={notificationCard({
-                      type: item.type as AppToastType,
-                    })}
-                  >
-                    <HStack alignItems="start">
-                      <ToasterIcon type={item.type as AppToastType} />
-                      <Stack>
-                        <Text>{item.title}</Text>
-                        <Text size="sm" color="fg.muted">
-                          {item.description}
-                        </Text>
-                      </Stack>
-                    </HStack>
-                    <IconButton
-                      size="sm"
-                      variant="link"
-                      position="absolute"
-                      top="3"
-                      right="3"
+                  <Show when={item.id}>
+                    <Stack
+                      class={notificationCard({
+                        type: item.type as AppToastType,
+                      })}
                     >
-                      <XIcon />
-                    </IconButton>
-                  </Stack>
+                      <HStack alignItems="start">
+                        <ToasterIcon type={item.type as AppToastType} />
+                        <Stack>
+                          <Text>{item.title}</Text>
+                          <Text size="sm" color="fg.muted">
+                            {item.description}
+                          </Text>
+                        </Stack>
+                      </HStack>
+                      <IconButton
+                        size="sm"
+                        variant="link"
+                        position="absolute"
+                        top="3"
+                        right="3"
+                        onClick={() => {
+                          const notificationIndex =
+                            store.notifications.findIndex(
+                              (notification) => notification.id === item.id,
+                            );
+                          setStore("notifications", notificationIndex, {
+                            id: undefined,
+                            title: undefined,
+                            description: undefined,
+                            type: "info",
+                          });
+                        }}
+                      >
+                        <XIcon />
+                      </IconButton>
+                    </Stack>
+                  </Show>
                 );
               }}
             </For>
@@ -106,7 +120,13 @@ export function NotificationHistory(props: Drawer.RootProps) {
                 </Button>
               )}
             />
-            <Button>Clear</Button>
+            <Button
+              onClick={() => {
+                setStore("notifications", []);
+              }}
+            >
+              Clear
+            </Button>
           </Drawer.Footer>
         </Drawer.Content>
       </Drawer.Positioner>
