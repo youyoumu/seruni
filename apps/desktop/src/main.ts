@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { app } from "electron";
 import { prepareAllClient, textractorClient } from "./client";
 import { env } from "./env";
-import { serveHttp } from "./hono/main";
-import { IPC, logIPC } from "./ipc";
+import { serveAnkiMedia, serveHttp } from "./hono";
+import { IPC } from "./ipc";
 import { generalIPC } from "./ipc/general";
 import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
@@ -32,6 +32,7 @@ export async function bootstrap() {
   await app.whenReady();
   IPC().registerAll();
   serveHttp();
+  serveAnkiMedia();
   await yomitanWindow().loadYomitan();
   await mainWindow().open();
   await generalIPC().ready.promise;

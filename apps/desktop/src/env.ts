@@ -102,6 +102,8 @@ async function createEnv_() {
     };
   });
 
+  const ANKI_MEDIA_PORT = 43568;
+
   const constant = {
     APP_NAME: "Seruni",
     ELECTRON_PATH: app.getPath("userData"),
@@ -118,6 +120,8 @@ async function createEnv_() {
     CHROME_PRELOAD_PATH: DEV ? CHROME_PRELOAD_PATH_DEV : CHROME_PRELOAD_PATH,
     RENDERER_PATH: DEV ? RENDERER_PATH_DEV : RENDERER_PATH,
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
+    ANKI_MEDIA_PORT,
+    ANKI_MEDIA_URL: `http://localhost:${ANKI_MEDIA_PORT}`,
   };
 
   return {

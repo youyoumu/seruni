@@ -35,5 +35,11 @@ export const miningIPC = {
         data: ankiHistory,
       }),
     }),
+    "mining:getAnkiMediaUrl": z.object({
+      input: z.tuple([]),
+      output: z.object({
+        url: z.string(),
+      }),
+    }),
   }),
 };

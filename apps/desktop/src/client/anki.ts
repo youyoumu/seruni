@@ -34,6 +34,7 @@ export function createAnkiClient() {
     monitorStarted = false;
     status: Status = "disconnected";
     textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
+    mediaDir: string | undefined;
 
     async prepare() {
       await this.connect();
@@ -51,6 +52,7 @@ export function createAnkiClient() {
         // Try to verify connection
         await this.client.deck.deckNames();
         this.lastAddedNote = await this.getLastAddedNote();
+        this.mediaDir = await this.client?.media.getMediaDirPath();
         this.retryCount = 0;
         this.status = "connected";
         log.info(

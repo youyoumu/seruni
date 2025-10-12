@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import { signal } from "alien-signals";
 import { ankiClient, obsClient } from "#/client";
 import { env } from "#/env";
@@ -39,8 +38,6 @@ function createMiningIPC() {
 
       this.handle("mining:getAnkiHistory", async () => {
         try {
-          const mediaPath = await ankiClient().client?.media.getMediaDirPath();
-
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
           });
@@ -62,20 +59,14 @@ function createMiningIPC() {
             const sentenceAudioFieldValue =
               note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
 
-            const pictureMedia = this.parseAnkiMediaPaths(
-              pictureFieldValue,
-              mediaPath,
-            );
-            const audioMedia = this.parseAnkiMediaPaths(
-              sentenceAudioFieldValue,
-              mediaPath,
-            );
+            const pictureMedia = this.parseAnkiMediaPath(pictureFieldValue);
+            const audioMedia = this.parseAnkiMediaPath(sentenceAudioFieldValue);
 
             return {
               id: note.noteId,
               word,
-              picturePath: pictureMedia.image,
-              sentenceAudioPath: audioMedia.sound,
+              picturePath: pictureMedia,
+              sentenceAudioPath: audioMedia,
             };
           });
 
@@ -84,19 +75,20 @@ function createMiningIPC() {
           return { data: [] };
         }
       });
+
+      this.handle("mining:getAnkiMediaUrl", async () => {
+        return { url: env.ANKI_MEDIA_URL };
+      });
     }
 
-    parseAnkiMediaPaths(fieldValue: string, mediaPath: string | undefined) {
-      if (!mediaPath) return { image: "", sound: "" };
-      const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/gi;
-      const soundRegex = /\[sound:([^\]]+)\]/gi;
-      const images = [...fieldValue.matchAll(imageRegex)].map((m) =>
-        join(mediaPath, m[1] ?? ""),
-      );
-      const sounds = [...fieldValue.matchAll(soundRegex)].map((m) =>
-        join(mediaPath, m[1] ?? ""),
-      );
-      return { image: images[0] ?? "", sound: sounds[0] ?? "" };
+    parseAnkiMediaPath(fieldValue: string) {
+      const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/i;
+      const soundRegex = /\[sound:([^\]]+)\]/i;
+
+      const imageMatch = fieldValue.match(imageRegex);
+      const soundMatch = fieldValue.match(soundRegex);
+
+      return imageMatch?.[1] ?? soundMatch?.[1] ?? "";
     }
   }
 

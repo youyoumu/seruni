@@ -113,6 +113,7 @@ export function HomeTab() {
         <Switch>
           <Match when={sourceScreenshot()}>
             <img
+              alt="OBS Preview"
               src={sourceScreenshot() ?? ""}
               class={css({
                 width: "md",
