@@ -1,7 +1,20 @@
 import type { AnkiHistory } from "@repo/preload/ipc";
-import { createEffect, createSignal, For, onMount, Show } from "solid-js";
+import { PauseIcon, PlayIcon } from "lucide-solid";
+import {
+  createEffect,
+  createSignal,
+  For,
+  Match,
+  onCleanup,
+  onMount,
+  Show,
+  Switch,
+} from "solid-js";
 import { css } from "styled-system/css";
-import { Box, Stack } from "styled-system/jsx";
+import { HStack, Stack } from "styled-system/jsx";
+import { IconButton } from "#/components/ui/icon-button";
+import { Slider } from "#/components/ui/slider";
+import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 
 export function HistoryTab() {
@@ -22,44 +35,110 @@ export function HistoryTab() {
 
   return (
     <Stack h="full" maxW="8xl" mx="auto" gap="4">
-      <Stack overflow="auto" class="custom-scrollbar" pe="4" gap="4">
+      <Stack
+        overflow="auto"
+        class="custom-scrollbar"
+        pe="4"
+        gap="4"
+        alignItems="center"
+      >
         <For each={history()}>
           {(item) => {
             return (
               <Stack
                 borderColor="border.default"
                 borderWidth="thin"
-                p="2"
+                p="4"
                 rounded="md"
-                bg="bg.subtle"
+                bg="bg.muted"
                 shadow="sm"
+                w="full"
+                maxW="4xl"
               >
-                <p>{item.word}</p>
-                <img
-                  class={css({
-                    width: "sm",
-                    objectFit: "contain",
-                    borderColor: "border.default",
-                    borderWidth: "thin",
-                    rounded: "md",
-                  })}
-                  //TODO: change to filename
-                  src={`${ankiMediaUrl()}/media/${item.picturePath}`}
-                  alt="PictureField"
-                />
-                <Show when={item.sentenceAudioPath}>
-                  <audio
-                    controls
-                    src={`${ankiMediaUrl()}/media/${item.sentenceAudioPath}`}
+                <HStack gap="4">
+                  <Stack
+                    flex="1"
+                    alignItems="center"
+                    p="2"
+                    rounded="md"
+                    bg="bg.subtle"
+                    h="full"
+                    justifyContent="center"
                   >
-                    <track kind="captions" />
-                  </audio>
-                </Show>
+                    {/* TODO: support sentence card */}
+                    <Text size="6xl">{item.word}</Text>
+                    <Show when={item.sentenceAudioPath}>
+                      <AudioButton
+                        src={`${ankiMediaUrl()}/media/${item.sentenceAudioPath}`}
+                      />
+                    </Show>
+                  </Stack>
+                  <Show when={item.picturePath}>
+                    <img
+                      class={css({
+                        height: "48",
+                        objectFit: "contain",
+                        rounded: "md",
+                      })}
+                      //TODO: change to filename
+                      src={`${ankiMediaUrl()}/media/${item.picturePath}`}
+                      alt="PictureField"
+                    />
+                  </Show>
+                </HStack>
               </Stack>
             );
           }}
         </For>
       </Stack>
+    </Stack>
+  );
+}
+
+interface AudioButtonProps {
+  src: string;
+}
+
+export function AudioButton(props: AudioButtonProps) {
+  const [playing, setPlaying] = createSignal(false);
+  const [progress, setProgress] = createSignal(0); // 0 → 1
+
+  const audio = new Audio(props.src);
+
+  const toggle = () => {
+    if (playing()) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+  };
+
+  audio.addEventListener("play", () => setPlaying(true));
+  audio.addEventListener("pause", () => setPlaying(false));
+  audio.addEventListener("ended", () => setPlaying(false));
+
+  audio.addEventListener("timeupdate", () => {
+    if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
+  });
+
+  onCleanup(() => {
+    audio.pause();
+    audio.src = "";
+  });
+
+  return (
+    <Stack alignItems="center">
+      <IconButton size="sm" onClick={toggle}>
+        <Switch>
+          <Match when={playing()}>
+            <PauseIcon />
+          </Match>
+          <Match when={!playing()}>
+            <PlayIcon />
+          </Match>
+        </Switch>
+      </IconButton>
+      <Slider value={[progress()]} defaultValue={[0]} w="32" />
     </Stack>
   );
 }
