@@ -19,6 +19,11 @@ export const [store, setStore] = createStore<{
     textractor: Client;
     obs: Client;
   };
+  element: {
+    statusBar: {
+      height: number;
+    };
+  };
 }>({
   notifications: [],
   client: {
@@ -30,6 +35,11 @@ export const [store, setStore] = createStore<{
     },
     obs: {
       status: "disconnected",
+    },
+  },
+  element: {
+    statusBar: {
+      height: 0,
     },
   },
 });

@@ -1,5 +1,6 @@
 import { XIcon } from "lucide-solid";
 import { type Component, For, Show } from "solid-js";
+import { Portal } from "solid-js/web";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
@@ -39,100 +40,108 @@ const notificationCard = cva({
   },
 });
 
-export function NotificationHistory(
-  props: Drawer.RootProps & {
-    trigger: Component;
-  },
-) {
+export function NotificationHistory(props: { trigger: Component }) {
   const Trigger = props.trigger;
+  const height = () => `calc(100vh - ${store.element.statusBar.height}px)`;
+
   return (
-    <Drawer.Root {...props}>
+    <Drawer.Root>
       <Drawer.Trigger
         asChild={(triggerProps) => <Trigger {...triggerProps()}></Trigger>}
       />
-      <Drawer.Backdrop />
-      <Drawer.Positioner>
-        <Drawer.Content>
-          <Drawer.Header>
-            <Drawer.Title>Notification</Drawer.Title>
-            <Drawer.Description>
-              Notification history and status updates.
-            </Drawer.Description>
-            <Drawer.CloseTrigger
-              position="absolute"
-              top="3"
-              right="4"
-              asChild={(closeProps) => (
-                <IconButton {...closeProps()} variant="ghost">
-                  <XIcon />
-                </IconButton>
-              )}
-            />
-          </Drawer.Header>
-          <Drawer.Body gap="4" class="custom-scrollbar">
-            <For each={store.notifications}>
-              {(item) => {
-                return (
-                  <Show when={item.id}>
-                    <Stack
-                      class={notificationCard({
-                        type: item.type as AppToastType,
-                      })}
-                    >
-                      <HStack alignItems="start">
-                        <ToasterIcon type={item.type as AppToastType} />
-                        <Stack>
-                          <Text>{item.title}</Text>
-                          <Text size="sm" color="fg.muted">
-                            {item.description}
-                          </Text>
-                        </Stack>
-                      </HStack>
-                      <IconButton
-                        size="sm"
-                        variant="link"
-                        position="absolute"
-                        top="3"
-                        right="3"
-                        onClick={() => {
-                          const notificationIndex =
-                            store.notifications.findIndex(
-                              (notification) => notification.id === item.id,
-                            );
-                          setStore("notifications", notificationIndex, {
-                            id: undefined,
-                            title: undefined,
-                            description: undefined,
-                            type: "info",
-                          });
-                        }}
+      <Portal mount={document.querySelector("#app") ?? document.body}>
+        <Drawer.Backdrop
+          style={{
+            height: height(),
+          }}
+        />
+        <Drawer.Positioner
+          style={{
+            height: height(),
+          }}
+        >
+          <Drawer.Content boxShadow="[none]">
+            <Drawer.Header>
+              <Drawer.Title>Notification</Drawer.Title>
+              <Drawer.Description>
+                Notification history and status updates.
+              </Drawer.Description>
+              <Drawer.CloseTrigger
+                position="absolute"
+                top="3"
+                right="4"
+                asChild={(closeProps) => (
+                  <IconButton {...closeProps()} variant="ghost">
+                    <XIcon />
+                  </IconButton>
+                )}
+              />
+            </Drawer.Header>
+            <Drawer.Body gap="4" class="custom-scrollbar">
+              <For each={store.notifications}>
+                {(item) => {
+                  return (
+                    <Show when={item.id}>
+                      <Stack
+                        class={notificationCard({
+                          type: item.type as AppToastType,
+                        })}
                       >
-                        <XIcon />
-                      </IconButton>
-                    </Stack>
-                  </Show>
-                );
-              }}
-            </For>
-          </Drawer.Body>
-          <Drawer.Footer gap="3">
-            <Drawer.CloseTrigger
-              asChild={(closeProps) => (
-                <Button {...closeProps()} variant="outline">
-                  Close
-                </Button>
-              )}
-            />
-            <Button
-              onClick={() => {
-                setStore("notifications", []);
-              }}
-            >
-              Clear
-            </Button>
-          </Drawer.Footer>
-        </Drawer.Content>
-      </Drawer.Positioner>
+                        <HStack alignItems="start">
+                          <ToasterIcon type={item.type as AppToastType} />
+                          <Stack>
+                            <Text>{item.title}</Text>
+                            <Text size="sm" color="fg.muted">
+                              {item.description}
+                            </Text>
+                          </Stack>
+                        </HStack>
+                        <IconButton
+                          size="sm"
+                          variant="link"
+                          position="absolute"
+                          top="3"
+                          right="3"
+                          onClick={() => {
+                            const notificationIndex =
+                              store.notifications.findIndex(
+                                (notification) => notification.id === item.id,
+                              );
+                            setStore("notifications", notificationIndex, {
+                              id: undefined,
+                              title: undefined,
+                              description: undefined,
+                              type: "info",
+                            });
+                          }}
+                        >
+                          <XIcon />
+                        </IconButton>
+                      </Stack>
+                    </Show>
+                  );
+                }}
+              </For>
+            </Drawer.Body>
+            <Drawer.Footer gap="3">
+              <Drawer.CloseTrigger
+                asChild={(closeProps) => (
+                  <Button {...closeProps()} variant="outline">
+                    Close
+                  </Button>
+                )}
+              />
+              <Button
+                onClick={() => {
+                  setStore("notifications", []);
+                }}
+              >
+                Clear
+              </Button>
+            </Drawer.Footer>
+          </Drawer.Content>
+        </Drawer.Positioner>
+      </Portal>
     </Drawer.Root>
   );
 }

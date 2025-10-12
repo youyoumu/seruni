@@ -7,6 +7,7 @@ import { Button } from "#/components/ui/button";
 import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
 import { Toast } from "#/components/ui/toast";
+import { store } from "#/lib/store";
 import {
   type AppToastType,
   appToaster,
@@ -33,10 +34,8 @@ export function Page() {
 
   let tabListRef: HTMLDivElement | undefined;
   const [tabListHeight, setTabListHeight] = createSignal(0);
-  let statusBarRef: HTMLDivElement | undefined;
-  const [statusBarHeight, setStatusBarHeight] = createSignal(0);
   const contentHeight = (gap = 8) =>
-    `calc(100vh - ${tabListHeight() + statusBarHeight() + gap}px)`;
+    `calc(100vh - ${tabListHeight() + store.element.statusBar.height + gap}px)`;
 
   createEffect(() => {
     // console.log(tabListHeight());
@@ -46,11 +45,6 @@ export function Page() {
     setTabListHeight(tabListRef?.clientHeight ?? 0);
     tabListRef?.addEventListener("resize", () => {
       setTabListHeight(tabListRef?.clientHeight ?? 0);
-    });
-
-    setStatusBarHeight(statusBarRef?.clientHeight ?? 0);
-    statusBarRef?.addEventListener("resize", () => {
-      setStatusBarHeight(statusBarRef?.clientHeight ?? 0);
     });
   });
 
@@ -119,7 +113,7 @@ export function Page() {
         </Tabs.Content>
       </Tabs.Root>
       <AppToaster />
-      <StatusBar ref={statusBarRef} />
+      <StatusBar />
     </>
   );
 }

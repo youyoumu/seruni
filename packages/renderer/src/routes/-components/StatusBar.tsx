@@ -1,13 +1,21 @@
 import { BellDotIcon, BellIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
-import { Match, Switch } from "solid-js";
+import { Match, onMount, Switch } from "solid-js";
 import { HStack } from "styled-system/jsx";
 import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
-import { type ClientStatus, store } from "#/lib/store";
+import { type ClientStatus, setStore, store } from "#/lib/store";
 import { NotificationHistory } from "./NotificationHistory";
 
-export function StatusBar(props: { ref: HTMLDivElement | undefined }) {
+export function StatusBar() {
+  let ref: HTMLDivElement | undefined;
+  onMount(() => {
+    setStore("element", "statusBar", "height", ref?.clientHeight ?? 0);
+    ref?.addEventListener("resize", () => {
+      setStore("element", "statusBar", "height", ref?.clientHeight ?? 0);
+    });
+  });
+
   function StatusIcon(props: { status: ClientStatus }) {
     return (
       <Switch fallback={null}>
@@ -39,7 +47,7 @@ export function StatusBar(props: { ref: HTMLDivElement | undefined }) {
   }
   return (
     <HStack
-      ref={props.ref}
+      ref={ref}
       bg="bg.emphasized"
       position="fixed"
       bottom="0"

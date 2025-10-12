@@ -97,6 +97,12 @@ export const appToaster_ = Toast.createToaster({
   placement: "bottom-end",
   overlap: true,
   gap: 16,
+  offsets: {
+    bottom: "40px",
+    left: "0px",
+    top: "0px",
+    right: "10px",
+  },
 });
 
 export function ToasterIcon(props: { type: AppToastType }) {
