@@ -2,37 +2,27 @@ import { makePersisted } from "@solid-primitives/storage";
 import { intervalToDuration } from "date-fns";
 import { liveQuery } from "dexie";
 import {
-  CheckIcon,
-  InfoIcon,
   ListRestartIcon,
-  OctagonXIcon,
   PauseIcon,
   PlayIcon,
-  ShieldAlertIcon,
   TrashIcon,
   XIcon,
 } from "lucide-solid";
 import {
   createEffect,
-  createMemo,
   createSignal,
   For,
   type JSX,
-  Match,
   onCleanup,
   onMount,
   Show,
-  Switch,
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
-import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
-import { Toast } from "#/components/ui/toast";
 import { texthoookerDB } from "#/lib/db";
 import { appToaster } from "./AppToaster";
 
@@ -117,8 +107,9 @@ export function MiningTab() {
         textContainerRef.scrollTop = textContainerRef.scrollHeight;
       }
       if (!timerRunning()) {
-        appToaster.info({
+        appToaster.create({
           description: "Received text but timer is paused",
+          type: "info",
         });
         return;
       }
@@ -179,8 +170,9 @@ export function MiningTab() {
           onConfirm={() => {
             setTimer(0);
             texthoookerDB.text.clear();
-            appToaster.info({
+            appToaster.create({
               description: "Stats have been reset.",
+              type: "info",
             });
           }}
         />

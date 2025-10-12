@@ -7,7 +7,12 @@ import { Button } from "#/components/ui/button";
 import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
 import { Toast } from "#/components/ui/toast";
-import { appToaster, ToasterIcon, type ToastType } from "./AppToaster";
+import {
+  type AppToastType,
+  appToaster,
+  appToaster_,
+  ToasterIcon,
+} from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
@@ -160,9 +165,9 @@ export function AppToaster() {
   });
 
   return (
-    <Toast.Toaster toaster={appToaster}>
+    <Toast.Toaster toaster={appToaster_}>
       {(toast) => {
-        const type = createMemo(() => toast().type) as () => ToastType;
+        const type = createMemo(() => toast().type) as () => AppToastType;
         return (
           <Toast.Root class={toasterRoot({ type: type() })}>
             <HStack>
