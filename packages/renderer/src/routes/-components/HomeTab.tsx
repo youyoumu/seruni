@@ -11,7 +11,7 @@ import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { appToaster } from "./AppToaster";
-import { Sidebar } from "./Sidebar";
+import { NotificationHistory } from "./NotificationHistory";
 
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -145,7 +145,7 @@ export function HomeTab() {
           Toast
         </Button>
 
-        <Sidebar />
+        <NotificationHistory />
       </HStack>
     </Stack>
   );

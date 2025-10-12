@@ -1,29 +1,13 @@
 import type { ToastPromiseOptions } from "@repo/preload/ipc";
-import {
-  CheckIcon,
-  InfoIcon,
-  OctagonXIcon,
-  ShieldAlertIcon,
-  XIcon,
-} from "lucide-solid";
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  Match,
-  onMount,
-  Switch,
-} from "solid-js";
+import { XIcon } from "lucide-solid";
+import { createEffect, createMemo, createSignal, For, onMount } from "solid-js";
 import { css, cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
-import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
-import { Spinner } from "#/components/ui/spinner";
 import { Tabs } from "#/components/ui/tabs";
 import { Toast } from "#/components/ui/toast";
-import { appToaster, type ToastType } from "./AppToaster";
+import { appToaster, ToasterIcon, type ToastType } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
@@ -182,41 +166,7 @@ export function AppToaster() {
         return (
           <Toast.Root class={toasterRoot({ type: type() })}>
             <HStack>
-              <Switch>
-                <Match when={type() === "info"}>
-                  <Icon asChild={(props) => <InfoIcon {...props()} />} />
-                </Match>
-
-                <Match when={type() === "error"}>
-                  <Icon
-                    class={css({ color: "fg.error" })}
-                    asChild={(props) => <OctagonXIcon {...props()} />}
-                  />
-                </Match>
-
-                <Match when={type() === "warning"}>
-                  <Icon
-                    class={css({ color: "yellow.dark.a10" })}
-                    asChild={(props) => <ShieldAlertIcon {...props()} />}
-                  />
-                </Match>
-
-                <Match when={type() === "success"}>
-                  <Icon
-                    class={css({ color: "grass.dark.a10" })}
-                    asChild={(props) => <CheckIcon {...props()} />}
-                  />
-                </Match>
-
-                <Match when={type() === "loading"}>
-                  <Icon
-                    asChild={(props) => (
-                      <Spinner borderColor="fg.subtle" {...props()} />
-                    )}
-                  />
-                </Match>
-              </Switch>
-
+              <ToasterIcon type={type()} />
               <Stack gap="0" alignItems="start">
                 <Toast.Title>{toast().title}</Toast.Title>
                 <Toast.Description>{toast().description}</Toast.Description>
