@@ -10,8 +10,10 @@ import {
   Show,
   Switch,
 } from "solid-js";
+import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
+import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";
 import { Text } from "#/components/ui/text";
@@ -74,16 +76,54 @@ export function HistoryTab() {
                     </Show>
                   </Stack>
                   <Show when={item.picturePath}>
-                    <img
-                      class={css({
-                        height: "48",
-                        objectFit: "contain",
-                        rounded: "md",
-                      })}
-                      //TODO: change to filename
-                      src={`${ankiMediaUrl()}/media/${item.picturePath}`}
-                      alt="PictureField"
-                    />
+                    <Dialog.Root>
+                      <Dialog.Trigger
+                        asChild={(triggerProps) => (
+                          <img
+                            {...triggerProps()}
+                            class={css({
+                              height: "48",
+                              objectFit: "contain",
+                              rounded: "md",
+                              cursor: "pointer",
+                            })}
+                            //TODO: change to filename
+                            src={`${ankiMediaUrl()}/media/${item.picturePath}`}
+                            alt="PictureField"
+                          />
+                        )}
+                      />
+                      <Dialog.Backdrop />
+                      <Portal
+                        mount={document.querySelector("#app") ?? document.body}
+                      >
+                        <Dialog.Positioner>
+                          <Dialog.Content
+                            p="4"
+                            bg="transparent"
+                            boxShadow="[none]"
+                            outlineStyle="[none]"
+                          >
+                            <Dialog.CloseTrigger
+                              asChild={(closeTriggerProps) => (
+                                <img
+                                  {...closeTriggerProps()}
+                                  class={css({
+                                    w: "full",
+                                    maxW: "8xl",
+                                    objectFit: "contain",
+                                    rounded: "md",
+                                    shadow: "md",
+                                  })}
+                                  src={`${ankiMediaUrl()}/media/${item.picturePath}`}
+                                  alt="PictureField"
+                                />
+                              )}
+                            />
+                          </Dialog.Content>
+                        </Dialog.Positioner>
+                      </Portal>
+                    </Dialog.Root>
                   </Show>
                 </HStack>
               </Stack>
