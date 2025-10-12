@@ -8,6 +8,7 @@ import { env } from "#/env";
 import { logIPC, miningIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
+import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
 import type { Status } from "./_util";
@@ -366,3 +367,13 @@ export function createAnkiClient() {
 }
 
 export const ankiClient = signal(createAnkiClient());
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  hmr.register(import.meta.url);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta.url, mod);
+  });
+  import.meta.hot.dispose(() => {});
+}

@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { signal } from "alien-signals";
 import { ankiClient, obsClient } from "#/client";
 import { env } from "#/env";
@@ -38,9 +39,12 @@ function createMiningIPC() {
 
       this.handle("mining:getAnkiHistory", async () => {
         try {
+          const mediaPath = await ankiClient().client?.media.getMediaDirPath();
+
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
           });
+
           if (!noteIds) return { data: [] };
 
           const notes = await ankiClient().client?.note.notesInfo({
@@ -49,14 +53,29 @@ function createMiningIPC() {
 
           if (!notes) return { data: [] };
 
-          const data = notes?.map((note) => {
+          const data = notes.map((note) => {
+            const firstField = Object.keys(note.fields)[0] ?? "";
+            const word = note.fields[firstField]?.value ?? "";
+
+            const pictureFieldValue =
+              note.fields[config.store.anki.pictureField]?.value ?? "";
+            const sentenceAudioFieldValue =
+              note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
+
+            const pictureMedia = this.parseAnkiMediaPaths(
+              pictureFieldValue,
+              mediaPath,
+            );
+            const audioMedia = this.parseAnkiMediaPaths(
+              sentenceAudioFieldValue,
+              mediaPath,
+            );
+
             return {
               id: note.noteId,
-              word: note.fields[0]?.value ?? "",
-              picturePath:
-                note.fields[config.store.anki.pictureField]?.value ?? "",
-              sentenceAudioPath:
-                note.fields[config.store.anki.sentenceAudioField]?.value ?? "",
+              word,
+              picturePath: pictureMedia.image,
+              sentenceAudioPath: audioMedia.sound,
             };
           });
 
@@ -65,6 +84,19 @@ function createMiningIPC() {
           return { data: [] };
         }
       });
+    }
+
+    parseAnkiMediaPaths(fieldValue: string, mediaPath: string | undefined) {
+      if (!mediaPath) return { image: "", sound: "" };
+      const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/gi;
+      const soundRegex = /\[sound:([^\]]+)\]/gi;
+      const images = [...fieldValue.matchAll(imageRegex)].map((m) =>
+        join(mediaPath, m[1] ?? ""),
+      );
+      const sounds = [...fieldValue.matchAll(soundRegex)].map((m) =>
+        join(mediaPath, m[1] ?? ""),
+      );
+      return { image: images[0] ?? "", sound: sounds[0] ?? "" };
     }
   }
 
