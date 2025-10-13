@@ -1,6 +1,5 @@
 import { rm } from "node:fs/promises";
 import { basename } from "node:path";
-import { signal } from "alien-signals";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
@@ -370,14 +369,14 @@ export function createAnkiClient() {
   return new AnkiClient();
 }
 
-export const ankiClient = signal(createAnkiClient());
+export const ankiClient = hmr.module(createAnkiClient());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
   });
   import.meta.hot.dispose(() => {});
 }

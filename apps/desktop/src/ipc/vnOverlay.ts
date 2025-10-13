@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";
@@ -27,14 +26,14 @@ function createVnOverlayIPC() {
   return new VnOverlayIPC();
 }
 
-export const vnOverlayIPC = signal(createVnOverlayIPC());
+export const vnOverlayIPC = hmr.module(createVnOverlayIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.vnOverlayIPC().register();
   });
   import.meta.hot.dispose(() => {

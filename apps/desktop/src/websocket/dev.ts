@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { app } from "electron";
 import { textractorClient } from "#/client";
 import { AppWebsocket } from "./base";
@@ -28,4 +27,4 @@ function createDevWS() {
   return new DevWS();
 }
 
-export const devWS = signal(createDevWS());
+export const devWS = hmr.module(createDevWS());

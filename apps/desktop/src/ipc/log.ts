@@ -1,5 +1,4 @@
 import type { ToastPromiseOptions } from "@repo/preload/ipc";
-import { signal } from "alien-signals";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
@@ -53,14 +52,14 @@ function createLogIPC() {
   return new LogIPC();
 }
 
-export const logIPC = signal(createLogIPC());
+export const logIPC = hmr.module(createLogIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.logIPC().register();
   });
   import.meta.hot.dispose(() => {

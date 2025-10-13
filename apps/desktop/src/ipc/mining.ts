@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { ankiClient, obsClient } from "#/client";
 import { env } from "#/env";
 import { config } from "#/util/config";
@@ -36,7 +35,7 @@ function createMiningIPC() {
       });
 
       this.handle("mining:getAnkiHistory", async () => {
-        console.log("DEBUG[712]: ankiClient().client=", ankiClient().client);
+        // console.log("DEBUG[712]: ankiClient().client=", ankiClient().client);
         try {
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
@@ -95,24 +94,23 @@ function createMiningIPC() {
   return new MiningIPC();
 }
 
-export const miningIPC = signal(createMiningIPC());
+export const miningIPC = hmr.module(createMiningIPC());
 global.miningIPC ??= miningIPC;
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  type Self = typeof import("./mining");
-  const url = import.meta.url;
-  hmr.register(url);
+  const { miningIPC } = await hmr.register<typeof import("./mining")>(
+    import.meta,
+  );
 
   import.meta.hot.accept((mod) => {
-    hmr.update(url, mod);
-    const { miningIPC } = hmr.m<Self>(url);
+    hmr.update(import.meta, mod);
+    console.log("Same?", miningIPC === global.miningIPC);
     miningIPC().register();
   });
 
   import.meta.hot.dispose(() => {
-    const { miningIPC } = hmr.m<Self>(url);
     miningIPC().unregister();
   });
 }

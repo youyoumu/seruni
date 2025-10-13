@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { BrowserWindow } from "electron";
 import { env } from "#/env";
 
@@ -50,14 +49,14 @@ function createAppWindowClass() {
   return AppWindow;
 }
 
-export const AppWindow = signal(createAppWindowClass());
+export const AppWindow = hmr.module(createAppWindowClass());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     import.meta.hot?.invalidate();
   });
 }

@@ -4,7 +4,6 @@ import type {
   IPCFromRenderer,
   IPCFromRendererChannel,
 } from "@repo/preload/ipc";
-import { signal } from "alien-signals";
 import { type BrowserWindow, ipcMain } from "electron";
 
 hmr.log(import.meta.url);
@@ -92,14 +91,14 @@ function createIPCClass() {
   return IPC;
 }
 
-export const IPC = signal(createIPCClass());
+export const IPC = hmr.module(createIPCClass());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     import.meta.hot?.invalidate();
   });
 }

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { signal } from "alien-signals";
 import { WebSocket } from "ws";
 import { vnOverlayIPC } from "#/ipc";
 import { config } from "#/util/config";
@@ -103,4 +102,4 @@ export function createTextractorClient() {
   return new TextractorClient();
 }
 
-export const textractorClient = signal(createTextractorClient());
+export const textractorClient = hmr.module(createTextractorClient());

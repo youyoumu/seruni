@@ -1,46 +1,65 @@
-type Signal = (value?: any) => any;
-type Module = Record<string, Signal>;
+type ModuleValue = {
+  __isHMR: true;
+};
+type ModuleAccessor = (value?: ModuleValue) => ModuleValue;
+type HmrModule = Record<string, ModuleAccessor>;
 type Cleanup = (() => Promise<void>) | (() => void);
 type Effect = (() => Promise<Cleanup>) | (() => Cleanup);
 
 import "./setEnv";
-import chalk from "chalk";
 import { Roarr as log } from "roarr";
 
 class HMR {
-  store = new Map<string, Module>();
+  vault = new Map<symbol, ModuleValue>();
+  store = new Map<string, HmrModule>();
   effects = new Map<string, Cleanup[]>();
 
-  m<M extends Module>(url: string) {
-    return this.store.get(url) as M;
+  module<T>(initialValue: T): {
+    (): T;
+    (value: T): void;
+  };
+
+  module<T>(initialValue: T) {
+    const key = Symbol();
+    (initialValue as ModuleValue).__isHMR = true;
+    this.vault.set(key, initialValue as ModuleValue);
+    return (...args: [T] | []) => {
+      if (args.length > 0) {
+        (args[0] as ModuleValue).__isHMR = true;
+        this.vault.set(key, args[0] as ModuleValue);
+        return;
+      }
+      return this.vault.get(key) as T;
+    };
   }
 
   log(url: string) {
-    log.trace({ namespace: "HMR" }, chalk.blue(`Importing ${url}`));
+    log.trace({ namespace: "HMR" }, `Importing ${url}`);
   }
 
-  async register(url: string) {
-    if (this.store.has(url)) return;
-    const module = await import(
-      /* @vite-ignore */
-      url
-    );
-    this.update(url, module);
+  async register<M extends Record<string, any>>(meta: ImportMeta) {
+    const url = meta.url;
+    const module = (
+      !this.store.has(url)
+        ? await import(
+            /* @vite-ignore */
+            url
+          )
+        : this.store.get(url)
+    ) as M;
+    if (!this.store.has(url)) {
+      this.update(meta, module);
+    }
+    return module;
   }
 
-  update(url: string, module: Module | undefined) {
+  update(meta: ImportMeta, module: HmrModule | undefined) {
+    const url = typeof meta === "string" ? meta : meta.url;
     if (!module) return;
     const stored = this.store.get(url);
 
     if (!stored) {
-      // validate & store initial
-      for (const key of Object.keys(module)) {
-        if (typeof module[key] !== "function") {
-          //TODO: use logger
-          log.error(`Exported module ${key} from ${url} is not a signal`);
-          process.exit(1);
-        }
-      }
+      // store initial
       this.store.set(url, module);
     } else {
       // merge new keys
@@ -52,22 +71,18 @@ class HMR {
       // remove missing keys
       for (const key of Object.keys(stored)) {
         if (!Object.hasOwn(module, key)) {
-          if (stored[key]) stored[key](undefined);
+          if (stored[key] && (stored[key] as unknown as ModuleValue).__isHMR)
+            stored[key](undefined);
         }
       }
       // update existing
       for (const key of Object.keys(module)) {
         if (stored[key] && module[key]) {
-          if (typeof module[key] !== "function") {
-            //TODO: use logger
-            log.warn(`Exported module ${key} from ${url} is not a signal`);
-            stored[key](module[key]);
-          } else {
+          if (module.__isHMR) {
             stored[key](module[key]());
           }
         }
       }
-      return stored;
     }
   }
 

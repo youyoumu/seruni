@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { env } from "#/env";
 import { AppWindow } from "./base";
 
@@ -29,14 +28,14 @@ function createVnOverlayWindow() {
   return new VnOverlayWindow();
 }
 
-export const vnOverlayWindow = signal(createVnOverlayWindow());
+export const vnOverlayWindow = hmr.module(createVnOverlayWindow());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.vnOverlayWindow().open();
   });
   import.meta.hot.dispose(() => {

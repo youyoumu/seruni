@@ -4,7 +4,6 @@ import type {
   WsFromServer,
   WsFromServerEvent,
 } from "@repo/preload/websocket";
-import { signal } from "alien-signals";
 import { isJSONValue } from "es-toolkit";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
@@ -146,4 +145,4 @@ function createAppWebsocketClass() {
   return AppWebsocket;
 }
 
-export const AppWebsocket = signal(createAppWebsocketClass());
+export const AppWebsocket = hmr.module(createAppWebsocketClass());

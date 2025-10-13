@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { app } from "electron";
 import { delay } from "es-toolkit";
 import { env } from "#/env";
@@ -52,14 +51,14 @@ function createMainWindow() {
   return new MainWindow();
 }
 
-export const mainWindow = signal(createMainWindow());
+export const mainWindow = hmr.module(createMainWindow());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.mainWindow().open();
   });
   import.meta.hot.dispose(() => {

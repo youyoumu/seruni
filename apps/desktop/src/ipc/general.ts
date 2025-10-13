@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { ankiClient, obsClient, textractorClient } from "#/client";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
@@ -33,14 +32,14 @@ function createGeneralIPC() {
   return new GeneralIPC();
 }
 
-export const generalIPC = signal(createGeneralIPC());
+export const generalIPC = hmr.module(createGeneralIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.generalIPC().register();
   });
   import.meta.hot.dispose(() => {

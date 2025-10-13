@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
 import { env } from "#/env";
@@ -63,14 +62,14 @@ function createSettingsIPC() {
   return new SettingsIPC();
 }
 
-export const settingsIPC = signal(createSettingsIPC());
+export const settingsIPC = hmr.module(createSettingsIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.settingsIPC().register();
   });
   import.meta.hot.dispose(() => {

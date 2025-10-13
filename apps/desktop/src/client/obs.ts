@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
@@ -110,4 +109,4 @@ export function createObsClient() {
   return new ObsClient();
 }
 
-export const obsClient = signal(createObsClient());
+export const obsClient = hmr.module(createObsClient());

@@ -1,4 +1,3 @@
-import { signal } from "alien-signals";
 import { session } from "electron";
 import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
@@ -68,12 +67,12 @@ function createYomitanWindow() {
   return new YomitanWindow();
 }
 
-export const yomitanWindow = signal(createYomitanWindow());
+export const yomitanWindow = hmr.module(createYomitanWindow());
 
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
+  hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
+    hmr.update(import.meta, mod);
     mod?.yomitanWindow().open();
   });
   import.meta.hot.dispose(() => {
