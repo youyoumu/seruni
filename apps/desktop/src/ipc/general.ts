@@ -1,6 +1,5 @@
 import { signal } from "alien-signals";
 import { ankiClient, obsClient, textractorClient } from "#/client";
-import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 

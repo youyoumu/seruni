@@ -25,9 +25,17 @@ export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
   const [ankiMediaUrl, setAnkiMediaUrl] = createSignal("");
 
-  onMount(async () => {
-    const { url } = await ipcRenderer.invoke("mining:getAnkiMediaUrl");
-    setAnkiMediaUrl(url);
+  onMount(() => {
+    const id = setInterval(async () => {
+      const { url } = await ipcRenderer.invoke("mining:getAnkiMediaUrl");
+      setAnkiMediaUrl(url);
+
+      const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
+      setHistory(sort(data).desc((item) => item.id));
+    }, 5000);
+    onCleanup(() => {
+      clearInterval(id);
+    });
   });
 
   createEffect(async () => {

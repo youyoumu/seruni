@@ -1,7 +1,6 @@
 import { signal } from "alien-signals";
 import { BrowserWindow } from "electron";
 import { env } from "#/env";
-import { hmr } from "#/util/hmr";
 
 type BrowserWindowOptions = ConstructorParameters<typeof BrowserWindow>[0];
 function createAppWindowClass() {

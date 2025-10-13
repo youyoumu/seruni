@@ -8,7 +8,6 @@ import { env } from "#/env";
 import { logIPC, miningIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
-import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
 import type { Status } from "./_util";

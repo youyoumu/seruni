@@ -55,6 +55,7 @@ class HMR {
           }
         }
       }
+      return stored;
     }
   }
 
@@ -78,4 +79,7 @@ class HMR {
   }
 }
 
-export const hmr = new HMR();
+declare global {
+  var hmr: HMR;
+}
+global.hmr = new HMR();

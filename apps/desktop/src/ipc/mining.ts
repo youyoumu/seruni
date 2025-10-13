@@ -2,7 +2,6 @@ import { signal } from "alien-signals";
 import { ankiClient, obsClient } from "#/client";
 import { env } from "#/env";
 import { config } from "#/util/config";
-import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
@@ -37,6 +36,7 @@ function createMiningIPC() {
       });
 
       this.handle("mining:getAnkiHistory", async () => {
+        console.log("DEBUG[712]: ankiClient().client=", ankiClient().client);
         try {
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
@@ -96,16 +96,23 @@ function createMiningIPC() {
 }
 
 export const miningIPC = signal(createMiningIPC());
+global.miningIPC ??= miningIPC;
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
+
+type Self = typeof import("./mining");
 
 if (import.meta.hot) {
   hmr.register(import.meta.url);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta.url, mod);
-    mod?.miningIPC().register();
+    const { miningIPC } = hmr.store.get(import.meta.url) as Self;
+    console.log("same?", global.miningIPC === miningIPC);
+
+    miningIPC().register();
   });
   import.meta.hot.dispose(() => {
+    const { miningIPC } = hmr.store.get(import.meta.url) as Self;
     miningIPC().unregister();
   });
 }

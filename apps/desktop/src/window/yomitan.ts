@@ -2,7 +2,6 @@ import { signal } from "alien-signals";
 import { session } from "electron";
 import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
-import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 

@@ -6,7 +6,6 @@ import type {
 } from "@repo/preload/ipc";
 import { signal } from "alien-signals";
 import { type BrowserWindow, ipcMain } from "electron";
-import { hmr } from "#/util/hmr";
 
 type ChannelsWithPrefix<
   All extends string,

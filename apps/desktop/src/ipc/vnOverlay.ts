@@ -1,5 +1,4 @@
 import { signal } from "alien-signals";
-import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";

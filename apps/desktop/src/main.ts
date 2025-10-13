@@ -6,7 +6,6 @@ import { env } from "./env";
 import { serveAnkiMedia, serveHttp } from "./hono";
 import { IPC } from "./ipc";
 import { generalIPC } from "./ipc/general";
-import { hmr } from "./util/hmr";
 import { log } from "./util/logger";
 import { AppWebsocket, devWS } from "./websocket";
 import { mainWindow } from "./window/main";

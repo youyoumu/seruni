@@ -1,10 +1,10 @@
+import "#/util/hmr";
 import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { app } from "electron";
 import z from "zod";
-import { hmr } from "./util/hmr";
 
 process.env.ROARR_LOG = "true";
 

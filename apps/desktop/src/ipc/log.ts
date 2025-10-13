@@ -1,6 +1,5 @@
 import type { ToastPromiseOptions } from "@repo/preload/ipc";
 import { signal } from "alien-signals";
-import { hmr } from "#/util/hmr";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 

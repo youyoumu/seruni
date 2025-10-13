@@ -3,7 +3,6 @@ import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
 import { env } from "#/env";
 import { config } from "#/util/config";
-import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
 import { mainWindow } from "#/window/main";

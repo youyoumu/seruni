@@ -2,7 +2,6 @@ import { signal } from "alien-signals";
 import { app } from "electron";
 import { delay } from "es-toolkit";
 import { env } from "#/env";
-import { hmr } from "#/util/hmr";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
