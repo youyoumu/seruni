@@ -137,8 +137,8 @@ export function HomeTab() {
             >
               <Icon
                 color="fg.muted"
-                width="[72px]"
-                height="[72px]"
+                width="24"
+                height="24"
                 asChild={(iconProps) => <ImageOffIcon {...iconProps()} />}
               />
             </Stack>

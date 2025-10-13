@@ -23,3 +23,8 @@
 - open in anki
 - show recent
 - delete card
+- health check
+- animation
+- config handle migration
+- toast create and update
+- mining hover select uuid

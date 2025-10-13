@@ -13,7 +13,7 @@ import {
   Switch,
 } from "solid-js";
 import { Portal } from "solid-js/web";
-import { css } from "styled-system/css";
+import { css, cva, type RecipeVariantProps } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
@@ -49,6 +49,40 @@ export function HistoryTab() {
         <For each={history()}>
           {(item) => {
             const time = formatRelative(new Date(item.id), new Date());
+            const textVariant = cva({
+              base: {
+                lineClamp: "1",
+              },
+              variants: {
+                wordLength: {
+                  1: { fontSize: "6xl" },
+                  2: { fontSize: "6xl" },
+                  3: { fontSize: "6xl" },
+                  4: { fontSize: "6xl" },
+                  5: { fontSize: "6xl" },
+                  6: { fontSize: "5xl" },
+                  7: { fontSize: "5xl" },
+                  8: { fontSize: "5xl" },
+                  9: { fontSize: "4xl" },
+                  10: { fontSize: "4xl" },
+                  11: { fontSize: "4xl" },
+                  12: { fontSize: "3xl" },
+                  13: { fontSize: "3xl" },
+                  14: { fontSize: "3xl" },
+                  15: { fontSize: "3xl" },
+                  16: { fontSize: "2xl" },
+                  17: { fontSize: "2xl" },
+                  18: { fontSize: "xl" },
+                  19: { fontSize: "xl" },
+                  20: { fontSize: "xl" },
+                  21: { fontSize: "lg" },
+                  22: { fontSize: "lg" },
+                  23: { fontSize: "lg" },
+                  default: { fontSize: "md" },
+                },
+              },
+            });
+            type TextVariant = RecipeVariantProps<typeof textVariant>;
             return (
               <Stack
                 borderColor="border.default"
@@ -73,8 +107,11 @@ export function HistoryTab() {
                     <Text size="xs" color="fg.muted">
                       {time}
                     </Text>
-                    {/* TODO: support sentence card */}
-                    <Text size="6xl" lineClamp="1">
+                    <Text
+                      class={textVariant({
+                        wordLength: item.word.length.toString(),
+                      } as TextVariant)}
+                    >
                       {item.word}
                     </Text>
                     <Show when={item.sentenceAudioPath}>

@@ -125,6 +125,7 @@ export function NotificationHistory(props: { trigger: Component }) {
             </Drawer.Body>
             <Drawer.Footer gap="3">
               <Drawer.CloseTrigger
+                flex="1"
                 asChild={(closeProps) => (
                   <Button {...closeProps()} variant="outline">
                     Close
@@ -132,6 +133,7 @@ export function NotificationHistory(props: { trigger: Component }) {
                 )}
               />
               <Button
+                flex="1"
                 onClick={() => {
                   setStore("notifications", []);
                 }}
