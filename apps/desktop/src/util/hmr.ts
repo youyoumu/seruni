@@ -3,7 +3,9 @@ type Module = Record<string, Signal>;
 type Cleanup = (() => Promise<void>) | (() => void);
 type Effect = (() => Promise<Cleanup>) | (() => Cleanup);
 
+import "./setEnv";
 import chalk from "chalk";
+import { Roarr as log } from "roarr";
 
 class HMR {
   store = new Map<string, Module>();
@@ -14,7 +16,7 @@ class HMR {
   }
 
   log(url: string) {
-    console.log(chalk.blue(`HMR: Importing ${url}`));
+    log.trace({ namespace: "HMR" }, chalk.blue(`Importing ${url}`));
   }
 
   async register(url: string) {
@@ -35,7 +37,7 @@ class HMR {
       for (const key of Object.keys(module)) {
         if (typeof module[key] !== "function") {
           //TODO: use logger
-          console.error(`Exported module ${key} from ${url} is not a signal`);
+          log.error(`Exported module ${key} from ${url} is not a signal`);
           process.exit(1);
         }
       }
@@ -58,7 +60,7 @@ class HMR {
         if (stored[key] && module[key]) {
           if (typeof module[key] !== "function") {
             //TODO: use logger
-            console.warn(`Exported module ${key} from ${url} is not a signal`);
+            log.warn(`Exported module ${key} from ${url} is not a signal`);
             stored[key](module[key]);
           } else {
             stored[key](module[key]());

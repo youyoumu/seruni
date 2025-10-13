@@ -2,10 +2,10 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
-import chalk from "chalk";
 import chokidar from "chokidar";
+import { Roarr } from "roarr";
 
-const log = (str: string) => console.log(chalk.yellow(str));
+const log = (str: string) => Roarr.debug({ namespace: "DEV" }, str);
 
 //TODO: make more structured
 const envJson = (() => {
@@ -36,10 +36,10 @@ async function setupWsClient() {
   wsClient = createSocketClient(`ws://localhost:${envJson.WS_PORT}`, {});
 
   wsClient.socket.on("connect", () => {
-    log(`DEV: WS client connected with id ${wsClient?.socket.id}`);
+    log(`WS client connected with id ${wsClient?.socket.id}`);
   });
   wsClient.socket.on("disconnect", async () => {
-    log(`DEV: WS client disconnected`);
+    log(`WS client disconnected`);
   });
   wsClient.on("dev:restart", (callback) => {
     restarting = true;
@@ -69,7 +69,7 @@ async function start() {
   child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
   child.on("close", (code) => {
     if (restarting) {
-      log("DEV: Restarting dev server");
+      log("Restarting dev server");
       restarting = false;
       start();
       return;
@@ -85,7 +85,7 @@ async function start() {
 }
 
 function watch() {
-  log(`DEV: Watching ${ipcPath}`);
+  log(`Watching ${ipcPath}`);
   chokidar
     .watch(ipcPath, { ignoreInitial: true })
     // .on("all", (event, path) => {
@@ -97,7 +97,7 @@ function watch() {
     //   handleFileEvent(path);
     // })
     .on("change", (path) => {
-      log(`DEV: Change detected on ${path}`);
+      log(`Change detected on ${path}`);
       handleFileEvent(path);
     });
 }
@@ -108,7 +108,7 @@ function handleFileEvent(filePath: string) {
     restarting = true;
     wsClient.emit("dev:fileChange", { fileName });
   } else {
-    log("DEV: WS Client not connected, failed to emit");
+    log("WS Client not connected, failed to emit");
   }
 }
 

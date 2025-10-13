@@ -8,8 +8,6 @@ import z from "zod";
 
 hmr.log(import.meta.url);
 
-process.env.ROARR_LOG = "true";
-
 async function createEnv_() {
   const envJson = (() => {
     if (app.isPackaged || process.env.NODE_ENV === "production") return {};

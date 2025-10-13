@@ -76,9 +76,6 @@ importers:
       obs-websocket-js:
         specifier: ^5.0.6
         version: 5.0.6
-      roarr:
-        specifier: ^7.21.1
-        version: 7.21.1
       smol-toml:
         specifier: ^1.4.2
         version: 1.4.2
