@@ -7,6 +7,8 @@ import type {
 import { signal } from "alien-signals";
 import { type BrowserWindow, ipcMain } from "electron";
 
+hmr.log(import.meta.url);
+
 type ChannelsWithPrefix<
   All extends string,
   Prefix extends string,

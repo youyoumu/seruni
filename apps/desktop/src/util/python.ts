@@ -5,6 +5,8 @@ import * as tar from "tar";
 import { env } from "#/env";
 import { log } from "./logger";
 
+hmr.log(import.meta.url);
+
 class Python {
   async run(params: string[]) {
     const finalParams = [...params];

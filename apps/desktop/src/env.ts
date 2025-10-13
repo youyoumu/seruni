@@ -6,6 +6,8 @@ import { createEnv } from "@t3-oss/env-core";
 import { app } from "electron";
 import z from "zod";
 
+hmr.log(import.meta.url);
+
 process.env.ROARR_LOG = "true";
 
 async function createEnv_() {

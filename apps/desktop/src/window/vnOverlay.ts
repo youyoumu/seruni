@@ -2,6 +2,8 @@ import { signal } from "alien-signals";
 import { env } from "#/env";
 import { AppWindow } from "./base";
 
+hmr.log(import.meta.url);
+
 function createVnOverlayWindow() {
   class VnOverlayWindow extends AppWindow() {
     constructor() {

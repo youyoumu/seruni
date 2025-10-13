@@ -3,6 +3,8 @@ import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";
 
+hmr.log(import.meta.url);
+
 function createVnOverlayIPC() {
   class VnOverlayIPC extends IPC()<"vnOverlay"> {
     constructor() {

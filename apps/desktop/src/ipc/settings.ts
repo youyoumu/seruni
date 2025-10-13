@@ -10,6 +10,8 @@ import { vnOverlayWindow } from "#/window/vnOverlay";
 import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 
+hmr.log(import.meta.url);
+
 function createSettingsIPC() {
   class SettingsIPC extends IPC()<"settings"> {
     dLogTrace;

@@ -2,7 +2,10 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path, { join } from "node:path";
 import { createSocketClient } from "@repo/preload/websocket";
+import chalk from "chalk";
 import chokidar from "chokidar";
+
+const log = (str: string) => console.log(chalk.yellow(str));
 
 //TODO: make more structured
 const envJson = (() => {
@@ -33,10 +36,10 @@ async function setupWsClient() {
   wsClient = createSocketClient(`ws://localhost:${envJson.WS_PORT}`, {});
 
   wsClient.socket.on("connect", () => {
-    console.log(`WS client connected with id ${wsClient?.socket.id}`);
+    log(`DEV: WS client connected with id ${wsClient?.socket.id}`);
   });
   wsClient.socket.on("disconnect", async () => {
-    console.log(`WS client disconnected`);
+    log(`DEV: WS client disconnected`);
   });
   wsClient.on("dev:restart", (callback) => {
     restarting = true;
@@ -66,7 +69,7 @@ async function start() {
   child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
   child.on("close", (code) => {
     if (restarting) {
-      console.log("Restarting dev server");
+      log("DEV: Restarting dev server");
       restarting = false;
       start();
       return;
@@ -82,7 +85,7 @@ async function start() {
 }
 
 function watch() {
-  console.log(`Watching ${ipcPath}`);
+  log(`DEV: Watching ${ipcPath}`);
   chokidar
     .watch(ipcPath, { ignoreInitial: true })
     // .on("all", (event, path) => {
@@ -94,7 +97,7 @@ function watch() {
     //   handleFileEvent(path);
     // })
     .on("change", (path) => {
-      console.log(`Chokidar event 'change' detected on ${path}`);
+      log(`DEV: Change detected on ${path}`);
       handleFileEvent(path);
     });
 }
@@ -105,7 +108,7 @@ function handleFileEvent(filePath: string) {
     restarting = true;
     wsClient.emit("dev:fileChange", { fileName });
   } else {
-    console.log("WS Client not connected, failed to emit");
+    log("DEV: WS Client not connected, failed to emit");
   }
 }
 

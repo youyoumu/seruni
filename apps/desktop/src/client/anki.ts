@@ -5,7 +5,7 @@ import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { env } from "#/env";
-import { logIPC, miningIPC } from "#/ipc";
+import { logIPC } from "#/ipc";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
@@ -20,6 +20,8 @@ type TextUuidQueueResult =
       picturePath: string | undefined | null;
     }
   | undefined;
+
+hmr.log(import.meta.url);
 
 export function createAnkiClient() {
   class AnkiClient {
@@ -172,7 +174,8 @@ export function createAnkiClient() {
       const history = sort(textractorClient().history)
         .desc(({ time }) => time)
         .find(({ time, uuid }) => {
-          return time <= now && uuid === miningIPC().textUuid;
+          return true;
+          // return time <= now && uuid === miningIPC().textUuid;
         });
       if (!history) {
         throw new Error("Failed to find history");

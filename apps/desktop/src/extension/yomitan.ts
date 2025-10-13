@@ -2,6 +2,8 @@ import path from "node:path";
 import { log } from "#/util/logger";
 import { Extension } from "./base";
 
+hmr.log(import.meta.url);
+
 class YomitanExtension extends Extension {
   constructor() {
     super({

@@ -11,6 +11,8 @@ import { AppWebsocket, devWS } from "./websocket";
 import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
 
+hmr.log(import.meta.url);
+
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
   contents.on("devtools-opened", () =>

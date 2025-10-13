@@ -5,6 +5,8 @@ import { yomitanExtension } from "#/extension/yomitan";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
+hmr.log(import.meta.url);
+
 function createYomitanWindow() {
   class YomitanWindow extends AppWindow() {
     preloadScriptIds: string[] = [];

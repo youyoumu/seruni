@@ -7,6 +7,8 @@ import StreamZip from "node-stream-zip";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
+hmr.log(import.meta.url);
+
 export class Extension {
   name: string;
   downloadUrl: string | (() => Promise<string>);

@@ -100,19 +100,19 @@ global.miningIPC ??= miningIPC;
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
-type Self = typeof import("./mining");
-
 if (import.meta.hot) {
-  hmr.register(import.meta.url);
-  import.meta.hot.accept((mod) => {
-    hmr.update(import.meta.url, mod);
-    const { miningIPC } = hmr.store.get(import.meta.url) as Self;
-    console.log("same?", global.miningIPC === miningIPC);
+  type Self = typeof import("./mining");
+  const url = import.meta.url;
+  hmr.register(url);
 
+  import.meta.hot.accept((mod) => {
+    hmr.update(url, mod);
+    const { miningIPC } = hmr.m<Self>(url);
     miningIPC().register();
   });
+
   import.meta.hot.dispose(() => {
-    const { miningIPC } = hmr.store.get(import.meta.url) as Self;
+    const { miningIPC } = hmr.m<Self>(url);
     miningIPC().unregister();
   });
 }

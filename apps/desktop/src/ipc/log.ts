@@ -3,6 +3,8 @@ import { signal } from "alien-signals";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
+hmr.log(import.meta.url);
+
 type ToastPromiseResultOptions = Omit<
   Omit<ToastPromiseOptions, "loading">,
   "error"

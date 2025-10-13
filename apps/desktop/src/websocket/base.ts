@@ -11,6 +11,8 @@ import type { JsonValue, Writable } from "type-fest";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
+hmr.log(import.meta.url);
+
 export type WsServerAck<Event extends WsFromServerEvent> = (
   data: WsFromServer[Event]["output"],
 ) => void;

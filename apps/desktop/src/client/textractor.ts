@@ -6,6 +6,8 @@ import { config } from "#/util/config";
 import { log } from "../util/logger";
 import type { Status } from "./_util";
 
+hmr.log(import.meta.url);
+
 export function createTextractorClient() {
   class TextractorClient {
     history: { time: Date; text: string; uuid: string }[] = [];

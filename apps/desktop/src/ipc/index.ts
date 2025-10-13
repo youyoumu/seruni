@@ -4,3 +4,5 @@ export * from "./mining";
 export * from "./settings";
 export * from "./vnOverlay";
 export * from "./yomitan";
+
+hmr.log(import.meta.url);

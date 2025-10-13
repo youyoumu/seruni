@@ -4,6 +4,8 @@ import { config } from "#/util/config";
 import { log } from "../util/logger";
 import type { Status } from "./_util";
 
+hmr.log(import.meta.url);
+
 export function createObsClient() {
   class ObsClient {
     client: OBSWebSocket | undefined;

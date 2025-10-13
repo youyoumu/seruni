@@ -3,9 +3,19 @@ type Module = Record<string, Signal>;
 type Cleanup = (() => Promise<void>) | (() => void);
 type Effect = (() => Promise<Cleanup>) | (() => Cleanup);
 
+import chalk from "chalk";
+
 class HMR {
   store = new Map<string, Module>();
   effects = new Map<string, Cleanup[]>();
+
+  m<M extends Module>(url: string) {
+    return this.store.get(url) as M;
+  }
+
+  log(url: string) {
+    console.log(chalk.blue(`HMR: Importing ${url}`));
+  }
 
   async register(url: string) {
     if (this.store.has(url)) return;
@@ -83,3 +93,4 @@ declare global {
   var hmr: HMR;
 }
 global.hmr = new HMR();
+hmr.log(import.meta.url);

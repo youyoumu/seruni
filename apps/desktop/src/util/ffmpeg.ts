@@ -4,6 +4,8 @@ import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "./logger";
 
+hmr.log(import.meta.url);
+
 export async function getFileDuration(filePath: string): Promise<number> {
   const { stdout, stderr } = await execa("ffprobe", [
     "-v",

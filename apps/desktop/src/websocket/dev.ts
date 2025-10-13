@@ -3,6 +3,8 @@ import { app } from "electron";
 import { textractorClient } from "#/client";
 import { AppWebsocket } from "./base";
 
+hmr.log(import.meta.url);
+
 function createDevWS() {
   class DevWS extends AppWebsocket()<"dev"> {
     constructor() {
