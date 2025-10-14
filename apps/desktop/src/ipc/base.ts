@@ -35,10 +35,17 @@ function createIPCClass() {
         ...args: IPCFromRenderer[K]["input"]
       ) => IPCFromRenderer[K]["output"],
     ) {
+      const uuid = crypto.randomUUID();
       ipcMain.on(channel, listener);
       this.#controller.signal.addEventListener(
         "abort",
-        () => ipcMain.removeListener(channel, listener),
+        () => {
+          log.trace(
+            { namespace: `IPC:${this.prefix}` },
+            `Removing listener ${channel} ${uuid}`,
+          );
+          ipcMain.removeListener(channel, listener);
+        },
         { once: true },
       );
     }
@@ -50,11 +57,15 @@ function createIPCClass() {
         ...args: IPCFromRenderer[K]["input"]
       ) => Promise<IPCFromRenderer[K]["output"]>,
     ) {
+      const uuid = crypto.randomUUID();
       ipcMain.handle(channel, listener);
       this.#controller.signal.addEventListener(
         "abort",
         () => {
-          log.trace({ namespace: `IPC:${this.prefix}` }, `removingHandler`);
+          log.trace(
+            { namespace: `IPC:${this.prefix}` },
+            `Removing handler ${channel} ${uuid}`,
+          );
           ipcMain.removeHandler(channel);
         },
         { once: true },

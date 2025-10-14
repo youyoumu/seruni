@@ -36,13 +36,20 @@ function createAppWindowClass() {
         this.win?.webContents.send(channel, ...payload);
       };
 
-      log.trace({ namespace: `WIN:webContent:send` }, `addingListener`);
+      const uuid = crypto.randomUUID();
+      log.trace(
+        { namespace: `WIN` },
+        `Adding listener webContent:send ${uuid}`,
+      );
       bus.on("webContent:send", listener);
 
       this.#controller.signal.addEventListener(
         "abort",
         () => {
-          log.trace({ namespace: `WIN:webContent:send` }, `removingListener`);
+          log.trace(
+            { namespace: `WIN` },
+            `Removing listener webContent:send ${uuid}`,
+          );
           bus.removeListener("webContent:send", listener);
         },
         { once: true },

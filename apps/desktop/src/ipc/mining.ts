@@ -36,7 +36,6 @@ function createMiningIPC() {
       });
 
       this.handle("mining:getAnkiHistory", async () => {
-        console.log("DEBUG[731]: ankiClient().client=", ankiClient().client);
         try {
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
