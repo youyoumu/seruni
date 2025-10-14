@@ -23,7 +23,8 @@
     "electron": "^38.1.2",
     "type-fest": "^5.0.1",
     "typescript": "^5.9.2",
-    "vite": "npm:rolldown-vite@latest"
+    "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-circular-dependency": "^0.5.0"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",

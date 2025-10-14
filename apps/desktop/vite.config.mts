@@ -1,10 +1,16 @@
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
+import circularDpendency from "vite-plugin-circular-dependency";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
-  plugins: [],
+  plugins: [
+    circularDpendency({
+      outputFilePath: "./.circularDependency.json",
+      circleImportThrowErr: false,
+    }),
+  ],
   resolve: {
     alias: {
       "#": resolve(import.meta.dirname, "./src"),
