@@ -49,8 +49,7 @@ function createMiningIPC() {
           if (!notes) return { data: [] };
 
           const data = notes.map((note) => {
-            const firstField = Object.keys(note.fields)[0] ?? "";
-            const word = note.fields[firstField]?.value ?? "";
+            const word = ankiClient().getWord(note);
 
             const pictureFieldValue =
               note.fields[config.store.anki.pictureField]?.value ?? "";

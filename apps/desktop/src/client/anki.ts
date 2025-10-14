@@ -14,6 +14,8 @@ import { python } from "#/util/python";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
+hmr.log(import.meta);
+
 type TextUuidQueueResult =
   | {
       sentenceAudioPath: string | undefined | null;
@@ -21,7 +23,21 @@ type TextUuidQueueResult =
     }
   | undefined;
 
-hmr.log(import.meta);
+type AnkiNote = {
+  cards: number[];
+  fields: Record<
+    string,
+    {
+      order: number;
+      value: string;
+    }
+  >;
+  mod: number;
+  modelName: string;
+  noteId: number;
+  profile: string;
+  tags: string[];
+};
 
 export function createAnkiClient() {
   class AnkiClient {
@@ -103,26 +119,24 @@ export function createAnkiClient() {
           ) {
             this.lastAddedNote = lastAddedNote;
             try {
-              const noteInfo = ((await this.client?.note.notesInfo({
-                notes: [lastAddedNote],
-              })) ?? [])[0];
+              const noteInfo = await this.getNote(lastAddedNote);
               log.debug({ noteInfo }, "noteInfo");
-              //TODO: display note info on toast
+              const word = this.getWord(noteInfo);
 
               logIPC().sendToastPromise(
                 (async () => {
                   const result = await this.handleNewNote(lastAddedNote);
                   return {
                     success: {
-                      title: "Note Has Been Updated",
-                      description: `Updated note with id: ${lastAddedNote}.${result?.reuseMedia ? " Reusing media files from previous note." : ""}`,
+                      title: `Note Has Been Updated`,
+                      description: `${word}${result?.reuseMedia ? " (♻  media)" : ""}`,
                     },
                   };
                 })(),
                 {
                   loading: {
                     title: "Processing New Note...",
-                    description: `Detected new note with id: ${lastAddedNote}.`,
+                    description: `Detected new note: ${word}`,
                   },
                   error: {
                     title: "Error",
@@ -349,6 +363,20 @@ export function createAnkiClient() {
         notes: [noteId],
         tags: env.APP_NAME,
       });
+    }
+
+    async getNote(noteId: number) {
+      const result = ((await this.client?.note.notesInfo({
+        notes: [noteId],
+      })) ?? [])[0];
+      if (!result) throw new Error("Note not found");
+      return result;
+    }
+
+    getWord(note: AnkiNote | undefined) {
+      const firstField = Object.keys(note?.fields ?? {})[0] ?? "";
+      const word = note?.fields[firstField]?.value ?? "";
+      return word;
     }
   }
 
