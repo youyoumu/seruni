@@ -20,10 +20,6 @@ export function createTextractorClient() {
     reconnecting = false;
     status: ClientStatus = "disconnected";
 
-    prepare() {
-      this.connect();
-    }
-
     connect() {
       try {
         this.reconnecting = false;

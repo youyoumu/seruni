@@ -6,10 +6,8 @@ hmr.log(import.meta);
 
 export async function prepareAllClient() {
   await Promise.all([
-    ankiClient().prepare(),
-    obsClient().prepare(),
-    textractorClient().prepare(),
+    ankiClient().connect(),
+    obsClient().connect(),
+    textractorClient().connect(),
   ]);
-
-  ankiClient().monitor();
 }

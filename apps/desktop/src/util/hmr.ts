@@ -39,10 +39,7 @@ class HMR {
     log.trace({ namespace: "HMR" }, `Importing ${meta.url}`);
   }
 
-  async register<M extends Record<string, any>>(
-    meta: ImportMeta,
-    module?: HmrModule,
-  ) {
+  async register<M extends Record<string, any>>(meta: ImportMeta, module?: M) {
     if (!module) {
       module = (
         !this.store.has(meta.url)

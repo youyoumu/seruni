@@ -35,10 +35,6 @@ export function createAnkiClient() {
     textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
     mediaDir: string | undefined;
 
-    async prepare() {
-      await this.connect();
-    }
-
     async connect() {
       if (this.reconnecting) return;
       this.status = "connecting";
@@ -372,7 +368,7 @@ if (import.meta.hot) {
   hmr.register(import.meta);
   import.meta.hot.accept(async (mod) => {
     hmr.update(import.meta, mod);
-    await ankiClient().prepare();
+    await ankiClient().connect();
   });
   import.meta.hot.dispose(() => {
     ankiClient().close();

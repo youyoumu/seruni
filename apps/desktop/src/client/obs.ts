@@ -16,10 +16,6 @@ export function createObsClient() {
     retryTimer: NodeJS.Timeout | null = null;
     status: ClientStatus = "disconnected";
 
-    async prepare() {
-      await this.connect();
-    }
-
     async connect() {
       if (this.reconnecting) return;
       this.status = "connecting";
