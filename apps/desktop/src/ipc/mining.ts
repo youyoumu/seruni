@@ -76,7 +76,7 @@ function createMiningIPC() {
       });
 
       this.handle("mining:getAnkiMediaUrl", async () => {
-        return { url: env.ANKI_MEDIA_URL };
+        return { url: env.HTTP_SERVER_URL };
       });
     }
 

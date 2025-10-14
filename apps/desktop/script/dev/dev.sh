@@ -4,8 +4,7 @@ set -o pipefail
 
 ARGS=("./script/dev")
 
-# Only add the Wayland flag if DISPLAY is not set to :0
-if [[ "$DISPLAY" != ":0" ]]; then
+if [[ "$SSH_PREFER_FISH" != "1" ]]; then
   ARGS=(--ozone-platform=wayland "${ARGS[@]}")
 fi
 

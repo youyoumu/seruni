@@ -39,7 +39,7 @@ function createMainWindow() {
     }
 
     async ping(url: string): Promise<void> {
-      log.trace(`pinging ${url}`);
+      log.trace({ namespace: "WIN" }, `Pinging ${url}`);
       const res = await fetch(url, { method: "GET" });
       if (res.ok) {
         return;

@@ -3,10 +3,29 @@ import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
+import { detect } from "detect-port";
 import { app } from "electron";
+import { Roarr as log } from "roarr";
 import z from "zod";
 
 hmr.log(import.meta);
+
+const PREFERED_HTTP_SERVER_PORT = 42424;
+let HTTP_SERVER_PORT = PREFERED_HTTP_SERVER_PORT;
+detect(PREFERED_HTTP_SERVER_PORT)
+  .then((realPort) => {
+    if (HTTP_SERVER_PORT !== realPort) {
+      log.debug(
+        `Port ${HTTP_SERVER_PORT} was occupied, switching to port ${realPort}`,
+      );
+      HTTP_SERVER_PORT = realPort;
+    }
+  })
+  .catch((e) => {
+    if (e instanceof Error) {
+      log.error(`Failed to detect port: ${e.message}`);
+    }
+  });
 
 async function createEnv_() {
   const envJson = (() => {
@@ -22,8 +41,7 @@ async function createEnv_() {
 
   const validatedEnv = createEnv({
     server: {
-      ROARR_LOG: z.boolean().default(true),
-      RENDERER_PORT: z.number().default(56435),
+      RENDERER_PORT: z.number().default(HTTP_SERVER_PORT),
       DEV: z.boolean().default(false),
       WS_PORT: z.number().default(45626),
     },
@@ -102,8 +120,6 @@ async function createEnv_() {
     };
   });
 
-  const ANKI_MEDIA_PORT = 43568;
-
   const constant = {
     APP_NAME: "Seruni",
     ELECTRON_PATH: app.getPath("userData"),
@@ -120,8 +136,8 @@ async function createEnv_() {
     CHROME_PRELOAD_PATH: DEV ? CHROME_PRELOAD_PATH_DEV : CHROME_PRELOAD_PATH,
     RENDERER_PATH: DEV ? RENDERER_PATH_DEV : RENDERER_PATH,
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
-    ANKI_MEDIA_PORT,
-    ANKI_MEDIA_URL: `http://localhost:${ANKI_MEDIA_PORT}`,
+    HTTP_SERVER_PORT,
+    HTTP_SERVER_URL: `http://localhost:${HTTP_SERVER_PORT}`,
   };
 
   return {
