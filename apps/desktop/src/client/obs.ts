@@ -1,7 +1,7 @@
+import type { ClientStatus } from "@repo/preload/ipc";
 import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
-import type { Status } from "./_util";
 
 hmr.log(import.meta.url);
 
@@ -14,7 +14,7 @@ export function createObsClient() {
     maxRetries = Infinity; // keep trying forever
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
-    status: Status = "disconnected";
+    status: ClientStatus = "disconnected";
 
     async prepare() {
       await this.connect();

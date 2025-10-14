@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { basename } from "node:path";
+import type { ClientStatus } from "@repo/preload/ipc";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
@@ -9,7 +10,6 @@ import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
-import type { Status } from "./_util";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -32,7 +32,7 @@ export function createAnkiClient() {
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
     monitorStarted = false;
-    status: Status = "disconnected";
+    status: ClientStatus = "disconnected";
     textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
     mediaDir: string | undefined;
 

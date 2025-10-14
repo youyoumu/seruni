@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
+import type { ClientStatus } from "@repo/preload/ipc";
 import { WebSocket } from "ws";
 import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
-import type { Status } from "./_util";
 
 hmr.log(import.meta.url);
 
@@ -18,7 +18,7 @@ export function createTextractorClient() {
     url = () =>
       `ws://127.0.0.1:${config.store.textractor.textractorWebSocketPort}`;
     reconnecting = false;
-    status: Status = "disconnected";
+    status: ClientStatus = "disconnected";
 
     prepare() {
       this.connect();
