@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
+import { zAnkiCollectionMediaUrlPath } from "@repo/preload/ipc";
 import { type Context, Hono } from "hono";
 import mime from "mime";
 import { ankiClient } from "#/client/anki";
@@ -71,7 +72,7 @@ async function handleMediaRequest(
   }
 }
 
-app.get("/media/:filename", async (c) => {
+app.get(`${zAnkiCollectionMediaUrlPath.value}:filename`, async (c) => {
   const filename = c.req.param("filename");
   const mediaDir = await waitForAnkiMediaDir();
   if (!mediaDir) {

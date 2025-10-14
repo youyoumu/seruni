@@ -1,5 +1,8 @@
-import type { AnkiHistory } from "@repo/preload/ipc";
-import { format, formatRelative } from "date-fns";
+import {
+  type AnkiHistory,
+  zAnkiCollectionMediaUrlPath,
+} from "@repo/preload/ipc";
+import { formatRelative } from "date-fns";
 import { sort } from "fast-sort";
 import { PauseIcon, PlayIcon } from "lucide-solid";
 import {
@@ -91,6 +94,8 @@ export function HistoryTab() {
               },
             });
             type TextVariant = RecipeVariantProps<typeof textVariant>;
+            const pictureSrc = `${ankiMediaUrl()}${zAnkiCollectionMediaUrlPath.value}${item.picturePath}`;
+            const sentenceAudioSrc = `${ankiMediaUrl()}${zAnkiCollectionMediaUrlPath.value}${item.sentenceAudioPath}`;
             return (
               <Stack
                 borderColor="border.default"
@@ -123,9 +128,7 @@ export function HistoryTab() {
                       {item.word}
                     </Text>
                     <Show when={item.sentenceAudioPath}>
-                      <AudioButton
-                        src={`${ankiMediaUrl()}/media/${item.sentenceAudioPath}`}
-                      />
+                      <AudioButton src={sentenceAudioSrc} />
                     </Show>
                   </Stack>
                   <Show when={item.picturePath}>
@@ -141,7 +144,7 @@ export function HistoryTab() {
                               cursor: "pointer",
                             })}
                             //TODO: change to filename
-                            src={`${ankiMediaUrl()}/media/${item.picturePath}`}
+                            src={pictureSrc}
                             alt="PictureField"
                           />
                         )}
@@ -168,7 +171,7 @@ export function HistoryTab() {
                                     rounded: "md",
                                     shadow: "md",
                                   })}
-                                  src={`${ankiMediaUrl()}/media/${item.picturePath}`}
+                                  src={pictureSrc}
                                   alt="PictureField"
                                 />
                               )}
