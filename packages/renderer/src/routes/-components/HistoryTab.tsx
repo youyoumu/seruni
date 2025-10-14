@@ -18,12 +18,14 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva, type RecipeVariantProps } from "styled-system/css";
-import { HStack, Stack } from "styled-system/jsx";
+import { Box, HStack, Stack } from "styled-system/jsx";
+import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { Pagination } from "#/components/ui/pagination";
 import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
+import { Switch as Toggle } from "#/components/ui/switch";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 
@@ -142,9 +144,6 @@ export function HistoryTab() {
                     h="full"
                     justifyContent="center"
                   >
-                    <Text size="xs" color="fg.muted">
-                      {time}
-                    </Text>
                     <Text
                       class={textVariant({
                         wordLength: item.word.length.toString(),
@@ -220,6 +219,9 @@ export function HistoryTab() {
                             bg="transparent"
                             boxShadow="[none]"
                             outlineStyle="[none]"
+                            display="flex"
+                            flexDirection="column"
+                            gap="4"
                           >
                             <Dialog.CloseTrigger
                               asChild={(closeTriggerProps) => (
@@ -237,12 +239,31 @@ export function HistoryTab() {
                                 />
                               )}
                             />
+                            <HStack justifyContent="end" px="8">
+                              <Toggle checked={item.nsfw}>NSFW</Toggle>
+                            </HStack>
                           </Dialog.Content>
                         </Dialog.Positioner>
                       </Portal>
                     </Dialog.Root>
                   </Show>
                 </HStack>
+                <Stack>
+                  <HStack
+                    gap="4"
+                    justifyContent="space-between"
+                    alignItems="end"
+                  >
+                    <HStack>
+                      <Button size="sm">Open in Anki</Button>
+                      <Button size="sm">Trim audio</Button>
+                    </HStack>
+
+                    <Text size="xs" color="fg.muted">
+                      {time}
+                    </Text>
+                  </HStack>
+                </Stack>
               </Stack>
             );
           }}
