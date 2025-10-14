@@ -12,7 +12,7 @@ export const zVnOverlaySettings = z.object({
 
 export const zConfig = z.object({
   window: z.object({
-    vn_overlay: zVnOverlaySettings,
+    vn_overlay: zVnOverlaySettings.default(zVnOverlaySettings.parse({})),
   }),
   anki: z.object({
     pictureField: z.string().default("Picture"),
@@ -25,4 +25,11 @@ export const zConfig = z.object({
   textractor: z.object({
     textractorWebSocketPort: z.number().default(6677),
   }),
+});
+
+export const defaultConfig = zConfig.parse({
+  window: {},
+  anki: {},
+  obs: {},
+  textractor: {},
 });

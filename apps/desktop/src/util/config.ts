@@ -1,7 +1,8 @@
-import { zConfig } from "@repo/preload/ipc";
+import { defaultConfig, zConfig } from "@repo/preload/ipc";
 import Config, { type Schema } from "conf";
 import { app } from "electron";
 import { debounce } from "es-toolkit";
+import { Roarr as log } from "roarr";
 import { parse, stringify } from "smol-toml";
 import type { PartialDeep } from "type-fest";
 import z from "zod";
@@ -22,29 +23,11 @@ class Config_ extends Config<ConfigSchema> {
       deserialize: parse as typeof JSON.parse,
       serialize: stringify,
       schema: z.toJSONSchema(zConfig).properties as Schema<ConfigSchema>,
-      defaults: {
-        window: {
-          vn_overlay: {
-            font: "Noto Sans JP",
-            fontSize: 24,
-            fontWeight: 400,
-            windowColor: "#ffffff",
-            backgroundColor: "#000000",
-            textColor: "#ffffff",
-            opacity: 0.5,
-          },
-        },
-        anki: {
-          pictureField: "Picture",
-          sentenceAudioField: "SentenceAudio",
-          ankiConnectPort: 8765,
-        },
-        obs: {
-          obsWebSocketPort: 7274,
-        },
-        textractor: {
-          textractorWebSocketPort: 6677,
-        },
+      defaults: defaultConfig,
+      ajvOptions: {
+        allErrors: true,
+        useDefaults: true,
+        removeAdditional: true,
       },
     });
   }
@@ -57,3 +40,5 @@ class Config_ extends Config<ConfigSchema> {
 }
 
 export const config = new Config_();
+
+log.debug(config.store, "Config value");
