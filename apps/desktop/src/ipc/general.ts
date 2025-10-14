@@ -1,4 +1,6 @@
-import { ankiClient, obsClient, textractorClient } from "#/client";
+import { ankiClient } from "#/client/anki";
+import { obsClient } from "#/client/obs";
+import { textractorClient } from "#/client/textractor";
 import { IPC } from "./base";
 
 hmr.log(import.meta.url);

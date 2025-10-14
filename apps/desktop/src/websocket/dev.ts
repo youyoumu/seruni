@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { textractorClient } from "#/client";
+import { textractorClient } from "#/client/textractor";
 import { AppWebsocket } from "./base";
 
 hmr.log(import.meta.url);

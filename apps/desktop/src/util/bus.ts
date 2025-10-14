@@ -1,6 +1,5 @@
 import { EventEmitter } from "node:events";
 import type { IPCFromMain, IPCFromMainChannel } from "@repo/preload/ipc";
-import type { log } from "./logger";
 
 interface StringKeyedObject {
   // biome-ignore lint: library

@@ -1,11 +1,13 @@
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { app } from "electron";
-import { prepareAllClient, textractorClient } from "./client";
+import { textractorClient } from "./client/textractor";
 import { env } from "./env";
-import { serveAnkiMedia, serveHttp } from "./hono";
-import { IPC } from "./ipc";
+import { serveAnkiMedia } from "./hono/ankiMedia";
+import { serveHttp } from "./hono/main";
 import { generalIPC } from "./ipc/general";
+import { prepareAllClient } from "./util/client";
+import { registerAllIPC } from "./util/ipc";
 import { log } from "./util/logger";
 import { AppWebsocket, devWS } from "./websocket";
 import { mainWindow } from "./window/main";
@@ -31,7 +33,7 @@ app.on("web-contents-created", (_, contents) => {
 
 export async function bootstrap() {
   await app.whenReady();
-  IPC().registerAll();
+  registerAllIPC();
   serveHttp();
   serveAnkiMedia();
   await yomitanWindow().loadYomitan();

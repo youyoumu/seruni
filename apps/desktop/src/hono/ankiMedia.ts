@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import mime from "mime";
-import { ankiClient } from "#/client";
+import { ankiClient } from "#/client/anki";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 

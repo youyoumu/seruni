@@ -19,13 +19,11 @@ function createIPCClass() {
   class IPC<Prefix extends string> {
     prefix: Prefix;
     #controller = new AbortController();
-    static #instances: Set<IPC<string>> = new Set();
 
     constructor(options: {
       prefix: Prefix;
     }) {
       this.prefix = options.prefix;
-      IPC.#instances.add(this);
     }
 
     on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
@@ -86,19 +84,6 @@ function createIPCClass() {
 
     unregister() {
       this.#controller.abort();
-    }
-
-    static unregisterAll() {
-      for (const instance of IPC.#instances) {
-        instance.unregister();
-      }
-      IPC.#instances.clear();
-    }
-
-    static registerAll() {
-      for (const instance of IPC.#instances) {
-        instance.register();
-      }
     }
   }
 
