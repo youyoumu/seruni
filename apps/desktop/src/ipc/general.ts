@@ -1,6 +1,7 @@
 import { ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
+import { env } from "#/env";
 import { IPC } from "./base";
 
 hmr.log(import.meta);
@@ -25,6 +26,10 @@ function createGeneralIPC() {
           obs: obsClient().status,
           textractor: textractorClient().status,
         };
+      });
+
+      this.handle("general:httpServerUrl", async () => {
+        return { url: env.HTTP_SERVER_URL };
       });
     }
   }

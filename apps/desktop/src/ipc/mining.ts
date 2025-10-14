@@ -64,8 +64,8 @@ function createMiningIPC() {
             return {
               id: note.noteId,
               word,
-              picturePath: pictureMedia,
-              sentenceAudioPath: audioMedia,
+              picture: pictureMedia,
+              sentenceAudio: audioMedia,
             };
           });
 
@@ -73,10 +73,6 @@ function createMiningIPC() {
         } catch {
           return { data: [] };
         }
-      });
-
-      this.handle("mining:getAnkiMediaUrl", async () => {
-        return { url: env.HTTP_SERVER_URL };
       });
     }
 

@@ -26,11 +26,11 @@ import { store } from "#/lib/store";
 
 export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
-  const [ankiMediaUrl, setAnkiMediaUrl] = createSignal("");
+  const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
 
   onMount(() => {
     const id = setInterval(async () => {
-      const { url } = await ipcRenderer.invoke("mining:getAnkiMediaUrl");
+      const { url } = await ipcRenderer.invoke("general:httpServerUrl");
       setAnkiMediaUrl(url);
 
       const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
@@ -94,8 +94,8 @@ export function HistoryTab() {
               },
             });
             type TextVariant = RecipeVariantProps<typeof textVariant>;
-            const pictureSrc = `${ankiMediaUrl()}${zAnkiCollectionMediaUrlPath.value}${item.picturePath}`;
-            const sentenceAudioSrc = `${ankiMediaUrl()}${zAnkiCollectionMediaUrlPath.value}${item.sentenceAudioPath}`;
+            const pictureSrc = `${httpServerUrl()}${zAnkiCollectionMediaUrlPath.value}${item.picture}`;
+            const sentenceAudioSrc = `${httpServerUrl()}${zAnkiCollectionMediaUrlPath.value}${item.sentenceAudio}`;
             return (
               <Stack
                 borderColor="border.default"
@@ -127,11 +127,11 @@ export function HistoryTab() {
                     >
                       {item.word}
                     </Text>
-                    <Show when={item.sentenceAudioPath}>
+                    <Show when={item.sentenceAudio}>
                       <AudioButton src={sentenceAudioSrc} />
                     </Show>
                   </Stack>
-                  <Show when={item.picturePath}>
+                  <Show when={item.picture}>
                     <Dialog.Root>
                       <Dialog.Trigger
                         asChild={(triggerProps) => (
@@ -143,7 +143,6 @@ export function HistoryTab() {
                               rounded: "md",
                               cursor: "pointer",
                             })}
-                            //TODO: change to filename
                             src={pictureSrc}
                             alt="PictureField"
                           />

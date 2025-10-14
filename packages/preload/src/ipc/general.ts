@@ -20,5 +20,11 @@ export const zGeneralIPC = {
         textractor: zClientStatus,
       }),
     }),
+    "general:httpServerUrl": z.object({
+      input: z.tuple([]),
+      output: z.object({
+        url: z.string(),
+      }),
+    }),
   }),
 };

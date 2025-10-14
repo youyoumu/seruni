@@ -6,8 +6,8 @@ export const zAnkiHistory = z.array(
   z.object({
     id: z.number(),
     word: z.string(),
-    picturePath: z.string(),
-    sentenceAudioPath: z.string(),
+    picture: z.string(),
+    sentenceAudio: z.string(),
   }),
 );
 
@@ -35,12 +35,6 @@ export const zMiningIPC = {
       input: z.tuple([]),
       output: z.object({
         data: zAnkiHistory,
-      }),
-    }),
-    "mining:getAnkiMediaUrl": z.object({
-      input: z.tuple([]),
-      output: z.object({
-        url: z.string(),
       }),
     }),
   }),
