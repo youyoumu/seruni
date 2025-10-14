@@ -21,6 +21,7 @@ import { HStack, Stack } from "styled-system/jsx";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";
+import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 
@@ -28,13 +29,17 @@ export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
   const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
 
-  onMount(() => {
-    const id = setInterval(async () => {
-      const { url } = await ipcRenderer.invoke("general:httpServerUrl");
-      setAnkiMediaUrl(url);
+  onMount(async () => {
+    const { url } = await ipcRenderer.invoke("general:httpServerUrl");
+    setAnkiMediaUrl(url);
 
+    const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
+    setHistory(sort(data).desc((item) => item.id));
+    const id = setInterval(async () => {
       const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
-      setHistory(sort(data).desc((item) => item.id));
+      if (history().length !== data.length) {
+        setHistory(sort(data).desc((item) => item.id));
+      }
     }, 5000);
     onCleanup(() => {
       clearInterval(id);
@@ -134,19 +139,44 @@ export function HistoryTab() {
                   <Show when={item.picture}>
                     <Dialog.Root>
                       <Dialog.Trigger
-                        asChild={(triggerProps) => (
-                          <img
-                            {...triggerProps()}
-                            class={css({
-                              height: "48",
-                              objectFit: "contain",
-                              rounded: "md",
-                              cursor: "pointer",
-                            })}
-                            src={pictureSrc}
-                            alt="PictureField"
-                          />
-                        )}
+                        asChild={(triggerProps) => {
+                          const [loaded, setLoaded] = createSignal(false);
+                          const [error, setError] = createSignal(false);
+                          return (
+                            <>
+                              <Show when={!error() && pictureSrc}>
+                                <img
+                                  {...triggerProps()}
+                                  class={css({
+                                    height: "48",
+                                    objectFit: "contain",
+                                    rounded: "md",
+                                    cursor: "pointer",
+                                  })}
+                                  style={{
+                                    display: loaded() ? "block" : "none",
+                                  }}
+                                  src={pictureSrc}
+                                  alt="PictureField"
+                                  onLoad={() => setLoaded(true)}
+                                  onError={() => setError(true)}
+                                />
+                              </Show>
+                              <Show when={pictureSrc && !loaded() && !error()}>
+                                <Stack
+                                  class={css({
+                                    height: "48",
+                                    aspectRatio: "16 / 9",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  })}
+                                >
+                                  <Spinner size="lg" />
+                                </Stack>
+                              </Show>
+                            </>
+                          );
+                        }}
                       />
                       <Dialog.Backdrop />
                       <Portal
