@@ -4,8 +4,6 @@ import { env } from "#/env";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { python } from "#/util/python";
-import { mainWindow } from "#/window/main";
-import { vnOverlayWindow } from "#/window/vnOverlay";
 import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 
@@ -17,7 +15,6 @@ function createSettingsIPC() {
     constructor() {
       super({
         prefix: "settings",
-        win: () => [mainWindow().win, vnOverlayWindow().win],
       });
 
       this.dLogTrace = debounce((context: MessageContext, message: string) => {

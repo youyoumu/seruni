@@ -1,5 +1,4 @@
 import type { ToastPromiseOptions } from "@repo/preload/ipc";
-import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
 hmr.log(import.meta.url);
@@ -15,7 +14,6 @@ function createLogIPC() {
     constructor() {
       super({
         prefix: "log",
-        win: () => [mainWindow().win],
       });
     }
 

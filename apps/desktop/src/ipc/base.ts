@@ -4,7 +4,7 @@ import type {
   IPCFromRenderer,
   IPCFromRendererChannel,
 } from "@repo/preload/ipc";
-import { type BrowserWindow, ipcMain } from "electron";
+import { ipcMain } from "electron";
 import { Roarr as log } from "roarr";
 import { bus } from "#/util/bus";
 
@@ -18,16 +18,13 @@ type ChannelsWithPrefix<
 function createIPCClass() {
   class IPC<Prefix extends string> {
     prefix: Prefix;
-    #win: () => (BrowserWindow | undefined)[] | undefined;
     #controller = new AbortController();
     static #instances: Set<IPC<string>> = new Set();
 
     constructor(options: {
       prefix: Prefix;
-      win: () => (BrowserWindow | undefined)[] | undefined;
     }) {
       this.prefix = options.prefix;
-      this.#win = options.win;
       IPC.#instances.add(this);
     }
 
@@ -72,9 +69,6 @@ function createIPCClass() {
         channel,
         payload,
       });
-      // this.#win()?.forEach((win) => {
-      //   win?.webContents.send(channel, ...payload);
-      // });
     }
 
     register() {}

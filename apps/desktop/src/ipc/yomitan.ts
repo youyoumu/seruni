@@ -10,7 +10,6 @@ function createYomitanIPC() {
     constructor() {
       super({
         prefix: "yomitan",
-        win: () => [yomitanWindow().win],
       });
     }
 

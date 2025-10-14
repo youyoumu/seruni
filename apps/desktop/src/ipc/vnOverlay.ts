@@ -1,4 +1,3 @@
-import { mainWindow } from "#/window/main";
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";
 
@@ -9,7 +8,6 @@ function createVnOverlayIPC() {
     constructor() {
       super({
         prefix: "vnOverlay",
-        win: () => [vnOverlayWindow().win, mainWindow().win],
       });
     }
 

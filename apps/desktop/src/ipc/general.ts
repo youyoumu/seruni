@@ -1,5 +1,4 @@
 import { ankiClient, obsClient, textractorClient } from "#/client";
-import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
 hmr.log(import.meta.url);
@@ -10,7 +9,6 @@ function createGeneralIPC() {
     constructor() {
       super({
         prefix: "general",
-        win: () => [mainWindow().win],
       });
     }
 

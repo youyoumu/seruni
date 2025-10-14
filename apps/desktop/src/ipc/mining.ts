@@ -2,7 +2,6 @@ import { ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { env } from "#/env";
 import { config } from "#/util/config";
-import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
 hmr.log(import.meta.url);
@@ -13,7 +12,6 @@ function createMiningIPC() {
     constructor() {
       super({
         prefix: "mining",
-        win: () => [mainWindow().win],
       });
     }
 
