@@ -1,11 +1,17 @@
+import { zConfig } from "@repo/preload/ipc";
+import { UndoIcon } from "lucide-solid";
 import { createEffect, createSignal, onMount } from "solid-js";
-import { Grid, Stack } from "styled-system/jsx";
+import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
+import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
 
+const defaultTextractorConfig = zConfig.shape.textractor.parse({});
+
 export function Textractor() {
-  const [textractorWebSocketPort, setTextractorWebSocketPort] =
-    createSignal(6677);
+  const [textractorWebSocketPort, setTextractorWebSocketPort] = createSignal(
+    defaultTextractorConfig.textractorWebSocketPort,
+  );
 
   let ready = false;
   createEffect(() => {
@@ -39,18 +45,29 @@ export function Textractor() {
         </Heading>
       </Stack>
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
-        <NumberInput
-          value={textractorWebSocketPort().toString()}
-          clampValueOnBlur
-          onValueChange={(e) => {
-            setTextractorWebSocketPort(e.valueAsNumber);
-          }}
-          min={1023}
-          max={65535}
-          step={1}
-        >
-          Textractor WebSocket Port
-        </NumberInput>
+        <HStack alignItems="end">
+          <NumberInput
+            value={textractorWebSocketPort().toString()}
+            clampValueOnBlur
+            onValueChange={(e) => {
+              setTextractorWebSocketPort(e.valueAsNumber);
+            }}
+            min={1023}
+            max={65535}
+            step={1}
+          >
+            Textractor WebSocket Port
+          </NumberInput>
+          <IconButton
+            onClick={() => {
+              setTextractorWebSocketPort(
+                defaultTextractorConfig.textractorWebSocketPort,
+              );
+            }}
+          >
+            <UndoIcon />
+          </IconButton>
+        </HStack>
       </Grid>
     </Stack>
   );

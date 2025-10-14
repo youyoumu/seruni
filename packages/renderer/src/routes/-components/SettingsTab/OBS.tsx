@@ -1,10 +1,17 @@
+import { zConfig } from "@repo/preload/ipc";
+import { UndoIcon } from "lucide-solid";
 import { createEffect, createSignal, onMount } from "solid-js";
-import { Grid, Stack } from "styled-system/jsx";
+import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
+import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
 
+const defaultObsConfig = zConfig.shape.obs.parse({});
+
 export function OBS() {
-  const [obsWebSocketPort, setObsWebSocketPort] = createSignal(7274);
+  const [obsWebSocketPort, setObsWebSocketPort] = createSignal(
+    defaultObsConfig.obsWebSocketPort,
+  );
 
   let ready = false;
   createEffect(() => {
@@ -37,18 +44,27 @@ export function OBS() {
         </Heading>
       </Stack>
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
-        <NumberInput
-          value={obsWebSocketPort().toString()}
-          clampValueOnBlur
-          onValueChange={(e) => {
-            setObsWebSocketPort(e.valueAsNumber);
-          }}
-          min={1023}
-          max={65535}
-          step={1}
-        >
-          OBS WebSocket Port
-        </NumberInput>
+        <HStack alignItems="end">
+          <NumberInput
+            value={obsWebSocketPort().toString()}
+            clampValueOnBlur
+            onValueChange={(e) => {
+              setObsWebSocketPort(e.valueAsNumber);
+            }}
+            min={1023}
+            max={65535}
+            step={1}
+          >
+            OBS WebSocket Port
+          </NumberInput>
+          <IconButton
+            onClick={() => {
+              setObsWebSocketPort(defaultObsConfig.obsWebSocketPort);
+            }}
+          >
+            <UndoIcon />
+          </IconButton>
+        </HStack>
       </Grid>
     </Stack>
   );

@@ -1,13 +1,24 @@
+import { zConfig } from "@repo/preload/ipc";
+import { UndoIcon } from "lucide-solid";
 import { createEffect, createSignal, onMount } from "solid-js";
-import { Grid, Stack } from "styled-system/jsx";
+import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
+import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
 
+const defaultAnkiConfig = zConfig.shape.anki.parse({});
+
 export function Anki() {
-  const [pictureField, setPictureField] = createSignal("");
-  const [sentenceAudioField, setSentenceAudioField] = createSignal("");
-  const [ankiConnectPort, setAnkiConnectPort] = createSignal(8765);
+  const [pictureField, setPictureField] = createSignal(
+    defaultAnkiConfig.pictureField,
+  );
+  const [sentenceAudioField, setSentenceAudioField] = createSignal(
+    defaultAnkiConfig.sentenceAudioField,
+  );
+  const [ankiConnectPort, setAnkiConnectPort] = createSignal(
+    defaultAnkiConfig.ankiConnectPort,
+  );
 
   let ready = false;
   createEffect(() => {
@@ -64,18 +75,27 @@ export function Anki() {
             }}
           />
         </Field.Root>
-        <NumberInput
-          value={ankiConnectPort().toString()}
-          clampValueOnBlur
-          onValueChange={(e) => {
-            setAnkiConnectPort(e.valueAsNumber);
-          }}
-          min={1023}
-          max={65535}
-          step={1}
-        >
-          AnkiConnect Port
-        </NumberInput>
+        <HStack alignItems="end">
+          <NumberInput
+            value={ankiConnectPort().toString()}
+            clampValueOnBlur
+            onValueChange={(e) => {
+              setAnkiConnectPort(e.valueAsNumber);
+            }}
+            min={1023}
+            max={65535}
+            step={1}
+          >
+            AnkiConnect Port
+          </NumberInput>
+          <IconButton
+            onClick={() => {
+              setAnkiConnectPort(defaultAnkiConfig.ankiConnectPort);
+            }}
+          >
+            <UndoIcon />
+          </IconButton>
+        </HStack>
       </Grid>
     </Stack>
   );
