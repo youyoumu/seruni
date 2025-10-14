@@ -1,6 +1,6 @@
 import z from "zod";
 
-export const ankiHistory = z.array(
+export const zAnkiHistory = z.array(
   z.object({
     id: z.number(),
     word: z.string(),
@@ -9,9 +9,9 @@ export const ankiHistory = z.array(
   }),
 );
 
-export type AnkiHistory = z.infer<typeof ankiHistory>;
+export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 
-export const miningIPC = {
+export const zMiningIPC = {
   renderer: z.object({
     "mining:setTextUuid": z.object({
       input: z.tuple([
@@ -32,7 +32,7 @@ export const miningIPC = {
     "mining:getAnkiHistory": z.object({
       input: z.tuple([]),
       output: z.object({
-        data: ankiHistory,
+        data: zAnkiHistory,
       }),
     }),
     "mining:getAnkiMediaUrl": z.object({

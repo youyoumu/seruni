@@ -1,6 +1,6 @@
 import z from "zod";
 
-export const vnOverlaySettings = z.object({
+export const zVnOverlaySettings = z.object({
   font: z.string(),
   fontSize: z.number(),
   fontWeight: z.number(),
@@ -10,9 +10,9 @@ export const vnOverlaySettings = z.object({
   opacity: z.number(),
 });
 
-export const configSchema = z.object({
+export const zConfig = z.object({
   window: z.object({
-    vn_overlay: vnOverlaySettings,
+    vn_overlay: zVnOverlaySettings,
   }),
   anki: z.object({
     pictureField: z.string(),

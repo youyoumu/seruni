@@ -1,10 +1,10 @@
 import z from "zod";
-import { simple } from "./_util";
+import { zSimple } from "./_util";
 
-export const yomitanIPC = {
+export const zYomitanIPC = {
   renderer: z.object({
-    "yomitan:open": simple,
-    "yomitan:minimize": simple,
-    "yomitan:reinstall": simple,
+    "yomitan:open": zSimple,
+    "yomitan:minimize": zSimple,
+    "yomitan:reinstall": zSimple,
   }),
 };

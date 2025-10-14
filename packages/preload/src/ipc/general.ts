@@ -1,21 +1,21 @@
 import z from "zod";
-import { simple } from "./_util";
+import { zSimple } from "./_util";
 
-const status = z.union([
+export const zStatus = z.union([
   z.literal("connected"),
   z.literal("disconnected"),
   z.literal("connecting"),
 ]);
 
-export const generalIPC = {
+export const zGeneralIPC = {
   renderer: z.object({
-    "general:ready": simple,
+    "general:ready": zSimple,
     "general:getClientStatus": z.object({
       input: z.tuple([]),
       output: z.object({
-        anki: status,
-        obs: status,
-        textractor: status,
+        anki: zStatus,
+        obs: zStatus,
+        textractor: zStatus,
       }),
     }),
   }),

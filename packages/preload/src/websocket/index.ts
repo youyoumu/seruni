@@ -6,23 +6,23 @@ import {
   type SocketOptions,
 } from "socket.io-client";
 import z from "zod";
-import { devWS } from "./dev";
+import { zDevWS } from "./dev";
 
-export { devWS };
+export { zDevWS as devWS };
 
-const wsFromServer = z.object({
-  ...devWS.server.shape,
+const zWsFromServer = z.object({
+  ...zDevWS.server.shape,
 });
-const wsFromServerEvent = wsFromServer.keyof();
-export type WsFromServer = z.infer<typeof wsFromServer>;
-export type WsFromServerEvent = z.infer<typeof wsFromServerEvent>;
+const zWsFromServerEvent = zWsFromServer.keyof();
+export type WsFromServer = z.infer<typeof zWsFromServer>;
+export type WsFromServerEvent = z.infer<typeof zWsFromServerEvent>;
 
-const wsFromClient = z.object({
-  ...devWS.client.shape,
+const zWsFromClient = z.object({
+  ...zDevWS.client.shape,
 });
-const wsFromClientEvent = wsFromClient.keyof();
-export type WsFromClient = z.infer<typeof wsFromClient>;
-export type WsFromClientEvent = z.infer<typeof wsFromClientEvent>;
+const zWsFromClientEvent = zWsFromClient.keyof();
+export type WsFromClient = z.infer<typeof zWsFromClient>;
+export type WsFromClientEvent = z.infer<typeof zWsFromClientEvent>;
 
 export type WsClientAck<Event extends WsFromClientEvent> = (
   data: WsFromClient[Event]["output"],
@@ -67,14 +67,14 @@ export function createSocketClient(
           ? (args.pop() as WsClientAck<typeof event>)
           : undefined;
       //check if channel valid
-      const eventResult = wsFromClientEvent.safeParse(event);
+      const eventResult = zWsFromClientEvent.safeParse(event);
       if (eventResult.error) {
         console.error("Invalid event", eventResult);
         return;
       }
 
       //check if args valid
-      const argsResult = wsFromClient.shape[event].shape.input.safeParse(args);
+      const argsResult = zWsFromClient.shape[event].shape.input.safeParse(args);
       if (argsResult.error) {
         console.error("Invalid args", argsResult);
         return;

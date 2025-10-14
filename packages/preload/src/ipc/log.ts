@@ -1,6 +1,6 @@
 import z from "zod";
 
-const toastPromiseOptions = z.object({
+const zToastPromiseOptions = z.object({
   loading: z.object({
     title: z.string(),
     description: z.string(),
@@ -15,9 +15,9 @@ const toastPromiseOptions = z.object({
   }),
 });
 
-export type ToastPromiseOptions = z.infer<typeof toastPromiseOptions>;
+export type ToastPromiseOptions = z.infer<typeof zToastPromiseOptions>;
 
-export const logIPC = {
+export const zLogIPC = {
   main: z.object({
     "log:send": z.object({
       input: z.tuple([
@@ -45,8 +45,8 @@ export const logIPC = {
       input: z.tuple([
         z.object({
           uuid: z.string(),
-          loading: toastPromiseOptions.shape.loading,
-          error: toastPromiseOptions.shape.error,
+          loading: zToastPromiseOptions.shape.loading,
+          error: zToastPromiseOptions.shape.error,
         }),
       ]),
       output: z.void(),
@@ -61,7 +61,7 @@ export const logIPC = {
         }),
       ]),
       output: z.object({
-        success: toastPromiseOptions.shape.success,
+        success: zToastPromiseOptions.shape.success,
       }),
     }),
   }),

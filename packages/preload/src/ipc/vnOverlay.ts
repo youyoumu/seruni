@@ -1,11 +1,11 @@
 import z from "zod";
-import { vnOverlaySettings } from "./_shared";
-import { simple } from "./_util";
+import { zVnOverlaySettings } from "./_shared";
+import { zSimple } from "./_util";
 
-export const vnOverlayIPC = {
+export const zVnOverlayIPC = {
   main: z.object({
     "vnOverlay:setSettings": z.object({
-      input: z.tuple([vnOverlaySettings]),
+      input: z.tuple([zVnOverlaySettings]),
       output: z.void(),
     }),
     "vnOverlay:sendText": z.object({
@@ -20,7 +20,7 @@ export const vnOverlayIPC = {
     }),
   }),
   renderer: z.object({
-    "vnOverlay:open": simple,
-    "vnOverlay:minimize": simple,
+    "vnOverlay:open": zSimple,
+    "vnOverlay:minimize": zSimple,
   }),
 };

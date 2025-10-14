@@ -1,4 +1,4 @@
-import { configSchema } from "@repo/preload/ipc";
+import { zConfig } from "@repo/preload/ipc";
 import Config, { type Schema } from "conf";
 import { app } from "electron";
 import { debounce } from "es-toolkit";
@@ -9,7 +9,7 @@ import { env } from "#/env";
 
 hmr.log(import.meta.url);
 
-type ConfigSchema = z.infer<typeof configSchema>;
+type ConfigSchema = z.infer<typeof zConfig>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
 
 class Config_ extends Config<ConfigSchema> {
@@ -21,7 +21,7 @@ class Config_ extends Config<ConfigSchema> {
       fileExtension: "toml",
       deserialize: parse as typeof JSON.parse,
       serialize: stringify,
-      schema: z.toJSONSchema(configSchema).properties as Schema<ConfigSchema>,
+      schema: z.toJSONSchema(zConfig).properties as Schema<ConfigSchema>,
       defaults: {
         window: {
           vn_overlay: {

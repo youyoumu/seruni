@@ -1,11 +1,11 @@
 import { ipcRenderer } from "electron";
 import z from "zod";
-import { generalIPC } from "./general";
-import { logIPC } from "./log";
-import { miningIPC } from "./mining";
-import { settingsIPC } from "./settings";
-import { vnOverlayIPC } from "./vnOverlay";
-import { yomitanIPC } from "./yomitan";
+import { zGeneralIPC } from "./general";
+import { zLogIPC } from "./log";
+import { zMiningIPC } from "./mining";
+import { zSettingsIPC } from "./settings";
+import { zVnOverlayIPC } from "./vnOverlay";
+import { zYomitanIPC } from "./yomitan";
 
 export * from "./_shared";
 export * from "./general";
@@ -16,26 +16,26 @@ export * from "./vnOverlay";
 export * from "./yomitan";
 
 //  ──────────────────────── From Renderer To Main ────────────────────────
-const ipcFromRenderer = z.object({
-  ...generalIPC.renderer.shape,
-  ...vnOverlayIPC.renderer.shape,
-  ...yomitanIPC.renderer.shape,
-  ...settingsIPC.renderer.shape,
-  ...miningIPC.renderer.shape,
-  ...logIPC.renderer.shape,
+const zIpcFromRenderer = z.object({
+  ...zGeneralIPC.renderer.shape,
+  ...zVnOverlayIPC.renderer.shape,
+  ...zYomitanIPC.renderer.shape,
+  ...zSettingsIPC.renderer.shape,
+  ...zMiningIPC.renderer.shape,
+  ...zLogIPC.renderer.shape,
 });
-const ipcFromRendererChannel = ipcFromRenderer.keyof();
-export type IPCFromRenderer = z.infer<typeof ipcFromRenderer>;
-export type IPCFromRendererChannel = z.infer<typeof ipcFromRendererChannel>;
+const zIpcFromRendererChannel = zIpcFromRenderer.keyof();
+export type IPCFromRenderer = z.infer<typeof zIpcFromRenderer>;
+export type IPCFromRendererChannel = z.infer<typeof zIpcFromRendererChannel>;
 //  ──────────────────────── From Renderer To Main ────────────────────────
 
 //  ──────────────────────── From Main To Renderer ────────────────────────
-const ipcFromMain = z.object({
-  ...logIPC.main.shape,
-  ...vnOverlayIPC.main.shape,
+const zIpcFromMain = z.object({
+  ...zLogIPC.main.shape,
+  ...zVnOverlayIPC.main.shape,
 });
-const ipcFromMainChannel = ipcFromMain.keyof();
-export type IPCFromMain = z.infer<typeof ipcFromMain>;
+const ipcFromMainChannel = zIpcFromMain.keyof();
+export type IPCFromMain = z.infer<typeof zIpcFromMain>;
 export type IPCFromMainChannel = z.infer<typeof ipcFromMainChannel>;
 //  ──────────────────────── From Main To Renderer ────────────────────────
 
@@ -70,7 +70,7 @@ const listenerMap = new WeakMap<Fn, Fn>();
 export const ipcRenderer_: IPCRenderer = {
   send: (channel, ...args) => {
     //check if channel valid
-    const channelResult = ipcFromRendererChannel.safeParse(channel);
+    const channelResult = zIpcFromRendererChannel.safeParse(channel);
     if (channelResult.error) {
       console.error("Invalid channel", channelResult);
       return;
@@ -78,7 +78,7 @@ export const ipcRenderer_: IPCRenderer = {
 
     //check if args valid
     const argsResult =
-      ipcFromRenderer.shape[channel].shape.input.safeParse(args);
+      zIpcFromRenderer.shape[channel].shape.input.safeParse(args);
     if (argsResult.error) {
       console.error("Invalid args", argsResult);
       return;
@@ -90,7 +90,7 @@ export const ipcRenderer_: IPCRenderer = {
   //TODO: make this dry
   invoke: async (channel, ...args) => {
     //check if channel valid
-    const channelResult = ipcFromRendererChannel.safeParse(channel);
+    const channelResult = zIpcFromRendererChannel.safeParse(channel);
     if (channelResult.error) {
       console.error("Invalid channel", channelResult);
       return;
@@ -98,7 +98,7 @@ export const ipcRenderer_: IPCRenderer = {
 
     //check if args valid
     const argsResult =
-      ipcFromRenderer.shape[channel].shape.input.safeParse(args);
+      zIpcFromRenderer.shape[channel].shape.input.safeParse(args);
     if (argsResult.error) {
       console.error("Invalid args", argsResult);
       return;

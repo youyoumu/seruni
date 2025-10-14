@@ -1,20 +1,20 @@
 import z from "zod";
-import { configSchema, vnOverlaySettings } from "./_shared";
-import { simple } from "./_util";
+import { zConfig, zVnOverlaySettings } from "./_shared";
+import { zSimple } from "./_util";
 
-export const settingsIPC = {
+export const zSettingsIPC = {
   renderer: z.object({
     "settings:setSettings": z.object({
-      input: z.tuple([configSchema.partial()]),
+      input: z.tuple([zConfig.partial()]),
       output: z.void(),
     }),
     "settings:setVnOverlaySettings": z.object({
-      input: z.tuple([vnOverlaySettings]),
+      input: z.tuple([zVnOverlaySettings]),
       output: z.void(),
     }),
     "settings:getConfig": z.object({
       input: z.tuple([]),
-      output: configSchema,
+      output: zConfig,
     }),
     "settings:getEnv": z.object({
       input: z.tuple([]),
@@ -23,7 +23,7 @@ export const settingsIPC = {
         z.union([z.string(), z.number(), z.boolean()]),
       ),
     }),
-    "settings:installPython": simple,
+    "settings:installPython": zSimple,
     "settings:runPython": z.object({
       input: z.tuple([z.array(z.string())]),
       output: z.void(),
