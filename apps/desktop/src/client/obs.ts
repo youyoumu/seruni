@@ -8,10 +8,9 @@ hmr.log(import.meta);
 export function createObsClient() {
   class ObsClient {
     client: OBSWebSocket | undefined;
-    url = () => `ws://127.0.0.1:${config.store.obs.obsWebSocketPort}`;
+    url = () => `ws://localhost:${config.store.obs.obsWebSocketPort}`;
     reconnecting = false;
     retryCount = 0;
-    maxRetries = Infinity; // keep trying forever
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
     status: ClientStatus = "disconnected";
@@ -25,25 +24,33 @@ export function createObsClient() {
 
       try {
         await this.client.connect(this.url());
-        log.info(`Connected to OBS on ${this.url()}`);
+        log.info(`OBS: Connected on ${this.url()}`);
         this.status = "connected";
 
         // Reset retry state
         this.retryCount = 0;
 
         // Auto-start Replay Buffer if not active
-        log.info("Ensuring Replay Buffer is active...");
+        log.info("OBS: Ensuring Replay Buffer is active...");
         const res = await this.client.call("GetReplayBufferStatus");
         if (!res.outputActive) {
           await this.client.call("StartReplayBuffer");
-          log.info("Replay Buffer started");
+          log.info("OBS: Replay Buffer started");
         }
 
         // Listen for disconnections
-        this.client.on("ConnectionClosed", () => this.handleDisconnect());
-        this.client.on("ConnectionError", () => this.handleDisconnect());
-      } catch (error) {
-        log.error({ error }, `Failed to connect to OBS on ${this.url()}`);
+        this.client.on("ConnectionError", () => {
+          log.error("OBS: Connection error");
+          this.handleDisconnect();
+        });
+        this.client.on("ConnectionClosed", () => {
+          if (!this.reconnecting) {
+            log.error("OBS: Connection closed");
+          }
+          this.handleDisconnect();
+        });
+      } catch {
+        log.warn(`OBS: Failed to connect on ${this.url()}`);
         this.handleDisconnect();
       }
     }
@@ -55,13 +62,8 @@ export function createObsClient() {
     }
 
     scheduleReconnect() {
-      if (this.retryCount >= this.maxRetries) {
-        log.error("Max retries reached. Stopping OBS reconnect attempts.");
-        return;
-      }
-
       const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
-      log.info(`Reconnecting to OBS in ${delay / 1000} seconds...`);
+      log.info(`OBS: Reconnecting in ${delay / 1000} seconds...`);
       this.retryCount++;
 
       if (this.retryTimer) clearTimeout(this.retryTimer);

@@ -12,11 +12,10 @@ export function createTextractorClient() {
     history: { time: Date; text: string; uuid: string }[] = [];
     client: WebSocket | undefined;
     retryCount = 0;
-    maxRetries = Infinity;
     retryTimer: NodeJS.Timeout | null = null;
     maxDelay = 16000;
     url = () =>
-      `ws://127.0.0.1:${config.store.textractor.textractorWebSocketPort}`;
+      `ws://localhost:${config.store.textractor.textractorWebSocketPort}`;
     reconnecting = false;
     status: ClientStatus = "disconnected";
 
@@ -27,7 +26,7 @@ export function createTextractorClient() {
         this.client = new WebSocket(this.url());
 
         this.client.on("open", () => {
-          log.info(`Connected to Textractor on ${this.url()}`);
+          log.info(`Textractor: Connected on ${this.url()}`);
           this.status = "connected";
           this.retryCount = 0;
         });
@@ -42,25 +41,19 @@ export function createTextractorClient() {
           vnOverlayIPC().send("vnOverlay:sendText", payload);
         });
 
-        this.client.on("error", (err) => {
-          log.error({ error: err }, "Textractor socket error");
+        this.client.on("error", () => {
+          log.warn(`Textractor: Failed to connect on ${this.url()}`);
           this.handleDisconnect();
         });
 
-        this.client.on("close", (code, reason) => {
+        this.client.on("close", () => {
           if (!this.reconnecting) {
-            log.warn(
-              { code, reason: reason.toString() },
-              "Textractor socket closed",
-            );
+            log.error("Textractor: Connection closed");
           }
           this.handleDisconnect();
         });
-      } catch (e) {
-        log.error(
-          { error: e },
-          `Failed to connect to Textractor on ${this.url()}`,
-        );
+      } catch {
+        log.error(`Textractor: Failed to connect on ${this.url()}`);
         this.scheduleReconnect();
       }
     }
@@ -72,13 +65,8 @@ export function createTextractorClient() {
     }
 
     scheduleReconnect() {
-      if (this.retryCount >= this.maxRetries) {
-        log.error("Max retries reached. Giving up on Textractor connection.");
-        return;
-      }
-
       const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
-      log.info(`Reconnecting to Textractor in ${delay / 1000} seconds...`);
+      log.info(`Textractor: Reconnecting in ${delay / 1000} seconds...`);
       this.retryCount++;
 
       if (this.retryTimer) clearTimeout(this.retryTimer);

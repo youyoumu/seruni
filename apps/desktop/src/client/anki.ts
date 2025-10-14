@@ -52,13 +52,12 @@ export function createAnkiClient() {
         this.retryCount = 0;
         this.status = "connected";
         log.info(
-          `Connected to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
+          `AnkiConnect: Connected on port ${config.store.anki.ankiConnectPort}`,
         );
         this.monitor();
-      } catch (error) {
+      } catch {
         log.error(
-          { error },
-          `Failed to connect to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
+          `AnkiConnect: Failed to connect on port ${config.store.anki.ankiConnectPort}`,
         );
         this.reconnect();
       }
@@ -72,7 +71,7 @@ export function createAnkiClient() {
 
     scheduleReconnect() {
       const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
-      log.info(`Reconnecting to AnkiConnect in ${delayMs / 1000} seconds...`);
+      log.info(`AnkiConnect: Reconnecting in ${delayMs / 1000} seconds...`);
       this.retryCount++;
 
       if (this.retryTimer) clearTimeout(this.retryTimer);
