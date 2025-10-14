@@ -54,11 +54,15 @@ export const logIPC = hmr.module(createLogIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
+const module: typeof import("./log") = { logIPC };
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { logIPC } = await hmr.register<typeof import("./log")>(
+    import.meta,
+    module,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.logIPC().register();
+    logIPC().register();
   });
   import.meta.hot.dispose(() => {
     logIPC().unregister();

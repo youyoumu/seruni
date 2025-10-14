@@ -42,10 +42,13 @@ export const generalIPC = hmr.module(createGeneralIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
+  const { generalIPC } = await hmr.register<typeof import("./general")>(
+    import.meta,
+  );
   hmr.register(import.meta);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.generalIPC().register();
+    generalIPC().register();
   });
   import.meta.hot.dispose(() => {
     generalIPC().unregister();

@@ -1,6 +1,7 @@
 import { rm } from "node:fs/promises";
 import { basename } from "node:path";
 import type { ClientStatus } from "@repo/preload/ipc";
+import { format } from "date-fns";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
@@ -28,10 +29,8 @@ export function createAnkiClient() {
     lastAddedNote: number | undefined;
     reconnecting = false;
     retryCount = 0;
-    maxRetries = Infinity;
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
-    monitorStarted = false;
     status: ClientStatus = "disconnected";
     textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
     mediaDir: string | undefined;
@@ -58,30 +57,23 @@ export function createAnkiClient() {
         log.info(
           `Connected to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
         );
-        if (this.monitorStarted) this.monitor();
+        this.monitor();
       } catch (error) {
         log.error(
           { error },
           `Failed to connect to AnkiConnect on port ${config.store.anki.ankiConnectPort}`,
         );
-        this.handleDisconnect();
+        this.reconnect();
       }
     }
 
-    handleDisconnect() {
+    reconnect() {
       if (this.reconnecting) return;
       this.reconnecting = true;
       this.scheduleReconnect();
     }
 
     scheduleReconnect() {
-      if (this.retryCount >= this.maxRetries) {
-        log.error(
-          "Max retries reached. Stopping AnkiConnect reconnection attempts.",
-        );
-        return;
-      }
-
       const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
       log.info(`Reconnecting to AnkiConnect in ${delayMs / 1000} seconds...`);
       this.retryCount++;
@@ -100,11 +92,10 @@ export function createAnkiClient() {
     }
 
     async monitor() {
-      this.monitorStarted = true;
       while (true) {
         if (!this.client) {
           log.warn("Anki client unavailable, pausing...");
-          this.handleDisconnect();
+          this.reconnect();
           break;
         }
 
@@ -149,7 +140,7 @@ export function createAnkiClient() {
           }
         } catch (error) {
           log.error({ error }, "Failed to get last added note");
-          this.handleDisconnect();
+          this.reconnect();
           break;
         }
 
@@ -174,6 +165,7 @@ export function createAnkiClient() {
         .desc(({ time }) => time)
         .find(({ time, uuid }) => {
           return true;
+          //TODO: handle circular dependency
           // return time <= now && uuid === miningIPC().textUuid;
         });
       if (!history) {
@@ -182,7 +174,7 @@ export function createAnkiClient() {
       log.debug(
         {
           text: history?.text,
-          time: history?.time?.toLocaleDateString(),
+          time: format(history?.time, "yyyy-MM-dd HH:mm:ss"),
         },
         "Using history",
       );
@@ -374,9 +366,15 @@ export const ankiClient = hmr.module(createAnkiClient());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
+  const { ankiClient } = await hmr.register<typeof import("./anki")>(
+    import.meta,
+  );
   hmr.register(import.meta);
-  import.meta.hot.accept((mod) => {
+  import.meta.hot.accept(async (mod) => {
     hmr.update(import.meta, mod);
+    await ankiClient().prepare();
   });
-  import.meta.hot.dispose(() => {});
+  import.meta.hot.dispose(() => {
+    ankiClient().close();
+  });
 }

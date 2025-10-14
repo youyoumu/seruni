@@ -39,15 +39,20 @@ class HMR {
     log.trace({ namespace: "HMR" }, `Importing ${meta.url}`);
   }
 
-  async register<M extends Record<string, any>>(meta: ImportMeta) {
-    const module = (
-      !this.store.has(meta.url)
-        ? await import(
-            /* @vite-ignore */
-            meta.url
-          )
-        : this.store.get(meta.url)
-    ) as M;
+  async register<M extends Record<string, any>>(
+    meta: ImportMeta,
+    module?: HmrModule,
+  ) {
+    if (!module) {
+      module = (
+        !this.store.has(meta.url)
+          ? await import(
+              /* @vite-ignore */
+              meta.url
+            )
+          : this.store.get(meta.url)
+      ) as M;
+    }
     if (!this.store.has(meta.url)) {
       this.update(meta, module);
     }

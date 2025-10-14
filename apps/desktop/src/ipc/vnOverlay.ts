@@ -29,10 +29,12 @@ export const vnOverlayIPC = hmr.module(createVnOverlayIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { vnOverlayIPC } = await hmr.register<typeof import("./vnOverlay")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.vnOverlayIPC().register();
+    vnOverlayIPC().register();
   });
   import.meta.hot.dispose(() => {
     vnOverlayIPC().unregister();

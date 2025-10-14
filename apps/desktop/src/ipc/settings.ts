@@ -64,10 +64,12 @@ export const settingsIPC = hmr.module(createSettingsIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { settingsIPC } = await hmr.register<typeof import("./settings")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.settingsIPC().register();
+    settingsIPC().register();
   });
   import.meta.hot.dispose(() => {
     settingsIPC().unregister();

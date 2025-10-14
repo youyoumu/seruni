@@ -39,10 +39,12 @@ export const yomitanIPC = hmr.module(createYomitanIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { yomitanIPC } = await hmr.register<typeof import("./yomitan")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.yomitanIPC().register();
+    yomitanIPC().register();
   });
   import.meta.hot.dispose(() => {
     yomitanIPC().unregister();

@@ -61,9 +61,11 @@ if (import.meta.hot) {
   });
 
   import.meta.hot.dispose(async () => {
-    log.warn("HMR update detected on the main process, reloading...");
+    log.warn(
+      { namespace: "HMR" },
+      "HMR update detected on the main.ts, reloading...",
+    );
     textractorClient().client?.close();
-    await devWS().register();
     devWS().emit("dev:restart", () => {
       app.exit();
     });
