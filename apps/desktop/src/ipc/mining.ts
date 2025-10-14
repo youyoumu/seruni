@@ -2,6 +2,7 @@ import { ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { env } from "#/env";
 import { config } from "#/util/config";
+import { log } from "#/util/logger";
 import { IPC } from "./base";
 
 hmr.log(import.meta);
@@ -64,13 +65,46 @@ function createMiningIPC() {
               word,
               picture: pictureMedia,
               sentenceAudio: audioMedia,
-              nsfw: note.tags.map((t) => t.toLowerCase()).includes("nsfw"),
+              nsfw: ankiClient().inNsfw(note),
             };
           });
 
           return { data: data ?? [] };
         } catch {
           return { data: [] };
+        }
+      });
+
+      this.handle("mining:toggleNoteNsfw", async (_, { noteId, checked }) => {
+        log.debug({ noteId, checked }, `Updating note NSFW tag`);
+        try {
+          const note = await ankiClient().getNote(noteId);
+          const nsfw = ankiClient().inNsfw(note);
+          if (nsfw === checked) {
+            log.warn("Note already has the same NSFW tag");
+            return true;
+          }
+          const client = ankiClient().client;
+          if (!client) {
+            log.error("Anki client not connected");
+            return false;
+          }
+          if (checked) {
+            await client.note.addTags({
+              notes: [noteId],
+              tags: "NSFW",
+            });
+          } else {
+            await client.note.removeTags({
+              notes: [noteId],
+              tags: "NSFW",
+            });
+          }
+          log.debug({ noteId, checked }, "Note NSFW tag updated");
+          return true;
+        } catch (e) {
+          log.error({ error: e }, "Failed to update note NSFW tag");
+          return false;
         }
       });
     }

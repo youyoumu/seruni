@@ -28,8 +28,10 @@ import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
+import { appToaster } from "./AppToaster";
 
 const srcMap = new Map<string, true>();
+const nsfwUpdateLock = new Map<number, boolean>();
 
 export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
@@ -86,6 +88,7 @@ export function HistoryTab() {
       >
         <For each={slicedHistory()}>
           {(item) => {
+            const [nsfw, setNsfw] = createSignal(item.nsfw);
             const time = formatRelative(new Date(item.id), new Date());
             const textVariant = cva({
               base: {
@@ -173,7 +176,7 @@ export function HistoryTab() {
                                     objectFit: "contain",
                                     rounded: "md",
                                     cursor: "pointer",
-                                    filter: item.nsfw
+                                    filter: nsfw()
                                       ? "[blur(12px) brightness(0.5)]"
                                       : "auto",
                                     _hover: {
@@ -240,7 +243,51 @@ export function HistoryTab() {
                               )}
                             />
                             <HStack justifyContent="end" px="8">
-                              <Toggle checked={item.nsfw}>NSFW</Toggle>
+                              <Toggle
+                                checked={nsfw()}
+                                onCheckedChange={() => {
+                                  if (nsfwUpdateLock.get(item.id)) return;
+                                  setNsfw(!nsfw());
+                                  appToaster.promise(
+                                    ipcRenderer
+                                      .invoke("mining:toggleNoteNsfw", {
+                                        noteId: item.id,
+                                        checked: nsfw(),
+                                      })
+                                      .then((success) => {
+                                        if (!success) {
+                                          setNsfw(!nsfw());
+                                          throw new Error(
+                                            "Failed to update NSFW tag",
+                                          );
+                                        }
+                                      })
+                                      .catch(() => {
+                                        setNsfw(!nsfw());
+                                      })
+                                      .finally(() => {
+                                        nsfwUpdateLock.delete(item.id);
+                                      }),
+                                    {
+                                      loading: {
+                                        title: "Updating note NSFW tag...",
+                                        description: `${item.word}`,
+                                      },
+                                      error: {
+                                        title: "Error",
+                                        description:
+                                          "Failed to update note NSFW tag",
+                                      },
+                                      success: {
+                                        title: "Note NSFW tag updated",
+                                        description: `${item.word}`,
+                                      },
+                                    },
+                                  );
+                                }}
+                              >
+                                NSFW
+                              </Toggle>
                             </HStack>
                           </Dialog.Content>
                         </Dialog.Positioner>

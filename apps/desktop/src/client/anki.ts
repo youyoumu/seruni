@@ -124,7 +124,7 @@ export function createAnkiClient() {
               const word = this.getWord(noteInfo);
 
               logIPC().sendToastPromise(
-                (async () => {
+                async () => {
                   const result = await this.handleNewNote(lastAddedNote);
                   return {
                     success: {
@@ -132,7 +132,7 @@ export function createAnkiClient() {
                       description: `${word}${result?.reuseMedia ? " (♻  media)" : ""}`,
                     },
                   };
-                })(),
+                },
                 {
                   loading: {
                     title: "Processing New Note...",
@@ -377,6 +377,10 @@ export function createAnkiClient() {
       const firstField = Object.keys(note?.fields ?? {})[0] ?? "";
       const word = note?.fields[firstField]?.value ?? "";
       return word;
+    }
+
+    inNsfw(note: AnkiNote) {
+      return note?.tags.map((t) => t.toLowerCase()).includes("nsfw");
     }
   }
 

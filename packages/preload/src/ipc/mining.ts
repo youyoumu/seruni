@@ -38,5 +38,14 @@ export const zMiningIPC = {
         data: zAnkiHistory,
       }),
     }),
+    "mining:toggleNoteNsfw": z.object({
+      input: z.tuple([
+        z.object({
+          noteId: z.number(),
+          checked: z.boolean(),
+        }),
+      ]),
+      output: z.boolean(),
+    }),
   }),
 };

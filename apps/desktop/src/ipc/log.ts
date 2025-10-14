@@ -36,11 +36,11 @@ function createLogIPC() {
     }
 
     sendToastPromise(
-      promise: Promise<ToastPromiseResultOptions>,
+      handler: () => Promise<ToastPromiseResultOptions>,
       toast: Omit<ToastPromiseOptions, "success">,
     ) {
       const uuid = crypto.randomUUID();
-      this.toastPromise[uuid] = promise;
+      this.toastPromise[uuid] = handler();
       this.send("log:toastPromise", {
         uuid,
         ...toast,
