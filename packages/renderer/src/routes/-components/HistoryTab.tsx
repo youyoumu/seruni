@@ -1,3 +1,4 @@
+import { usePagination } from "@ark-ui/solid";
 import {
   type AnkiHistory,
   zAnkiCollectionMediaUrlPath,
@@ -20,6 +21,7 @@ import { css, cva, type RecipeVariantProps } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
+import { Pagination } from "#/components/ui/pagination";
 import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
@@ -28,6 +30,20 @@ import { store } from "#/lib/store";
 export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
   const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
+
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const [pageSize, setPageSize] = createSignal(25);
+  const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
+
+  createEffect(() => {
+    const count = history().length;
+    const pagination = usePagination({
+      count,
+      pageSize: pageSize(),
+      page: currentPage(),
+    });
+    setSlicedHistory(pagination().slice(history()));
+  });
 
   onMount(async () => {
     const { url } = await ipcRenderer.invoke("general:httpServerUrl");
@@ -62,7 +78,7 @@ export function HistoryTab() {
         gap="4"
         alignItems="center"
       >
-        <For each={history()}>
+        <For each={slicedHistory()}>
           {(item) => {
             const time = formatRelative(new Date(item.id), new Date());
             const textVariant = cva({
@@ -216,6 +232,14 @@ export function HistoryTab() {
           }}
         </For>
       </Stack>
+      <Pagination
+        justifyContent="center"
+        count={history().length}
+        pageSize={pageSize()}
+        siblingCount={3}
+        page={currentPage()}
+        onPageChange={(page) => setCurrentPage(page.page)}
+      />
     </Stack>
   );
 }
