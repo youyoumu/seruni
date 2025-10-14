@@ -57,12 +57,15 @@ export const mainWindow = hmr.module(createMainWindow());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { mainWindow } = await hmr.register<typeof import("./main")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.mainWindow().open();
+    mainWindow().open();
   });
   import.meta.hot.dispose(() => {
+    mainWindow().unregister();
     const listener = () => {};
     app.on("window-all-closed", listener);
     mainWindow().win?.close();

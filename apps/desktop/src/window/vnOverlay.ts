@@ -33,12 +33,15 @@ export const vnOverlayWindow = hmr.module(createVnOverlayWindow());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { vnOverlayWindow } = await hmr.register<typeof import("./vnOverlay")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.vnOverlayWindow().open();
+    vnOverlayWindow().open();
   });
   import.meta.hot.dispose(() => {
+    vnOverlayWindow().unregister();
     vnOverlayWindow().win?.close();
   });
 }

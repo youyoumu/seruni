@@ -1,6 +1,7 @@
 import { BrowserWindow } from "electron";
+import { Roarr as log } from "roarr";
 import { env } from "#/env";
-import { bus } from "#/util/bus";
+import { type BusEvents, bus } from "#/util/bus";
 
 hmr.log(import.meta.url);
 
@@ -9,6 +10,7 @@ function createAppWindowClass() {
   class AppWindow {
     options: BrowserWindowOptions;
     win: BrowserWindow | undefined;
+    #controller = new AbortController();
 
     constructor(options: BrowserWindowOptions = {}) {
       const defaultOptions: BrowserWindowOptions = {
@@ -26,13 +28,29 @@ function createAppWindowClass() {
         },
       };
 
-      // this.register();
+      this.register();
     }
 
     register() {
-      bus.on("webContent:send", ({ channel, payload }) => {
+      const listener = ({ channel, payload }: BusEvents["webContent:send"]) => {
         this.win?.webContents.send(channel, ...payload);
-      });
+      };
+
+      log.trace({ namespace: `WIN:webContent:send` }, `addingListener`);
+      bus.on("webContent:send", listener);
+
+      this.#controller.signal.addEventListener(
+        "abort",
+        () => {
+          log.trace({ namespace: `WIN:webContent:send` }, `removingListener`);
+          bus.removeListener("webContent:send", listener);
+        },
+        { once: true },
+      );
+    }
+
+    unregister() {
+      this.#controller.abort();
     }
 
     async create() {

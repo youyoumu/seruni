@@ -31,7 +31,7 @@ export interface TypeSafeEventEmitter<C extends StringKeyedObject> extends Event
   key: <K extends Extract<keyof C, string>>(eventName: K) => K;
 }
 
-type Events = {
+export type BusEvents = {
   "webContent:send": {
     channel: string;
     payload: IPCFromMain[IPCFromMainChannel]["input"];
@@ -41,12 +41,12 @@ type Events = {
 };
 
 class EventEmitter_ extends EventEmitter {
-  key<K extends keyof Events>(key: K) {
+  key<K extends keyof BusEvents>(key: K) {
     return Symbol(key) as unknown as K;
   }
 }
 
-export const bus: TypeSafeEventEmitter<Events> = new EventEmitter_();
+export const bus: TypeSafeEventEmitter<BusEvents> = new EventEmitter_();
 
 //example
 () => {

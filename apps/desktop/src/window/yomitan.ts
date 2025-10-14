@@ -70,12 +70,15 @@ function createYomitanWindow() {
 export const yomitanWindow = hmr.module(createYomitanWindow());
 
 if (import.meta.hot) {
-  hmr.register(import.meta);
+  const { yomitanWindow } = await hmr.register<typeof import("./yomitan")>(
+    import.meta,
+  );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    mod?.yomitanWindow().open();
+    yomitanWindow().open();
   });
   import.meta.hot.dispose(() => {
+    yomitanWindow().unregister();
     yomitanWindow().win?.close();
     yomitanWindow().preloadScriptIds.forEach((id) => {
       session.defaultSession.unregisterPreloadScript(id);
