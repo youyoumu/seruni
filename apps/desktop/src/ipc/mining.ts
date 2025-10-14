@@ -8,7 +8,6 @@ hmr.log(import.meta);
 
 function createMiningIPC() {
   class MiningIPC extends IPC()<"mining"> {
-    textUuid = "";
     constructor() {
       super({
         prefix: "mining",
@@ -17,8 +16,8 @@ function createMiningIPC() {
 
     override register() {
       this.handle("mining:setTextUuid", async (_, { uuid }) => {
-        this.textUuid = uuid;
-        return { uuid: this.textUuid };
+        ankiClient().selectedTextUuid = uuid;
+        return { uuid };
       });
 
       this.handle("mining:getSourceScreenshot", async () => {

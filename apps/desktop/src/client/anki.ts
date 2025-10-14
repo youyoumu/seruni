@@ -32,6 +32,7 @@ export function createAnkiClient() {
     maxDelay = 16000;
     retryTimer: NodeJS.Timeout | null = null;
     status: ClientStatus = "disconnected";
+    selectedTextUuid: string | undefined;
     textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
     mediaDir: string | undefined;
 
@@ -160,9 +161,7 @@ export function createAnkiClient() {
       const history = sort(textractorClient().history)
         .desc(({ time }) => time)
         .find(({ time, uuid }) => {
-          return true;
-          //TODO: handle circular dependency
-          // return time <= now && uuid === miningIPC().textUuid;
+          return time <= now && uuid === this.selectedTextUuid;
         });
       if (!history) {
         throw new Error("Failed to find history");
