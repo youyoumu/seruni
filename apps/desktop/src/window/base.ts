@@ -1,5 +1,6 @@
 import { BrowserWindow } from "electron";
 import { env } from "#/env";
+import { bus } from "#/util/bus";
 
 hmr.log(import.meta.url);
 
@@ -24,6 +25,14 @@ function createAppWindowClass() {
           ...options.webPreferences,
         },
       };
+
+      // this.register();
+    }
+
+    register() {
+      bus.on("webContent:send", ({ channel, payload }) => {
+        this.win?.webContents.send(channel, ...payload);
+      });
     }
 
     async create() {

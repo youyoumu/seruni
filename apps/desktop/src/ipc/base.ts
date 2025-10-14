@@ -6,6 +6,7 @@ import type {
 } from "@repo/preload/ipc";
 import { type BrowserWindow, ipcMain } from "electron";
 import { Roarr as log } from "roarr";
+import { bus } from "#/util/bus";
 
 hmr.log(import.meta.url);
 
@@ -67,9 +68,13 @@ function createIPCClass() {
       channel: K,
       ...payload: IPCFromMain[K]["input"]
     ) {
-      this.#win()?.forEach((win) => {
-        win?.webContents.send(channel, ...payload);
+      bus.emit("webContent:send", {
+        channel,
+        payload,
       });
+      // this.#win()?.forEach((win) => {
+      //   win?.webContents.send(channel, ...payload);
+      // });
     }
 
     register() {}
