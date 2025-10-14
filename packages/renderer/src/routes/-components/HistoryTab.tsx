@@ -174,6 +174,13 @@ export function HistoryTab() {
                                     objectFit: "contain",
                                     rounded: "md",
                                     cursor: "pointer",
+                                    filter: item.nsfw
+                                      ? "[blur(12px) brightness(0.5)]"
+                                      : "auto",
+                                    _hover: {
+                                      filter: "[blur(0px) brightness(1)]",
+                                    },
+                                    transition: "[filter 0.2s ease-in-out]",
                                   })}
                                   style={{
                                     display: loaded() ? "block" : "none",

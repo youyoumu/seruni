@@ -8,6 +8,7 @@ export const zAnkiHistory = z.array(
     word: z.string(),
     picture: z.string(),
     sentenceAudio: z.string(),
+    nsfw: z.boolean(),
   }),
 );
 

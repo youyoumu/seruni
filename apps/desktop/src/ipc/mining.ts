@@ -64,6 +64,7 @@ function createMiningIPC() {
               word,
               picture: pictureMedia,
               sentenceAudio: audioMedia,
+              nsfw: note.tags.map((t) => t.toLowerCase()).includes("nsfw"),
             };
           });
 
