@@ -5,7 +5,7 @@ import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export function createTextractorClient() {
   class TextractorClient {

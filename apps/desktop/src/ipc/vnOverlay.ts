@@ -1,7 +1,7 @@
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createVnOverlayIPC() {
   class VnOverlayIPC extends IPC()<"vnOverlay"> {

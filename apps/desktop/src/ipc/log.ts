@@ -1,7 +1,7 @@
 import type { ToastPromiseOptions } from "@repo/preload/ipc";
 import { IPC } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 type ToastPromiseResultOptions = Omit<
   Omit<ToastPromiseOptions, "loading">,

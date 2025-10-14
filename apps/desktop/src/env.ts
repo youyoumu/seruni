@@ -6,7 +6,7 @@ import { createEnv } from "@t3-oss/env-core";
 import { app } from "electron";
 import z from "zod";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 async function createEnv_() {
   const envJson = (() => {

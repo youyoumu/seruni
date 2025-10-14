@@ -1,7 +1,7 @@
 import { Roarr as log_ } from "roarr";
 import { logIPC } from "#/ipc/log";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export const log = log_.child<{
   error: unknown;

@@ -3,7 +3,7 @@ import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export function createObsClient() {
   class ObsClient {

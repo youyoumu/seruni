@@ -4,7 +4,7 @@ import { env } from "#/env";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createMainWindow() {
   class MainWindow extends AppWindow() {

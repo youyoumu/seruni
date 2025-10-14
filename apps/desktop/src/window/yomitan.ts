@@ -4,7 +4,7 @@ import { yomitanExtension } from "#/extension/yomitan";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createYomitanWindow() {
   class YomitanWindow extends AppWindow() {

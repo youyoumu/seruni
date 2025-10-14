@@ -6,7 +6,7 @@ import mime from "mime";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 const app = new Hono();
 

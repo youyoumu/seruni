@@ -3,7 +3,7 @@ import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
 import { IPC } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createGeneralIPC() {
   class GeneralIPC extends IPC()<"general"> {

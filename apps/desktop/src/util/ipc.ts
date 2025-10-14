@@ -5,6 +5,8 @@ import { settingsIPC } from "#/ipc/settings";
 import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { yomitanIPC } from "#/ipc/yomitan";
 
+hmr.log(import.meta);
+
 export function registerAllIPC() {
   generalIPC().register();
   logIPC().register();

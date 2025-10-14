@@ -7,7 +7,7 @@ import StreamZip from "node-stream-zip";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export class Extension {
   name: string;

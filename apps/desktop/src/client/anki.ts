@@ -20,7 +20,7 @@ type TextUuidQueueResult =
     }
   | undefined;
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export function createAnkiClient() {
   class AnkiClient {

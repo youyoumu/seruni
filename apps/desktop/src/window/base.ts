@@ -3,7 +3,7 @@ import { env } from "#/env";
 import { type BusEvents, bus } from "#/util/bus";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 type BrowserWindowOptions = ConstructorParameters<typeof BrowserWindow>[0];
 function createAppWindowClass() {

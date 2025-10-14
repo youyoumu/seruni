@@ -2,7 +2,7 @@ import { app } from "electron";
 import { textractorClient } from "#/client/textractor";
 import { AppWebsocket } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createDevWS() {
   class DevWS extends AppWebsocket()<"dev"> {

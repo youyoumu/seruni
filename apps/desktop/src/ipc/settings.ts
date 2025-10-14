@@ -7,7 +7,7 @@ import { python } from "#/util/python";
 import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createSettingsIPC() {
   class SettingsIPC extends IPC()<"settings"> {

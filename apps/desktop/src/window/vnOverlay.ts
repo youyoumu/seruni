@@ -1,7 +1,7 @@
 import { env } from "#/env";
 import { AppWindow } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createVnOverlayWindow() {
   class VnOverlayWindow extends AppWindow() {

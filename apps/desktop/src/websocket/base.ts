@@ -7,10 +7,9 @@ import type {
 import { isJSONValue } from "es-toolkit";
 import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
-import { env } from "#/env";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 export type WsServerAck<Event extends WsFromServerEvent> = (
   data: WsFromServer[Event]["output"],
@@ -29,7 +28,6 @@ function createAppWebsocketClass() {
   class AppWebsocket<Prefix extends string> {
     prefix: Prefix;
     #controller = new AbortController();
-    static #instances: Set<AppWebsocket<string>> = new Set();
     static io = new Server();
     static socket: Socket<
       DefaultEventsMap,
@@ -42,7 +40,6 @@ function createAppWebsocketClass() {
       prefix: Prefix;
     }) {
       this.prefix = options.prefix;
-      AppWebsocket.#instances.add(this);
     }
 
     on<Event extends EventWithPrefix<WsFromClientEvent, Prefix>>(
@@ -124,21 +121,6 @@ function createAppWebsocketClass() {
         resolve();
       });
       await promise;
-    }
-
-    static unregisterAll() {
-      for (const instance of AppWebsocket.#instances) {
-        instance.unregister();
-      }
-      AppWebsocket.#instances.clear();
-    }
-
-    static async registerAll() {
-      AppWebsocket.io.listen(env.WS_PORT);
-      log.info(`Websocket server listening on port ${env.WS_PORT}`);
-      for (const instance of AppWebsocket.#instances) {
-        instance.register();
-      }
     }
   }
 

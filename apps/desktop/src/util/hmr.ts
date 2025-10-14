@@ -35,8 +35,8 @@ class HMR {
     return this.store.get(meta.url) as M;
   }
 
-  log(url: string) {
-    log.trace({ namespace: "HMR" }, `Importing ${url}`);
+  log(meta: ImportMeta) {
+    log.trace({ namespace: "HMR" }, `Importing ${meta.url}`);
   }
 
   async register<M extends Record<string, any>>(meta: ImportMeta) {
@@ -110,4 +110,4 @@ declare global {
   var hmr: HMR;
 }
 global.hmr = new HMR();
-hmr.log(import.meta.url);
+hmr.log(import.meta);

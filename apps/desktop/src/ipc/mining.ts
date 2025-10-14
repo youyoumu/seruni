@@ -4,7 +4,7 @@ import { env } from "#/env";
 import { config } from "#/util/config";
 import { IPC } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createMiningIPC() {
   class MiningIPC extends IPC()<"mining"> {

@@ -3,7 +3,7 @@ import { log } from "#/util/logger";
 import { yomitanWindow } from "../window/yomitan";
 import { IPC } from "./base";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 function createYomitanIPC() {
   class YomitanIPC extends IPC()<"yomitan"> {
