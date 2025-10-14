@@ -4,6 +4,8 @@ import { config } from "#/util/config";
 import { mainWindow } from "#/window/main";
 import { IPC } from "./base";
 
+hmr.log(import.meta.url);
+
 function createMiningIPC() {
   class MiningIPC extends IPC()<"mining"> {
     textUuid = "";
@@ -35,7 +37,7 @@ function createMiningIPC() {
       });
 
       this.handle("mining:getAnkiHistory", async () => {
-        // console.log("DEBUG[712]: ankiClient().client=", ankiClient().client);
+        console.log("DEBUG[731]: ankiClient().client=", ankiClient().client);
         try {
           const noteIds = await ankiClient().client?.note.findNotes({
             query: `tag:${env.APP_NAME}`,
@@ -95,7 +97,6 @@ function createMiningIPC() {
 }
 
 export const miningIPC = hmr.module(createMiningIPC());
-global.miningIPC ??= miningIPC;
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
@@ -106,7 +107,6 @@ if (import.meta.hot) {
 
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
-    console.log("Same?", miningIPC === global.miningIPC);
     miningIPC().register();
   });
 

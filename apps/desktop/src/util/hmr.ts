@@ -1,8 +1,5 @@
-type ModuleValue = {
-  __isHMR: true;
-};
-type ModuleAccessor = (value?: ModuleValue) => ModuleValue;
-type HmrModule = Record<string, ModuleAccessor>;
+type ModuleValue = any;
+type HmrModule = Record<string, ModuleValue>;
 type Cleanup = (() => Promise<void>) | (() => void);
 type Effect = (() => Promise<Cleanup>) | (() => Cleanup);
 
@@ -12,6 +9,7 @@ import { Roarr as log } from "roarr";
 class HMR {
   vault = new Map<symbol, ModuleValue>();
   store = new Map<string, HmrModule>();
+  accessors = new Map<() => void, true>();
   effects = new Map<string, Cleanup[]>();
 
   module<T>(initialValue: T): {
@@ -21,16 +19,20 @@ class HMR {
 
   module<T>(initialValue: T) {
     const key = Symbol();
-    (initialValue as ModuleValue).__isHMR = true;
-    this.vault.set(key, initialValue as ModuleValue);
-    return (...args: [T] | []) => {
+    this.vault.set(key, initialValue);
+    const accessor = (...args: [T] | []) => {
       if (args.length > 0) {
-        (args[0] as ModuleValue).__isHMR = true;
-        this.vault.set(key, args[0] as ModuleValue);
+        this.vault.set(key, args[0]);
         return;
       }
       return this.vault.get(key) as T;
     };
+    this.accessors.set(accessor, true);
+    return accessor;
+  }
+
+  m<M extends Record<string, ModuleValue>>(meta: ImportMeta) {
+    return this.store.get(meta.url) as M;
   }
 
   log(url: string) {
@@ -38,29 +40,27 @@ class HMR {
   }
 
   async register<M extends Record<string, any>>(meta: ImportMeta) {
-    const url = meta.url;
     const module = (
-      !this.store.has(url)
+      !this.store.has(meta.url)
         ? await import(
             /* @vite-ignore */
-            url
+            meta.url
           )
-        : this.store.get(url)
+        : this.store.get(meta.url)
     ) as M;
-    if (!this.store.has(url)) {
+    if (!this.store.has(meta.url)) {
       this.update(meta, module);
     }
     return module;
   }
 
   update(meta: ImportMeta, module: HmrModule | undefined) {
-    const url = typeof meta === "string" ? meta : meta.url;
     if (!module) return;
-    const stored = this.store.get(url);
+    const stored = this.store.get(meta.url);
 
     if (!stored) {
       // store initial
-      this.store.set(url, module);
+      this.store.set(meta.url, module);
     } else {
       // merge new keys
       for (const key of Object.keys(module)) {
@@ -71,14 +71,14 @@ class HMR {
       // remove missing keys
       for (const key of Object.keys(stored)) {
         if (!Object.hasOwn(module, key)) {
-          if (stored[key] && (stored[key] as unknown as ModuleValue).__isHMR)
+          if (stored[key] && this.accessors.has(stored[key]))
             stored[key](undefined);
         }
       }
       // update existing
       for (const key of Object.keys(module)) {
         if (stored[key] && module[key]) {
-          if (module.__isHMR) {
+          if (this.accessors.has(stored[key])) {
             stored[key](module[key]());
           }
         }

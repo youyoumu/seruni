@@ -5,6 +5,7 @@ import type {
   IPCFromRendererChannel,
 } from "@repo/preload/ipc";
 import { type BrowserWindow, ipcMain } from "electron";
+import { Roarr as log } from "roarr";
 
 hmr.log(import.meta.url);
 
@@ -54,7 +55,10 @@ function createIPCClass() {
       ipcMain.handle(channel, listener);
       this.#controller.signal.addEventListener(
         "abort",
-        () => ipcMain.removeHandler(channel),
+        () => {
+          log.trace({ namespace: `IPC:${this.prefix}` }, `removingHandler`);
+          ipcMain.removeHandler(channel);
+        },
         { once: true },
       );
     }
