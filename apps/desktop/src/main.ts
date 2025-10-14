@@ -9,11 +9,12 @@ import { generalIPC } from "./ipc/general";
 import { prepareAllClient } from "./util/client";
 import { registerAllIPC } from "./util/ipc";
 import { log } from "./util/logger";
-import { AppWebsocket, devWS } from "./websocket";
+import { registerAllWS } from "./util/websocket";
+import { devWS } from "./websocket/dev";
 import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
 
-hmr.log(import.meta.url);
+hmr.log(import.meta);
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
@@ -41,7 +42,7 @@ export async function bootstrap() {
   await generalIPC().ready.promise;
 
   log.debug(env, "env value");
-  await AppWebsocket().registerAll();
+  registerAllWS();
   await prepareAllClient();
 
   // remove everything inside temp dir
