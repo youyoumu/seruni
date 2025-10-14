@@ -106,3 +106,17 @@ export function createObsClient() {
 }
 
 export const obsClient = hmr.module(createObsClient());
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  const { obsClient } = await hmr.register<typeof import("./obs")>(import.meta);
+  hmr.register(import.meta);
+  import.meta.hot.accept(async (mod) => {
+    hmr.update(import.meta, mod);
+    await obsClient().connect();
+  });
+  import.meta.hot.dispose(() => {
+    obsClient().close();
+  });
+}

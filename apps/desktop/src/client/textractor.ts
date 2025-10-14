@@ -20,7 +20,7 @@ export function createTextractorClient() {
     reconnecting = false;
     status: ClientStatus = "disconnected";
 
-    connect() {
+    async connect() {
       try {
         this.reconnecting = false;
         this.status = "connecting";
@@ -99,3 +99,19 @@ export function createTextractorClient() {
 }
 
 export const textractorClient = hmr.module(createTextractorClient());
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+if (import.meta.hot) {
+  const { textractorClient } = await hmr.register<
+    typeof import("./textractor")
+  >(import.meta);
+  hmr.register(import.meta);
+  import.meta.hot.accept(async (mod) => {
+    hmr.update(import.meta, mod);
+    await textractorClient().connect();
+  });
+  import.meta.hot.dispose(() => {
+    textractorClient().close();
+  });
+}

@@ -69,6 +69,8 @@ function createYomitanWindow() {
 
 export const yomitanWindow = hmr.module(createYomitanWindow());
 
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
 if (import.meta.hot) {
   const { yomitanWindow } = await hmr.register<typeof import("./yomitan")>(
     import.meta,
