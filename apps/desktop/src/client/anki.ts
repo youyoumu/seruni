@@ -4,7 +4,7 @@ import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { env } from "#/env";
-import { logIPC } from "#/ipc";
+import { logIPC } from "#/ipc/log";
 import { config } from "#/util/config";
 import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";

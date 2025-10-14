@@ -1,4 +1,5 @@
-import { ankiClient, obsClient } from "#/client";
+import { ankiClient } from "#/client/anki";
+import { obsClient } from "#/client/obs";
 import { env } from "#/env";
 import { config } from "#/util/config";
 import { mainWindow } from "#/window/main";

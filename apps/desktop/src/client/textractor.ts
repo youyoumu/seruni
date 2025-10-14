@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
-import { vnOverlayIPC } from "#/ipc";
+import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
 import type { Status } from "./_util";

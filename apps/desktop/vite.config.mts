@@ -8,7 +8,7 @@ export default defineConfig(({ command }) => ({
   plugins: [
     circularDpendency({
       outputFilePath: "./.circularDependency.json",
-      circleImportThrowErr: false,
+      circleImportThrowErr: true,
     }),
   ],
   resolve: {
