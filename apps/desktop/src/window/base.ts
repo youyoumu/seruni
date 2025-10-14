@@ -1,7 +1,7 @@
 import { BrowserWindow } from "electron";
-import { Roarr as log } from "roarr";
 import { env } from "#/env";
 import { type BusEvents, bus } from "#/util/bus";
+import { log } from "#/util/logger";
 
 hmr.log(import.meta.url);
 

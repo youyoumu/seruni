@@ -1,7 +1,7 @@
 import { app } from "electron";
 import { delay } from "es-toolkit";
 import { env } from "#/env";
-// import { log } from "#/util/logger";
+import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
 hmr.log(import.meta.url);
@@ -39,8 +39,7 @@ function createMainWindow() {
     }
 
     async ping(url: string): Promise<void> {
-      //TODO: fix circular
-      // log.trace({ url }, "pinging");
+      log.trace(`pinging ${url}`);
       const res = await fetch(url, { method: "GET" });
       if (res.ok) {
         return;
