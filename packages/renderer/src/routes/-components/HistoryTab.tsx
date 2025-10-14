@@ -27,6 +27,8 @@ import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 
+const srcMap = new Map<string, true>();
+
 export function HistoryTab() {
   const [history, setHistory] = createSignal<AnkiHistory>([]);
   const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
@@ -45,21 +47,23 @@ export function HistoryTab() {
     setSlicedHistory(pagination().slice(history()));
   });
 
+  let id = setInterval(() => {});
   onMount(async () => {
     const { url } = await ipcRenderer.invoke("general:httpServerUrl");
     setAnkiMediaUrl(url);
 
     const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
     setHistory(sort(data).desc((item) => item.id));
-    const id = setInterval(async () => {
+    id = setInterval(async () => {
       const { data } = await ipcRenderer.invoke("mining:getAnkiHistory");
       if (history().length !== data.length) {
         setHistory(sort(data).desc((item) => item.id));
       }
     }, 5000);
-    onCleanup(() => {
-      clearInterval(id);
-    });
+  });
+
+  onCleanup(() => {
+    clearInterval(id);
   });
 
   createEffect(async () => {
@@ -156,7 +160,9 @@ export function HistoryTab() {
                     <Dialog.Root>
                       <Dialog.Trigger
                         asChild={(triggerProps) => {
-                          const [loaded, setLoaded] = createSignal(false);
+                          const [loaded, setLoaded] = createSignal(
+                            srcMap.has(pictureSrc),
+                          );
                           const [error, setError] = createSignal(false);
                           return (
                             <>
@@ -174,7 +180,10 @@ export function HistoryTab() {
                                   }}
                                   src={pictureSrc}
                                   alt="PictureField"
-                                  onLoad={() => setLoaded(true)}
+                                  onLoad={() => {
+                                    setLoaded(true);
+                                    srcMap.set(pictureSrc, true);
+                                  }}
                                   onError={() => setError(true)}
                                 />
                               </Show>
