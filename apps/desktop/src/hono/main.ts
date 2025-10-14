@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import mime from "mime";
 import { ankiClient } from "#/client/anki";
 import { env } from "#/env";
@@ -28,30 +28,26 @@ function waitForAnkiMediaDir() {
   });
 }
 
-app.get("/media/:filename", async (c) => {
-  const filename = c.req.param("filename");
-  const mediaDir = await waitForAnkiMediaDir();
-  if (!mediaDir) {
-    return c.notFound();
-  }
-  const filePath = join(mediaDir, filename);
-
+async function handleMediaRequest(
+  c: Context,
+  { filePath }: { filePath: string },
+) {
   try {
-    const stat_ = await stat(filePath);
+    const stats = await stat(filePath);
     const range = c.req.header("range");
     const mimeType = mime.getType(filePath) ?? "application/octet-stream";
 
     if (range) {
       const [startStr, endStr] = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(startStr ?? "", 10);
-      const end = endStr ? parseInt(endStr, 10) : stat_.size - 1;
+      const start = parseInt(startStr ?? "0", 10);
+      const end = endStr ? parseInt(endStr, 10) : stats.size - 1;
       const chunkSize = end - start + 1;
       const file = await readFile(filePath);
 
       return new Response(file.subarray(start, end + 1), {
         status: 206,
         headers: {
-          "Content-Range": `bytes ${start}-${end}/${stat_.size}`,
+          "Content-Range": `bytes ${start}-${end}/${stats.size}`,
           "Accept-Ranges": "bytes",
           "Content-Length": chunkSize.toString(),
           "Content-Type": mimeType,
@@ -62,14 +58,27 @@ app.get("/media/:filename", async (c) => {
     const file = await readFile(filePath);
     return new Response(file, {
       headers: {
-        "Content-Length": stat_.size.toString(),
+        "Content-Length": stats.size.toString(),
         "Content-Type": mimeType,
         "Accept-Ranges": "bytes",
       },
     });
-  } catch {
+  } catch (e) {
+    if (e instanceof Error) {
+      log({ error: e }, e.message);
+    }
     return c.notFound();
   }
+}
+
+app.get("/media/:filename", async (c) => {
+  const filename = c.req.param("filename");
+  const mediaDir = await waitForAnkiMediaDir();
+  if (!mediaDir) {
+    return c.notFound();
+  }
+  const filePath = join(mediaDir, filename);
+  return handleMediaRequest(c, { filePath });
 });
 
 // during development, we use vite dev server
@@ -78,16 +87,7 @@ if (!env.DEV) {
   app.get("/assets/*", async (c) => {
     const relPath = c.req.path.replace("/assets/", "");
     const filePath = join(env.RENDERER_PATH, "assets", relPath);
-    try {
-      const buf = await readFile(filePath);
-      return new Response(buf, {
-        headers: {
-          "Content-Type": mime.getType(filePath) || "application/octet-stream",
-        },
-      });
-    } catch {
-      return c.notFound();
-    }
+    return handleMediaRequest(c, { filePath });
   });
 
   app.get("*", async (c) => {
