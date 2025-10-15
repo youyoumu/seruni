@@ -1,7 +1,7 @@
 import { type ListCollection, parseColor } from "@ark-ui/solid";
 import { CheckIcon, ChevronsUpDownIcon, PipetteIcon } from "lucide-solid";
 import { createEffect, createSignal, For, onMount } from "solid-js";
-import { Box, Grid, HStack, Stack } from "styled-system/jsx";
+import { Grid, HStack, Stack } from "styled-system/jsx";
 import { ColorPicker } from "#/components/ui/color-picker";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";

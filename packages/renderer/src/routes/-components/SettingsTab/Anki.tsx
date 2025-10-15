@@ -1,6 +1,7 @@
 import { zConfig } from "@repo/preload/ipc";
 import { UndoIcon } from "lucide-solid";
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect, onMount } from "solid-js";
+import { createStore } from "solid-js/store";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
@@ -10,31 +11,11 @@ import { NumberInput } from "#/components/ui/number-input";
 const defaultAnkiConfig = zConfig.shape.anki.parse({});
 
 export function Anki() {
-  const [expressionField, setExpressionField] = createSignal(
-    defaultAnkiConfig.expressionField,
-  );
-  const [sentenceField, setSentenceField] = createSignal(
-    defaultAnkiConfig.sentenceField,
-  );
-  const [pictureField, setPictureField] = createSignal(
-    defaultAnkiConfig.pictureField,
-  );
-  const [sentenceAudioField, setSentenceAudioField] = createSignal(
-    defaultAnkiConfig.sentenceAudioField,
-  );
-  const [ankiConnectPort, setAnkiConnectPort] = createSignal(
-    defaultAnkiConfig.ankiConnectPort,
-  );
+  const [ankiConfig, setAnkiConfig] = createStore(defaultAnkiConfig);
 
   let ready = false;
   createEffect(() => {
-    const payload = {
-      expressionField: expressionField(),
-      sentenceField: sentenceField(),
-      pictureField: pictureField(),
-      sentenceAudioField: sentenceAudioField(),
-      ankiConnectPort: ankiConnectPort(),
-    };
+    const payload = ankiConfig;
     if (!ready) return;
     ipcRenderer.send("settings:setSettings", {
       anki: payload,
@@ -43,11 +24,7 @@ export function Anki() {
 
   onMount(async () => {
     const settings = (await ipcRenderer.invoke("settings:getConfig")).anki;
-    setExpressionField(settings.expressionField);
-    setSentenceField(settings.sentenceField);
-    setPictureField(settings.pictureField);
-    setSentenceAudioField(settings.sentenceAudioField);
-    setAnkiConnectPort(settings.ankiConnectPort);
+    setAnkiConfig(settings);
 
     ready = true;
   });
@@ -69,9 +46,9 @@ export function Anki() {
           <Field.Label>Expression Field</Field.Label>
           <Field.Input
             placeholder="Expression"
-            value={expressionField()}
+            value={ankiConfig.expressionField}
             onChange={(e) => {
-              setExpressionField(e.target.value);
+              setAnkiConfig("expressionField", e.target.value);
             }}
           />
         </Field.Root>
@@ -79,9 +56,9 @@ export function Anki() {
           <Field.Label>Sentence Field</Field.Label>
           <Field.Input
             placeholder="Sentence"
-            value={sentenceField()}
+            value={ankiConfig.sentenceField}
             onChange={(e) => {
-              setSentenceField(e.target.value);
+              setAnkiConfig("sentenceField", e.target.value);
             }}
           />
         </Field.Root>
@@ -89,9 +66,9 @@ export function Anki() {
           <Field.Label>Picture Field</Field.Label>
           <Field.Input
             placeholder="Picture"
-            value={pictureField()}
+            value={ankiConfig.pictureField}
             onChange={(e) => {
-              setPictureField(e.target.value);
+              setAnkiConfig("pictureField", e.target.value);
             }}
           />
         </Field.Root>
@@ -99,18 +76,18 @@ export function Anki() {
           <Field.Label>Sentence Audio Field</Field.Label>
           <Field.Input
             placeholder="Sentence Audio"
-            value={sentenceAudioField()}
+            value={ankiConfig.sentenceAudioField}
             onChange={(e) => {
-              setSentenceAudioField(e.target.value);
+              setAnkiConfig("sentenceAudioField", e.target.value);
             }}
           />
         </Field.Root>
         <HStack alignItems="end">
           <NumberInput
-            value={ankiConnectPort().toString()}
+            value={ankiConfig.ankiConnectPort.toString()}
             clampValueOnBlur
             onValueChange={(e) => {
-              setAnkiConnectPort(e.valueAsNumber);
+              setAnkiConfig("ankiConnectPort", e.valueAsNumber);
             }}
             min={1023}
             max={65535}
@@ -120,7 +97,10 @@ export function Anki() {
           </NumberInput>
           <IconButton
             onClick={() => {
-              setAnkiConnectPort(defaultAnkiConfig.ankiConnectPort);
+              setAnkiConfig(
+                "ankiConnectPort",
+                defaultAnkiConfig.ankiConnectPort,
+              );
             }}
           >
             <UndoIcon />
