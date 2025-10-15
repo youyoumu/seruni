@@ -10,6 +10,12 @@ import { NumberInput } from "#/components/ui/number-input";
 const defaultAnkiConfig = zConfig.shape.anki.parse({});
 
 export function Anki() {
+  const [expressionField, setExpressionField] = createSignal(
+    defaultAnkiConfig.expressionField,
+  );
+  const [sentenceField, setSentenceField] = createSignal(
+    defaultAnkiConfig.sentenceField,
+  );
   const [pictureField, setPictureField] = createSignal(
     defaultAnkiConfig.pictureField,
   );
@@ -23,6 +29,8 @@ export function Anki() {
   let ready = false;
   createEffect(() => {
     const payload = {
+      expressionField: expressionField(),
+      sentenceField: sentenceField(),
       pictureField: pictureField(),
       sentenceAudioField: sentenceAudioField(),
       ankiConnectPort: ankiConnectPort(),
@@ -35,6 +43,8 @@ export function Anki() {
 
   onMount(async () => {
     const settings = (await ipcRenderer.invoke("settings:getConfig")).anki;
+    setExpressionField(settings.expressionField);
+    setSentenceField(settings.sentenceField);
     setPictureField(settings.pictureField);
     setSentenceAudioField(settings.sentenceAudioField);
     setAnkiConnectPort(settings.ankiConnectPort);
@@ -55,6 +65,26 @@ export function Anki() {
         </Heading>
       </Stack>
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+        <Field.Root>
+          <Field.Label>Expression Field</Field.Label>
+          <Field.Input
+            placeholder="Expression"
+            value={expressionField()}
+            onChange={(e) => {
+              setExpressionField(e.target.value);
+            }}
+          />
+        </Field.Root>
+        <Field.Root>
+          <Field.Label>Sentence Field</Field.Label>
+          <Field.Input
+            placeholder="Sentence"
+            value={sentenceField()}
+            onChange={(e) => {
+              setSentenceField(e.target.value);
+            }}
+          />
+        </Field.Root>
         <Field.Root>
           <Field.Label>Picture Field</Field.Label>
           <Field.Input

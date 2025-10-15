@@ -373,8 +373,7 @@ class AnkiClient {
   }
 
   getWord(note: AnkiNote | undefined) {
-    const firstField = Object.keys(note?.fields ?? {})[0] ?? "";
-    const word = note?.fields[firstField]?.value ?? "";
+    const word = note?.fields[config.store.anki.expressionField]?.value ?? "";
     return word;
   }
 

@@ -15,6 +15,8 @@ export const zConfig = z.object({
     vn_overlay: zVnOverlaySettings.default(zVnOverlaySettings.parse({})),
   }),
   anki: z.object({
+    expressionField: z.string().default("Expression"),
+    sentenceField: z.string().default("Sentence"),
     pictureField: z.string().default("Picture"),
     sentenceAudioField: z.string().default("SentenceAudio"),
     ankiConnectPort: z.number().default(8765),
