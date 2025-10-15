@@ -35,6 +35,7 @@ export const zMiningIPC = {
     "mining:getAnkiHistory": z.object({
       input: z.tuple([]),
       output: z.object({
+        success: z.boolean(),
         data: zAnkiHistory,
       }),
     }),

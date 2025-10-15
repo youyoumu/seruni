@@ -40,13 +40,21 @@ class MiningIPC extends IPC()<"mining"> {
           query: `tag:${env.APP_NAME}`,
         });
 
-        if (!noteIds) return { data: [] };
+        if (!noteIds)
+          return {
+            success: false,
+            data: [],
+          };
 
         const notes = await ankiClient().client?.note.notesInfo({
           notes: noteIds,
         });
 
-        if (!notes) return { data: [] };
+        if (!notes)
+          return {
+            success: false,
+            data: [],
+          };
 
         const data = notes.map((note) => {
           const expression = AnkiClient().getExpression(note);
@@ -68,9 +76,15 @@ class MiningIPC extends IPC()<"mining"> {
           };
         });
 
-        return { data: data ?? [] };
+        return {
+          success: true,
+          data,
+        };
       } catch {
-        return { data: [] };
+        return {
+          success: false,
+          data: [],
+        };
       }
     });
 
