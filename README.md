@@ -28,3 +28,18 @@
 - config handle migration
 - toast create and update
 - mining hover select uuid
+- date picker filter
+- console filter
+- mining tab custom font etc
+- anki obs install detect
+- install python toast
+- python command dialog
+- yomitan download toast
+- restart button
+- max width settings
+- debug show store
+- remote mobile support
+- page size history
+- history on anki disconnect
+- config expression anki config
+- handle invalid anki field

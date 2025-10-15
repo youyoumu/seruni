@@ -274,9 +274,8 @@ export function HistoryTab() {
                                         description: `${item.word}`,
                                       },
                                       error: {
-                                        title: "Error",
-                                        description:
-                                          "Failed to update note NSFW tag",
+                                        title: "Failed to update note NSFW tag",
+                                        description: item.word,
                                       },
                                       success: {
                                         title: "Note NSFW tag updated",
