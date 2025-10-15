@@ -30,6 +30,5 @@
 - max width settings
 - debug show store
 - remote mobile support
-- page size history
 - history on anki disconnect
 - handle invalid anki field

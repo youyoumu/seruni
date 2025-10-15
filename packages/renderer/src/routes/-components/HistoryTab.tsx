@@ -1,11 +1,17 @@
-import { usePagination } from "@ark-ui/solid";
+import { type ListCollection, usePagination } from "@ark-ui/solid";
 import {
   type AnkiHistory,
   zAnkiCollectionMediaUrlPath,
 } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
 import { sort } from "fast-sort";
-import { BirdIcon, PauseIcon, PlayIcon } from "lucide-solid";
+import {
+  BirdIcon,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  PauseIcon,
+  PlayIcon,
+} from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -19,10 +25,12 @@ import {
 import { Portal } from "solid-js/web";
 import { css, cva, type RecipeVariantProps } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
+import { Select_ } from "#/components/Form";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { Pagination } from "#/components/ui/pagination";
+import { createListCollection, Select } from "#/components/ui/select";
 import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
@@ -73,7 +81,7 @@ export function HistoryTab() {
   const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
 
   const [currentPage, setCurrentPage] = createSignal(1);
-  const [pageSize, setPageSize] = createSignal(25);
+  const [pageSize, setPageSize] = createSignal(20);
   const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
 
   createEffect(() => {
@@ -119,6 +127,11 @@ export function HistoryTab() {
     }
   });
 
+  const pageSizeItems = [20, 40, 60].map((item) => ({
+    label: item.toString(),
+    value: item.toString(),
+  }));
+
   return (
     <Stack h="full" maxW="8xl" mx="auto" gap="4">
       <Switch>
@@ -136,14 +149,25 @@ export function HistoryTab() {
               }}
             </For>
           </Stack>
-          <Pagination
-            justifyContent="center"
-            count={history().length}
-            pageSize={pageSize()}
-            siblingCount={3}
-            page={currentPage()}
-            onPageChange={(page) => setCurrentPage(page.page)}
-          />
+          <HStack justifyContent="center" gap="4">
+            <Pagination
+              justifyContent="center"
+              count={history().length}
+              pageSize={pageSize()}
+              siblingCount={3}
+              page={currentPage()}
+              onPageChange={(page) => setCurrentPage(page.page)}
+            />
+            <Select_
+              value={[pageSize().toString() ?? ""]}
+              collection={createListCollection({
+                items: pageSizeItems,
+              })}
+              onValueChange={(e) => {
+                setPageSize(parseInt(e.items[0]?.value ?? "20"));
+              }}
+            />
+          </HStack>
         </Match>
         <Match when={!success()}>
           <Stack alignItems="center" justifyContent="center" h="full">

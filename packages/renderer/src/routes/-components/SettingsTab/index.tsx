@@ -9,16 +9,15 @@ import { Yomitan } from "./Yomitan";
 
 export function SettingsTab() {
   return (
-    <Stack maxW="8xl" mx="auto" pe="4">
-      <Stack
-        gap="16"
-        h="full"
-        overflow="auto"
-        class="custom-scrollbar"
-        w="full"
-        maxW="5xl"
-        mx="auto"
-      >
+    <Stack
+      maxW="8xl"
+      mx="auto"
+      h="full"
+      pe="4"
+      overflow="auto"
+      class="custom-scrollbar"
+    >
+      <Stack gap="16" h="full" w="full" maxW="5xl" mx="auto">
         <Yomitan />
         <Python />
         <Anki />

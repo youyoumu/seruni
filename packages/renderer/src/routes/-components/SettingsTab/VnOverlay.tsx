@@ -2,6 +2,7 @@ import { type ListCollection, parseColor } from "@ark-ui/solid";
 import { CheckIcon, ChevronsUpDownIcon, PipetteIcon } from "lucide-solid";
 import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Grid, HStack, Stack } from "styled-system/jsx";
+import { Select_ } from "#/components/Form";
 import { ColorPicker } from "#/components/ui/color-picker";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
@@ -163,51 +164,6 @@ export function VnOverlay() {
         />
       </Grid>
     </Stack>
-  );
-}
-
-export function Select_(
-  props: Select.RootProps & {
-    collection: ListCollection;
-    label: string;
-    itemGroupLabel?: string;
-    placeholder?: string;
-  },
-) {
-  return (
-    <Select.Root
-      positioning={{ sameWidth: true }}
-      width="2xs"
-      {...props}
-      collection={props.collection}
-    >
-      <Select.Label>{props.label}</Select.Label>
-      <Select.Control>
-        <Select.Trigger>
-          <Select.ValueText placeholder={props.placeholder} />
-          <ChevronsUpDownIcon />
-        </Select.Trigger>
-      </Select.Control>
-      <Select.Positioner>
-        <Select.Content>
-          <Select.ItemGroup>
-            <Select.ItemGroupLabel>
-              {props.itemGroupLabel}
-            </Select.ItemGroupLabel>
-            <For each={props.collection.items}>
-              {(item) => (
-                <Select.Item item={item}>
-                  <Select.ItemText>{item.label}</Select.ItemText>
-                  <Select.ItemIndicator>
-                    <CheckIcon />
-                  </Select.ItemIndicator>
-                </Select.Item>
-              )}
-            </For>
-          </Select.ItemGroup>
-        </Select.Content>
-      </Select.Positioner>
-    </Select.Root>
   );
 }
 
