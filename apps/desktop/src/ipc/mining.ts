@@ -1,4 +1,4 @@
-import { ankiClient } from "#/client/anki";
+import { AnkiClient, ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { env } from "#/env";
 import { config } from "#/util/config";
@@ -49,7 +49,7 @@ class MiningIPC extends IPC()<"mining"> {
         if (!notes) return { data: [] };
 
         const data = notes.map((note) => {
-          const expression = ankiClient().getExpression(note);
+          const expression = AnkiClient().getExpression(note);
 
           const pictureFieldValue =
             note.fields[config.store.anki.pictureField]?.value ?? "";
@@ -64,7 +64,7 @@ class MiningIPC extends IPC()<"mining"> {
             expression,
             picture: pictureMedia,
             sentenceAudio: audioMedia,
-            nsfw: ankiClient().inNsfw(note),
+            nsfw: AnkiClient().inNsfw(note),
           };
         });
 
@@ -78,7 +78,7 @@ class MiningIPC extends IPC()<"mining"> {
       log.debug({ noteId, checked }, `Updating note NSFW tag`);
       try {
         const note = await ankiClient().getNote(noteId);
-        const nsfw = ankiClient().inNsfw(note);
+        const nsfw = AnkiClient().inNsfw(note);
         if (nsfw === checked) {
           log.warn("Note already has the same NSFW tag");
           return true;

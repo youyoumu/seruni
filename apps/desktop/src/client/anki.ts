@@ -39,7 +39,7 @@ type AnkiNote = {
   tags: string[];
 };
 
-class AnkiClient {
+const AnkiClient_ = class AnkiClient {
   client: YankiConnect | undefined;
   lastAddedNote: number | undefined;
   reconnecting = false;
@@ -120,7 +120,7 @@ class AnkiClient {
           try {
             const noteInfo = await this.getNote(lastAddedNote);
             log.debug({ noteInfo }, "noteInfo");
-            const word = this.getExpression(noteInfo);
+            const expression = AnkiClient.getExpression(noteInfo);
 
             logIPC().sendToastPromise(
               async () => {
@@ -128,14 +128,14 @@ class AnkiClient {
                 return {
                   success: {
                     title: `Note Has Been Updated`,
-                    description: `${word}${result?.reuseMedia ? " (♻  media)" : ""}`,
+                    description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
                   },
                 };
               },
               {
                 loading: {
                   title: "Processing New Note...",
-                  description: `Detected new note: ${word}`,
+                  description: `Detected new note: ${expression}`,
                 },
                 error: {
                   title: "Error",
@@ -161,10 +161,6 @@ class AnkiClient {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.client = undefined;
     this.reconnecting = false;
-  }
-
-  rm(path: string) {
-    rm(path, { force: true });
   }
 
   async handleNewNote(noteId: number) {
@@ -320,8 +316,8 @@ class AnkiClient {
       resolve(undefined);
       throw e;
     } finally {
-      if (savedReplayPath) this.rm(savedReplayPath);
-      if (audioStage1Path) this.rm(audioStage1Path);
+      if (savedReplayPath) AnkiClient.rm(savedReplayPath);
+      if (audioStage1Path) AnkiClient.rm(audioStage1Path);
     }
   }
 
@@ -372,17 +368,22 @@ class AnkiClient {
     return result;
   }
 
-  getExpression(note: AnkiNote | undefined) {
+  static rm(path: string) {
+    rm(path, { force: true });
+  }
+
+  static getExpression(note: AnkiNote | undefined) {
     const word = note?.fields[config.store.anki.expressionField]?.value ?? "";
     return word;
   }
 
-  inNsfw(note: AnkiNote) {
+  static inNsfw(note: AnkiNote) {
     return note?.tags.map((t) => t.toLowerCase()).includes("nsfw");
   }
-}
+};
 
-export const ankiClient = hmr.module(new AnkiClient());
+export const ankiClient = hmr.module(new AnkiClient_());
+export const AnkiClient = hmr.module(AnkiClient_);
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
