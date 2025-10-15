@@ -1,23 +1,16 @@
 ## Todo
 
-- notifications
-- status line
-- notifications history
 - asbplayer like feature
 - discord rich presence
 - anilist interaction
 - media quality settings
-- nsfw toggle
 - blinking/marker when processing text
 - marker for text that can't be processed
 - guard when the text doesn't contain the word
-- reset settings
 - offset crop
-- mining history
 - edit existing media files
 - more history on console
 - download ffmpeg
-- nsfw blur
 - crop image
 - crop audio
 - open in anki
@@ -25,9 +18,7 @@
 - delete card
 - health check
 - animation
-- config handle migration
 - toast create and update
-- mining hover select uuid
 - date picker filter
 - console filter
 - mining tab custom font etc
@@ -41,5 +32,4 @@
 - remote mobile support
 - page size history
 - history on anki disconnect
-- config expression anki config
 - handle invalid anki field
