@@ -49,7 +49,7 @@ class MiningIPC extends IPC()<"mining"> {
         if (!notes) return { data: [] };
 
         const data = notes.map((note) => {
-          const word = ankiClient().getWord(note);
+          const expression = ankiClient().getExpression(note);
 
           const pictureFieldValue =
             note.fields[config.store.anki.pictureField]?.value ?? "";
@@ -61,7 +61,7 @@ class MiningIPC extends IPC()<"mining"> {
 
           return {
             id: note.noteId,
-            word,
+            expression,
             picture: pictureMedia,
             sentenceAudio: audioMedia,
             nsfw: ankiClient().inNsfw(note),

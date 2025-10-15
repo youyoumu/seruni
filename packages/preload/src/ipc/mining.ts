@@ -5,7 +5,7 @@ export const zAnkiCollectionMediaUrlPath = z.literal("/anki/collection.media/");
 export const zAnkiHistory = z.array(
   z.object({
     id: z.number(),
-    word: z.string(),
+    expression: z.string(),
     picture: z.string(),
     sentenceAudio: z.string(),
     nsfw: z.boolean(),

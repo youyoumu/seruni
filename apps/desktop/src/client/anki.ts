@@ -120,7 +120,7 @@ class AnkiClient {
           try {
             const noteInfo = await this.getNote(lastAddedNote);
             log.debug({ noteInfo }, "noteInfo");
-            const word = this.getWord(noteInfo);
+            const word = this.getExpression(noteInfo);
 
             logIPC().sendToastPromise(
               async () => {
@@ -372,7 +372,7 @@ class AnkiClient {
     return result;
   }
 
-  getWord(note: AnkiNote | undefined) {
+  getExpression(note: AnkiNote | undefined) {
     const word = note?.fields[config.store.anki.expressionField]?.value ?? "";
     return word;
   }

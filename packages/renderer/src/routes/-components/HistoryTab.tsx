@@ -149,10 +149,10 @@ export function HistoryTab() {
                   >
                     <Text
                       class={textVariant({
-                        wordLength: item.word.length.toString(),
+                        wordLength: item.expression.length.toString(),
                       } as TextVariant)}
                     >
-                      {item.word}
+                      {item.expression}
                     </Text>
                     <Show when={item.sentenceAudio}>
                       <AudioButton src={sentenceAudioSrc} />
@@ -271,15 +271,15 @@ export function HistoryTab() {
                                     {
                                       loading: {
                                         title: "Updating note NSFW tag...",
-                                        description: `${item.word}`,
+                                        description: `${item.expression}`,
                                       },
                                       error: {
                                         title: "Failed to update note NSFW tag",
-                                        description: item.word,
+                                        description: item.expression,
                                       },
                                       success: {
                                         title: "Note NSFW tag updated",
-                                        description: `${item.word}`,
+                                        description: `${item.expression}`,
                                       },
                                     },
                                   );
