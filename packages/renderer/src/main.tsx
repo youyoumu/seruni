@@ -3,6 +3,7 @@ import { render } from "solid-js/web";
 
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
+import { setStore } from "./lib/store";
 
 const router = createRouter({
   routeTree,
@@ -25,7 +26,14 @@ function App() {
   );
 }
 
-const rootElement = document.getElementById("app");
-if (rootElement) {
-  render(() => <App />, rootElement);
-}
+ipcRenderer.invoke("settings:getEnv").then((env) => {
+  setStore("debug", "env", env);
+});
+
+ipcRenderer.invoke("general:httpServerUrl").then(({ url }) => {
+  setStore("general", "httpServerUrl", url);
+  const rootElement = document.getElementById("app");
+  if (rootElement) {
+    render(() => <App />, rootElement);
+  }
+});

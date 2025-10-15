@@ -8,6 +8,12 @@ export type Client = {
 };
 
 export const [store, setStore] = createStore<{
+  general: {
+    httpServerUrl: string | undefined;
+  };
+  debug: {
+    env: Record<string, string | number | boolean | undefined | null>;
+  };
   notifications: {
     id: string | undefined;
     title: JSX.Element;
@@ -25,6 +31,12 @@ export const [store, setStore] = createStore<{
     };
   };
 }>({
+  general: {
+    httpServerUrl: undefined,
+  },
+  debug: {
+    env: {},
+  },
   notifications: [],
   client: {
     anki: {

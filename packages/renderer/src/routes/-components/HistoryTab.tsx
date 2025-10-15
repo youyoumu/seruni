@@ -1,17 +1,11 @@
-import { type ListCollection, usePagination } from "@ark-ui/solid";
+import { usePagination } from "@ark-ui/solid";
 import {
   type AnkiHistory,
   zAnkiCollectionMediaUrlPath,
 } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
 import { sort } from "fast-sort";
-import {
-  BirdIcon,
-  CheckIcon,
-  ChevronsUpDownIcon,
-  PauseIcon,
-  PlayIcon,
-} from "lucide-solid";
+import { BirdIcon, PauseIcon, PlayIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -30,7 +24,7 @@ import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { Pagination } from "#/components/ui/pagination";
-import { createListCollection, Select } from "#/components/ui/select";
+import { createListCollection } from "#/components/ui/select";
 import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
@@ -78,7 +72,6 @@ const expressionVariant = cva({
 export function HistoryTab() {
   const [success, setSuccess] = createSignal(false);
   const [history, setHistory] = createSignal<AnkiHistory>([]);
-  const [httpServerUrl, setAnkiMediaUrl] = createSignal("");
 
   const [currentPage, setCurrentPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
@@ -96,9 +89,6 @@ export function HistoryTab() {
 
   let id = setInterval(() => {});
   onMount(async () => {
-    const { url } = await ipcRenderer.invoke("general:httpServerUrl");
-    setAnkiMediaUrl(url);
-
     const { success, data } = await ipcRenderer.invoke("mining:getAnkiHistory");
     setSuccess(success);
     setHistory(sort(data).desc((item) => item.id));
@@ -145,7 +135,7 @@ export function HistoryTab() {
           >
             <For each={slicedHistory()}>
               {(item) => {
-                return <AnkiCard item={item} httpServerUrl={httpServerUrl()} />;
+                return <AnkiCard item={item} />;
               }}
             </For>
           </Stack>
@@ -186,13 +176,13 @@ interface AudioButtonProps {
   src: string;
 }
 
-function AnkiCard(props: { item: AnkiHistory[number]; httpServerUrl: string }) {
+function AnkiCard(props: { item: AnkiHistory[number] }) {
   {
     const [nsfw, setNsfw] = createSignal(props.item.nsfw);
     const time = formatRelative(new Date(props.item.id), new Date());
     type TextVariant = RecipeVariantProps<typeof expressionVariant>;
-    const pictureSrc = `${props.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.picture}`;
-    const sentenceAudioSrc = `${props.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.sentenceAudio}`;
+    const pictureSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.picture}`;
+    const sentenceAudioSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.sentenceAudio}`;
 
     return (
       <Stack
