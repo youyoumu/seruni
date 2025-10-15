@@ -15,82 +15,78 @@ type ChannelsWithPrefix<
   Prefix extends string,
 > = All extends `${Prefix}:${string}` ? All : never;
 
-function createIPCClass() {
-  class IPC<Prefix extends string> {
+const ipc = class IPC<Prefix extends string> {
+  prefix: Prefix;
+  #controller = new AbortController();
+
+  constructor(options: {
     prefix: Prefix;
-    #controller = new AbortController();
-
-    constructor(options: {
-      prefix: Prefix;
-    }) {
-      this.prefix = options.prefix;
-    }
-
-    on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
-      channel: K,
-      listener: (
-        event: Electron.IpcMainEvent,
-        ...args: IPCFromRenderer[K]["input"]
-      ) => IPCFromRenderer[K]["output"],
-    ) {
-      const uuid = crypto.randomUUID();
-      ipcMain.on(channel, listener);
-      this.#controller.signal.addEventListener(
-        "abort",
-        () => {
-          log.trace(
-            { namespace: `IPC:${this.prefix}` },
-            `Removing listener ${channel} ${uuid}`,
-          );
-          ipcMain.removeListener(channel, listener);
-        },
-        { once: true },
-      );
-    }
-
-    handle<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
-      channel: K,
-      listener: (
-        event: Electron.IpcMainInvokeEvent,
-        ...args: IPCFromRenderer[K]["input"]
-      ) => Promise<IPCFromRenderer[K]["output"]>,
-    ) {
-      const uuid = crypto.randomUUID();
-      ipcMain.handle(channel, listener);
-      this.#controller.signal.addEventListener(
-        "abort",
-        () => {
-          log.trace(
-            { namespace: `IPC:${this.prefix}` },
-            `Removing handler ${channel} ${uuid}`,
-          );
-          ipcMain.removeHandler(channel);
-        },
-        { once: true },
-      );
-    }
-
-    send<K extends IPCFromMainChannel>(
-      channel: K,
-      ...payload: IPCFromMain[K]["input"]
-    ) {
-      bus.emit("webContent:send", {
-        channel,
-        payload,
-      });
-    }
-
-    register() {}
-
-    unregister() {
-      this.#controller.abort();
-    }
+  }) {
+    this.prefix = options.prefix;
   }
 
-  return IPC;
-}
+  on<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
+    channel: K,
+    listener: (
+      event: Electron.IpcMainEvent,
+      ...args: IPCFromRenderer[K]["input"]
+    ) => IPCFromRenderer[K]["output"],
+  ) {
+    const uuid = crypto.randomUUID();
+    ipcMain.on(channel, listener);
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => {
+        log.trace(
+          { namespace: `IPC:${this.prefix}` },
+          `Removing listener ${channel} ${uuid}`,
+        );
+        ipcMain.removeListener(channel, listener);
+      },
+      { once: true },
+    );
+  }
 
-export const IPC = hmr.module(createIPCClass());
+  handle<K extends ChannelsWithPrefix<IPCFromRendererChannel, Prefix>>(
+    channel: K,
+    listener: (
+      event: Electron.IpcMainInvokeEvent,
+      ...args: IPCFromRenderer[K]["input"]
+    ) => Promise<IPCFromRenderer[K]["output"]>,
+  ) {
+    const uuid = crypto.randomUUID();
+    ipcMain.handle(channel, listener);
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => {
+        log.trace(
+          { namespace: `IPC:${this.prefix}` },
+          `Removing handler ${channel} ${uuid}`,
+        );
+        ipcMain.removeHandler(channel);
+      },
+      { once: true },
+    );
+  }
+
+  send<K extends IPCFromMainChannel>(
+    channel: K,
+    ...payload: IPCFromMain[K]["input"]
+  ) {
+    bus.emit("webContent:send", {
+      channel,
+      payload,
+    });
+  }
+
+  register() {}
+
+  unregister() {
+    this.#controller.abort();
+  }
+};
+
+export const IPC = hmr.module(ipc);
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

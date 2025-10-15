@@ -8,49 +8,46 @@ type ToastPromiseResultOptions = Omit<
   "error"
 >;
 
-function createLogIPC() {
-  class LogIPC extends IPC()<"log"> {
-    toastPromise: Record<string, Promise<ToastPromiseResultOptions>> = {};
-    constructor() {
-      super({
-        prefix: "log",
-      });
-    }
-
-    override register() {
-      this.handle("log:toastPromise", async (_, { uuid }) => {
-        if (this.toastPromise[uuid]) {
-          return await this.toastPromise[uuid];
-        }
-        return {
-          success: {
-            title: "Invalid Toast Promise UUID",
-            description: "Invalid Toast Promise UUID",
-          },
-          error: {
-            title: "Invalid Toast Promise UUID",
-            description: "Invalid Toast Promise UUID",
-          },
-        };
-      });
-    }
-
-    sendToastPromise(
-      handler: () => Promise<ToastPromiseResultOptions>,
-      toast: Omit<ToastPromiseOptions, "success">,
-    ) {
-      const uuid = crypto.randomUUID();
-      this.toastPromise[uuid] = handler();
-      this.send("log:toastPromise", {
-        uuid,
-        ...toast,
-      });
-    }
+class LogIPC extends IPC()<"log"> {
+  toastPromise: Record<string, Promise<ToastPromiseResultOptions>> = {};
+  constructor() {
+    super({
+      prefix: "log",
+    });
   }
-  return new LogIPC();
+
+  override register() {
+    this.handle("log:toastPromise", async (_, { uuid }) => {
+      if (this.toastPromise[uuid]) {
+        return await this.toastPromise[uuid];
+      }
+      return {
+        success: {
+          title: "Invalid Toast Promise UUID",
+          description: "Invalid Toast Promise UUID",
+        },
+        error: {
+          title: "Invalid Toast Promise UUID",
+          description: "Invalid Toast Promise UUID",
+        },
+      };
+    });
+  }
+
+  sendToastPromise(
+    handler: () => Promise<ToastPromiseResultOptions>,
+    toast: Omit<ToastPromiseOptions, "success">,
+  ) {
+    const uuid = crypto.randomUUID();
+    this.toastPromise[uuid] = handler();
+    this.send("log:toastPromise", {
+      uuid,
+      ...toast,
+    });
+  }
 }
 
-export const logIPC = hmr.module(createLogIPC());
+export const logIPC = hmr.module(new LogIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

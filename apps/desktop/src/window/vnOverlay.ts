@@ -3,32 +3,29 @@ import { AppWindow } from "./base";
 
 hmr.log(import.meta);
 
-function createVnOverlayWindow() {
-  class VnOverlayWindow extends AppWindow() {
-    constructor() {
-      super({
-        frame: false, // no title bar
-        transparent: true, // allow transparency
-        alwaysOnTop: true, // stays above VN
-        skipTaskbar: true, // don’t show in taskbar
-        focusable: false, // prevent stealing focus
-        webPreferences: {},
-        show: false,
-      });
-    }
-
-    override async create() {
-      super.create();
-      // this.win?.setIgnoreMouseEvents(true); // set true if you want clicks to pass through
-      await this.win?.loadURL(`${env.RENDERER_URL}/vnOverlay`);
-      this.win?.setTitle("VN Overlay");
-      return true;
-    }
+class VnOverlayWindow extends AppWindow() {
+  constructor() {
+    super({
+      frame: false, // no title bar
+      transparent: true, // allow transparency
+      alwaysOnTop: true, // stays above VN
+      skipTaskbar: true, // don’t show in taskbar
+      focusable: false, // prevent stealing focus
+      webPreferences: {},
+      show: false,
+    });
   }
-  return new VnOverlayWindow();
+
+  override async create() {
+    super.create();
+    // this.win?.setIgnoreMouseEvents(true); // set true if you want clicks to pass through
+    await this.win?.loadURL(`${env.RENDERER_URL}/vnOverlay`);
+    this.win?.setTitle("VN Overlay");
+    return true;
+  }
 }
 
-export const vnOverlayWindow = hmr.module(createVnOverlayWindow());
+export const vnOverlayWindow = hmr.module(new VnOverlayWindow());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

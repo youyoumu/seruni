@@ -24,107 +24,103 @@ type EventWithPrefix<
   Prefix extends string,
 > = All extends `${Prefix}:${string}` ? All : never;
 
-function createAppWebsocketClass() {
-  class AppWebsocket<Prefix extends string> {
+const appWebsocket = class AppWebsocket<Prefix extends string> {
+  prefix: Prefix;
+  #controller = new AbortController();
+  static io = new Server();
+  static socket: Socket<
+    DefaultEventsMap,
+    DefaultEventsMap,
+    DefaultEventsMap,
+    any
+  >;
+
+  constructor(options: {
     prefix: Prefix;
-    #controller = new AbortController();
-    static io = new Server();
-    static socket: Socket<
-      DefaultEventsMap,
-      DefaultEventsMap,
-      DefaultEventsMap,
-      any
-    >;
+  }) {
+    this.prefix = options.prefix;
+  }
 
-    constructor(options: {
-      prefix: Prefix;
-    }) {
-      this.prefix = options.prefix;
-    }
-
-    on<Event extends EventWithPrefix<WsFromClientEvent, Prefix>>(
-      event: Event,
-      listener: (
-        ...args: [
-          ...WsFromClient[Event]["input"],
-          callback?: WsServerCallback<Event>,
-        ]
-      ) => void,
-    ) {
-      const wrapped = (
-        ...args: [
-          ...WsFromClient[Event]["input"],
-          callback: WsServerCallback<Event>,
-        ]
-      ) => {
-        const data: Writable<JsonValue> = [];
-        for (let i = 0; i < args.length; i++) {
-          if (isJSONValue(args[i])) {
-            data.push(args[i] as JsonValue);
-          }
-        }
-
-        log.trace(
-          {
-            event,
-            data,
-          },
-          "WS on",
-        );
-
-        listener(...args);
-      };
-
-      AppWebsocket.socket.on(event as string, wrapped);
-
-      this.#controller.signal.addEventListener(
-        "abort",
-        () => AppWebsocket.socket.off(event as string, wrapped),
-        { once: true },
-      );
-    }
-
-    emit<Event extends WsFromServerEvent>(
-      event: Event,
-      ...args: [...WsFromServer[Event]["input"], ack?: WsServerAck<Event>]
-    ) {
+  on<Event extends EventWithPrefix<WsFromClientEvent, Prefix>>(
+    event: Event,
+    listener: (
+      ...args: [
+        ...WsFromClient[Event]["input"],
+        callback?: WsServerCallback<Event>,
+      ]
+    ) => void,
+  ) {
+    const wrapped = (
+      ...args: [
+        ...WsFromClient[Event]["input"],
+        callback: WsServerCallback<Event>,
+      ]
+    ) => {
       const data: Writable<JsonValue> = [];
       for (let i = 0; i < args.length; i++) {
         if (isJSONValue(args[i])) {
-          data.push(args[i] as unknown as JsonValue);
+          data.push(args[i] as JsonValue);
         }
       }
+
       log.trace(
         {
           event,
           data,
         },
-        "WS emit",
+        "WS on",
       );
 
-      AppWebsocket.socket.emit(event, ...args);
-    }
+      listener(...args);
+    };
 
-    async register() {
-      await AppWebsocket.prepare();
-    }
+    AppWebsocket.socket.on(event as string, wrapped);
 
-    unregister() {
-      this.#controller.abort();
-    }
-
-    static async prepare() {
-      if (AppWebsocket.socket) return;
-      const { promise, resolve } = Promise.withResolvers<void>();
-      AppWebsocket.io.on("connection", (socket) => {
-        AppWebsocket.socket = socket;
-        resolve();
-      });
-      await promise;
-    }
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => AppWebsocket.socket.off(event as string, wrapped),
+      { once: true },
+    );
   }
 
-  return AppWebsocket;
-}
+  emit<Event extends WsFromServerEvent>(
+    event: Event,
+    ...args: [...WsFromServer[Event]["input"], ack?: WsServerAck<Event>]
+  ) {
+    const data: Writable<JsonValue> = [];
+    for (let i = 0; i < args.length; i++) {
+      if (isJSONValue(args[i])) {
+        data.push(args[i] as unknown as JsonValue);
+      }
+    }
+    log.trace(
+      {
+        event,
+        data,
+      },
+      "WS emit",
+    );
 
-export const AppWebsocket = hmr.module(createAppWebsocketClass());
+    AppWebsocket.socket.emit(event, ...args);
+  }
+
+  async register() {
+    await AppWebsocket.prepare();
+  }
+
+  unregister() {
+    this.#controller.abort();
+  }
+
+  static async prepare() {
+    if (AppWebsocket.socket) return;
+    const { promise, resolve } = Promise.withResolvers<void>();
+    AppWebsocket.io.on("connection", (socket) => {
+      AppWebsocket.socket = socket;
+      resolve();
+    });
+    await promise;
+  }
+};
+
+export const AppWebsocket = hmr.module(appWebsocket);

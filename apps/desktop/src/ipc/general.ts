@@ -6,38 +6,34 @@ import { IPC } from "./base";
 
 hmr.log(import.meta);
 
-function createGeneralIPC() {
-  class GeneralIPC extends IPC()<"general"> {
-    ready = Promise.withResolvers<boolean>();
-    constructor() {
-      super({
-        prefix: "general",
-      });
-    }
-
-    override register() {
-      this.on("general:ready", (_) => {
-        this.ready.resolve(true);
-      });
-
-      this.handle("general:getClientStatus", async () => {
-        return {
-          anki: ankiClient().status,
-          obs: obsClient().status,
-          textractor: textractorClient().status,
-        };
-      });
-
-      this.handle("general:httpServerUrl", async () => {
-        return { url: env.HTTP_SERVER_URL };
-      });
-    }
+class GeneralIPC extends IPC()<"general"> {
+  ready = Promise.withResolvers<boolean>();
+  constructor() {
+    super({
+      prefix: "general",
+    });
   }
 
-  return new GeneralIPC();
+  override register() {
+    this.on("general:ready", (_) => {
+      this.ready.resolve(true);
+    });
+
+    this.handle("general:getClientStatus", async () => {
+      return {
+        anki: ankiClient().status,
+        obs: obsClient().status,
+        textractor: textractorClient().status,
+      };
+    });
+
+    this.handle("general:httpServerUrl", async () => {
+      return { url: env.HTTP_SERVER_URL };
+    });
+  }
 }
 
-export const generalIPC = hmr.module(createGeneralIPC());
+export const generalIPC = hmr.module(new GeneralIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

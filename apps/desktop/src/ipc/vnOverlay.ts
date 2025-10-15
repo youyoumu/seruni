@@ -3,28 +3,25 @@ import { IPC } from "./base";
 
 hmr.log(import.meta);
 
-function createVnOverlayIPC() {
-  class VnOverlayIPC extends IPC()<"vnOverlay"> {
-    constructor() {
-      super({
-        prefix: "vnOverlay",
-      });
-    }
-
-    override register() {
-      this.on("vnOverlay:open", () => {
-        vnOverlayWindow().open();
-      });
-
-      this.on("vnOverlay:minimize", () => {
-        vnOverlayWindow().win?.minimize();
-      });
-    }
+class VnOverlayIPC extends IPC()<"vnOverlay"> {
+  constructor() {
+    super({
+      prefix: "vnOverlay",
+    });
   }
-  return new VnOverlayIPC();
+
+  override register() {
+    this.on("vnOverlay:open", () => {
+      vnOverlayWindow().open();
+    });
+
+    this.on("vnOverlay:minimize", () => {
+      vnOverlayWindow().win?.minimize();
+    });
+  }
 }
 
-export const vnOverlayIPC = hmr.module(createVnOverlayIPC());
+export const vnOverlayIPC = hmr.module(new VnOverlayIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

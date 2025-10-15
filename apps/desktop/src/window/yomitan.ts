@@ -6,68 +6,64 @@ import { AppWindow } from "./base";
 
 hmr.log(import.meta);
 
-function createYomitanWindow() {
-  class YomitanWindow extends AppWindow() {
-    preloadScriptIds: string[] = [];
+class YomitanWindow extends AppWindow() {
+  preloadScriptIds: string[] = [];
 
-    constructor() {
-      super({
-        width: 1200,
-        height: 800,
-        show: false,
-        webPreferences: {
-          preload: undefined,
-        },
-      });
-    }
-
-    override async create() {
-      super.create();
-      if (!yomitanExtension.isInstalled()) {
-        await yomitanExtension.install();
-      }
-      if (yomitanExtension.installingLock) {
-        log.warn("Yomitan extension is installing, waiting for it to finish");
-        return false;
-      }
-
-      const ext = await this.loadYomitan();
-      if (!ext) return false;
-      const optionsPage = `chrome-extension://${ext.id}/settings.html`;
-      log.info(`Opening Yomitan settings page: ${optionsPage}`);
-      await this.win?.loadURL(optionsPage);
-      return true;
-    }
-
-    async loadYomitan() {
-      if (!yomitanExtension.isInstalled()) {
-        return;
-      }
-
-      this.preloadScriptIds.push(
-        session.defaultSession.registerPreloadScript({
-          type: "service-worker",
-          filePath: env.CHROME_PRELOAD_PATH,
-        }),
-      );
-
-      this.preloadScriptIds.push(
-        session.defaultSession.registerPreloadScript({
-          type: "frame",
-          filePath: env.CHROME_PRELOAD_PATH,
-        }),
-      );
-
-      return await session.defaultSession.extensions.loadExtension(
-        yomitanExtension.getExtensionPath(),
-      );
-    }
+  constructor() {
+    super({
+      width: 1200,
+      height: 800,
+      show: false,
+      webPreferences: {
+        preload: undefined,
+      },
+    });
   }
 
-  return new YomitanWindow();
+  override async create() {
+    super.create();
+    if (!yomitanExtension.isInstalled()) {
+      await yomitanExtension.install();
+    }
+    if (yomitanExtension.installingLock) {
+      log.warn("Yomitan extension is installing, waiting for it to finish");
+      return false;
+    }
+
+    const ext = await this.loadYomitan();
+    if (!ext) return false;
+    const optionsPage = `chrome-extension://${ext.id}/settings.html`;
+    log.info(`Opening Yomitan settings page: ${optionsPage}`);
+    await this.win?.loadURL(optionsPage);
+    return true;
+  }
+
+  async loadYomitan() {
+    if (!yomitanExtension.isInstalled()) {
+      return;
+    }
+
+    this.preloadScriptIds.push(
+      session.defaultSession.registerPreloadScript({
+        type: "service-worker",
+        filePath: env.CHROME_PRELOAD_PATH,
+      }),
+    );
+
+    this.preloadScriptIds.push(
+      session.defaultSession.registerPreloadScript({
+        type: "frame",
+        filePath: env.CHROME_PRELOAD_PATH,
+      }),
+    );
+
+    return await session.defaultSession.extensions.loadExtension(
+      yomitanExtension.getExtensionPath(),
+    );
+  }
 }
 
-export const yomitanWindow = hmr.module(createYomitanWindow());
+export const yomitanWindow = hmr.module(new YomitanWindow());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

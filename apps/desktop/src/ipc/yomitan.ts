@@ -5,36 +5,32 @@ import { IPC } from "./base";
 
 hmr.log(import.meta);
 
-function createYomitanIPC() {
-  class YomitanIPC extends IPC()<"yomitan"> {
-    constructor() {
-      super({
-        prefix: "yomitan",
-      });
-    }
-
-    override register() {
-      this.on("yomitan:open", () => {
-        log.info("Opening Yomitan");
-        yomitanWindow().open();
-      });
-
-      this.on("yomitan:minimize", () => {
-        yomitanWindow().win?.minimize();
-      });
-
-      this.on("yomitan:reinstall", async () => {
-        yomitanWindow().win?.close();
-        await yomitanExtension.reinstall();
-        yomitanWindow().open();
-      });
-    }
+class YomitanIPC extends IPC()<"yomitan"> {
+  constructor() {
+    super({
+      prefix: "yomitan",
+    });
   }
 
-  return new YomitanIPC();
+  override register() {
+    this.on("yomitan:open", () => {
+      log.info("Opening Yomitan");
+      yomitanWindow().open();
+    });
+
+    this.on("yomitan:minimize", () => {
+      yomitanWindow().win?.minimize();
+    });
+
+    this.on("yomitan:reinstall", async () => {
+      yomitanWindow().win?.close();
+      await yomitanExtension.reinstall();
+      yomitanWindow().open();
+    });
+  }
 }
 
-export const yomitanIPC = hmr.module(createYomitanIPC());
+export const yomitanIPC = hmr.module(new YomitanIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

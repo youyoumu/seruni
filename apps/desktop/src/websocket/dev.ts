@@ -4,27 +4,24 @@ import { AppWebsocket } from "./base";
 
 hmr.log(import.meta);
 
-function createDevWS() {
-  class DevWS extends AppWebsocket()<"dev"> {
-    constructor() {
-      super({
-        prefix: "dev",
-      });
-    }
-
-    override async register() {
-      await super.register();
-      this.on("dev:fileChange", ({ fileName }) => {
-        if (fileName === "ipc.js") {
-          textractorClient().client?.close();
-          this.emit("dev:restart", () => {
-            app.exit();
-          });
-        }
-      });
-    }
+class DevWS extends AppWebsocket()<"dev"> {
+  constructor() {
+    super({
+      prefix: "dev",
+    });
   }
-  return new DevWS();
+
+  override async register() {
+    await super.register();
+    this.on("dev:fileChange", ({ fileName }) => {
+      if (fileName === "ipc.js") {
+        textractorClient().client?.close();
+        this.emit("dev:restart", () => {
+          app.exit();
+        });
+      }
+    });
+  }
 }
 
-export const devWS = hmr.module(createDevWS());
+export const devWS = hmr.module(new DevWS());

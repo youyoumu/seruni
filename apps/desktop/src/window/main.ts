@@ -6,52 +6,46 @@ import { AppWindow } from "./base";
 
 hmr.log(import.meta);
 
-function createMainWindow() {
-  class MainWindow extends AppWindow() {
-    constructor() {
-      super({
-        width: 1280,
-        height: 1000,
-        show: false,
-      });
-    }
-
-    override async create() {
-      super.create();
-
-      await this.waitForRenderer(env.RENDERER_URL);
-      await this.win?.loadURL(env.RENDERER_URL);
-      return true;
-    }
-
-    async waitForRenderer(url: string, retries = 30, delayMs = 500) {
-      for (let i = 0; i < retries; i++) {
-        try {
-          await this.ping(url);
-          return;
-        } catch {
-          await delay(delayMs);
-        }
-      }
-      throw new Error(
-        `Renderer at ${url} not responding after ${retries} tries`,
-      );
-    }
-
-    async ping(url: string): Promise<void> {
-      log.trace({ namespace: "WIN" }, `Pinging ${url}`);
-      const res = await fetch(url, { method: "GET" });
-      if (res.ok) {
-        return;
-      }
-      throw new Error(`Bad status: ${res.status} ${res.statusText}`);
-    }
+class MainWindow extends AppWindow() {
+  constructor() {
+    super({
+      width: 1280,
+      height: 1000,
+      show: false,
+    });
   }
 
-  return new MainWindow();
+  override async create() {
+    super.create();
+
+    await this.waitForRenderer(env.RENDERER_URL);
+    await this.win?.loadURL(env.RENDERER_URL);
+    return true;
+  }
+
+  async waitForRenderer(url: string, retries = 30, delayMs = 500) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await this.ping(url);
+        return;
+      } catch {
+        await delay(delayMs);
+      }
+    }
+    throw new Error(`Renderer at ${url} not responding after ${retries} tries`);
+  }
+
+  async ping(url: string): Promise<void> {
+    log.trace({ namespace: "WIN" }, `Pinging ${url}`);
+    const res = await fetch(url, { method: "GET" });
+    if (res.ok) {
+      return;
+    }
+    throw new Error(`Bad status: ${res.status} ${res.statusText}`);
+  }
 }
 
-export const mainWindow = hmr.module(createMainWindow());
+export const mainWindow = hmr.module(new MainWindow());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 

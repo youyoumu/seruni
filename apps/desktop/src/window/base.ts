@@ -6,84 +6,77 @@ import { log } from "#/util/logger";
 hmr.log(import.meta);
 
 type BrowserWindowOptions = ConstructorParameters<typeof BrowserWindow>[0];
-function createAppWindowClass() {
-  class AppWindow {
-    options: BrowserWindowOptions;
-    win: BrowserWindow | undefined;
-    #controller = new AbortController();
+const appWindow = class AppWindow {
+  options: BrowserWindowOptions;
+  win: BrowserWindow | undefined;
+  #controller = new AbortController();
 
-    constructor(options: BrowserWindowOptions = {}) {
-      const defaultOptions: BrowserWindowOptions = {
-        webPreferences: {
-          preload: env.IPC_PRELOAD_PATH,
-        },
-      };
+  constructor(options: BrowserWindowOptions = {}) {
+    const defaultOptions: BrowserWindowOptions = {
+      webPreferences: {
+        preload: env.IPC_PRELOAD_PATH,
+      },
+    };
 
-      this.options = {
-        ...defaultOptions,
-        ...options,
-        webPreferences: {
-          ...defaultOptions.webPreferences,
-          ...options.webPreferences,
-        },
-      };
+    this.options = {
+      ...defaultOptions,
+      ...options,
+      webPreferences: {
+        ...defaultOptions.webPreferences,
+        ...options.webPreferences,
+      },
+    };
 
-      this.register();
-    }
-
-    register() {
-      const listener = ({ channel, payload }: BusEvents["webContent:send"]) => {
-        this.win?.webContents.send(channel, ...payload);
-      };
-
-      const uuid = crypto.randomUUID();
-      log.trace(
-        { namespace: `WIN` },
-        `Adding listener webContent:send ${uuid}`,
-      );
-      bus.on("webContent:send", listener);
-
-      this.#controller.signal.addEventListener(
-        "abort",
-        () => {
-          log.trace(
-            { namespace: `WIN` },
-            `Removing listener webContent:send ${uuid}`,
-          );
-          bus.removeListener("webContent:send", listener);
-        },
-        { once: true },
-      );
-    }
-
-    unregister() {
-      this.#controller.abort();
-    }
-
-    async create() {
-      this.win = new BrowserWindow(this.options);
-
-      this.win.on("closed", () => {
-        this.win = undefined;
-      });
-      return true;
-    }
-
-    async open() {
-      let ready = true;
-      if (!this.win || this.win.isDestroyed()) {
-        ready = await this.create();
-      }
-      if (ready) {
-        this.win?.show();
-      }
-    }
+    this.register();
   }
 
-  return AppWindow;
-}
+  register() {
+    const listener = ({ channel, payload }: BusEvents["webContent:send"]) => {
+      this.win?.webContents.send(channel, ...payload);
+    };
 
-export const AppWindow = hmr.module(createAppWindowClass());
+    const uuid = crypto.randomUUID();
+    log.trace({ namespace: `WIN` }, `Adding listener webContent:send ${uuid}`);
+    bus.on("webContent:send", listener);
+
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => {
+        log.trace(
+          { namespace: `WIN` },
+          `Removing listener webContent:send ${uuid}`,
+        );
+        bus.removeListener("webContent:send", listener);
+      },
+      { once: true },
+    );
+  }
+
+  unregister() {
+    this.#controller.abort();
+  }
+
+  async create() {
+    this.win = new BrowserWindow(this.options);
+
+    this.win.on("closed", () => {
+      this.win = undefined;
+    });
+    return true;
+  }
+
+  async open() {
+    let ready = true;
+    if (!this.win || this.win.isDestroyed()) {
+      ready = await this.create();
+    }
+    if (ready) {
+      this.win?.show();
+    }
+  }
+};
+
+export const AppWindow = hmr.module(appWindow);
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
