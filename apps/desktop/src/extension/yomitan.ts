@@ -25,8 +25,8 @@ class YomitanExtension extends Extension {
     });
   }
 
-  override async extractExtension() {
-    const extensionPath = await super.extractExtension();
+  override async extractExtension({ filePath }: { filePath: string }) {
+    const extensionPath = await super.extractExtension({ filePath });
     if (!extensionPath) {
       log.warn("Cancelling yomitan shimming");
       return;

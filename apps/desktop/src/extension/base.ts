@@ -85,10 +85,6 @@ export class Extension {
     return path.join(env.EXTENSION_PATH, this.name);
   }
 
-  getDownloadPath() {
-    return path.join(env.CACHE_PATH, this.fileName);
-  }
-
   async downloadExtension() {
     log.info(`Downloading ${this.name} extension`);
     await mkdir(this.getExtensionPath(), { recursive: true });
@@ -110,7 +106,7 @@ export class Extension {
       if (match) this.fileName = decodeURIComponent(match[1] ?? this.fileName);
     }
 
-    const downloadPath = this.getDownloadPath();
+    const downloadPath = path.join(env.CACHE_PATH, this.fileName);
     await writeFile(downloadPath, Readable.fromWeb(res.body as ReadableStream));
     log.info(`Downloaded ${this.name} extension to ${downloadPath}`);
     await cache.setDownloadCache({
@@ -120,17 +116,17 @@ export class Extension {
     return downloadPath;
   }
 
-  async extractExtension() {
+  async extractExtension({ filePath }: { filePath: string }) {
     log.info(`Extracting ${this.name} extension`);
     await mkdir(this.getExtensionPath(), { recursive: true });
 
-    const zip = new StreamZip.async({ file: this.getDownloadPath() });
+    const zip = new StreamZip.async({ file: filePath });
     try {
       const count = await zip.extract(null, this.getExtensionPath());
       log.debug(`Extracted ${count} entries to ${this.getExtensionPath()}`);
     } catch {
       log.error(
-        `Failed to extract ${this.name} extension, check if ${this.getDownloadPath()} is downloaded correctly`,
+        `Failed to extract ${this.name} extension, check if ${filePath} is downloaded correctly`,
       );
       return;
     } finally {
@@ -155,8 +151,9 @@ export class Extension {
     log.info(`Installing ${this.name} extension`);
     await Extension.deleteSeriveWorkerDir();
     try {
-      await this.downloadExtension();
-      await this.extractExtension();
+      const filePath = await this.downloadExtension();
+      if (!filePath) throw new Error("Failed to download extension");
+      await this.extractExtension({ filePath });
       if (this.isInstalled()) {
         log.info(`Installed ${this.name} extension`);
       } else {
