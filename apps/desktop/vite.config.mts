@@ -59,6 +59,11 @@ export default defineConfig(({ command }) => ({
           { recursive: true },
         );
         await cp(
+          resolve(import.meta.dirname, "../../packages/python/uv.lock"),
+          resolve(outDir, "python/uv.lock"),
+          { recursive: true },
+        );
+        await cp(
           resolve(import.meta.dirname, "./drizzle/"),
           resolve(outDir, "drizzle/"),
           { recursive: true },
