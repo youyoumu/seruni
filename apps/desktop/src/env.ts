@@ -67,43 +67,35 @@ async function createEnv_() {
   const CACHE_FILE_PATH = join(CACHE_PATH, "cache.json");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
   const EXTENSION_PATH = join(USER_DATA_PATH, "extension");
-  const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
+  const BIN_PATH = join(USER_DATA_PATH, "bin");
+  const PYTHON_ENV_PATH = join(USER_DATA_PATH, "python");
 
   await mkdir(DB_PATH, { recursive: true });
   await mkdir(CACHE_PATH, { recursive: true });
   await mkdir(TEMP_PATH, { recursive: true });
   await mkdir(EXTENSION_PATH, { recursive: true });
-  await mkdir(PYTHON_EXTRACT_PATH, { recursive: true });
+  await mkdir(BIN_PATH, { recursive: true });
+  await mkdir(PYTHON_ENV_PATH, { recursive: true });
 
   const DRIZZLE_PATH = join(import.meta.dirname, "drizzle");
   const DRIZZLE_PATH_DEV = join(import.meta.dirname, "../drizzle");
 
-  const pythonBinPathMap: Partial<Record<NodeJS.Platform, string>> = {
-    win32: join(PYTHON_EXTRACT_PATH, "python/python.exe"),
-    linux: join(PYTHON_EXTRACT_PATH, "python/bin/python"),
+  const PYTHON_BIN_PATH_MAP: Partial<Record<NodeJS.Platform, string>> = {
+    win32: join(BIN_PATH, "python/python.exe"),
+    linux: join(BIN_PATH, "python/bin/python"),
   };
-  const PYTHON_BIN_PATH = pythonBinPathMap[process.platform];
+  const PYTHON_BIN_PATH = PYTHON_BIN_PATH_MAP[process.platform];
   if (!PYTHON_BIN_PATH) {
     throw new Error(
       `No python bin path found for platform ${process.platform}`,
     );
   }
-  const PYTHON_BIN_PATH_DEV = join(
-    import.meta.dirname,
-    "../../../packages/python/.venv/bin/python",
-  );
-  const PYTHON_BIN_PATH_DEV2 = PYTHON_BIN_PATH;
-
-  const PYTHON_ENTRY_PATH = join(import.meta.dirname, "python/src/main.py");
-  const PYTHON_ENTRY_PATH_DEV = join(
-    import.meta.dirname,
-    "../../../packages/python/src/main.py",
-  );
   const PYTHON_PACKAGE_PATH = join(import.meta.dirname, "python");
   const PYTHON_PACKAGE_PATH_DEV = join(
     import.meta.dirname,
     "../../../packages/python",
   );
+  const PYTHON_ENTRY_PATH = join(PYTHON_ENV_PATH, "src/main.py");
 
   const IPC_PRELOAD_PATH = join(import.meta.dirname, "_preload/ipc.js");
   const IPC_PRELOAD_PATH_DEV = join(
@@ -134,17 +126,18 @@ async function createEnv_() {
     ELECTRON_PATH: app.getPath("userData"),
     USER_DATA_PATH,
     DB_PATH,
-    DB_FILE_PATH: DB_FILE_PATH,
+    DB_FILE_PATH,
     CACHE_PATH,
     CACHE_FILE_PATH,
     TEMP_PATH,
     EXTENSION_PATH,
+    BIN_PATH,
 
     DRIZZLE_PATH: DEV ? DRIZZLE_PATH_DEV : DRIZZLE_PATH,
 
-    PYTHON_EXTRACT_PATH,
-    PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH_DEV2 : PYTHON_BIN_PATH,
-    PYTHON_ENTRY_PATH: DEV ? PYTHON_ENTRY_PATH_DEV : PYTHON_ENTRY_PATH,
+    PYTHON_ENV_PATH,
+    PYTHON_BIN_PATH,
+    PYTHON_ENTRY_PATH,
     PYTHON_PACKAGE_PATH: DEV ? PYTHON_PACKAGE_PATH_DEV : PYTHON_PACKAGE_PATH,
 
     IPC_PRELOAD_PATH: DEV ? IPC_PRELOAD_PATH_DEV : IPC_PRELOAD_PATH,

@@ -46,7 +46,7 @@ class SettingsIPC extends IPC()<"settings"> {
 
     this.handle("settings:installPython", async (_) => {
       try {
-        await python.install();
+        await python().install();
         return true;
       } catch {
         return false;
@@ -54,11 +54,11 @@ class SettingsIPC extends IPC()<"settings"> {
     });
 
     this.on("settings:runPython", async (_, payload) => {
-      await python.run(payload);
+      await python().run(payload);
     });
 
     this.handle("settings:inPythonInstalled", async () => {
-      return await python.isPythonInstalled();
+      return await python().isPythonInstalled();
     });
 
     this.handle("settings:isYomitanInstalled", async () => {

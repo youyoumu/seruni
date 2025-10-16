@@ -254,7 +254,7 @@ const AnkiClient_ = class AnkiClient {
       }[];
       try {
         audioStage1VadData = JSON.parse(
-          await python.runEntry([audioStage1Path]),
+          await python().runEntry([audioStage1Path]),
         );
       } catch (e) {
         throw new Error("Failed to extract audio VAD data", { cause: e });

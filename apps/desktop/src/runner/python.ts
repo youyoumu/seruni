@@ -1,4 +1,5 @@
-import { access, mkdir } from "node:fs/promises";
+import { access, cp } from "node:fs/promises";
+import { join } from "node:path";
 import { execa } from "execa";
 import * as tar from "tar";
 import { env } from "#/env";
@@ -9,8 +10,16 @@ hmr.log(import.meta);
 
 class Python {
   async run(params: string[]) {
-    log.debug(`Running python with params: ${params.join(" ")}`);
-    const subprocess = execa(env.PYTHON_BIN_PATH, params);
+    const finalParams = [
+      "-m",
+      "uv",
+      "run",
+      "--directory",
+      env.PYTHON_ENV_PATH,
+      ...params,
+    ];
+    log.debug(`Running python with params: ${finalParams.join(" ")}`);
+    const subprocess = execa(env.PYTHON_BIN_PATH, finalParams);
 
     subprocess.stdout?.on("data", (data) => {
       log.trace(`[python stdout] ${data.toString().trim()}`);
@@ -63,17 +72,16 @@ class Python {
 
   async extract({ tarPath }: { tarPath: string }) {
     log.info(`Extracting ${tarPath}`);
-    await mkdir(env.PYTHON_EXTRACT_PATH, { recursive: true });
 
     try {
       await tar.x({
         file: tarPath,
-        cwd: env.PYTHON_EXTRACT_PATH,
+        cwd: env.BIN_PATH,
         strict: true, // throw errors on bad entries
       });
 
-      log.info(`Extracted ${tarPath} to ${env.PYTHON_EXTRACT_PATH}`);
-      return env.PYTHON_EXTRACT_PATH;
+      log.info(`Extracted ${tarPath} to ${env.BIN_PATH}`);
+      return env.BIN_PATH;
     } catch (err) {
       log.error({ error: err }, `Failed to extract ${tarPath}`);
       throw err;
@@ -81,14 +89,29 @@ class Python {
   }
 
   async install() {
-    const outputPath = await python.download();
-    await python.extract({ tarPath: outputPath });
-    await python.installDeps();
+    const outputPath = await this.download();
+    await this.extract({ tarPath: outputPath });
+    await this.installDeps();
   }
 
   async installDeps() {
     await this.run(["-m", "pip", "install", "uv"]);
-    await this.run(["-m", "uv", "pip", "install", env.PYTHON_PACKAGE_PATH]);
+    await cp(
+      join(env.PYTHON_PACKAGE_PATH, "pyproject.toml"),
+      join(env.PYTHON_ENV_PATH, "pyproject.toml"),
+      { recursive: true },
+    );
+    await cp(
+      join(env.PYTHON_PACKAGE_PATH, "uv.lock"),
+      join(env.PYTHON_ENV_PATH, "uv.lock"),
+      { recursive: true },
+    );
+    await cp(
+      join(env.PYTHON_PACKAGE_PATH, "src"),
+      join(env.PYTHON_ENV_PATH, "src"),
+      { recursive: true },
+    );
+    await this.run(["-m", "uv", "sync", "--directory", env.PYTHON_ENV_PATH]);
   }
 
   async isPythonInstalled() {
@@ -101,7 +124,7 @@ class Python {
   }
 }
 
-export const python = new Python();
+export const python = hmr.module(new Python());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
