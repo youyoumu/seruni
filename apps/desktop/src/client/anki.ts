@@ -7,7 +7,7 @@ import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { env } from "#/env";
 import { logIPC } from "#/ipc/log";
-import { ffmpeg, getFileDuration } from "#/runner/ffmpeg";
+import { ffmpeg } from "#/runner/ffmpeg";
 import { python } from "#/runner/python";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
@@ -226,7 +226,7 @@ const AnkiClient_ = class AnkiClient {
       const fileEnd = new Date();
       let durationSeconds: number;
       try {
-        durationSeconds = await getFileDuration(savedReplayPath);
+        durationSeconds = await ffmpeg().getFileDuration(savedReplayPath);
       } catch (e) {
         throw new Error("Failed to get duration", { cause: e });
       }
@@ -238,7 +238,7 @@ const AnkiClient_ = class AnkiClient {
 
       // create wav file for vad
       try {
-        audioStage1Path = await ffmpeg({
+        audioStage1Path = await ffmpeg().process({
           inputPath: savedReplayPath,
           seekMs: offsetMs,
           format: "wav",
@@ -268,7 +268,7 @@ const AnkiClient_ = class AnkiClient {
       const audioStage2PathPromise = (() => {
         if (lastEnd) {
           try {
-            return ffmpeg({
+            return ffmpeg().process({
               inputPath: audioStage1Path,
               durationMs: lastEnd * 1000,
               format: "opus",
@@ -286,7 +286,7 @@ const AnkiClient_ = class AnkiClient {
             0,
             Math.floor(now.getTime() - history.time.getTime()),
           );
-          return ffmpeg({
+          return ffmpeg().process({
             inputPath: savedReplayPath,
             seekMs: offsetMs + extraSeek,
             format: "webp",

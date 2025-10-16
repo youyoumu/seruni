@@ -105,3 +105,14 @@ class Python {
 }
 
 export const python = new Python();
+
+//  ───────────────────────────────── HMR ─────────────────────────────────
+
+type Self = typeof import("./python");
+const module: Self = { python };
+if (import.meta.hot) {
+  hmr.register<Self>(import.meta, module);
+  import.meta.hot.accept((mod) => {
+    hmr.update(import.meta, mod);
+  });
+}
