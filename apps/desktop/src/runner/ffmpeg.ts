@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { format as formatDate } from "date-fns";
 import { execa } from "execa";
 import { env } from "#/env";
-import { log } from "./logger";
+import { log } from "#/util/logger";
 
 hmr.log(import.meta);
 

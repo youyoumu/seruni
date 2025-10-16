@@ -1,9 +1,9 @@
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
 import { env } from "#/env";
+import { python } from "#/runner/python";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
-import { python } from "#/util/python";
 import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 

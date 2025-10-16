@@ -7,10 +7,10 @@ import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
 import { env } from "#/env";
 import { logIPC } from "#/ipc/log";
+import { ffmpeg, getFileDuration } from "#/runner/ffmpeg";
+import { python } from "#/runner/python";
 import { config } from "#/util/config";
-import { ffmpeg, getFileDuration } from "#/util/ffmpeg";
 import { log } from "#/util/logger";
-import { python } from "#/util/python";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 

@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { execa } from "execa";
 import * as tar from "tar";
 import { env } from "#/env";
-import { cache } from "./cache";
-import { log } from "./logger";
+import { cache } from "#/util/cache";
+import { log } from "#/util/logger";
 
 hmr.log(import.meta);
 
