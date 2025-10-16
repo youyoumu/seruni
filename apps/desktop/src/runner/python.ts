@@ -1,5 +1,7 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { access, mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { throttle } from "es-toolkit";
 import { execa } from "execa";
 import * as tar from "tar";
 import { env } from "#/env";
@@ -56,18 +58,51 @@ class Python {
     const fileName = downloadUrl.split("/").pop() ?? "python.tar.gz";
     log.info(`Downloading ${fileName} from ${downloadUrl}`);
 
-    const assetRes = await fetch(downloadUrl);
-    const buffer = await assetRes.arrayBuffer();
-    const downloadPath = join(env.CACHE_PATH, fileName);
-    await writeFile(downloadPath, Buffer.from(buffer));
+    const res = await fetch(downloadUrl);
+    if (!res.ok || !res.body) {
+      throw new Error(`Failed to download ${downloadUrl}: ${res.statusText}`);
+    }
 
-    log.info(`Downloaded ${downloadPath} successfully!`);
+    const total = Number(res.headers.get("content-length"));
+    const destPath = join(env.CACHE_PATH, fileName);
+    const fileStream = createWriteStream(destPath);
+
+    let downloaded = 0;
+    const reader = res.body.getReader();
+
+    log.info(
+      `File size: ${total ? `${(total / 1024 / 1024).toFixed(2)} MB` : "unknown"}`,
+    );
+
+    const logDownloadProgress = throttle(() => {
+      if (total) {
+        const percent = ((downloaded / total) * 100).toFixed(1);
+        log.info(
+          `Downloading ${fileName}... ${Math.round(downloaded / 1024)} KB -- ${percent}%`,
+        );
+      } else {
+        log.info(`Downloaded ${Math.round(downloaded / 1024)} KB...`);
+      }
+    }, 500);
+
+    // Stream reading
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fileStream.write(value);
+      downloaded += value.length;
+      logDownloadProgress();
+    }
+
+    fileStream.end();
+    log.info(`Downloaded ${fileName} successfully to ${destPath}`);
+
     await cache.setDownloadCache({
       downloadUrl,
-      downloadedFilePath: downloadPath,
+      downloadedFilePath: destPath,
     });
 
-    return downloadPath;
+    return destPath;
   }
 
   async extract({ tarPath }: { tarPath: string }) {
