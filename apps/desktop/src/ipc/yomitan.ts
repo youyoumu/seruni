@@ -22,10 +22,14 @@ class YomitanIPC extends IPC()<"yomitan"> {
       yomitanWindow().win?.minimize();
     });
 
-    this.on("yomitan:reinstall", async () => {
-      yomitanWindow().win?.close();
-      await yomitanExtension.reinstall();
-      yomitanWindow().open();
+    this.handle("yomitan:reinstall", async () => {
+      try {
+        yomitanWindow().win?.close();
+        await yomitanExtension.reinstall();
+        return true;
+      } catch {
+        return false;
+      }
     });
   }
 }

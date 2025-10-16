@@ -1,10 +1,14 @@
-import { createSignal, onMount } from "solid-js";
+import { ShieldAlertIcon } from "lucide-solid";
+import { createSignal, onMount, Show } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
+import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
+import { appToaster } from "../AppToaster";
 
 export function Yomitan() {
   const [isInstalled, setIsInstalled] = createSignal(false);
+  const [isInstalling, setIsInstalling] = createSignal(false);
   onMount(async () => {
     const isInstalled = await ipcRenderer.invoke("settings:isYomitanInstalled");
     return setIsInstalled(isInstalled);
@@ -22,9 +26,21 @@ export function Yomitan() {
           Yomitan
         </Heading>
       </Stack>
+      <Show when={!isInstalled()}>
+        <Alert.Root>
+          <Alert.Icon
+            color="yellow.dark.a10"
+            asChild={(props) => {
+              return <ShieldAlertIcon {...props()} />;
+            }}
+          ></Alert.Icon>
+          <Alert.Title>Yomitan is not installed</Alert.Title>
+        </Alert.Root>
+      </Show>
+
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Button
-          disabled={!isInstalled()}
+          disabled={!isInstalled() || isInstalling()}
           onClick={() => {
             ipcRenderer.send("yomitan:open");
           }}
@@ -32,11 +48,47 @@ export function Yomitan() {
           Open Yomitan Settings
         </Button>
         <Button
+          loading={isInstalling()}
           onClick={() => {
-            ipcRenderer.send("yomitan:reinstall");
+            setIsInstalling(true);
+            appToaster.promise(
+              ipcRenderer
+                .invoke("yomitan:reinstall")
+                .then((success) => {
+                  if (success) {
+                    ipcRenderer
+                      .invoke("settings:isYomitanInstalled")
+                      .then((isInstalled) => {
+                        setIsInstalled(isInstalled);
+                      });
+                    setIsInstalled(true);
+                  } else {
+                    throw new Error("Failed to reinstall Yomitan");
+                  }
+                })
+                .finally(() => {
+                  setIsInstalling(false);
+                }),
+              {
+                loading: {
+                  title: isInstalled()
+                    ? "Updating Yomitan..."
+                    : "Installing Yomitan...",
+                },
+                error: {
+                  title: "Failed to install Yomitan",
+                },
+                success: {
+                  title: isInstalled()
+                    ? "Yomitan has been updated"
+                    : "Yomitan has been installed",
+                  description: "Restart the app to apply changes",
+                },
+              },
+            );
           }}
         >
-          Reinstall Yomitan
+          {isInstalled() ? "Update" : "Install"} Yomitan
         </Button>
       </Grid>
     </Stack>
