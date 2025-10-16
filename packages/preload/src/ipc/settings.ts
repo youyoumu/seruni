@@ -23,10 +23,17 @@ export const zSettingsIPC = {
         z.union([z.string(), z.number(), z.boolean()]),
       ),
     }),
-    "settings:installPython": zSimple,
+    "settings:installPython": z.object({
+      input: z.tuple([]),
+      output: z.boolean(),
+    }),
     "settings:runPython": z.object({
       input: z.tuple([z.array(z.string())]),
       output: z.void(),
+    }),
+    "settings:inPythonInstalled": z.object({
+      input: z.tuple([]),
+      output: z.boolean(),
     }),
     "settings:isYomitanInstalled": z.object({
       input: z.tuple([]),

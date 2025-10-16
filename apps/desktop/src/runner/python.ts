@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { execa } from "execa";
 import * as tar from "tar";
@@ -92,6 +92,15 @@ class Python {
   async installDeps() {
     await this.run(["-m", "pip", "install", "uv"]);
     await this.run(["-m", "uv", "pip", "install", env.PYTHON_PACKAGE_PATH]);
+  }
+
+  async isPythonInstalled() {
+    try {
+      await access(env.PYTHON_BIN_PATH);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

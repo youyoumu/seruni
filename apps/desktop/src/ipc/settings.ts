@@ -44,14 +44,23 @@ class SettingsIPC extends IPC()<"settings"> {
       return env;
     });
 
-    this.on("settings:installPython", async (_) => {
-      const outputPath = await python.download();
-      await python.extract({ tarPath: outputPath });
-      await python.installDeps();
+    this.handle("settings:installPython", async (_) => {
+      try {
+        const outputPath = await python.download();
+        await python.extract({ tarPath: outputPath });
+        await python.installDeps();
+        return true;
+      } catch {
+        return false;
+      }
     });
 
     this.on("settings:runPython", async (_, payload) => {
       await python.run(payload);
+    });
+
+    this.handle("settings:inPythonInstalled", async () => {
+      return await python.isPythonInstalled();
     });
 
     this.handle("settings:isYomitanInstalled", async () => {

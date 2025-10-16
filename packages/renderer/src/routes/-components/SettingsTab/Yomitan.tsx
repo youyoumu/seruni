@@ -61,7 +61,6 @@ export function Yomitan() {
                       .then((isInstalled) => {
                         setIsInstalled(isInstalled);
                       });
-                    setIsInstalled(true);
                   } else {
                     throw new Error("Failed to reinstall Yomitan");
                   }
