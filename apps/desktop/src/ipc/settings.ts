@@ -46,9 +46,7 @@ class SettingsIPC extends IPC()<"settings"> {
 
     this.handle("settings:installPython", async (_) => {
       try {
-        const outputPath = await python.download();
-        await python.extract({ tarPath: outputPath });
-        await python.installDeps();
+        await python.install();
         return true;
       } catch {
         return false;

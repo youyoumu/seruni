@@ -1,7 +1,4 @@
-import { createWriteStream } from "node:fs";
 import { access, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { throttle } from "es-toolkit";
 import { execa } from "execa";
 import * as tar from "tar";
 import { env } from "#/env";
@@ -12,13 +9,22 @@ hmr.log(import.meta);
 
 class Python {
   async run(params: string[]) {
-    const finalParams = [...params];
-    const { stdout, stderr } = await execa(env.PYTHON_BIN_PATH, finalParams);
+    log.debug(`Running python with params: ${params.join(" ")}`);
+    const subprocess = execa(env.PYTHON_BIN_PATH, params);
 
-    log.trace(
+    subprocess.stdout?.on("data", (data) => {
+      log.trace(`[python stdout] ${data.toString().trim()}`);
+    });
+
+    subprocess.stderr?.on("data", (data) => {
+      log.trace(`[python stderr] ${data.toString().trim()}`);
+    });
+
+    const { stdout, stderr } = await subprocess;
+
+    log.debug(
       {
-        params: finalParams,
-        stdout,
+        params: stdout,
         stderr,
       },
       "python",
@@ -28,17 +34,7 @@ class Python {
 
   async runEntry(params: string[]) {
     const finalParams = [env.PYTHON_ENTRY_PATH, ...params];
-    const { stdout, stderr } = await execa(env.PYTHON_BIN_PATH, finalParams);
-
-    log.trace(
-      {
-        params: finalParams,
-        stdout,
-        stderr,
-      },
-      "python",
-    );
-    return stdout;
+    return await this.run(finalParams);
   }
 
   async download() {
@@ -82,6 +78,12 @@ class Python {
       log.error({ error: err }, `Failed to extract ${tarPath}`);
       throw err;
     }
+  }
+
+  async install() {
+    const outputPath = await python.download();
+    await python.extract({ tarPath: outputPath });
+    await python.installDeps();
   }
 
   async installDeps() {
