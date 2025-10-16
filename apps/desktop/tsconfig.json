@@ -6,6 +6,6 @@
       "#/*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "vite.config.mts"],
+  "include": ["**/*.ts", "**/*.tsx", "vite.config.mts", "drizzle.config.ts"],
   "exclude": ["node_modules"]
 }

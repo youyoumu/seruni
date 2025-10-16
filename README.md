@@ -32,3 +32,4 @@
 - remote mobile support
 - history on anki disconnect
 - handle invalid anki field
+- cache downloaded file

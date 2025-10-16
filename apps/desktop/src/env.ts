@@ -61,13 +61,20 @@ async function createEnv_() {
   }
 
   const USER_DATA_PATH = app.getPath("userData");
+  const DB_PATH = join(USER_DATA_PATH, "db");
+  const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
+  //TODO: extension path
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
   const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
 
+  await mkdir(DB_PATH, { recursive: true });
   await mkdir(CACHE_PATH, { recursive: true });
   await mkdir(TEMP_PATH, { recursive: true });
   await mkdir(PYTHON_EXTRACT_PATH, { recursive: true });
+
+  const DRIZZLE_PATH = join(import.meta.dirname, "drizzle");
+  const DRIZZLE_PATH_DEV = join(import.meta.dirname, "../drizzle");
 
   const pythonBinPathMap: Partial<Record<NodeJS.Platform, string>> = {
     win32: join(PYTHON_EXTRACT_PATH, "python/python.exe"),
@@ -124,8 +131,12 @@ async function createEnv_() {
     APP_NAME: "Seruni",
     ELECTRON_PATH: app.getPath("userData"),
     USER_DATA_PATH,
+    DB_PATH,
+    DB_FILE_PATH: DB_FILE_PATH,
     CACHE_PATH,
     TEMP_PATH,
+
+    DRIZZLE_PATH: DEV ? DRIZZLE_PATH_DEV : DRIZZLE_PATH,
 
     PYTHON_EXTRACT_PATH,
     PYTHON_BIN_PATH: DEV ? PYTHON_BIN_PATH_DEV2 : PYTHON_BIN_PATH,

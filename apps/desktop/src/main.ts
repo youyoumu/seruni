@@ -12,6 +12,7 @@ import { registerAllWS } from "./util/websocket";
 import { devWS } from "./websocket/dev";
 import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
+import "./db/main";
 
 hmr.log(import.meta);
 

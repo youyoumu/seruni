@@ -58,6 +58,11 @@ export default defineConfig(({ command }) => ({
           resolve(outDir, "python/pyproject.toml"),
           { recursive: true },
         );
+        await cp(
+          resolve(import.meta.dirname, "./drizzle/"),
+          resolve(outDir, "drizzle/"),
+          { recursive: true },
+        );
 
         const packageJson = JSON.parse(
           await readFile(resolve(import.meta.dirname, "package.json"), "utf-8"),
