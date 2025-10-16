@@ -1,4 +1,8 @@
+import { createWriteStream } from "node:fs";
 import { access, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { format } from "date-fns";
+import { throttle } from "es-toolkit";
 import z from "zod";
 import { env } from "#/env";
 import { log } from "./logger";
@@ -61,10 +65,88 @@ class Cache {
     if (downloadedFilePath) {
       await access(downloadedFilePath).then(() => {
         exists = true;
-        log.debug(`Cached file ${downloadedFilePath} exists`);
+        log.debug(
+          {
+            downloadUrl,
+            downloadedFilePath,
+          },
+          "Cache hit",
+        );
       });
     }
     return exists ? downloadedFilePath : undefined;
+  }
+
+  async download({
+    downloadUrl,
+    fileName,
+    fallbackFileName,
+  }: {
+    downloadUrl: string;
+    fileName?: string;
+    fallbackFileName?: string;
+  }) {
+    const downloadedFilePath = await this.getDownloadCache(downloadUrl);
+    if (downloadedFilePath) return downloadedFilePath;
+
+    const res = await fetch(downloadUrl);
+    if (!res.ok || !res.body) {
+      throw new Error(`Failed to download ${downloadUrl}: ${res.statusText}`);
+    }
+
+    if (!fileName) {
+      const disposition = res.headers.get("content-disposition");
+      if (disposition?.includes("filename=")) {
+        const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^;"']+)/i);
+        if (match) fileName = decodeURIComponent(match[1] ?? "");
+      }
+    }
+
+    const total = Number(res.headers.get("content-length"));
+    const destPath = join(
+      env.CACHE_PATH,
+      fileName ??
+        fallbackFileName ??
+        `${format(new Date(), "yyyyMMdd-HHmmss")}.tmp`,
+    );
+    const fileStream = createWriteStream(destPath);
+
+    let downloaded = 0;
+    const reader = res.body.getReader();
+
+    log.info(
+      `File size: ${total ? `${(total / 1024 / 1024).toFixed(2)} MB` : "unknown"}`,
+    );
+
+    const logDownloadProgress = throttle(() => {
+      if (total) {
+        const percent = ((downloaded / total) * 100).toFixed(1);
+        log.info(
+          `Downloading ${fileName}... ${Math.round(downloaded / 1024)} KB -- ${percent}%`,
+        );
+      } else {
+        log.info(`Downloaded ${Math.round(downloaded / 1024)} KB...`);
+      }
+    }, 500);
+
+    // Stream reading
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fileStream.write(value);
+      downloaded += value.length;
+      logDownloadProgress();
+    }
+
+    fileStream.end();
+    log.info(`Downloaded ${fileName} successfully to ${destPath}`);
+
+    await this.setDownloadCache({
+      downloadUrl,
+      downloadedFilePath: destPath,
+    });
+
+    return destPath;
   }
 }
 

@@ -53,56 +53,16 @@ class Python {
     if (!downloadUrl) {
       throw new Error(`No download url found for platform ${process.platform}`);
     }
-    const downloadedFilePath = await cache.getDownloadCache(downloadUrl);
-    if (downloadedFilePath) return downloadedFilePath;
-    const fileName = downloadUrl.split("/").pop() ?? "python.tar.gz";
+    const fileName = downloadUrl.split("/").pop();
     log.info(`Downloading ${fileName} from ${downloadUrl}`);
 
-    const res = await fetch(downloadUrl);
-    if (!res.ok || !res.body) {
-      throw new Error(`Failed to download ${downloadUrl}: ${res.statusText}`);
-    }
-
-    const total = Number(res.headers.get("content-length"));
-    const destPath = join(env.CACHE_PATH, fileName);
-    const fileStream = createWriteStream(destPath);
-
-    let downloaded = 0;
-    const reader = res.body.getReader();
-
-    log.info(
-      `File size: ${total ? `${(total / 1024 / 1024).toFixed(2)} MB` : "unknown"}`,
-    );
-
-    const logDownloadProgress = throttle(() => {
-      if (total) {
-        const percent = ((downloaded / total) * 100).toFixed(1);
-        log.info(
-          `Downloading ${fileName}... ${Math.round(downloaded / 1024)} KB -- ${percent}%`,
-        );
-      } else {
-        log.info(`Downloaded ${Math.round(downloaded / 1024)} KB...`);
-      }
-    }, 500);
-
-    // Stream reading
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      fileStream.write(value);
-      downloaded += value.length;
-      logDownloadProgress();
-    }
-
-    fileStream.end();
-    log.info(`Downloaded ${fileName} successfully to ${destPath}`);
-
-    await cache.setDownloadCache({
+    const downloadedFilePath = await cache.download({
       downloadUrl,
-      downloadedFilePath: destPath,
+      fileName,
+      fallbackFileName: "python.tar.gz",
     });
 
-    return destPath;
+    return downloadedFilePath;
   }
 
   async extract({ tarPath }: { tarPath: string }) {

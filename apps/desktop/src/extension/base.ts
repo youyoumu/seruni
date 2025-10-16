@@ -92,28 +92,13 @@ export class Extension {
       typeof this.downloadUrl === "string"
         ? this.downloadUrl
         : await this.downloadUrl();
-    const downloadedFilePath = await cache.getDownloadCache(downloadUrl);
-    if (downloadedFilePath) return downloadedFilePath;
 
-    const res = await fetch(downloadUrl);
-    if (!res.ok) {
-      log.error(`Failed to download ${this.name} extension: ${res.statusText}`);
-      return;
-    }
-    const disposition = res.headers.get("content-disposition");
-    if (disposition?.includes("filename=")) {
-      const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^;"']+)/i);
-      if (match) this.fileName = decodeURIComponent(match[1] ?? this.fileName);
-    }
-
-    const downloadPath = path.join(env.CACHE_PATH, this.fileName);
-    await writeFile(downloadPath, Readable.fromWeb(res.body as ReadableStream));
-    log.info(`Downloaded ${this.name} extension to ${downloadPath}`);
-    await cache.setDownloadCache({
+    const downloadedFilePath = await cache.download({
       downloadUrl,
-      downloadedFilePath: downloadPath,
+      fallbackFileName: "yomitan-chrome.zip",
     });
-    return downloadPath;
+
+    return downloadedFilePath;
   }
 
   async extractExtension({ filePath }: { filePath: string }) {
