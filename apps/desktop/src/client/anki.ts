@@ -117,35 +117,7 @@ const AnkiClient_ = class AnkiClient {
           (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
         ) {
           this.lastAddedNote = lastAddedNote;
-          try {
-            const noteInfo = await this.getNote(lastAddedNote);
-            log.debug({ noteInfo }, "noteInfo");
-            const expression = AnkiClient.getExpression(noteInfo);
-
-            logIPC().sendToastPromise(
-              async () => {
-                const result = await this.handleNewNote(lastAddedNote);
-                return {
-                  success: {
-                    title: `Note Has Been Updated`,
-                    description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
-                  },
-                };
-              },
-              {
-                loading: {
-                  title: "Processing New Note...",
-                  description: `Detected new note: ${expression}`,
-                },
-                error: {
-                  title: "Error",
-                  description: "Failed to process new note",
-                },
-              },
-            );
-          } catch (e) {
-            log.error({ error: e }, "Failed to handle new note");
-          }
+          this.preHandleNewNote(lastAddedNote);
         }
       } catch (error) {
         log.error({ error }, "Failed to get last added note");
@@ -161,6 +133,50 @@ const AnkiClient_ = class AnkiClient {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.client = undefined;
     this.reconnecting = false;
+  }
+
+  async preHandleNewNote(noteId: number) {
+    const noteInfo = await this.getNote(noteId);
+    log.debug({ noteInfo }, "noteInfo");
+    const expression = AnkiClient.getExpression(noteInfo);
+
+    logIPC().sendToastPromise(
+      async () => {
+        try {
+          const result = await this.handleNewNote(noteId);
+          return {
+            success: true,
+            data: {
+              success: {
+                title: `Note Has Been Updated`,
+                description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
+              },
+            },
+          };
+        } catch (e) {
+          log.error({ error: e }, "Failed to handle new note");
+          return {
+            success: false,
+            data: {
+              error: {
+                title: "Failed to handle new note",
+                description: "",
+              },
+            },
+          };
+        }
+      },
+      {
+        loading: {
+          title: "Processing New Note...",
+          description: `Detected new note: ${expression}`,
+        },
+        error: {
+          title: "Error",
+          description: "Failed to process new note",
+        },
+      },
+    );
   }
 
   async handleNewNote(noteId: number) {

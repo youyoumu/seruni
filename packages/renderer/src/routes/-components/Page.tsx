@@ -1,4 +1,8 @@
-import type { ToastPromiseOptions } from "@repo/preload/ipc";
+import type {
+  ToastPromiseOptions,
+  ToastPromiseOptionsError,
+  ToastPromiseOptionsSuccess,
+} from "@repo/preload/ipc";
 import { XIcon } from "lucide-solid";
 import { createEffect, createMemo, createSignal, For, onMount } from "solid-js";
 import { css, cva } from "styled-system/css";
@@ -165,15 +169,26 @@ export function AppToaster() {
     });
 
     ipcRenderer.on("log:toastPromise", ({ loading, error, uuid }) => {
-      let result: Omit<Omit<ToastPromiseOptions, "loading">, "error">;
+      let result: {
+        success: boolean;
+        data: Partial<ToastPromiseOptionsSuccess> &
+          Partial<ToastPromiseOptionsError>;
+      };
       appToaster.promise(
         async () => {
           result = await ipcRenderer.invoke("log:toastPromise", { uuid });
+          if (!result.success) {
+            throw new Error(result.data.error?.description ?? "Unknown error");
+          }
         },
         {
           loading,
           error,
-          success: () => result.success,
+          success: () =>
+            result.data.success ?? {
+              title: "Unknown Title",
+              description: "Unknown Description",
+            },
         },
       );
     });

@@ -16,6 +16,15 @@ const zToastPromiseOptions = z.object({
 });
 
 export type ToastPromiseOptions = z.infer<typeof zToastPromiseOptions>;
+export type ToastPromiseOptionsLoading = {
+  success: ToastPromiseOptions["loading"];
+};
+export type ToastPromiseOptionsError = {
+  error: ToastPromiseOptions["error"];
+};
+export type ToastPromiseOptionsSuccess = {
+  success: ToastPromiseOptions["success"];
+};
 
 export const zLogIPC = {
   main: z.object({
@@ -61,7 +70,11 @@ export const zLogIPC = {
         }),
       ]),
       output: z.object({
-        success: zToastPromiseOptions.shape.success,
+        success: z.boolean(),
+        data: z.object({
+          success: zToastPromiseOptions.shape.success.optional(),
+          error: zToastPromiseOptions.shape.error.optional(),
+        }),
       }),
     }),
   }),
