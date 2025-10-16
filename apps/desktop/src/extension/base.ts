@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
@@ -13,11 +13,13 @@ export class Extension {
   name: string;
   downloadUrl: string | (() => Promise<string>);
   installingLock = false;
+  fileName: string;
   constructor(options: {
     name: string;
     downloadUrl: string | (() => Promise<string>);
   }) {
     this.name = options.name;
+    this.fileName = `${this.name}.zip`;
     this.downloadUrl = options.downloadUrl;
   }
 
@@ -79,28 +81,33 @@ export class Extension {
   }
 
   getExtensionPath() {
-    return path.join(env.USER_DATA_PATH, "extension", this.name);
+    return path.join(env.EXTENSION_PATH, this.name);
   }
 
   getDownloadPath() {
-    return path.join(env.USER_DATA_PATH, "extension", `${this.name}.zip`);
+    return path.join(env.CACHE_PATH, this.fileName);
   }
 
   async downloadExtension() {
     log.info(`Downloading ${this.name} extension`);
-    const downloadPath = this.getDownloadPath();
-    fs.mkdirSync(this.getExtensionPath(), { recursive: true });
+    await mkdir(this.getExtensionPath(), { recursive: true });
     const downloadUrl =
-      this.downloadUrl instanceof Function
-        ? await this.downloadUrl()
-        : this.downloadUrl;
+      typeof this.downloadUrl === "string"
+        ? this.downloadUrl
+        : await this.downloadUrl();
 
     const res = await fetch(downloadUrl);
     if (!res.ok) {
       log.error(`Failed to download ${this.name} extension: ${res.statusText}`);
       return;
     }
+    const disposition = res.headers.get("content-disposition");
+    if (disposition?.includes("filename=")) {
+      const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^;"']+)/i);
+      if (match) this.fileName = decodeURIComponent(match[1] ?? this.fileName);
+    }
 
+    const downloadPath = this.getDownloadPath();
     await writeFile(downloadPath, Readable.fromWeb(res.body as ReadableStream));
     log.info(`Downloaded ${this.name} extension to ${downloadPath}`);
     return downloadPath;
@@ -108,7 +115,7 @@ export class Extension {
 
   async extractExtension() {
     log.info(`Extracting ${this.name} extension`);
-    fs.mkdirSync(this.getExtensionPath(), { recursive: true });
+    await mkdir(this.getExtensionPath(), { recursive: true });
 
     const zip = new StreamZip.async({ file: this.getDownloadPath() });
     try {
@@ -162,23 +169,11 @@ export class Extension {
     this.installingLock = true;
     log.info(`Reinstalling ${this.name} extension`);
 
-    try {
-      // Remove old extracted extension folder
-      const extPath = this.getExtensionPath();
-      if (fs.existsSync(extPath)) {
-        await rm(extPath, { recursive: true, force: true });
-        log.info(`Removed old extension folder: ${extPath}`);
-      }
+    // Remove old extracted extension folder
+    const extPath = this.getExtensionPath();
+    await rm(extPath, { recursive: true, force: true });
+    log.info(`Removed old extension folder: ${extPath}`);
 
-      // Remove old zip if exists
-      const zipPath = this.getDownloadPath();
-      if (fs.existsSync(zipPath)) {
-        await rm(zipPath, { force: true });
-        log.info(`Removed old extension zip: ${zipPath}`);
-      }
-    } catch (e) {
-      log.error({ error: e }, `Failed to reinstall ${this.name} extension`);
-    }
     this.installingLock = false;
     await this.install();
   }

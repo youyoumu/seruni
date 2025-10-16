@@ -63,14 +63,15 @@ async function createEnv_() {
   const USER_DATA_PATH = app.getPath("userData");
   const DB_PATH = join(USER_DATA_PATH, "db");
   const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
-  //TODO: extension path
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
+  const EXTENSION_PATH = join(USER_DATA_PATH, "extension");
   const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
 
   await mkdir(DB_PATH, { recursive: true });
   await mkdir(CACHE_PATH, { recursive: true });
   await mkdir(TEMP_PATH, { recursive: true });
+  await mkdir(EXTENSION_PATH, { recursive: true });
   await mkdir(PYTHON_EXTRACT_PATH, { recursive: true });
 
   const DRIZZLE_PATH = join(import.meta.dirname, "drizzle");
@@ -135,6 +136,7 @@ async function createEnv_() {
     DB_FILE_PATH: DB_FILE_PATH,
     CACHE_PATH,
     TEMP_PATH,
+    EXTENSION_PATH,
 
     DRIZZLE_PATH: DEV ? DRIZZLE_PATH_DEV : DRIZZLE_PATH,
 
