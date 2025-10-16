@@ -1,8 +1,15 @@
+import { createSignal, onMount } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
 
 export function Yomitan() {
+  const [isInstalled, setIsInstalled] = createSignal(false);
+  onMount(async () => {
+    const isInstalled = await ipcRenderer.invoke("settings:isYomitanInstalled");
+    return setIsInstalled(isInstalled);
+  });
+
   return (
     <Stack gap="4" w="full">
       <Stack>
@@ -17,6 +24,7 @@ export function Yomitan() {
       </Stack>
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <Button
+          disabled={!isInstalled()}
           onClick={() => {
             ipcRenderer.send("yomitan:open");
           }}

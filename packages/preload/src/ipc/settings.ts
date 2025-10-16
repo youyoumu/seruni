@@ -28,5 +28,9 @@ export const zSettingsIPC = {
       input: z.tuple([z.array(z.string())]),
       output: z.void(),
     }),
+    "settings:isYomitanInstalled": z.object({
+      input: z.tuple([]),
+      output: z.boolean(),
+    }),
   }),
 };

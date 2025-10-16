@@ -1,6 +1,7 @@
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
 import { env } from "#/env";
+import { yomitanExtension } from "#/extension/yomitan";
 import { python } from "#/runner/python";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
@@ -51,6 +52,10 @@ class SettingsIPC extends IPC()<"settings"> {
 
     this.on("settings:runPython", async (_, payload) => {
       await python.run(payload);
+    });
+
+    this.handle("settings:isYomitanInstalled", async () => {
+      return yomitanExtension.isInstalled();
     });
   }
 }
