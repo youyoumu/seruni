@@ -3,6 +3,7 @@ import { delay } from "es-toolkit";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
+import { yomitanWindow } from "./yomitan";
 
 hmr.log(import.meta);
 
@@ -12,6 +13,18 @@ class MainWindow extends AppWindow() {
       width: 1280,
       height: 1000,
       show: false,
+    });
+  }
+
+  override register() {
+    super.register();
+    this.handle("mainWindow:reload", () => {
+      log.debug("Reloading main window");
+      yomitanWindow()
+        .loadYomitan()
+        .then(() => {
+          this.win?.reload();
+        });
     });
   }
 

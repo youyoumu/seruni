@@ -2,6 +2,7 @@ import { ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
 import { env } from "#/env";
+import { bus } from "#/util/bus";
 import { IPC } from "./base";
 
 hmr.log(import.meta);
@@ -29,6 +30,10 @@ class GeneralIPC extends IPC()<"general"> {
 
     this.handle("general:httpServerUrl", async () => {
       return { url: env.HTTP_SERVER_URL };
+    });
+
+    this.on("general:reloadMainWindow", (_) => {
+      bus.emit("mainWindow:reload", undefined);
     });
   }
 }

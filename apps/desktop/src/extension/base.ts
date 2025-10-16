@@ -149,7 +149,8 @@ export class Extension {
     }
     this.installingLock = true;
     log.info(`Installing ${this.name} extension`);
-    await Extension.deleteSeriveWorkerDir();
+    //TODO: call this with a button for debugging
+    // await Extension.deleteSeriveWorkerDir();
     try {
       const filePath = await this.downloadExtension();
       if (!filePath) throw new Error("Failed to download extension");

@@ -26,5 +26,6 @@ export const zGeneralIPC = {
         url: z.string(),
       }),
     }),
+    "general:reloadMainWindow": zSimple,
   }),
 };

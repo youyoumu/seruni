@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 import { env } from "#/env";
-import { type BusEvents, bus } from "#/util/bus";
+import { type BusEventName, type BusEvents, bus } from "#/util/bus";
 import { log } from "#/util/logger";
 
 hmr.log(import.meta);
@@ -47,6 +47,25 @@ const appWindow = class AppWindow {
           `Removing listener webContent:send ${uuid}`,
         );
         bus.removeListener("webContent:send", listener);
+      },
+      { once: true },
+    );
+  }
+
+  handle<K extends BusEventName>(
+    eventName: K,
+    listener: (payload: BusEvents[K]) => void,
+  ) {
+    const uuid = crypto.randomUUID();
+    bus.on(eventName, listener);
+    this.#controller.signal.addEventListener(
+      "abort",
+      () => {
+        log.trace(
+          { namespace: `WIN` },
+          `Removing handler ${eventName} ${uuid}`,
+        );
+        bus.removeListener(eventName, listener);
       },
       { once: true },
     );

@@ -8,6 +8,7 @@ hmr.log(import.meta);
 
 class YomitanWindow extends AppWindow() {
   preloadScriptIds: string[] = [];
+  ext: Electron.Extension | undefined;
 
   constructor() {
     super({
@@ -43,6 +44,12 @@ class YomitanWindow extends AppWindow() {
       return;
     }
 
+    if (this.ext) {
+      session.defaultSession.extensions.removeExtension(this.ext.id);
+      this.ext = undefined;
+      this.loadYomitan();
+    }
+
     this.preloadScriptIds.push(
       session.defaultSession.registerPreloadScript({
         type: "service-worker",
@@ -57,9 +64,11 @@ class YomitanWindow extends AppWindow() {
       }),
     );
 
-    return await session.defaultSession.extensions.loadExtension(
+    const ext = await session.defaultSession.extensions.loadExtension(
       yomitanExtension.getExtensionPath(),
     );
+    this.ext = ext;
+    return ext;
   }
 }
 

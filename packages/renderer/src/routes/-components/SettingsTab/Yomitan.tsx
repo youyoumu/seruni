@@ -82,7 +82,14 @@ export function Yomitan() {
                   title: isInstalled()
                     ? "Yomitan has been updated"
                     : "Yomitan has been installed",
-                  description: "Restart the app to apply changes",
+                  description: "Reload to apply changes",
+                  duration: Infinity,
+                  action: {
+                    label: "Reload",
+                    onClick: () => {
+                      ipcRenderer.send("general:reloadMainWindow");
+                    },
+                  },
                 },
               },
             );

@@ -37,9 +37,12 @@ export type BusEvents = {
     channel: string;
     payload: IPCFromMain[IPCFromMainChannel]["input"];
   };
+  "mainWindow:reload": undefined;
   "test:test": { key: "test:test:result"; data: string };
   "test:test:result": { result: number };
 };
+
+export type BusEventName = keyof BusEvents;
 
 class EventEmitter_ extends EventEmitter {
   key<K extends keyof BusEvents>(key: K) {
