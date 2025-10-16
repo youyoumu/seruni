@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { execa } from "execa";
 import * as tar from "tar";
 import { env } from "#/env";
+import { cache } from "./cache";
 import { log } from "./logger";
 
 hmr.log(import.meta);
@@ -50,17 +51,23 @@ class Python {
     if (!downloadUrl) {
       throw new Error(`No download url found for platform ${process.platform}`);
     }
+    const downloadedFilePath = await cache.getDownloadCache(downloadUrl);
+    if (downloadedFilePath) return downloadedFilePath;
     const fileName = downloadUrl.split("/").pop() ?? "python.tar.gz";
     log.info(`Downloading ${fileName} from ${downloadUrl}`);
 
     const assetRes = await fetch(downloadUrl);
     const buffer = await assetRes.arrayBuffer();
-    const outputPath = join(env.PYTHON_EXTRACT_PATH, fileName);
-    await writeFile(outputPath, Buffer.from(buffer));
+    const downloadPath = join(env.CACHE_PATH, fileName);
+    await writeFile(downloadPath, Buffer.from(buffer));
 
-    log.info(`Downloaded ${outputPath} successfully!`);
+    log.info(`Downloaded ${downloadPath} successfully!`);
+    await cache.setDownloadCache({
+      downloadUrl,
+      downloadedFilePath: downloadPath,
+    });
 
-    return outputPath;
+    return downloadPath;
   }
 
   async extract({ tarPath }: { tarPath: string }) {

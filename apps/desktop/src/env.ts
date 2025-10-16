@@ -64,6 +64,7 @@ async function createEnv_() {
   const DB_PATH = join(USER_DATA_PATH, "db");
   const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
+  const CACHE_FILE_PATH = join(CACHE_PATH, "cache.json");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
   const EXTENSION_PATH = join(USER_DATA_PATH, "extension");
   const PYTHON_EXTRACT_PATH = join(USER_DATA_PATH, "python");
@@ -135,6 +136,7 @@ async function createEnv_() {
     DB_PATH,
     DB_FILE_PATH: DB_FILE_PATH,
     CACHE_PATH,
+    CACHE_FILE_PATH,
     TEMP_PATH,
     EXTENSION_PATH,
 

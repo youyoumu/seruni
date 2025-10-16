@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
 import StreamZip from "node-stream-zip";
 import { env } from "#/env";
+import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
 
 hmr.log(import.meta);
@@ -95,6 +96,8 @@ export class Extension {
       typeof this.downloadUrl === "string"
         ? this.downloadUrl
         : await this.downloadUrl();
+    const downloadedFilePath = await cache.getDownloadCache(downloadUrl);
+    if (downloadedFilePath) return downloadedFilePath;
 
     const res = await fetch(downloadUrl);
     if (!res.ok) {
@@ -110,6 +113,10 @@ export class Extension {
     const downloadPath = this.getDownloadPath();
     await writeFile(downloadPath, Readable.fromWeb(res.body as ReadableStream));
     log.info(`Downloaded ${this.name} extension to ${downloadPath}`);
+    await cache.setDownloadCache({
+      downloadUrl,
+      downloadedFilePath: downloadPath,
+    });
     return downloadPath;
   }
 
