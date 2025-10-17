@@ -1,10 +1,11 @@
-import { rm } from "node:fs/promises";
-import { basename } from "node:path";
+import { readdir, rm } from "node:fs/promises";
+import { basename, join } from "node:path";
 import type { ClientStatus } from "@repo/preload/ipc";
 import { format } from "date-fns";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
+import { mainDB } from "#/db/main";
 import { env } from "#/env";
 import { logIPC } from "#/ipc/log";
 import { ffmpeg } from "#/runner/ffmpeg";
@@ -180,9 +181,8 @@ const AnkiClient_ = class AnkiClient {
       .find(({ time, uuid }) => {
         return time <= now && uuid === this.selectedTextUuid;
       });
-    if (!history) {
-      throw new Error("Failed to find history");
-    }
+    if (!history) throw new Error("Failed to find history");
+
     log.debug(
       {
         text: history?.text,
@@ -206,21 +206,14 @@ const AnkiClient_ = class AnkiClient {
         log.info("Trying to reuse media files");
         const result = await this.textUuidQueue[history.uuid];
         if (result) {
-          log.debug(
-            {
-              ...result,
-            },
-            "Reusing media files",
-          );
+          log.debug({ ...result }, "Reusing media files");
           await this.updateNoteMedia({
             noteId,
             picturePath: result.picturePath,
             sentenceAudioPath: result.sentenceAudioPath,
           });
           await this.client?.graphical.guiEditNote({ note: noteId });
-          return {
-            reuseMedia: true,
-          };
+          return { reuseMedia: true };
         }
       }
 
@@ -294,6 +287,7 @@ const AnkiClient_ = class AnkiClient {
       // generate image file
       const imagePathPromise = (() => {
         try {
+          //get the frame of when we add the note instead of when we received the text
           const extraSeek = Math.max(
             0,
             Math.floor(now.getTime() - history.time.getTime()),
@@ -309,6 +303,86 @@ const AnkiClient_ = class AnkiClient {
           });
         }
       })();
+
+      // generate audio file for editing
+      const audioStage3PathPromise = (() => {
+        try {
+          //TODO: configuratble
+          const recordDurationFallbackSecond = 10;
+          const lastEndSecond =
+            audioStage1VadData[audioStage1VadData.length - 1]?.end ??
+            recordDurationFallbackSecond;
+          const offsetMsToLeft = 5000;
+          const offsetMsToRight = 5000;
+          return ffmpeg().process({
+            inputPath: savedReplayPath,
+            seekMs: offsetMs - offsetMsToLeft,
+            durationMs: lastEndSecond * 1000 + offsetMsToLeft + offsetMsToRight,
+            format: "opus",
+          });
+        } catch (e) {
+          log.error({ error: e }, "Failed to extract audio for editing");
+        }
+      })();
+
+      // generate image file
+      const imageDirPromise = (() => {
+        try {
+          return ffmpeg().process({
+            inputPath: savedReplayPath,
+            seekMs: offsetMs,
+            //TODO: configurable
+            durationMs: (lastEnd ?? 3) * 1000,
+            format: "webp:multiple",
+          });
+        } catch (e) {
+          log.error({ error: e }, "Failed to extract images for editing");
+        }
+      })();
+
+      Promise.all([audioStage3PathPromise, imageDirPromise]).then(
+        async ([audioStage3Path, imageDir]) => {
+          const insertNoteAndMedia = mainDB().insertNoteAndMedia;
+          const mediaEntries: Parameters<
+            typeof insertNoteAndMedia
+          >[0]["media"] = [];
+
+          if (audioStage3Path) {
+            mediaEntries.push({
+              filePath: audioStage3Path,
+              type: "sentenceAudio",
+              vadData: audioStage1VadData,
+            });
+          }
+
+          if (imageDir) {
+            try {
+              const files = await readdir(imageDir);
+              const imageFiles = files
+                .filter((f) => f.endsWith(".webp"))
+                .map((file) => ({
+                  filePath: join(imageDir, file),
+                  type: "picture" as const,
+                  vadData: undefined,
+                }));
+              mediaEntries.push(...imageFiles);
+            } catch (e) {
+              log.error({ error: e }, "Failed to read images from directory:");
+            }
+          }
+
+          if (mediaEntries.length > 0) {
+            try {
+              await mainDB().insertNoteAndMedia({
+                noteId,
+                media: mediaEntries,
+              });
+            } catch (e) {
+              log.error({ error: e }, "Failed to insert note and media");
+            }
+          }
+        },
+      );
 
       const [audioStage2Path, imagePath] = await Promise.all([
         audioStage2PathPromise,
