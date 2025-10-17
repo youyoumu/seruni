@@ -13,6 +13,7 @@ import { devWS } from "./websocket/dev";
 import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
 import "./db/main";
+import { startAnkiConnectProxtServer } from "./hono/ankiConnectProxy";
 
 hmr.log(import.meta);
 
@@ -36,6 +37,7 @@ export async function bootstrap() {
   await app.whenReady();
   registerAllIPC();
   startHttpServer();
+  startAnkiConnectProxtServer();
   await yomitanWindow().loadYomitan();
   await mainWindow().open();
   await generalIPC().ready.promise;

@@ -22,3 +22,12 @@ export const zAnkiNote = z.object({
 });
 
 export type AnkiNote = z.infer<typeof zAnkiNote>;
+
+export const zAnkiConnectAddNote = z.object({
+  action: z.literal("addNote"),
+  params: z.object({
+    note: z.object({
+      fields: z.record(z.string(), z.string()),
+    }),
+  }),
+});

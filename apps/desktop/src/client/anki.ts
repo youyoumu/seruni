@@ -40,6 +40,7 @@ const AnkiClient_ = class AnkiClient {
   #abortController = new AbortController();
 
   register() {
+    log.trace("AnkiConnect: Registering event listeners");
     const listener = ({ noteId }: BusEvents["anki:handleNewNote"]) => {
       this.preHandleNewNote(noteId);
     };
@@ -50,6 +51,7 @@ const AnkiClient_ = class AnkiClient {
   }
 
   unregister() {
+    log.trace("AnkiConnect: Unregistering event listeners");
     this.#abortController.abort();
   }
 
@@ -108,16 +110,21 @@ const AnkiClient_ = class AnkiClient {
       }
 
       try {
-        const lastAddedNote = await this.getLastAddedNote();
-        if (
-          lastAddedNote &&
-          (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
-        ) {
-          this.lastAddedNote = lastAddedNote;
-          this.preHandleNewNote(lastAddedNote);
-        }
+        await this.client.miscellaneous.version();
+        // const lastAddedNote = await this.getLastAddedNote();
+        // if (
+        //   lastAddedNote &&
+        //   (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
+        // ) {
+        //   this.lastAddedNote = lastAddedNote;
+        //   this.preHandleNewNote(lastAddedNote);
+        // }
       } catch (error) {
-        log.error({ error }, "Failed to fetch last added note");
+        // log.error({ error }, "Failed to fetch last added note");
+        log.error(
+          { error },
+          "Failed to connect to AnkiConnect, reconnecting...",
+        );
         this.reconnect();
         break;
       }
