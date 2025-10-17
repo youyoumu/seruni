@@ -10,39 +10,31 @@ hmr.log(import.meta);
 
 class Python {
   async run(params: string[]) {
+    log.info({ params }, `Running python`);
+    const subprocess = execa(env.PYTHON_BIN_PATH, params);
+
+    subprocess.stdout?.on("data", (data) => {
+      log.trace(`[python stdout] ${data.toString().trim()}`);
+    });
+    subprocess.stderr?.on("data", (data) => {
+      log.trace(`[python stderr] ${data.toString().trim()}`);
+    });
+
+    const { stdout, stderr } = await subprocess;
+    log.debug({ params, stdout, stderr }, "python");
+    return stdout;
+  }
+
+  async runEntry(params: string[]) {
     const finalParams = [
       "-m",
       "uv",
       "run",
       "--directory",
       env.PYTHON_ENV_PATH,
+      env.PYTHON_ENTRY_PATH,
       ...params,
     ];
-    log.debug(`Running python with params: ${finalParams.join(" ")}`);
-    const subprocess = execa(env.PYTHON_BIN_PATH, finalParams);
-
-    subprocess.stdout?.on("data", (data) => {
-      log.trace(`[python stdout] ${data.toString().trim()}`);
-    });
-
-    subprocess.stderr?.on("data", (data) => {
-      log.trace(`[python stderr] ${data.toString().trim()}`);
-    });
-
-    const { stdout, stderr } = await subprocess;
-
-    log.debug(
-      {
-        params: stdout,
-        stderr,
-      },
-      "python",
-    );
-    return stdout;
-  }
-
-  async runEntry(params: string[]) {
-    const finalParams = [env.PYTHON_ENTRY_PATH, ...params];
     return await this.run(finalParams);
   }
 
@@ -91,6 +83,7 @@ class Python {
   async install() {
     const outputPath = await this.download();
     await this.extract({ tarPath: outputPath });
+    //TODO: separate install and install deps
     await this.installDeps();
   }
 
