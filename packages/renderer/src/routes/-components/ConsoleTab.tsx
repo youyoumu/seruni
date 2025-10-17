@@ -11,7 +11,7 @@ import {
 import { cva } from "styled-system/css";
 import { Box, HStack } from "styled-system/jsx";
 
-const MAX_LOGS = 100;
+const MAX_LOGS = 1000;
 
 type Log = Parameters<IPCRendererHandler<"log:send">>[0];
 
@@ -36,6 +36,7 @@ const logLevelCva = cva({
 });
 
 export function ConsoleTab() {
+  const [logLevel, setLogLevel] = createSignal(0);
   const [logs, setLogs] = createSignal<Log[]>([]);
 
   onMount(() => {
@@ -77,7 +78,15 @@ export function ConsoleTab() {
         fontSize="sm"
         p="2"
       >
-        <For each={logs()}>
+        <For
+          each={logs()
+            .slice(logs().length - MAX_LOGS)
+            .filter((log) => {
+              const logLevel_ = log.context.logLevel as number;
+              //TODO: slider ui
+              return logLevel_ >= logLevel();
+            })}
+        >
           {(log) => {
             const logLevel_ = log.context.logLevel as number;
             const logLevel = (() => {
