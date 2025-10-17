@@ -24,7 +24,7 @@ class FFmpeg {
   //TODO: offset +-
   async process({
     inputPath,
-    seekMs = 0,
+    seekMs,
     durationMs = 0,
     format,
   }: {
@@ -45,6 +45,7 @@ class FFmpeg {
         `${seekMs}ms`,
         "-i",
         inputPath, // input file
+        ...(durationMs !== undefined ? ["-t", `${durationMs}ms`] : []),
         "-vn", // no video
         "-acodec",
         "pcm_s16le", // WAV codec
@@ -57,10 +58,12 @@ class FFmpeg {
 
       opus: [
         "-y",
+        "-ss",
+        `${seekMs}ms`,
         "-i",
         inputPath,
-        "-t",
-        `${durationMs}ms`,
+        ...(durationMs !== undefined ? ["-t", `${durationMs}ms`] : []),
+        "-vn",
         "-ac",
         "2", // 1 = mono, 2 = stereo
         "-ar",
