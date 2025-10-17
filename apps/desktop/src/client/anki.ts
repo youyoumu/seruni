@@ -11,7 +11,7 @@ import { ffmpeg } from "#/runner/ffmpeg";
 import { python } from "#/runner/python";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
-import { type VadData, zVadData } from "#/util/schema";
+import { type AnkiNote, type VadData, zVadData } from "#/util/schema";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -23,22 +23,6 @@ type TextUuidQueueResult =
       picturePath: string | undefined | null;
     }
   | undefined;
-
-type AnkiNote = {
-  cards: number[];
-  fields: Record<
-    string,
-    {
-      order: number;
-      value: string;
-    }
-  >;
-  mod: number;
-  modelName: string;
-  noteId: number;
-  profile: string;
-  tags: string[];
-};
 
 const AnkiClient_ = class AnkiClient {
   client: YankiConnect | undefined;

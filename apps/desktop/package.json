@@ -38,6 +38,7 @@
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.6",
+    "drizzle-zod": "^0.8.3",
     "es-toolkit": "^1.39.10",
     "execa": "^9.6.0",
     "fast-sort": "^3.4.1",

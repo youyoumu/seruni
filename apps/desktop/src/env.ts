@@ -66,6 +66,7 @@ async function createEnv_() {
   const USER_DATA_PATH = app.getPath("userData");
   const DB_PATH = join(USER_DATA_PATH, "db");
   const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
+  const STORAGE_PATH = join(USER_DATA_PATH, "storage");
   const CACHE_PATH = join(USER_DATA_PATH, "cache");
   const CACHE_FILE_PATH = join(CACHE_PATH, "cache.json");
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
@@ -74,6 +75,7 @@ async function createEnv_() {
   const PYTHON_ENV_PATH = join(USER_DATA_PATH, "python");
 
   await mkdir(DB_PATH, { recursive: true });
+  await mkdir(STORAGE_PATH, { recursive: true });
   await mkdir(CACHE_PATH, { recursive: true });
   await mkdir(TEMP_PATH, { recursive: true });
   await mkdir(EXTENSION_PATH, { recursive: true });
@@ -130,6 +132,7 @@ async function createEnv_() {
     USER_DATA_PATH,
     DB_PATH,
     DB_FILE_PATH,
+    STORAGE_PATH,
     CACHE_PATH,
     CACHE_FILE_PATH,
     TEMP_PATH,
