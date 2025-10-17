@@ -11,6 +11,7 @@ import { ffmpeg } from "#/runner/ffmpeg";
 import { python } from "#/runner/python";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
+import { type VadData, zVadData } from "#/util/schema";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -260,13 +261,10 @@ const AnkiClient_ = class AnkiClient {
       }
 
       // generate vad data
-      let audioStage1VadData: {
-        start: number;
-        end: number;
-      }[];
+      let audioStage1VadData: VadData;
       try {
-        audioStage1VadData = JSON.parse(
-          await python().runEntry([audioStage1Path]),
+        audioStage1VadData = zVadData.parse(
+          JSON.parse(await python().runEntry([audioStage1Path])),
         );
       } catch (e) {
         throw new Error("Failed to extract audio VAD data", { cause: e });
