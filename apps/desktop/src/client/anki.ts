@@ -9,6 +9,7 @@ import { env } from "#/env";
 import { logIPC } from "#/ipc/log";
 import { ffmpeg } from "#/runner/ffmpeg";
 import { python } from "#/runner/python";
+import { type BusEvents, bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { type AnkiNote, type VadData, zVadData } from "#/util/schema";
@@ -35,6 +36,21 @@ const AnkiClient_ = class AnkiClient {
   selectedTextUuid: string | undefined;
   textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
   mediaDir: string | undefined;
+  #abortController = new AbortController();
+
+  register() {
+    const listener = ({ noteId }: BusEvents["anki:handleNewNote"]) => {
+      this.preHandleNewNote(noteId);
+    };
+    bus.on("anki:handleNewNote", listener);
+    this.#abortController.signal.addEventListener("abort", () => {
+      bus.off("anki:handleNewNote", listener);
+    });
+  }
+
+  unregister() {
+    this.#abortController.abort();
+  }
 
   async connect() {
     if (this.reconnecting) return;
@@ -405,9 +421,11 @@ if (import.meta.hot) {
   hmr.register(import.meta);
   import.meta.hot.accept(async (mod) => {
     hmr.update(import.meta, mod);
+    ankiClient().register();
     await ankiClient().connect();
   });
   import.meta.hot.dispose(() => {
     ankiClient().close();
+    ankiClient().unregister();
   });
 }

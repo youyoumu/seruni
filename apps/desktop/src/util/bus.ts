@@ -38,6 +38,9 @@ export type BusEvents = {
     payload: IPCFromMain[IPCFromMainChannel]["input"];
   };
   "mainWindow:reload": undefined;
+  "anki:handleNewNote": { noteId: number };
+  //
+  //
   "test:test": { key: "test:test:result"; data: string };
   "test:test:result": { result: number };
 };
