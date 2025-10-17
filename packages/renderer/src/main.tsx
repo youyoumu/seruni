@@ -5,6 +5,11 @@ import { routeTree } from "./routeTree.gen";
 import "./index.css";
 import { setStore } from "./lib/store";
 
+declare global {
+  var hmr: Record<string, any>;
+}
+window.hmr ??= {};
+
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",

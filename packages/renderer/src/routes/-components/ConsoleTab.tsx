@@ -1,15 +1,21 @@
 import type { IPCRendererHandler } from "@repo/preload/ipc";
+import { makePersisted } from "@solid-primitives/storage";
 import stringify from "json-stringify-pretty-compact";
+import { ChevronDown, ChevronUp } from "lucide-solid";
 import {
   createEffect,
   createSignal,
   For,
+  Match,
   onCleanup,
   onMount,
   Show,
+  Switch,
 } from "solid-js";
 import { cva } from "styled-system/css";
-import { Box, HStack } from "styled-system/jsx";
+import { Box, HStack, Stack } from "styled-system/jsx";
+import { IconButton } from "#/components/ui/icon-button";
+import { Slider } from "#/components/ui/slider";
 
 const MAX_LOGS = 1000;
 
@@ -36,10 +42,15 @@ const logLevelCva = cva({
 });
 
 export function ConsoleTab() {
-  const [logLevel, setLogLevel] = createSignal(0);
+  const [logLevel, setLogLevel] = makePersisted(createSignal(10), {
+    name: "logLevel",
+  });
   const [logs, setLogs] = createSignal<Log[]>([]);
 
   onMount(() => {
+    if (window.hmr?.logs) {
+      setLogs(window.hmr.logs);
+    }
     const handler: IPCRendererHandler<"log:send"> = (payload) => {
       setLogs((prev) => [...prev, payload].slice(prev.length - MAX_LOGS));
     };
@@ -50,6 +61,7 @@ export function ConsoleTab() {
   let logsRef: HTMLDivElement | undefined;
 
   createEffect(() => {
+    window.hmr.logs = logs();
     logs();
     if (logsRef) {
       // jump to bottom when logs update
@@ -58,21 +70,39 @@ export function ConsoleTab() {
   });
 
   return (
-    <Box
+    <Stack
+      gap="8"
       h="full"
-      borderColor="border.default"
       borderRadius="sm"
       overflow="hidden"
-      borderWidth="thin"
-      bg="bg.subtle"
       maxW="8xl"
       mx="auto"
     >
+      <Slider
+        px="8"
+        value={[logLevel()]}
+        onValueChange={(details) => setLogLevel(details.value[0] ?? 10)}
+        step={10}
+        marks={[
+          { value: 10, label: "TRACE" },
+          { value: 20, label: "DEBUG" },
+          { value: 30, label: "INFO" },
+          { value: 40, label: "WARN" },
+          { value: 50, label: "ERROR" },
+          { value: 60, label: "FATAL" },
+        ]}
+        min={10}
+        max={60}
+      />
       <Box
         ref={logsRef}
+        borderWidth="thin"
+        bg="bg.subtle"
+        borderColor="border.default"
         class="custom-scrollbar"
         h="full"
-        overflow="auto"
+        overflowY="scroll"
+        overflowX="scroll"
         lineHeight="tight"
         fontFamily="jetbrainsMono"
         fontSize="sm"
@@ -115,7 +145,7 @@ export function ConsoleTab() {
               : undefined;
 
             return (
-              <Box>
+              <Stack gap="1" mb="1">
                 <HStack alignItems="start">
                   <HStack alignItems="center">
                     <Box whiteSpace="nowrap" fontSize="xs" color="gray.light.9">
@@ -125,29 +155,87 @@ export function ConsoleTab() {
                       <Box class={logLevelCva({ logLevel })}>{logLevel}</Box>
                     </Box>
                   </HStack>
-                  <Box>{log.message}</Box>
+                  <Box
+                    color={logLevel === "trace" ? "fg.muted" : undefined}
+                    whiteSpace="pre-wrap" // preserves line breaks
+                    wordBreak="break-all" // allows breaking long words
+                  >
+                    {log.message}
+                  </Box>
                 </HStack>
                 <Show when={debugString}>
-                  <Box
-                    class="custom-scrollbar"
-                    my="2"
-                    as="pre"
-                    p="2"
-                    borderWidth="thin"
-                    borderColor="border.subtle"
-                    borderRadius="sm"
-                    fontSize="xs"
-                    whiteSpace="pre-wrap"
-                    overflow="auto"
-                    color="gray.light.8"
-                  >
-                    <Box maxH="[20svh]">{debugString}</Box>
-                  </Box>
+                  <DebugBox debugString={debugString ?? ""} />
                 </Show>
-              </Box>
+              </Stack>
             );
           }}
         </For>
+      </Box>
+    </Stack>
+  );
+}
+
+function DebugBox({ debugString }: { debugString: string }) {
+  const [expanded, setExpanded] = createSignal(false);
+  const [isOverflowing, setIsOverflowing] = createSignal(false);
+  let contentRef: HTMLDivElement | undefined;
+
+  const COLLAPSED_HEIGHT = 150; // px
+
+  createEffect(() => {
+    if (contentRef) {
+      setIsOverflowing(contentRef.scrollHeight > COLLAPSED_HEIGHT);
+    }
+  }); // recalc when content changes
+
+  return (
+    <Box
+      ref={contentRef}
+      class="custom-scrollbar"
+      as="pre"
+      p="2"
+      borderWidth="thin"
+      borderColor="border.subtle"
+      borderRadius="sm"
+      fontSize="xs"
+      whiteSpace="pre-wrap"
+      color="gray.light.8"
+      overflow="hidden" // hide overflowing content when collapsed
+      transition="size"
+      style={{
+        height: !isOverflowing()
+          ? undefined
+          : expanded()
+            ? undefined
+            : `${COLLAPSED_HEIGHT}px`,
+      }}
+    >
+      <Box position="relative">
+        {debugString}
+
+        <IconButton
+          style={{
+            display: isOverflowing() ? "block" : "none",
+          }}
+          position="absolute"
+          top="0"
+          right="0"
+          variant="ghost"
+          size="xs"
+          onClick={() => setExpanded(!expanded())}
+          asChild={(props) => {
+            return (
+              <Switch>
+                <Match when={expanded()}>
+                  <ChevronUp {...props()} />
+                </Match>
+                <Match when={!expanded()}>
+                  <ChevronDown {...props()} />
+                </Match>
+              </Switch>
+            );
+          }}
+        ></IconButton>
       </Box>
     </Box>
   );
