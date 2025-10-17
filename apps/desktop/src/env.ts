@@ -10,22 +10,25 @@ import z from "zod";
 
 hmr.log(import.meta);
 
-const PREFERED_HTTP_SERVER_PORT = 42424;
-let HTTP_SERVER_PORT = PREFERED_HTTP_SERVER_PORT;
-detect(PREFERED_HTTP_SERVER_PORT)
-  .then((realPort) => {
-    if (HTTP_SERVER_PORT !== realPort) {
+async function preferPort(preferredPort: number) {
+  try {
+    const realPort = await detect(preferredPort);
+    if (realPort !== preferredPort) {
       log.debug(
-        `Port ${HTTP_SERVER_PORT} was occupied, switching to port ${realPort}`,
+        `Port ${preferredPort} was occupied, switching to port ${realPort}`,
       );
-      HTTP_SERVER_PORT = realPort;
     }
-  })
-  .catch((e) => {
+    return realPort;
+  } catch (e) {
     if (e instanceof Error) {
       log.error(`Failed to detect port: ${e.message}`);
     }
-  });
+    return preferredPort;
+  }
+}
+
+const HTTP_SERVER_PORT = await preferPort(42424);
+const ANKI_CONNECT_PROXY_PORT = await preferPort(48765);
 
 async function createEnv_() {
   const envJson = (() => {
@@ -146,6 +149,7 @@ async function createEnv_() {
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
     HTTP_SERVER_PORT,
     HTTP_SERVER_URL: `http://localhost:${HTTP_SERVER_PORT}`,
+    ANKI_CONNECT_PROXY_PORT,
   };
 
   return {
