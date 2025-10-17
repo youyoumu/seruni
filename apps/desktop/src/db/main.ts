@@ -32,7 +32,7 @@ class DB {
     media: Array<{
       type: "picture" | "sentenceAudio";
       filePath: string;
-      vadData: VadData | null | undefined;
+      vadData: VadData | undefined;
     }>;
   }) {
     media.forEach((m) => {
@@ -44,15 +44,15 @@ class DB {
       .values({ noteId })
       .onConflictDoNothing({ target: notesTable.noteId })
       .returning({ id: notesTable.id });
-    const noteId_ = insertedNotes[0]?.id;
-    if (!noteId_) throw new Error("Note ID not found");
+    const noteRowId = insertedNotes[0]?.id;
+    if (!noteRowId) throw new Error("Note ID not found");
 
     await this.db.insert(mediaTable).values(
       media.map((m) => ({
-        noteId,
+        noteId: noteRowId,
         type: m.type,
         fileName: basename(m.filePath),
-        vadData: m.vadData ?? null,
+        vadData: m.vadData,
       })),
     );
   }
