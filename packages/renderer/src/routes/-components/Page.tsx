@@ -168,26 +168,25 @@ export function AppToaster() {
       });
     });
 
-    ipcRenderer.on("log:toastPromise", ({ loading, error, uuid }) => {
-      let result: {
-        success: boolean;
-        data: Partial<ToastPromiseOptionsSuccess> &
-          Partial<ToastPromiseOptionsError>;
-      };
+    ipcRenderer.on("log:toastPromise", ({ loading, uuid }) => {
+      let result: Partial<ToastPromiseOptionsSuccess> &
+        Partial<ToastPromiseOptionsError>;
       appToaster.promise(
         async () => {
           result = await ipcRenderer.invoke("log:toastPromise", { uuid });
-          if (!result.success) {
-            throw new Error(result.data.error?.description ?? "Unknown error");
+          if (result.error) {
+            throw new Error(result.error?.description ?? "Unknown error");
           }
         },
         {
           loading,
-          error,
+          error: () =>
+            result.error ?? {
+              title: "Unknown Error",
+            },
           success: () =>
-            result.data.success ?? {
-              title: "Unknown Title",
-              description: "Unknown Description",
+            result.success ?? {
+              title: "Unknown Success",
             },
         },
       );

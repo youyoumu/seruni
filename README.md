@@ -24,13 +24,11 @@
 - mining tab custom font etc
 - anki obs install detect
 - install python toast
-- python command dialog
-- yomitan download toast
-- restart button
+- python command toast
+- python entry use electron
 - max width settings
-- debug show store
 - remote mobile support
-- history on anki disconnect
 - handle invalid anki field
-- cache downloaded file
 - store note media for editing
+- install python deps toast
+- google image

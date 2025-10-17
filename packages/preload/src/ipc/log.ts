@@ -2,22 +2,22 @@ import z from "zod";
 
 const zToastPromiseOptions = z.object({
   loading: z.object({
-    title: z.string(),
-    description: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
   }),
   success: z.object({
-    title: z.string(),
-    description: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
   }),
   error: z.object({
-    title: z.string(),
-    description: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
   }),
 });
 
 export type ToastPromiseOptions = z.infer<typeof zToastPromiseOptions>;
 export type ToastPromiseOptionsLoading = {
-  success: ToastPromiseOptions["loading"];
+  loading: ToastPromiseOptions["loading"];
 };
 export type ToastPromiseOptionsError = {
   error: ToastPromiseOptions["error"];
@@ -55,7 +55,6 @@ export const zLogIPC = {
         z.object({
           uuid: z.string(),
           loading: zToastPromiseOptions.shape.loading,
-          error: zToastPromiseOptions.shape.error,
         }),
       ]),
       output: z.void(),
@@ -70,11 +69,8 @@ export const zLogIPC = {
         }),
       ]),
       output: z.object({
-        success: z.boolean(),
-        data: z.object({
-          success: zToastPromiseOptions.shape.success.optional(),
-          error: zToastPromiseOptions.shape.error.optional(),
-        }),
+        success: zToastPromiseOptions.shape.success.optional(),
+        error: zToastPromiseOptions.shape.error.optional(),
       }),
     }),
   }),

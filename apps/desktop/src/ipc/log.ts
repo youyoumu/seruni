@@ -1,16 +1,15 @@
 import type {
-  ToastPromiseOptions,
   ToastPromiseOptionsError,
+  ToastPromiseOptionsLoading,
   ToastPromiseOptionsSuccess,
 } from "@repo/preload/ipc";
 import { IPC } from "./base";
 
 hmr.log(import.meta);
 
-type ToastPayloadPromise = Promise<{
-  success: boolean;
-  data: Partial<ToastPromiseOptionsSuccess> & Partial<ToastPromiseOptionsError>;
-}>;
+type ToastPayloadPromise = Promise<
+  Partial<ToastPromiseOptionsSuccess> & Partial<ToastPromiseOptionsError>
+>;
 
 class LogIPC extends IPC()<"log"> {
   toastPromise: Record<string, ToastPayloadPromise> = {};
@@ -26,12 +25,8 @@ class LogIPC extends IPC()<"log"> {
         return await this.toastPromise[uuid];
       }
       return {
-        success: false,
-        data: {
-          error: {
-            title: "Invalid Toast Promise UUID",
-            description: "Invalid Toast Promise UUID",
-          },
+        error: {
+          title: "Invalid Toast Promise UUID",
         },
       };
     });
@@ -39,7 +34,7 @@ class LogIPC extends IPC()<"log"> {
 
   sendToastPromise(
     handler: () => ToastPayloadPromise,
-    toast: Omit<ToastPromiseOptions, "success">,
+    toast: ToastPromiseOptionsLoading,
   ) {
     const uuid = crypto.randomUUID();
     this.toastPromise[uuid] = handler();

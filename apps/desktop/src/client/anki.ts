@@ -120,7 +120,7 @@ const AnkiClient_ = class AnkiClient {
           this.preHandleNewNote(lastAddedNote);
         }
       } catch (error) {
-        log.error({ error }, "Failed to get last added note");
+        log.error({ error }, "Failed to fetch last added note");
         this.reconnect();
         break;
       }
@@ -145,23 +145,17 @@ const AnkiClient_ = class AnkiClient {
         try {
           const result = await this.handleNewNote(noteId);
           return {
-            success: true,
-            data: {
-              success: {
-                title: `Note Has Been Updated`,
-                description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
-              },
+            success: {
+              title: `Note Has Been Updated`,
+              description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
             },
           };
         } catch (e) {
           log.error({ error: e }, "Failed to handle new note");
           return {
-            success: false,
-            data: {
-              error: {
-                title: "Failed to handle new note",
-                description: "",
-              },
+            error: {
+              title: "Failed to handle new note",
+              description: e instanceof Error ? e.message : "Unknown Error",
             },
           };
         }
@@ -169,11 +163,7 @@ const AnkiClient_ = class AnkiClient {
       {
         loading: {
           title: "Processing New Note...",
-          description: `Detected new note: ${expression}`,
-        },
-        error: {
-          title: "Error",
-          description: "Failed to process new note",
+          description: `${expression}`,
         },
       },
     );
@@ -244,7 +234,9 @@ const AnkiClient_ = class AnkiClient {
       try {
         durationSeconds = await ffmpeg().getFileDuration(savedReplayPath);
       } catch (e) {
-        throw new Error("Failed to get duration", { cause: e });
+        throw new Error("Failed to get replay buffer duration duration", {
+          cause: e,
+        });
       }
       const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
       const offsetMs = Math.max(
@@ -260,7 +252,9 @@ const AnkiClient_ = class AnkiClient {
           format: "wav",
         });
       } catch (e) {
-        throw new Error("Failed to extract audio", { cause: e });
+        throw new Error("Failed to extract audio into wav format", {
+          cause: e,
+        });
       }
 
       // generate vad data
@@ -290,7 +284,9 @@ const AnkiClient_ = class AnkiClient {
               format: "opus",
             });
           } catch (e) {
-            throw new Error("Failed to crop audio", { cause: e });
+            throw new Error("Failed to crop audio from processed wav audio", {
+              cause: e,
+            });
           }
         }
       })();
@@ -308,7 +304,9 @@ const AnkiClient_ = class AnkiClient {
             format: "webp",
           });
         } catch (e) {
-          throw new Error("Failed to extract image", { cause: e });
+          throw new Error("Failed to extract image from replay buffer", {
+            cause: e,
+          });
         }
       })();
 
@@ -346,6 +344,10 @@ const AnkiClient_ = class AnkiClient {
     picturePath: string | undefined | null;
     sentenceAudioPath: string | undefined | null;
   }) {
+    log.debug(
+      { noteId, picturePath, sentenceAudioPath },
+      "Updating note media",
+    );
     await this.client?.note.updateNoteFields({
       note: {
         id: noteId,
@@ -370,6 +372,7 @@ const AnkiClient_ = class AnkiClient {
         }),
       },
     });
+    log.debug(`Adding tag ${env.APP_NAME} to note ${noteId}`);
     await this.client?.note.addTags({
       notes: [noteId],
       tags: env.APP_NAME,
