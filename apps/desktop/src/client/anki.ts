@@ -54,14 +54,13 @@ const AnkiClient_ = class AnkiClient {
   async connect() {
     if (this.reconnecting) return;
     this.status = "connecting";
-    this.reconnecting = false;
 
     try {
       this.client = new YankiConnect({
         port: config.store.anki.ankiConnectPort,
       });
-      // Try to verify connection
-      await this.client.deck.deckNames();
+      // check if anki is running
+      await this.client.miscellaneous.version();
       this.lastAddedNote = await this.getLastAddedNote();
       this.mediaDir = await this.client?.media.getMediaDirPath();
       this.retryCount = 0;
@@ -81,10 +80,6 @@ const AnkiClient_ = class AnkiClient {
   reconnect() {
     if (this.reconnecting) return;
     this.reconnecting = true;
-    this.scheduleReconnect();
-  }
-
-  scheduleReconnect() {
     const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
     log.info(`AnkiConnect: Reconnecting in ${delayMs / 1000} seconds...`);
     this.retryCount++;
@@ -105,7 +100,7 @@ const AnkiClient_ = class AnkiClient {
   async monitor() {
     while (true) {
       if (!this.client) {
-        log.warn("Anki client unavailable, pausing...");
+        log.warn("Anki client unavailable, reconnecting...");
         this.reconnect();
         break;
       }
@@ -124,7 +119,6 @@ const AnkiClient_ = class AnkiClient {
         this.reconnect();
         break;
       }
-
       await delay(1000);
     }
   }
@@ -133,6 +127,7 @@ const AnkiClient_ = class AnkiClient {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.client = undefined;
     this.reconnecting = false;
+    this.status = "disconnected";
   }
 
   async preHandleNewNote(noteId: number) {

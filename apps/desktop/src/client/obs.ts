@@ -17,16 +17,12 @@ class ObsClient {
   async connect() {
     if (this.reconnecting) return;
     this.status = "connecting";
-    this.reconnecting = false;
-
     this.client = new OBSWebSocket();
 
     try {
       await this.client.connect(this.url());
       log.info(`OBS: Connected on ${this.url()}`);
       this.status = "connected";
-
-      // Reset retry state
       this.retryCount = 0;
 
       // Auto-start Replay Buffer if not active
@@ -40,27 +36,23 @@ class ObsClient {
       // Listen for disconnections
       this.client.on("ConnectionError", () => {
         log.error("OBS: Connection error");
-        this.handleDisconnect();
+        this.reconnect();
       });
       this.client.on("ConnectionClosed", () => {
         if (!this.reconnecting) {
           log.error("OBS: Connection closed");
         }
-        this.handleDisconnect();
+        this.reconnect();
       });
     } catch {
       log.warn(`OBS: Failed to connect on ${this.url()}`);
-      this.handleDisconnect();
+      this.reconnect();
     }
   }
 
-  handleDisconnect() {
+  reconnect() {
     if (this.reconnecting) return;
     this.reconnecting = true;
-    this.scheduleReconnect();
-  }
-
-  scheduleReconnect() {
     const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
     log.info(`OBS: Reconnecting in ${delay / 1000} seconds...`);
     this.retryCount++;
@@ -79,11 +71,11 @@ class ObsClient {
       this.client = undefined;
     }
     this.reconnecting = false;
+    this.status = "disconnected";
   }
 
   saveReplayBuffer() {
     if (!this.client) throw new Error("OBS client not connected");
-
     const { promise, resolve, reject } = Promise.withResolvers<string>();
 
     const handler = ({ savedReplayPath }: { savedReplayPath: string }) => {
@@ -93,7 +85,6 @@ class ObsClient {
     };
 
     this.client.on("ReplayBufferSaved", handler);
-
     this.client.call("SaveReplayBuffer").catch((e) => {
       this.client?.off("ReplayBufferSaved", handler);
       reject(e);

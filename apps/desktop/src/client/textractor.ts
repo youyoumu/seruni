@@ -20,7 +20,7 @@ class TextractorClient {
 
   async connect() {
     try {
-      this.reconnecting = false;
+      if (this.reconnecting) return;
       this.status = "connecting";
       this.client = new WebSocket(this.url());
 
@@ -42,34 +42,34 @@ class TextractorClient {
 
       this.client.on("error", () => {
         log.warn(`Textractor: Failed to connect on ${this.url()}`);
-        this.handleDisconnect();
+        this.reconnect();
       });
 
       this.client.on("close", () => {
         if (!this.reconnecting) {
           log.error("Textractor: Connection closed");
         }
-        this.handleDisconnect();
+        this.reconnect();
       });
     } catch {
       log.error(`Textractor: Failed to connect on ${this.url()}`);
-      this.scheduleReconnect();
+      this.reconnect();
     }
   }
 
-  handleDisconnect() {
+  reconnect() {
+    //TODO: disable auto connect
     if (this.reconnecting) return;
     this.reconnecting = true;
-    this.scheduleReconnect();
-  }
-
-  scheduleReconnect() {
     const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
     log.info(`Textractor: Reconnecting in ${delay / 1000} seconds...`);
-    this.retryCount++;
 
+    this.retryCount++;
     if (this.retryTimer) clearTimeout(this.retryTimer);
-    this.retryTimer = setTimeout(() => this.connect(), delay);
+    this.retryTimer = setTimeout(() => {
+      this.reconnecting = false;
+      this.connect();
+    }, delay);
   }
 
   close() {
@@ -79,6 +79,7 @@ class TextractorClient {
       this.client = undefined;
     }
     this.reconnecting = false;
+    this.status = "disconnected";
   }
 }
 
