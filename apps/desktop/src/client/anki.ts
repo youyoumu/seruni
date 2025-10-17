@@ -134,10 +134,17 @@ const AnkiClient_ = class AnkiClient {
     const noteInfo = await this.getNote(noteId);
     log.debug({ noteInfo }, "noteInfo");
     const expression = AnkiClient.getExpression(noteInfo);
+    //TODO: test this
+    const { expressionField, pictureField, sentenceAudioField } =
+      AnkiClient.validateField(noteInfo);
 
     logIPC().sendToastPromise(
       async () => {
         try {
+          if (!expressionField) throw new Error("Invalid Expression field");
+          if (!pictureField) throw new Error("Invalid Picture field");
+          if (!sentenceAudioField)
+            throw new Error("Invalid Sentence Audio field");
           const result = await this.handleNewNote(noteId);
           return {
             success: {
@@ -393,6 +400,14 @@ const AnkiClient_ = class AnkiClient {
 
   static inNsfw(note: AnkiNote) {
     return note?.tags.map((t) => t.toLowerCase()).includes("nsfw");
+  }
+
+  static validateField(note: AnkiNote) {
+    const expressionField = note.fields[config.store.anki.expressionField];
+    const pictureField = note.fields[config.store.anki.pictureField];
+    const sentenceAudioField =
+      note.fields[config.store.anki.sentenceAudioField];
+    return { expressionField, pictureField, sentenceAudioField };
   }
 };
 

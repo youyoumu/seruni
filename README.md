@@ -32,3 +32,4 @@
 - store note media for editing
 - install python deps toast
 - google image
+- anki connect proxy
