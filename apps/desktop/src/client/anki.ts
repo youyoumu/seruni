@@ -80,7 +80,7 @@ const AnkiClient_ = class AnkiClient {
   }
 
   reconnect() {
-    if (this.reconnecting) return;
+    if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
     const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
     log.info(`AnkiConnect: Reconnecting in ${delayMs / 1000} seconds...`);

@@ -51,7 +51,7 @@ class ObsClient {
   }
 
   reconnect() {
-    if (this.reconnecting) return;
+    if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
     const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
     log.info(`OBS: Reconnecting in ${delay / 1000} seconds...`);
