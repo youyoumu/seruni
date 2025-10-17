@@ -268,10 +268,10 @@ const AnkiClient_ = class AnkiClient {
       }
 
       // generate audio file
-      const audioStage2PathPromise = (() => {
+      const audioStage2PathPromise = (async () => {
         if (lastEnd) {
           try {
-            return ffmpeg().process({
+            return await ffmpeg().process({
               inputPath: audioStage1Path,
               durationMs: lastEnd * 1000,
               format: "opus",
@@ -285,14 +285,14 @@ const AnkiClient_ = class AnkiClient {
       })();
 
       // generate image file
-      const imagePathPromise = (() => {
+      const imagePathPromise = (async () => {
         try {
           //get the frame of when we add the note instead of when we received the text
           const extraSeek = Math.max(
             0,
             Math.floor(now.getTime() - history.time.getTime()),
           );
-          return ffmpeg().process({
+          return await ffmpeg().process({
             inputPath: savedReplayPath,
             seekMs: offsetMs + extraSeek,
             format: "webp",
@@ -305,7 +305,7 @@ const AnkiClient_ = class AnkiClient {
       })();
 
       // generate audio file for editing
-      const audioStage3PathPromise = (() => {
+      const audioStage3PathPromise = (async () => {
         try {
           //TODO: configuratble
           const recordDurationFallbackSecond = 10;
@@ -314,7 +314,7 @@ const AnkiClient_ = class AnkiClient {
             recordDurationFallbackSecond;
           const offsetMsToLeft = 5000;
           const offsetMsToRight = 5000;
-          return ffmpeg().process({
+          return await ffmpeg().process({
             inputPath: savedReplayPath,
             seekMs: offsetMs - offsetMsToLeft,
             durationMs: lastEndSecond * 1000 + offsetMsToLeft + offsetMsToRight,
@@ -325,15 +325,16 @@ const AnkiClient_ = class AnkiClient {
         }
       })();
 
+      const imageFormat = "webp" as const;
       // generate image file
-      const imageDirPromise = (() => {
+      const imageDirPromise = (async () => {
         try {
-          return ffmpeg().process({
+          return await ffmpeg().process({
             inputPath: savedReplayPath,
             seekMs: offsetMs,
             //TODO: configurable
             durationMs: (lastEnd ?? 3) * 1000,
-            format: "webp:multiple",
+            format: `${imageFormat}:multiple`,
           });
         } catch (e) {
           log.error({ error: e }, "Failed to extract images for editing");
@@ -359,7 +360,7 @@ const AnkiClient_ = class AnkiClient {
             try {
               const files = await readdir(imageDir);
               const imageFiles = files
-                .filter((f) => f.endsWith(".webp"))
+                .filter((f) => f.endsWith(`.${imageFormat}`))
                 .map((file) => ({
                   filePath: join(imageDir, file),
                   type: "picture" as const,

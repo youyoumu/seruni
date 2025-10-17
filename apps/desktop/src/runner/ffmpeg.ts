@@ -8,6 +8,17 @@ import { log } from "#/util/logger";
 hmr.log(import.meta);
 
 class FFmpeg {
+  usedTimestamps: string[] = [];
+
+  getTimestamp(): string {
+    const timestamp = `${formatDate(new Date(), "yyyyMMdd_HHmmss")}_${crypto.randomUUID().slice(0, 3)}`;
+    if (this.usedTimestamps.includes(timestamp)) {
+      return this.getTimestamp();
+    }
+    this.usedTimestamps.push(timestamp);
+    return timestamp;
+  }
+
   async getFileDuration(filePath: string): Promise<number> {
     const { stdout, stderr } = await execa("ffprobe", [
       "-v",
@@ -18,7 +29,7 @@ class FFmpeg {
       "csv=p=0",
       filePath,
     ]);
-    log.trace({ stdout, stderr }, "ffprobe");
+    log.debug({ stdout, stderr }, "ffprobe");
     return parseFloat(stdout.trim());
   }
 
@@ -32,22 +43,36 @@ class FFmpeg {
     inputPath: string;
     seekMs?: number;
     durationMs?: number;
-    format: "wav" | "opus" | "webp" | "webp:multiple";
+    format:
+      | "wav"
+      | "opus"
+      | "webp"
+      | "webp:multiple"
+      | "webp:animated"
+      | "png:multiple";
   }) {
-    const timestamp = formatDate(new Date(), "yyyyMMdd_HHmmss_SSS");
-    const outputPath = join(
-      env.TEMP_PATH,
-      `${timestamp}.${format === "webp:multiple" ? "webp" : format}`,
-    );
+    const timestamp = this.getTimestamp();
+    const actualFormat = () => {
+      if (format === "png:multiple") return "png";
+      if (format === "webp:multiple") return "webp";
+      if (format === "webp:animated") return "webp";
+      return format;
+    };
 
+    const outputPath = join(env.TEMP_PATH, `${timestamp}.${actualFormat()}`);
     const outputDir = join(env.TEMP_PATH, `${timestamp}`);
-    await mkdir(outputDir, { recursive: true });
-    const outputPattern = join(outputDir, `${timestamp}_%03d.webp`);
+    if (format.endsWith("multiple")) {
+      await mkdir(outputDir, { recursive: true });
+    }
+    const outputPattern = join(
+      outputDir,
+      `${timestamp}_%03d.${actualFormat()}`,
+    );
 
     //TODO: configurable
     const defaultDurationMs = 1000;
     const numberOfFrames = 6;
-    const fps = numberOfFrames / (durationMs ?? defaultDurationMs / 1000);
+    const fps = numberOfFrames / ((durationMs ?? defaultDurationMs) / 1000);
 
     const params = {
       wav: [
@@ -98,7 +123,7 @@ class FFmpeg {
         "scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease", // max 720p
         "-q:v",
         "75", // quality (1-100, worst to best)
-        outputPattern,
+        outputPath,
       ],
 
       "webp:multiple": [
@@ -109,8 +134,48 @@ class FFmpeg {
         inputPath,
         "-t",
         `${durationMs ?? defaultDurationMs}ms`,
+        "-r",
+        `${fps}`,
+        "-c:v",
+        "libwebp",
         "-vf",
-        `fps=${fps},scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease`,
+        `scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease`,
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPattern,
+      ],
+
+      "png:multiple": [
+        "-y",
+        "-ss",
+        `${seekMs}ms`,
+        "-i",
+        inputPath,
+        "-t",
+        `${durationMs ?? defaultDurationMs}ms`,
+        "-r",
+        `${fps}`,
+        "-vf",
+        `scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease`,
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPattern,
+      ],
+
+      "webp:animated": [
+        "-y",
+        "-ss",
+        `${seekMs}ms`,
+        "-i",
+        inputPath,
+        "-t",
+        `${durationMs ?? defaultDurationMs}ms`,
+        "-r",
+        "24",
+        "-c:v",
+        "libwebp_anim",
+        "-vf",
+        `scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease`,
         "-q:v",
         "75", // quality (1-100, worst to best)
         outputPath,
@@ -118,7 +183,7 @@ class FFmpeg {
     };
 
     const { stdout, stderr } = await execa("ffmpeg", params[format]);
-    log.trace(
+    log.debug(
       {
         params: params[format],
         stdout,
@@ -127,7 +192,7 @@ class FFmpeg {
       "ffmpeg",
     );
 
-    return format === "webp:multiple" ? outputDir : outputPath;
+    return format.endsWith("multiple") ? outputDir : outputPath;
   }
 }
 

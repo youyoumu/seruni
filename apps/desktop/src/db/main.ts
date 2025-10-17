@@ -47,6 +47,7 @@ class DB {
     const noteRowId = insertedNotes[0]?.id;
     if (!noteRowId) throw new Error("Note ID not found");
 
+    log.debug({ noteId, media }, "Saving note and media to database");
     await this.db.insert(mediaTable).values(
       media.map((m) => ({
         noteId: noteRowId,
