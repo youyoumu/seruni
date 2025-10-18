@@ -1,6 +1,5 @@
 import "#/util/hmr";
-import { readFileSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { detect } from "detect-port";
@@ -31,16 +30,16 @@ const HTTP_SERVER_PORT = await preferPort(42424);
 const ANKI_CONNECT_PROXY_PORT = await preferPort(48765);
 
 async function createEnv_() {
-  const envJson = (() => {
+  const envJson = async () => {
     if (app.isPackaged || process.env.NODE_ENV === "production") return {};
     try {
       return JSON.parse(
-        readFileSync(join(import.meta.dirname, "../env.json"), "utf-8"),
+        await readFile(join(import.meta.dirname, "../env.json"), "utf-8"),
       );
     } catch {
       return {};
     }
-  })();
+  };
 
   const validatedEnv = createEnv({
     server: {
@@ -48,19 +47,14 @@ async function createEnv_() {
       DEV: z.boolean().default(false),
       WS_PORT: z.number().default(45626),
     },
-    runtimeEnv: envJson,
+    runtimeEnv: await envJson(),
     emptyStringAsUndefined: true,
   });
   const DEV = validatedEnv.DEV;
 
   if (DEV) {
-    await hmr.runEffect(import.meta.url, () => {
-      const original = app.getPath("userData");
-      app.setPath("userData", join(import.meta.dirname, "../.userData"));
-      return () => {
-        app.setPath("userData", original);
-      };
-    });
+    // use separate user data dir for dev
+    app.setPath("userData", join(import.meta.dirname, "../.userData"));
   }
 
   const USER_DATA_PATH = app.getPath("userData");
@@ -118,13 +112,8 @@ async function createEnv_() {
     "../../../packages/renderer/dist",
   );
 
-  await hmr.runEffect(import.meta.url, () => {
-    const original = USER_DATA_PATH;
-    app.setPath("userData", join(USER_DATA_PATH, "Default"));
-    return () => {
-      app.setPath("userData", original);
-    };
-  });
+  // separate chromium stuff from user data
+  app.setPath("userData", join(USER_DATA_PATH, "Default"));
 
   const constant = {
     APP_NAME: "Seruni",
