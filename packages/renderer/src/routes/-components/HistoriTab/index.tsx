@@ -31,7 +31,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
-import { appToaster } from "./AppToaster";
+import { appToaster } from "../AppToaster";
 
 const srcMap = new Map<string, true>();
 const nsfwUpdateLock = new Map<number, boolean>();
