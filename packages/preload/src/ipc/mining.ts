@@ -28,8 +28,16 @@ export const zMedia = z.array(
   }),
 );
 
+export const zSelectionData = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+});
+
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 export type Media = z.infer<typeof zMedia>;
+export type SelectionData = z.infer<typeof zSelectionData>;
 
 export const zMiningIPC = {
   renderer: z.object({

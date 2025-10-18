@@ -1,15 +1,17 @@
-import type { AnkiHistory, Media } from "@repo/preload/ipc";
 import {
-  ArrowRightFromLineIcon,
-  FullscreenIcon,
-  PawPrintIcon,
-  ZoomInIcon,
-} from "lucide-solid";
+  type AnkiHistory,
+  type Media,
+  type SelectionData,
+  zSelectionData,
+} from "@repo/preload/ipc";
+import Cropper from "cropperjs";
+import { ArrowRightFromLineIcon, FullscreenIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
   For,
   type JSX,
+  onCleanup,
   onMount,
   type ParentProps,
   Show,
@@ -53,9 +55,7 @@ export function EditButton(props: { noteId: number }) {
     setMedia(media);
   });
 
-  createEffect(() => {
-    console.log("DEBUG[753]: selectedImage=", selectedImage());
-  });
+  createEffect(() => {});
 
   return (
     <Dialog.Root>
@@ -98,9 +98,7 @@ export function EditButton(props: { noteId: number }) {
                 />
                 <SelectedImage
                   src={selectedImageSrc()}
-                  onClick={() => {
-                    //TODO: crop pop up
-                  }}
+                  //TODO: crop pop up
                 />
               </HStack>
               <Grid
@@ -166,7 +164,7 @@ const zoomIconCva = cva({
   },
 });
 
-function SelectedImage(props: { src: string; onClick: () => void }) {
+function SelectedImage(props: { src: string }) {
   const pictureSrc = () => props.src;
   return (
     <PictureWithZoom
@@ -183,18 +181,25 @@ function SelectedImage(props: { src: string; onClick: () => void }) {
               height="56"
               image={(imageProps) => {
                 return (
-                  <img
-                    {...imageProps()}
-                    onClick={props.onClick}
-                    class={css({
-                      width: "full",
-                      height: "full",
-                      objectFit: "contain",
-                      rounded: "sm",
-                      cursor: "pointer",
-                    })}
+                  <PictureWithCropper
                     src={pictureSrc()}
-                    alt="PictureField"
+                    trigger={(triggerProps) => {
+                      return (
+                        <img
+                          {...triggerProps()}
+                          {...imageProps()}
+                          class={css({
+                            width: "full",
+                            height: "full",
+                            objectFit: "contain",
+                            rounded: "sm",
+                            cursor: "pointer",
+                          })}
+                          src={pictureSrc()}
+                          alt="PictureField"
+                        />
+                      );
+                    }}
                   />
                 );
               }}
@@ -355,12 +360,159 @@ function ImageWithFallback(props: {
             aspectRatio: "16 / 9",
             alignItems: "center",
             justifyContent: "center",
+            //TODO: this doesn't work
             height: `[${props.height}]`,
             width: "full",
           })}
         ></Stack>
       </Show>
     </>
+  );
+}
+
+export function PictureWithCropper(props: {
+  src: string;
+  trigger: (props: () => ParentProps) => JSX.Element;
+}) {
+  const [selectionData, setSelectionData] = createSignal<SelectionData>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+  const [naturalSize, setNaturalSize] = createSignal<{
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
+  const image = new Image();
+  image.alt = "Picture";
+  image.src = props.src;
+  let cropperContainer: HTMLDivElement | undefined;
+  let cropper: Cropper | undefined;
+
+  function inSelection(selection: SelectionData, maxSelection: SelectionData) {
+    return (
+      selection.x >= maxSelection.x &&
+      selection.y >= maxSelection.y &&
+      selection.x + selection.width <= maxSelection.x + maxSelection.width &&
+      selection.y + selection.height <= maxSelection.y + maxSelection.height
+    );
+  }
+
+  const abortController = new AbortController();
+
+  createEffect(() => {
+    image.src = props.src;
+    cropper = new Cropper(image, {
+      container: cropperContainer,
+    });
+
+    const listener1 = (e: Event) => {
+      const image = e.target as HTMLImageElement;
+      setNaturalSize({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    };
+    image.addEventListener("load", listener1);
+
+    const centerImage = () => {
+      cropper?.getCropperImage()?.$center("contain");
+    };
+    const observer = new ResizeObserver(centerImage);
+    const cropperImage = cropper.getCropperImage();
+    if (cropperImage) observer.observe(cropperImage);
+    window.addEventListener("resize", centerImage);
+
+    const listener2 = (e: Event) => {
+      cropper?.getCropperImage()?.$center("contain");
+      const parsed = zSelectionData.safeParse(
+        (e as Event & { detail: unknown }).detail,
+      );
+      if (parsed.success) {
+        const cropperImageRect = cropper
+          ?.getCropperImage()
+          ?.getBoundingClientRect();
+        const maxSelection: SelectionData = {
+          x: 0,
+          y: 0,
+          width: cropperImageRect?.width ?? 0,
+          height: cropperImageRect?.height ?? 0,
+        };
+        if (!inSelection(parsed.data, maxSelection)) {
+          e.preventDefault();
+        } else {
+          setSelectionData(parsed.data);
+        }
+      }
+    };
+    cropper.getCropperSelection()?.addEventListener("change", listener2);
+    abortController.signal.addEventListener("abort", () => {
+      image.removeEventListener("load", listener1);
+      cropper?.getCropperSelection()?.removeEventListener("change", listener2);
+      observer.disconnect();
+      window.removeEventListener("resize", centerImage);
+    });
+
+    onCleanup(() => {
+      cropper?.getCropperCanvas()?.remove();
+      abortController.abort();
+    });
+  });
+
+  createEffect(() => {
+    console.log("DEBUG[760]: selectionData=", selectionData());
+  });
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger
+        asChild={(triggerProps) => {
+          return props.trigger(triggerProps);
+        }}
+      />
+      <Dialog.Backdrop />
+      <Portal mount={document.querySelector("#app") ?? document.body}>
+        <Dialog.Positioner>
+          <Dialog.Content
+            p="4"
+            bg="transparent"
+            boxShadow="[none]"
+            outlineStyle="[none]"
+            display="flex"
+            flexDirection="column"
+            gap="4"
+          >
+            <Dialog.CloseTrigger
+              asChild={(closeTriggerProps) => (
+                <Box maxW="8xl">
+                  <div
+                    ref={cropperContainer}
+                    class={css({
+                      maxW: "full",
+                      rounded: "md",
+                      shadow: "md",
+                      "& > cropper-canvas": {
+                        height: "full",
+                        width: "full",
+                      },
+                      "& > cropper-canvas > cropper-image": {
+                        height: "full",
+                        width: "full",
+                      },
+                    })}
+                    style={{
+                      width: `${naturalSize().width}px`,
+                      "aspect-ratio": `${naturalSize().width} / ${naturalSize().height}`,
+                      height: "auto",
+                    }}
+                  ></div>
+                </Box>
+              )}
+            />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
   );
 }
 
