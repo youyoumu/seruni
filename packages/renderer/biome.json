@@ -7,6 +7,11 @@
   "linter": {
     "domains": {
       "solid": "all"
+    },
+    "rules": {
+      "a11y": {
+        "useKeyWithClickEvents": "off"
+      }
     }
   }
 }

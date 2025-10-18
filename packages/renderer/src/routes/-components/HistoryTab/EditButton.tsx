@@ -54,7 +54,7 @@ export function EditButton(props: { noteId: number }) {
   });
 
   createEffect(() => {
-    console.log(note().id, media());
+    console.log("DEBUG[753]: selectedImage=", selectedImage());
   });
 
   return (
@@ -74,7 +74,19 @@ export function EditButton(props: { noteId: number }) {
           <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
             <Stack gap="8">
               <HStack justifyContent="center">
-                <CurrentImage src={pictureSrc()} />
+                <CurrentImage
+                  isSelected={
+                    selectedImage().fileName === note().picture &&
+                    selectedImage().source === "anki"
+                  }
+                  src={pictureSrc()}
+                  onClick={() => {
+                    setSelectedImage({
+                      fileName: note().picture,
+                      source: "anki",
+                    });
+                  }}
+                />
                 <ArrowRightFromLineIcon
                   class={css({
                     h: "full",
@@ -84,7 +96,12 @@ export function EditButton(props: { noteId: number }) {
                   })}
                   strokeWidth="1"
                 />
-                <SelectedImage src={selectedImageSrc()} />
+                <SelectedImage
+                  src={selectedImageSrc()}
+                  onClick={() => {
+                    //TODO: crop pop up
+                  }}
+                />
               </HStack>
               <Grid
                 gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -94,7 +111,21 @@ export function EditButton(props: { noteId: number }) {
                   {(item) => {
                     const pictureSrc = () =>
                       getMediaUrl(item.fileName, "storage");
-                    return <AvailableImage src={pictureSrc()} />;
+                    const isSelected = () =>
+                      selectedImage().fileName === item.fileName &&
+                      selectedImage().source === "storage";
+                    return (
+                      <AvailableImage
+                        isSelected={isSelected()}
+                        src={pictureSrc()}
+                        onClick={() => {
+                          setSelectedImage({
+                            fileName: item.fileName,
+                            source: "storage",
+                          });
+                        }}
+                      />
+                    );
                   }}
                 </For>
               </Grid>
@@ -135,7 +166,7 @@ const zoomIconCva = cva({
   },
 });
 
-function SelectedImage(props: { src: string }) {
+function SelectedImage(props: { src: string; onClick: () => void }) {
   const pictureSrc = () => props.src;
   return (
     <PictureWithZoom
@@ -154,6 +185,7 @@ function SelectedImage(props: { src: string }) {
                 return (
                   <img
                     {...imageProps()}
+                    onClick={props.onClick}
                     class={css({
                       width: "full",
                       height: "full",
@@ -174,7 +206,11 @@ function SelectedImage(props: { src: string }) {
   );
 }
 
-function CurrentImage(props: { src: string }) {
+function CurrentImage(props: {
+  src: string;
+  onClick: () => void;
+  isSelected: boolean;
+}) {
   const pictureSrc = () => props.src;
   return (
     <PictureWithZoom
@@ -193,7 +229,14 @@ function CurrentImage(props: { src: string }) {
                 return (
                   <img
                     {...imageProps()}
+                    onClick={props.onClick}
                     class={css({
+                      outlineColor: props.isSelected
+                        ? "colorPalette.default"
+                        : "transparent",
+                      outlineWidth: "medium",
+                      outlineStyle: "solid",
+                      transition: "[outline-color 0.1s]",
                       height: "full",
                       width: "full",
                       objectFit: "contain",
@@ -213,7 +256,11 @@ function CurrentImage(props: { src: string }) {
   );
 }
 
-function AvailableImage(props: { src: string }) {
+function AvailableImage(props: {
+  src: string;
+  onClick: () => void;
+  isSelected: boolean;
+}) {
   const pictureSrc = () => props.src;
   return (
     <PictureWithZoom
@@ -232,7 +279,14 @@ function AvailableImage(props: { src: string }) {
                 return (
                   <img
                     {...imageProps()}
+                    onClick={props.onClick}
                     class={css({
+                      outlineColor: props.isSelected
+                        ? "colorPalette.default"
+                        : "transparent",
+                      outlineWidth: "medium",
+                      outlineStyle: "solid",
+                      transition: "[outline-color 0.1s]",
                       height: "full",
                       width: "full",
                       objectFit: "contain",
