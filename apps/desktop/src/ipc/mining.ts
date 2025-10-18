@@ -1,5 +1,6 @@
 import { AnkiClient, ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
+import { mainDB } from "#/db/main";
 import { env } from "#/env";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
@@ -117,6 +118,10 @@ class MiningIPC extends IPC()<"mining"> {
         log.error({ error: e }, "Failed to update note NSFW tag");
         return false;
       }
+    });
+
+    this.handle("mining:getNoteMedia", async (_, { noteId }) => {
+      return await mainDB().getNoteMedia(noteId);
     });
   }
 

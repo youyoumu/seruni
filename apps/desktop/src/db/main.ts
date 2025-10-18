@@ -57,10 +57,19 @@ class DB {
   }
 
   async getNoteMedia(noteId: number) {
+    const note = await this.db
+      .select()
+      .from(notesTable)
+      .where(eq(notesTable.noteId, noteId));
+    const noteRowId = note[0]?.id;
+    if (!noteRowId) {
+      log.trace(`noteId ${noteId} is not in the database`);
+      return [];
+    }
     const result = await this.db
       .select()
       .from(mediaTable)
-      .where(eq(mediaTable.noteId, noteId));
+      .where(eq(mediaTable.noteId, noteRowId));
     const validMedia: number[] = [];
     for (const r of result) {
       try {

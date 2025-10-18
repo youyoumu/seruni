@@ -110,6 +110,7 @@ export function MiningTab() {
       }
       if (!timerRunning()) {
         appToaster.create({
+          title: "Textractor",
           description: "Received text but timer is paused",
           type: "info",
         });

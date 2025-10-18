@@ -1,6 +1,7 @@
 import { usePagination } from "@ark-ui/solid";
 import {
   type AnkiHistory,
+  type Media,
   zAnkiCollectionMediaUrlPath,
 } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
@@ -117,7 +118,7 @@ export function HistoryTab() {
     }
   });
 
-  const pageSizeItems = [20, 40, 60].map((item) => ({
+  const pageSizeItems = [5, 20, 40, 60].map((item) => ({
     label: item.toString(),
     value: item.toString(),
   }));
@@ -183,6 +184,22 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
     type TextVariant = RecipeVariantProps<typeof expressionVariant>;
     const pictureSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.picture}`;
     const sentenceAudioSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.sentenceAudio}`;
+    const [media, setMedia] = createSignal<Media>([]);
+
+    const pictureMedia = () => media().filter((m) => m.type === "picture");
+    const sentenceAudioMedia = () =>
+      media().find((m) => m.type === "sentenceAudio");
+
+    onMount(async () => {
+      const media = await ipcRenderer.invoke("mining:getNoteMedia", {
+        noteId: props.item.id,
+      });
+      setMedia(media);
+    });
+
+    createEffect(() => {
+      console.log(props.item.id, media());
+    });
 
     return (
       <Stack
@@ -352,7 +369,23 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
           <HStack gap="4" justifyContent="space-between" alignItems="end">
             <HStack>
               <Button size="sm">Open in Anki</Button>
-              <Button size="sm">Trim audio</Button>
+              <Dialog.Root>
+                <Dialog.Trigger
+                  asChild={(triggerProps) => {
+                    return (
+                      <Button size="sm" {...triggerProps()}>
+                        Edit
+                      </Button>
+                    );
+                  }}
+                />
+                <Dialog.Backdrop />
+                <Portal mount={document.querySelector("#app") ?? document.body}>
+                  <Dialog.Positioner>
+                    <Dialog.Content></Dialog.Content>
+                  </Dialog.Positioner>
+                </Portal>
+              </Dialog.Root>
             </HStack>
 
             <Text size="xs" color="fg.muted">

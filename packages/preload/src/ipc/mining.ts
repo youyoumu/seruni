@@ -12,7 +12,23 @@ export const zAnkiHistory = z.array(
   }),
 );
 
+export const zMedia = z.array(
+  z.object({
+    fileName: z.string(),
+    type: z.union([z.literal("picture"), z.literal("sentenceAudio")]),
+    vadData: z
+      .array(
+        z.object({
+          start: z.number(),
+          end: z.number(),
+        }),
+      )
+      .nullable(),
+  }),
+);
+
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
+export type Media = z.infer<typeof zMedia>;
 
 export const zMiningIPC = {
   renderer: z.object({
@@ -47,6 +63,14 @@ export const zMiningIPC = {
         }),
       ]),
       output: z.boolean(),
+    }),
+    "mining:getNoteMedia": z.object({
+      input: z.tuple([
+        z.object({
+          noteId: z.number(),
+        }),
+      ]),
+      output: zMedia,
     }),
   }),
 };
