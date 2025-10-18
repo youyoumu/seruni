@@ -17,24 +17,24 @@ import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
+import { history, setHistory } from "./_util";
 import { AnkiCard } from "./AnkiCard";
 
 export function HistoryTab() {
   const [success, setSuccess] = createSignal(false);
-  const [history, setHistory] = createSignal<AnkiHistory>([]);
 
   const [currentPage, setCurrentPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
   const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
 
   createEffect(() => {
-    const count = history().length;
+    const count = history.length;
     const pagination = usePagination({
       count,
       pageSize: pageSize(),
       page: currentPage(),
     });
-    setSlicedHistory(pagination().slice(history()));
+    setSlicedHistory(pagination().slice(history));
   });
 
   let id = setInterval(() => {});
@@ -42,12 +42,13 @@ export function HistoryTab() {
     const { success, data } = await ipcRenderer.invoke("mining:getAnkiHistory");
     setSuccess(success);
     setHistory(sort(data).desc((item) => item.id));
+    //TODO: use event listener
     id = setInterval(async () => {
       const { success, data } = await ipcRenderer.invoke(
         "mining:getAnkiHistory",
       );
       setSuccess(success);
-      if (history().length !== data.length) {
+      if (history.length !== data.length) {
         setHistory(sort(data).desc((item) => item.id));
       }
     }, 5000);
@@ -85,14 +86,14 @@ export function HistoryTab() {
           >
             <For each={slicedHistory()}>
               {(item) => {
-                return <AnkiCard item={item} />;
+                return <AnkiCard noteId={item.id} />;
               }}
             </For>
           </Stack>
           <HStack justifyContent="center" gap="4">
             <Pagination
               justifyContent="center"
-              count={history().length}
+              count={history.length}
               pageSize={pageSize()}
               siblingCount={3}
               page={currentPage()}
