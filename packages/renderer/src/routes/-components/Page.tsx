@@ -11,7 +11,7 @@ import { Button } from "#/components/ui/button";
 import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
 import { Toast } from "#/components/ui/toast";
-import { store } from "#/lib/store";
+import { setStore, store } from "#/lib/store";
 import {
   type AppToastType,
   appToaster,
@@ -56,7 +56,12 @@ export function Page() {
 
   return (
     <>
-      <Tabs.Root defaultValue="home">
+      <Tabs.Root
+        defaultValue="home"
+        onValueChange={(details) => {
+          setStore("general", "currentTab", details.value);
+        }}
+      >
         <Tabs.List
           px="2"
           pt="4"

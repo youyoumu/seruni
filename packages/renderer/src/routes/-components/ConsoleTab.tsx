@@ -16,6 +16,7 @@ import { cva } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";
+import { store } from "#/lib/store";
 
 const MAX_LOGS = 1000;
 const [state, setState] = hmr.createState<{ logs: Log[] }>(
@@ -50,6 +51,8 @@ export function ConsoleTab() {
   });
   const [logs, setLogs] = createSignal<Log[]>([]);
 
+  const abortController = new AbortController();
+
   onMount(() => {
     const logs = state().logs;
     if (logs) setLogs(logs);
@@ -58,7 +61,9 @@ export function ConsoleTab() {
       setLogs((prev) => [...prev, payload].slice(prev.length - MAX_LOGS));
     };
     ipcRenderer.on("log:send", handler);
-    onCleanup(() => ipcRenderer.removeListener("log:send", handler));
+    abortController.signal.addEventListener("abort", () => {
+      ipcRenderer.removeListener("log:send", handler);
+    });
   });
 
   let logsRef: HTMLDivElement | undefined;
@@ -68,9 +73,18 @@ export function ConsoleTab() {
 
     logs();
     if (logsRef) {
-      // jump to bottom when logs update
       logsRef.scrollTop = logsRef.scrollHeight;
     }
+  });
+
+  createEffect(() => {
+    if (store.general.currentTab === "console" && logsRef) {
+      logsRef.scrollTop = logsRef.scrollHeight;
+    }
+  });
+
+  onCleanup(() => {
+    abortController.abort();
   });
 
   return (
