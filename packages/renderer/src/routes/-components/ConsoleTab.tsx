@@ -18,6 +18,9 @@ import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";
 
 const MAX_LOGS = 1000;
+const [state, setState] = hmr.createState<{ logs: Log[] }>(
+  Symbol.for("ConsoleTab"),
+);
 
 type Log = Parameters<IPCRendererHandler<"log:send">>[0];
 
@@ -48,9 +51,9 @@ export function ConsoleTab() {
   const [logs, setLogs] = createSignal<Log[]>([]);
 
   onMount(() => {
-    if (window.hmr?.logs) {
-      setLogs(window.hmr.logs);
-    }
+    const logs = state().logs;
+    if (logs) setLogs(logs);
+
     const handler: IPCRendererHandler<"log:send"> = (payload) => {
       setLogs((prev) => [...prev, payload].slice(prev.length - MAX_LOGS));
     };
@@ -61,7 +64,8 @@ export function ConsoleTab() {
   let logsRef: HTMLDivElement | undefined;
 
   createEffect(() => {
-    window.hmr.logs = logs();
+    setState({ logs: logs() });
+
     logs();
     if (logsRef) {
       // jump to bottom when logs update
@@ -178,6 +182,7 @@ export function ConsoleTab() {
 function DebugBox({ debugString }: { debugString: string }) {
   const [expanded, setExpanded] = createSignal(false);
   const [isOverflowing, setIsOverflowing] = createSignal(false);
+
   let contentRef: HTMLDivElement | undefined;
 
   const COLLAPSED_HEIGHT = 150; // px
