@@ -1,27 +1,45 @@
+import type { AnkiHistory, Media } from "@repo/preload/ipc";
+import { ArrowRightFromLineIcon } from "lucide-solid";
 import {
-  type AnkiHistory,
-  type Media,
-  zStorageUrlPath,
-} from "@repo/preload/ipc";
-import { createEffect, createSignal, For, onMount, Show } from "solid-js";
+  createEffect,
+  createSignal,
+  For,
+  type JSX,
+  onMount,
+  type ParentProps,
+  Show,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
-import { Grid, Stack } from "styled-system/jsx";
+import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { Spinner } from "#/components/ui/spinner";
-import { store } from "#/lib/store";
+import { getMediaUrl } from "#/lib/util";
 import { history, srcSet } from "./_util";
 
 export function EditButton(props: { noteId: number }) {
   const note = () =>
     history.find((item) => item.id === props.noteId) as AnkiHistory[number];
-
   const [media, setMedia] = createSignal<Media>([]);
-
   const pictureMedia = () => media().filter((m) => m.type === "picture");
   const sentenceAudioMedia = () =>
     media().find((m) => m.type === "sentenceAudio");
+  const pictureSrc = () => getMediaUrl(note().picture, "anki");
+
+  const [selectedImage, setSelectedImage] = createSignal<{
+    fileName: string | undefined;
+    source: "storage" | "anki";
+  }>({
+    fileName: note().picture,
+    source: "anki",
+  });
+  const selectedImageSrc = () =>
+    selectedImage().fileName
+      ? selectedImage().source === "anki"
+        ? getMediaUrl(selectedImage().fileName ?? "", "anki")
+        : getMediaUrl(selectedImage().fileName ?? "", "storage")
+      : "";
 
   onMount(async () => {
     const media = await ipcRenderer.invoke("mining:getNoteMedia", {
@@ -48,8 +66,21 @@ export function EditButton(props: { noteId: number }) {
       <Dialog.Backdrop />
       <Portal mount={document.querySelector("#app") ?? document.body}>
         <Dialog.Positioner p="4">
-          <Dialog.Content w="full" maxW="5xl" p="4" maxH="[80svh]">
-            <Stack>
+          <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
+            <Stack gap="8">
+              <HStack justifyContent="center">
+                <CurrentImage src={pictureSrc()} />
+                <ArrowRightFromLineIcon
+                  class={css({
+                    h: "full",
+                    w: "full",
+                    maxW: "24",
+                    color: "fg.subtle",
+                  })}
+                  strokeWidth="1"
+                />
+                <SelectedImage src={selectedImageSrc()} />
+              </HStack>
               <Grid
                 gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
                 gap="4"
@@ -57,9 +88,8 @@ export function EditButton(props: { noteId: number }) {
                 <For each={pictureMedia()}>
                   {(item) => {
                     const pictureSrc = () =>
-                      `${store.general.httpServerUrl}${zStorageUrlPath.value}${item.fileName}`;
-
-                    return <PictureThumbnail src={pictureSrc()} />;
+                      getMediaUrl(item.fileName, "storage");
+                    return <AvailableImage src={pictureSrc()} />;
                   }}
                 </For>
               </Grid>
@@ -71,50 +101,172 @@ export function EditButton(props: { noteId: number }) {
   );
 }
 
-export function PictureThumbnail(props: { src: string }) {
+function SelectedImage(props: { src: string }) {
+  const pictureSrc = () => props.src;
   return (
-    <Dialog.Root>
-      <Dialog.Trigger
-        asChild={(triggerProps) => {
-          const [loaded, setLoaded] = createSignal(srcSet.has(props.src));
-          const [error, setError] = createSignal(false);
-          return (
-            <>
-              <Show when={!error()}>
+    <PictureWithZoom
+      src={pictureSrc()}
+      trigger={(triggerProps) => {
+        return (
+          <ImageWithFallback
+            src={pictureSrc()}
+            height="56"
+            image={(imageProps) => {
+              return (
                 <img
                   {...triggerProps()}
+                  {...imageProps()}
+                  class={css({
+                    height: "56",
+                    objectFit: "contain",
+                    rounded: "sm",
+                    cursor: "pointer",
+                  })}
+                  src={pictureSrc()}
+                  alt="PictureField"
+                />
+              );
+            }}
+          />
+        );
+      }}
+    />
+  );
+}
+
+function CurrentImage(props: { src: string }) {
+  const pictureSrc = () => props.src;
+  return (
+    <PictureWithZoom
+      src={pictureSrc()}
+      trigger={(triggerProps) => {
+        return (
+          <ImageWithFallback
+            src={pictureSrc()}
+            height="56"
+            image={(imageProps) => {
+              return (
+                <img
+                  {...triggerProps()}
+                  {...imageProps()}
+                  class={css({
+                    height: "56",
+                    objectFit: "contain",
+                    rounded: "sm",
+                    cursor: "pointer",
+                  })}
+                  src={pictureSrc()}
+                  alt="PictureField"
+                />
+              );
+            }}
+          />
+        );
+      }}
+    />
+  );
+}
+
+function AvailableImage(props: { src: string }) {
+  const pictureSrc = () => props.src;
+  return (
+    <PictureWithZoom
+      src={pictureSrc()}
+      trigger={(triggerProps) => {
+        return (
+          <ImageWithFallback
+            src={pictureSrc()}
+            height="28"
+            image={(imageProps) => {
+              return (
+                <img
+                  {...triggerProps()}
+                  {...imageProps()}
                   class={css({
                     height: "28",
                     objectFit: "contain",
                     rounded: "sm",
                     cursor: "pointer",
                   })}
-                  style={{
-                    display: loaded() ? "block" : "none",
-                  }}
-                  src={props.src}
+                  src={pictureSrc()}
                   alt="PictureField"
-                  onLoad={() => {
-                    setLoaded(true);
-                    srcSet.add(props.src);
-                  }}
-                  onError={() => setError(true)}
                 />
-              </Show>
-              <Show when={!loaded() && !error()}>
-                <Stack
-                  class={css({
-                    height: "48",
-                    aspectRatio: "16 / 9",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  })}
-                >
-                  <Spinner size="lg" />
-                </Stack>
-              </Show>
-            </>
-          );
+              );
+            }}
+          />
+        );
+      }}
+    />
+  );
+}
+function ImageWithFallback(props: {
+  src: string;
+  image: (
+    props: () => ParentProps<JSX.ImgHTMLAttributes<HTMLImageElement>>,
+  ) => JSX.Element;
+  height: string;
+}) {
+  const [loaded, setLoaded] = createSignal(srcSet.has(props.src));
+  const [error, setError] = createSignal(false);
+  return (
+    <>
+      <Show when={!error()}>
+        {props.image(() => ({
+          style: {
+            display: loaded() ? "block" : "none",
+          },
+          onLoad: () => {
+            setLoaded(true);
+            srcSet.add(props.src);
+          },
+          onError: () => {
+            setError(true);
+          },
+        }))}
+      </Show>
+      <Show when={!loaded() && !error()}>
+        <Stack
+          class={css({
+            rounded: "sm",
+            borderColor: "border.default",
+            borderWidth: "thin",
+            aspectRatio: "16 / 9",
+            alignItems: "center",
+            justifyContent: "center",
+            height: `[${props.height}]`,
+            width: "full",
+          })}
+        >
+          <Spinner size="lg" />
+        </Stack>
+      </Show>
+      <Show when={loaded() && error()}>
+        <Stack
+          class={css({
+            rounded: "sm",
+            borderColor: "border.default",
+            borderWidth: "thin",
+            aspectRatio: "16 / 9",
+            alignItems: "center",
+            justifyContent: "center",
+            height: `[${props.height}]`,
+            width: "full",
+          })}
+        ></Stack>
+      </Show>
+    </>
+  );
+}
+
+export function PictureWithZoom(props: {
+  src: string;
+  trigger: (props: () => ParentProps) => JSX.Element;
+}) {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger
+        asChild={(triggerProps) => {
+          return props.trigger(triggerProps);
         }}
       />
       <Dialog.Backdrop />

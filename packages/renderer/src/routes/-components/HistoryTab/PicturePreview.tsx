@@ -1,7 +1,4 @@
-import {
-  type AnkiHistory,
-  zAnkiCollectionMediaUrlPath,
-} from "@repo/preload/ipc";
+import type { AnkiHistory } from "@repo/preload/ipc";
 import { createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
@@ -9,7 +6,7 @@ import { HStack, Stack } from "styled-system/jsx";
 import { Dialog } from "#/components/ui/dialog";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
-import { store } from "#/lib/store";
+import { getMediaUrl } from "#/lib/util";
 import { appToaster } from "../AppToaster";
 import { history, nsfwUpdateLock, srcSet } from "./_util";
 
@@ -19,8 +16,7 @@ export function PicturePreview(props: { noteId: number }) {
   if (!note()) return null;
   //TODO: modify via context
   const [nsfw, setNsfw] = createSignal(note().nsfw);
-  const pictureSrc = () =>
-    `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${note().picture}`;
+  const pictureSrc = () => getMediaUrl(note().picture, "anki");
 
   return (
     <Dialog.Root>
@@ -30,7 +26,7 @@ export function PicturePreview(props: { noteId: number }) {
           const [error, setError] = createSignal(false);
           return (
             <>
-              <Show when={!error() && pictureSrc}>
+              <Show when={!error() && pictureSrc()}>
                 <img
                   {...triggerProps()}
                   class={css({
@@ -38,7 +34,7 @@ export function PicturePreview(props: { noteId: number }) {
                     objectFit: "contain",
                     rounded: "md",
                     cursor: "pointer",
-                    filter: nsfw() ? "[blur(12px) brightness(0.5)]" : "auto",
+                    filter: nsfw() ? "[blur(16px) brightness(0.5)]" : "auto",
                     _hover: {
                       filter: "[blur(0px) brightness(1)]",
                     },
