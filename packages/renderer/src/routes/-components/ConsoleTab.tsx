@@ -187,11 +187,25 @@ function DebugBox({ debugString }: { debugString: string }) {
 
   const COLLAPSED_HEIGHT = 150; // px
 
-  createEffect(() => {
+  const abortController = new AbortController();
+  onMount(() => {
     if (contentRef) {
-      setIsOverflowing(contentRef.scrollHeight > COLLAPSED_HEIGHT);
+      const checkOverflow = () => {
+        setIsOverflowing(contentRef.scrollHeight > COLLAPSED_HEIGHT);
+      };
+
+      // Initial check
+      checkOverflow();
+
+      const observer = new ResizeObserver(checkOverflow);
+      observer.observe(contentRef);
+
+      abortController.signal.addEventListener("abort", () => {
+        observer.disconnect();
+      });
     }
   }); // recalc when content changes
+  onCleanup(() => abortController.abort());
 
   return (
     <Box
