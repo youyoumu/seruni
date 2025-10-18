@@ -1,5 +1,10 @@
 import type { AnkiHistory, Media } from "@repo/preload/ipc";
-import { ArrowRightFromLineIcon } from "lucide-solid";
+import {
+  ArrowRightFromLineIcon,
+  FullscreenIcon,
+  PawPrintIcon,
+  ZoomInIcon,
+} from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -10,8 +15,8 @@ import {
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
-import { css } from "styled-system/css";
-import { Grid, HStack, Stack } from "styled-system/jsx";
+import { css, cva } from "styled-system/css";
+import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { Spinner } from "#/components/ui/spinner";
@@ -101,6 +106,35 @@ export function EditButton(props: { noteId: number }) {
   );
 }
 
+const zoomIconCva = cva({
+  base: {
+    cursor: "pointer",
+    rounded: "sm",
+    bg: "bg.default/75",
+    w: "6",
+    h: "6",
+    p: "0.5",
+    position: "absolute",
+    top: "2",
+    right: "2",
+    strokeWidth: "1.5",
+  },
+  variants: {
+    size: {
+      default: {
+        w: "8",
+        h: "8",
+      },
+      sm: {
+        top: "1",
+        right: "1",
+        w: "6",
+        h: "6",
+      },
+    },
+  },
+});
+
 function SelectedImage(props: { src: string }) {
   const pictureSrc = () => props.src;
   return (
@@ -108,26 +142,32 @@ function SelectedImage(props: { src: string }) {
       src={pictureSrc()}
       trigger={(triggerProps) => {
         return (
-          <ImageWithFallback
-            src={pictureSrc()}
-            height="56"
-            image={(imageProps) => {
-              return (
-                <img
-                  {...triggerProps()}
-                  {...imageProps()}
-                  class={css({
-                    height: "56",
-                    objectFit: "contain",
-                    rounded: "sm",
-                    cursor: "pointer",
-                  })}
-                  src={pictureSrc()}
-                  alt="PictureField"
-                />
-              );
-            }}
-          />
+          <Box position="relative">
+            <FullscreenIcon
+              {...triggerProps()}
+              class={zoomIconCva({ size: "default" })}
+            />
+            <ImageWithFallback
+              src={pictureSrc()}
+              height="56"
+              image={(imageProps) => {
+                return (
+                  <img
+                    {...imageProps()}
+                    class={css({
+                      width: "full",
+                      height: "full",
+                      objectFit: "contain",
+                      rounded: "sm",
+                      cursor: "pointer",
+                    })}
+                    src={pictureSrc()}
+                    alt="PictureField"
+                  />
+                );
+              }}
+            />
+          </Box>
         );
       }}
     />
@@ -141,26 +181,32 @@ function CurrentImage(props: { src: string }) {
       src={pictureSrc()}
       trigger={(triggerProps) => {
         return (
-          <ImageWithFallback
-            src={pictureSrc()}
-            height="56"
-            image={(imageProps) => {
-              return (
-                <img
-                  {...triggerProps()}
-                  {...imageProps()}
-                  class={css({
-                    height: "56",
-                    objectFit: "contain",
-                    rounded: "sm",
-                    cursor: "pointer",
-                  })}
-                  src={pictureSrc()}
-                  alt="PictureField"
-                />
-              );
-            }}
-          />
+          <Box position="relative">
+            <FullscreenIcon
+              {...triggerProps()}
+              class={zoomIconCva({ size: "default" })}
+            />
+            <ImageWithFallback
+              src={pictureSrc()}
+              height="56"
+              image={(imageProps) => {
+                return (
+                  <img
+                    {...imageProps()}
+                    class={css({
+                      height: "full",
+                      width: "full",
+                      objectFit: "contain",
+                      rounded: "sm",
+                      cursor: "pointer",
+                    })}
+                    src={pictureSrc()}
+                    alt="PictureField"
+                  />
+                );
+              }}
+            />
+          </Box>
         );
       }}
     />
@@ -174,26 +220,32 @@ function AvailableImage(props: { src: string }) {
       src={pictureSrc()}
       trigger={(triggerProps) => {
         return (
-          <ImageWithFallback
-            src={pictureSrc()}
-            height="28"
-            image={(imageProps) => {
-              return (
-                <img
-                  {...triggerProps()}
-                  {...imageProps()}
-                  class={css({
-                    height: "28",
-                    objectFit: "contain",
-                    rounded: "sm",
-                    cursor: "pointer",
-                  })}
-                  src={pictureSrc()}
-                  alt="PictureField"
-                />
-              );
-            }}
-          />
+          <Box position="relative">
+            <FullscreenIcon
+              {...triggerProps()}
+              class={zoomIconCva({ size: "sm" })}
+            />
+            <ImageWithFallback
+              src={pictureSrc()}
+              height="28"
+              image={(imageProps) => {
+                return (
+                  <img
+                    {...imageProps()}
+                    class={css({
+                      height: "full",
+                      width: "full",
+                      objectFit: "contain",
+                      rounded: "sm",
+                      cursor: "pointer",
+                    })}
+                    src={pictureSrc()}
+                    alt="PictureField"
+                  />
+                );
+              }}
+            />
+          </Box>
         );
       }}
     />
