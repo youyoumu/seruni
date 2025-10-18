@@ -1,20 +1,18 @@
 import {
   type AnkiHistory,
-  type Media,
   zAnkiCollectionMediaUrlPath,
 } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
-import { createEffect, createSignal, onMount, Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Show } from "solid-js";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
-import { Dialog } from "#/components/ui/dialog";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 import { history } from "./_util";
 import { AudioButton } from "./AudioButton";
+import { EditButton } from "./EditButton";
 import { PicturePreview } from "./PicturePreview";
 
 const expressionVariant = cva({
@@ -60,22 +58,6 @@ export function AnkiCard(props: { noteId: number }) {
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
   const sentenceAudioSrc = () =>
     `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${note().sentenceAudio}`;
-  const [media, setMedia] = createSignal<Media>([]);
-
-  const pictureMedia = () => media().filter((m) => m.type === "picture");
-  const sentenceAudioMedia = () =>
-    media().find((m) => m.type === "sentenceAudio");
-
-  onMount(async () => {
-    const media = await ipcRenderer.invoke("mining:getNoteMedia", {
-      noteId: note().id,
-    });
-    setMedia(media);
-  });
-
-  createEffect(() => {
-    console.log(note().id, media());
-  });
 
   return (
     <Stack
@@ -117,23 +99,7 @@ export function AnkiCard(props: { noteId: number }) {
         <HStack gap="4" justifyContent="space-between" alignItems="end">
           <HStack>
             <Button size="sm">Open in Anki</Button>
-            <Dialog.Root>
-              <Dialog.Trigger
-                asChild={(triggerProps) => {
-                  return (
-                    <Button size="sm" {...triggerProps()}>
-                      Edit
-                    </Button>
-                  );
-                }}
-              />
-              <Dialog.Backdrop />
-              <Portal mount={document.querySelector("#app") ?? document.body}>
-                <Dialog.Positioner>
-                  <Dialog.Content></Dialog.Content>
-                </Dialog.Positioner>
-              </Portal>
-            </Dialog.Root>
+            <EditButton noteId={note().id} />
           </HStack>
 
           <Text size="xs" color="fg.muted">
