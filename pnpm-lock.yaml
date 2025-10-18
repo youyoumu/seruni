@@ -182,6 +182,9 @@ importers:
       '@repo/preload':
         specifier: workspace:*
         version: link:../preload
+      '@solid-primitives/lifecycle':
+        specifier: ^0.1.2
+        version: 0.1.2(solid-js@1.9.9)
       '@solid-primitives/storage':
         specifier: ^4.3.3
         version: 4.3.3(solid-js@1.9.9)
@@ -1376,6 +1379,11 @@ packages:
 
   '@solid-primitives/keyed@1.5.2':
     resolution: {integrity: sha512-BgoEdqPw48URnI+L5sZIHdF4ua4Las1eWEBBPaoSFs42kkhnHue+rwCBPL2Z9ebOyQ75sUhUfOETdJfmv0D6Kg==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/lifecycle@0.1.2':
+    resolution: {integrity: sha512-+K0T10kZXqorocFj0coIqt8NYm2UqoZfpF3nm2RwrDMZMV+C+SC0Oi3N6Dnq2i7W/n1cHAnfpoV4CBLsW21lJw==}
     peerDependencies:
       solid-js: ^1.6.12
 
@@ -5581,6 +5589,10 @@ snapshots:
       solid-js: 1.9.9
 
   '@solid-primitives/keyed@1.5.2(solid-js@1.9.9)':
+    dependencies:
+      solid-js: 1.9.9
+
+  '@solid-primitives/lifecycle@0.1.2(solid-js@1.9.9)':
     dependencies:
       solid-js: 1.9.9
 

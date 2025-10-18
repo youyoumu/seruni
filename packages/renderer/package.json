@@ -12,8 +12,9 @@
     "prepare": "panda codegen"
   },
   "dependencies": {
-    "@repo/preload": "workspace:*",
     "@ark-ui/solid": "^5.25.0",
+    "@repo/preload": "workspace:*",
+    "@solid-primitives/lifecycle": "^0.1.2",
     "@solid-primitives/storage": "^4.3.3",
     "@tanstack/router-plugin": "^1.121.3",
     "@tanstack/solid-router": "^1.121.3",

@@ -213,7 +213,7 @@ export function ConsoleTab() {
 
 function DebugBox({ debugString }: { debugString: string }) {
   const [expanded, setExpanded] = createSignal(false);
-  const [isOverflowing, setIsOverflowing] = createSignal(false);
+  const [isOverflowing, setIsOverflowing] = createSignal(true);
 
   let contentRef: HTMLDivElement | undefined;
 
@@ -223,12 +223,10 @@ function DebugBox({ debugString }: { debugString: string }) {
   onMount(() => {
     if (contentRef) {
       const checkOverflow = () => {
+        if (contentRef.scrollHeight === 0) return;
         setIsOverflowing(contentRef.scrollHeight > COLLAPSED_HEIGHT);
       };
-
-      // Initial check
       checkOverflow();
-
       const observer = new ResizeObserver(checkOverflow);
       observer.observe(contentRef);
 
@@ -251,14 +249,14 @@ function DebugBox({ debugString }: { debugString: string }) {
       fontSize="xs"
       whiteSpace="pre-wrap"
       color="gray.light.8"
-      overflow="hidden" // hide overflowing content when collapsed
       transition="size"
+      overflow="hidden" // hide overflowing content when collapsed
       style={{
-        height: !isOverflowing()
-          ? undefined
-          : expanded()
-            ? undefined
-            : `${COLLAPSED_HEIGHT}px`,
+        height: (() => {
+          if (expanded()) return undefined;
+          if (isOverflowing()) return `${COLLAPSED_HEIGHT}px`;
+          return undefined;
+        })(),
       }}
     >
       <Box position="relative">
