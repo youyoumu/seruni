@@ -5,8 +5,6 @@ import type {
 } from "@repo/preload/ipc";
 import { IPC } from "./base";
 
-hmr.log(import.meta);
-
 type ToastPayloadPromise = Promise<
   Partial<ToastPromiseOptionsSuccess> & Partial<ToastPromiseOptionsError>
 >;

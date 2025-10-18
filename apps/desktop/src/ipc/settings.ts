@@ -8,8 +8,6 @@ import { log } from "#/util/logger";
 import { IPC } from "./base";
 import { vnOverlayIPC } from "./vnOverlay";
 
-hmr.log(import.meta);
-
 class SettingsIPC extends IPC()<"settings"> {
   dLogTrace;
   constructor() {

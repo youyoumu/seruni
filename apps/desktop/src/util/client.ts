@@ -2,8 +2,6 @@ import { ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
 
-hmr.log(import.meta);
-
 export async function prepareAllClient() {
   ankiClient().register();
   await Promise.all([

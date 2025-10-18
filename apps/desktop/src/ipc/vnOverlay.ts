@@ -1,8 +1,6 @@
 import { vnOverlayWindow } from "../window/vnOverlay";
 import { IPC } from "./base";
 
-hmr.log(import.meta);
-
 class VnOverlayIPC extends IPC()<"vnOverlay"> {
   constructor() {
     super({

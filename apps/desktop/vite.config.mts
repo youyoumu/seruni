@@ -3,9 +3,30 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import circularDpendency from "vite-plugin-circular-dependency";
 
+function hmrLogPlugin() {
+  return {
+    name: "hmr-log-injector",
+    enforce: "pre", // run before other transforms
+    transform(code: string, id: string) {
+      // only affect your source files (skip node_modules, virtual files, etc.)
+      if (!id.includes("/src/") || id.includes("node_modules")) return;
+
+      // skip if already has it
+      if (code.includes("hmr.log(import.meta)")) return;
+
+      // inject at the very top
+      return {
+        code: `if (global.hmr) hmr.log(import.meta);\n${code}`,
+        map: null,
+      };
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
   plugins: [
+    hmrLogPlugin(),
     circularDpendency({
       outputFilePath: "./.circularDependency.json",
       circleImportThrowErr: true,

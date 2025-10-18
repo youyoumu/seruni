@@ -1,8 +1,6 @@
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { AnkiNote } from "#/util/schema";
 
-if (global.hmr) hmr.log(import.meta);
-
 // Notes table
 export const notesTable = sqliteTable("notes", {
   id: int().primaryKey({ autoIncrement: true }),

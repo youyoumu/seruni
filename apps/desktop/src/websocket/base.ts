@@ -9,8 +9,6 @@ import { type DefaultEventsMap, Server, type Socket } from "socket.io";
 import type { JsonValue, Writable } from "type-fest";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta);
-
 export type WsServerAck<Event extends WsFromServerEvent> = (
   data: WsFromServer[Event]["output"],
 ) => void;

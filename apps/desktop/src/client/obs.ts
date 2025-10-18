@@ -3,8 +3,6 @@ import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
 
-hmr.log(import.meta);
-
 class ObsClient {
   client: OBSWebSocket | undefined;
   url = () => `ws://localhost:${config.store.obs.obsWebSocketPort}`;

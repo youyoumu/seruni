@@ -7,8 +7,6 @@ import { app } from "electron";
 import { Roarr as log } from "roarr";
 import z from "zod";
 
-hmr.log(import.meta);
-
 async function preferPort(preferredPort: number) {
   try {
     const realPort = await detect(preferredPort);

@@ -5,8 +5,6 @@ import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 import { yomitanWindow } from "./yomitan";
 
-hmr.log(import.meta);
-
 class MainWindow extends AppWindow() {
   constructor() {
     super({

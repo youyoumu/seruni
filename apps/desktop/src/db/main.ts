@@ -8,8 +8,6 @@ import { log } from "#/util/logger";
 import type { VadData } from "#/util/schema";
 import { mediaTable, notesTable } from "./schema";
 
-hmr.log(import.meta);
-
 class DB {
   db: ReturnType<typeof drizzle>;
   constructor() {

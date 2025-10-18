@@ -5,8 +5,6 @@ import { env } from "#/env";
 import { bus } from "#/util/bus";
 import { IPC } from "./base";
 
-hmr.log(import.meta);
-
 class GeneralIPC extends IPC()<"general"> {
   ready = Promise.withResolvers<boolean>();
   constructor() {

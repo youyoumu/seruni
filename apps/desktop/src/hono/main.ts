@@ -9,8 +9,6 @@ import { ankiClient } from "#/client/anki";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta);
-
 const app = new Hono();
 
 function waitForAnkiMediaDir() {

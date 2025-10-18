@@ -6,8 +6,6 @@ import { env } from "#/env";
 import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta);
-
 class Python {
   async run(params: string[]) {
     log.info({ params }, `Running python`);

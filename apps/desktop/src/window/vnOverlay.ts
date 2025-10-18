@@ -1,8 +1,6 @@
 import { env } from "#/env";
 import { AppWindow } from "./base";
 
-hmr.log(import.meta);
-
 class VnOverlayWindow extends AppWindow() {
   constructor() {
     super({

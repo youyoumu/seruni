@@ -8,8 +8,6 @@ import { ipcMain } from "electron";
 import { Roarr as log } from "roarr";
 import { bus } from "#/util/bus";
 
-hmr.log(import.meta);
-
 type ChannelsWithPrefix<
   All extends string,
   Prefix extends string,

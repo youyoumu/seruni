@@ -3,8 +3,6 @@ import { env } from "#/env";
 import { type BusEventName, type BusEvents, bus } from "#/util/bus";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta);
-
 type BrowserWindowOptions = ConstructorParameters<typeof BrowserWindow>[0];
 const appWindow = class AppWindow {
   options: BrowserWindowOptions;

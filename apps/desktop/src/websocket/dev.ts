@@ -2,8 +2,6 @@ import { app } from "electron";
 import { textractorClient } from "#/client/textractor";
 import { AppWebsocket } from "./base";
 
-hmr.log(import.meta);
-
 class DevWS extends AppWebsocket()<"dev"> {
   constructor() {
     super({

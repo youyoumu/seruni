@@ -4,8 +4,6 @@ import { yomitanExtension } from "#/extension/yomitan";
 import { log } from "#/util/logger";
 import { AppWindow } from "./base";
 
-hmr.log(import.meta);
-
 class YomitanWindow extends AppWindow() {
   preloadScriptIds: string[] = [];
   ext: Electron.Extension | undefined;

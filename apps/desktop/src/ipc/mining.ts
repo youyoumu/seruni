@@ -5,8 +5,6 @@ import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { IPC } from "./base";
 
-hmr.log(import.meta);
-
 class MiningIPC extends IPC()<"mining"> {
   constructor() {
     super({

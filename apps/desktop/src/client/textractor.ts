@@ -5,8 +5,6 @@ import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
 
-hmr.log(import.meta);
-
 class TextractorClient {
   history: { time: Date; text: string; uuid: string }[] = [];
   client: WebSocket | undefined;

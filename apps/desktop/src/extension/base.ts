@@ -1,14 +1,10 @@
 import fs from "node:fs";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { Readable } from "node:stream";
-import type { ReadableStream } from "node:stream/web";
 import StreamZip from "node-stream-zip";
 import { env } from "#/env";
 import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
-
-hmr.log(import.meta);
 
 export class Extension {
   name: string;

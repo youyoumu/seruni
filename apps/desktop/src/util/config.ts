@@ -8,8 +8,6 @@ import type { PartialDeep } from "type-fest";
 import z from "zod";
 import { env } from "#/env";
 
-hmr.log(import.meta);
-
 type ConfigSchema = z.infer<typeof zConfig>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
 

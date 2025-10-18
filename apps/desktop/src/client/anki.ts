@@ -17,8 +17,6 @@ import { type AnkiNote, type VadData, zVadData } from "#/util/schema";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
-hmr.log(import.meta);
-
 type TextUuidQueueResult =
   | {
       sentenceAudioPath: string | undefined | null;

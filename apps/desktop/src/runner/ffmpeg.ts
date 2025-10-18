@@ -5,8 +5,6 @@ import { execa } from "execa";
 import { env } from "#/env";
 import { log } from "#/util/logger";
 
-hmr.log(import.meta);
-
 class FFmpeg {
   usedTimestamps: string[] = [];
 
