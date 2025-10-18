@@ -1,40 +1,25 @@
-import { usePagination } from "@ark-ui/solid";
 import {
   type AnkiHistory,
   type Media,
   zAnkiCollectionMediaUrlPath,
 } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
-import { sort } from "fast-sort";
-import { BirdIcon, PauseIcon, PlayIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  For,
-  Match,
-  onCleanup,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
+import { createEffect, createSignal, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { css, cva, type RecipeVariantProps } from "styled-system/css";
+import { css, cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
-import { Select_ } from "#/components/Form";
+import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { IconButton } from "#/components/ui/icon-button";
-import { Pagination } from "#/components/ui/pagination";
-import { createListCollection } from "#/components/ui/select";
-import { Slider } from "#/components/ui/slider";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 import { appToaster } from "../AppToaster";
+import { AudioButton } from "./AudioButton";
 
-const srcMap = new Map<string, true>();
-const nsfwUpdateLock = new Map<number, boolean>();
+const srcSet = new Set<string>();
+const nsfwUpdateLock = new Set<number>();
 
 const expressionVariant = cva({
   base: {
@@ -70,120 +55,16 @@ const expressionVariant = cva({
   },
 });
 
-export function HistoryTab() {
-  const [success, setSuccess] = createSignal(false);
-  const [history, setHistory] = createSignal<AnkiHistory>([]);
-
-  const [currentPage, setCurrentPage] = createSignal(1);
-  const [pageSize, setPageSize] = createSignal(20);
-  const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
-
-  createEffect(() => {
-    const count = history().length;
-    const pagination = usePagination({
-      count,
-      pageSize: pageSize(),
-      page: currentPage(),
-    });
-    setSlicedHistory(pagination().slice(history()));
-  });
-
-  let id = setInterval(() => {});
-  onMount(async () => {
-    const { success, data } = await ipcRenderer.invoke("mining:getAnkiHistory");
-    setSuccess(success);
-    setHistory(sort(data).desc((item) => item.id));
-    id = setInterval(async () => {
-      const { success, data } = await ipcRenderer.invoke(
-        "mining:getAnkiHistory",
-      );
-      setSuccess(success);
-      if (history().length !== data.length) {
-        setHistory(sort(data).desc((item) => item.id));
-      }
-    }, 5000);
-  });
-
-  onCleanup(() => {
-    clearInterval(id);
-  });
-
-  createEffect(async () => {
-    if (store.client.anki.status === "connected") {
-      const { success, data } = await ipcRenderer.invoke(
-        "mining:getAnkiHistory",
-      );
-      setSuccess(success);
-      setHistory(sort(data).desc((item) => item.id));
-    }
-  });
-
-  const pageSizeItems = [5, 20, 40, 60].map((item) => ({
-    label: item.toString(),
-    value: item.toString(),
-  }));
-
-  return (
-    <Stack h="full" maxW="8xl" mx="auto" gap="4">
-      <Switch>
-        <Match when={success()}>
-          <Stack
-            overflow="auto"
-            class="custom-scrollbar"
-            pe="4"
-            gap="4"
-            alignItems="center"
-          >
-            <For each={slicedHistory()}>
-              {(item) => {
-                return <AnkiCard item={item} />;
-              }}
-            </For>
-          </Stack>
-          <HStack justifyContent="center" gap="4">
-            <Pagination
-              justifyContent="center"
-              count={history().length}
-              pageSize={pageSize()}
-              siblingCount={3}
-              page={currentPage()}
-              onPageChange={(page) => setCurrentPage(page.page)}
-            />
-            <Select_
-              value={[pageSize().toString() ?? ""]}
-              collection={createListCollection({
-                items: pageSizeItems,
-              })}
-              onValueChange={(e) => {
-                setPageSize(parseInt(e.items[0]?.value ?? "20"));
-              }}
-            />
-          </HStack>
-        </Match>
-        <Match when={!success()}>
-          <Stack alignItems="center" justifyContent="center" h="full">
-            <BirdIcon size={250} strokeWidth={1}></BirdIcon>
-            <Text size="2xl" color="fg.muted">
-              Can't connect to Anki
-            </Text>
-          </Stack>
-        </Match>
-      </Switch>
-    </Stack>
-  );
-}
-
-interface AudioButtonProps {
-  src: string;
-}
-
-function AnkiCard(props: { item: AnkiHistory[number] }) {
+export function AnkiCard(props: { item: AnkiHistory[number] }) {
   {
+    //TODO: modify via context
     const [nsfw, setNsfw] = createSignal(props.item.nsfw);
-    const time = formatRelative(new Date(props.item.id), new Date());
+    const time = () => formatRelative(new Date(props.item.id), new Date());
     type TextVariant = RecipeVariantProps<typeof expressionVariant>;
-    const pictureSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.picture}`;
-    const sentenceAudioSrc = `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.sentenceAudio}`;
+    const pictureSrc = () =>
+      `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.picture}`;
+    const sentenceAudioSrc = () =>
+      `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${props.item.sentenceAudio}`;
     const [media, setMedia] = createSignal<Media>([]);
 
     const pictureMedia = () => media().filter((m) => m.type === "picture");
@@ -230,7 +111,7 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
               {props.item.expression}
             </Text>
             <Show when={props.item.sentenceAudio}>
-              <AudioButton src={sentenceAudioSrc} />
+              <AudioButton src={sentenceAudioSrc()} />
             </Show>
           </Stack>
           <Show when={props.item.picture}>
@@ -238,7 +119,7 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
               <Dialog.Trigger
                 asChild={(triggerProps) => {
                   const [loaded, setLoaded] = createSignal(
-                    srcMap.has(pictureSrc),
+                    srcSet.has(pictureSrc()),
                   );
                   const [error, setError] = createSignal(false);
                   return (
@@ -262,16 +143,16 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
                           style={{
                             display: loaded() ? "block" : "none",
                           }}
-                          src={pictureSrc}
+                          src={pictureSrc()}
                           alt="PictureField"
                           onLoad={() => {
                             setLoaded(true);
-                            srcMap.set(pictureSrc, true);
+                            srcSet.add(pictureSrc());
                           }}
                           onError={() => setError(true)}
                         />
                       </Show>
-                      <Show when={pictureSrc && !loaded() && !error()}>
+                      <Show when={pictureSrc() && !loaded() && !error()}>
                         <Stack
                           class={css({
                             height: "48",
@@ -310,7 +191,7 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
                             rounded: "md",
                             shadow: "md",
                           })}
-                          src={pictureSrc}
+                          src={pictureSrc()}
                           alt="PictureField"
                         />
                       )}
@@ -319,7 +200,8 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
                       <Toggle
                         checked={nsfw()}
                         onCheckedChange={() => {
-                          if (nsfwUpdateLock.get(props.item.id)) return;
+                          if (nsfwUpdateLock.has(props.item.id)) return;
+                          nsfwUpdateLock.add(props.item.id);
                           setNsfw(!nsfw());
                           appToaster.promise(
                             ipcRenderer
@@ -389,55 +271,11 @@ function AnkiCard(props: { item: AnkiHistory[number] }) {
             </HStack>
 
             <Text size="xs" color="fg.muted">
-              {time}
+              {time()}
             </Text>
           </HStack>
         </Stack>
       </Stack>
     );
   }
-}
-
-function AudioButton(props: AudioButtonProps) {
-  const [playing, setPlaying] = createSignal(false);
-  const [progress, setProgress] = createSignal(0); // 0 → 1
-
-  const audio = new Audio(props.src);
-
-  const toggle = () => {
-    if (playing()) {
-      audio.pause();
-    } else {
-      audio.play();
-    }
-  };
-
-  audio.addEventListener("play", () => setPlaying(true));
-  audio.addEventListener("pause", () => setPlaying(false));
-  audio.addEventListener("ended", () => setPlaying(false));
-
-  audio.addEventListener("timeupdate", () => {
-    if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
-  });
-
-  onCleanup(() => {
-    audio.pause();
-    audio.src = "";
-  });
-
-  return (
-    <Stack alignItems="center">
-      <IconButton size="xs" onClick={toggle}>
-        <Switch>
-          <Match when={playing()}>
-            <PauseIcon />
-          </Match>
-          <Match when={!playing()}>
-            <PlayIcon />
-          </Match>
-        </Switch>
-      </IconButton>
-      <Slider value={[progress()]} defaultValue={[0]} w="32" />
-    </Stack>
-  );
 }

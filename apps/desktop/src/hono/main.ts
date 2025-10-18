@@ -2,7 +2,10 @@ import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
-import { zAnkiCollectionMediaUrlPath } from "@repo/preload/ipc";
+import {
+  zAnkiCollectionMediaUrlPath,
+  zStorageUrlPath,
+} from "@repo/preload/ipc";
 import { type Context, Hono } from "hono";
 import mime from "mime";
 import { ankiClient } from "#/client/anki";
@@ -107,6 +110,12 @@ app.get(`${zAnkiCollectionMediaUrlPath.value}:filename`, async (c) => {
     return c.notFound();
   }
   const filePath = join(mediaDir, filename);
+  return handleMediaRequest(c, { filePath });
+});
+
+app.get(`${zStorageUrlPath.value}:filename`, async (c) => {
+  const filename = c.req.param("filename");
+  const filePath = join(env.STORAGE_PATH, filename);
   return handleMediaRequest(c, { filePath });
 });
 
