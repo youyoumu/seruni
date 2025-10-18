@@ -1,7 +1,7 @@
 import type { IPCRendererHandler } from "@repo/preload/ipc";
 import { makePersisted } from "@solid-primitives/storage";
 import stringify from "json-stringify-pretty-compact";
-import { ChevronDown, ChevronUp } from "lucide-solid";
+import { ChevronDown, ChevronUp, SnailIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -50,8 +50,15 @@ export function ConsoleTab() {
     name: "logLevel",
   });
   const [logs, setLogs] = createSignal<Log[]>([]);
+  const [tailing, setTailing] = createSignal(true);
 
   const abortController = new AbortController();
+
+  function scrollToBottom() {
+    if (logsRef && tailing()) {
+      logsRef.scrollTop = logsRef.scrollHeight;
+    }
+  }
 
   onMount(() => {
     const logs = state().logs;
@@ -72,14 +79,12 @@ export function ConsoleTab() {
     setState({ logs: logs() });
 
     logs();
-    if (logsRef) {
-      logsRef.scrollTop = logsRef.scrollHeight;
-    }
+    scrollToBottom();
   });
 
   createEffect(() => {
     if (store.general.currentTab === "console" && logsRef) {
-      logsRef.scrollTop = logsRef.scrollHeight;
+      scrollToBottom();
     }
   });
 
@@ -95,23 +100,36 @@ export function ConsoleTab() {
       overflow="hidden"
       maxW="8xl"
       mx="auto"
+      position="relative"
     >
-      <Slider
-        px="8"
-        value={[logLevel()]}
-        onValueChange={(details) => setLogLevel(details.value[0] ?? 10)}
-        step={10}
-        marks={[
-          { value: 10, label: "TRACE" },
-          { value: 20, label: "DEBUG" },
-          { value: 30, label: "INFO" },
-          { value: 40, label: "WARN" },
-          { value: 50, label: "ERROR" },
-          { value: 60, label: "FATAL" },
-        ]}
-        min={10}
-        max={60}
-      />
+      <HStack px="6" gap="8" alignItems="center">
+        <Slider
+          value={[logLevel()]}
+          onValueChange={(details) => setLogLevel(details.value[0] ?? 10)}
+          step={10}
+          marks={[
+            { value: 10, label: "TRACE" },
+            { value: 20, label: "DEBUG" },
+            { value: 30, label: "INFO" },
+            { value: 40, label: "WARN" },
+            { value: 50, label: "ERROR" },
+            { value: 60, label: "FATAL" },
+          ]}
+          min={10}
+          max={60}
+        />
+        <IconButton
+          bottom="-2"
+          variant={tailing() ? "subtle" : "solid"}
+          p="1.5"
+          onClick={() => setTailing(!tailing())}
+          strokeWidth="1"
+          asChild={(props) => {
+            return <SnailIcon {...props()} />;
+          }}
+        />
+      </HStack>
+
       <Box
         ref={logsRef}
         borderWidth="thin"
