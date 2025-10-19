@@ -22,7 +22,7 @@ export const zConfig = z.object({
     ankiConnectPort: z.number().default(8765),
   }),
   obs: z.object({
-    obsWebSocketPort: z.number().default(7274),
+    obsWebSocketPort: z.number().default(4455),
   }),
   textractor: z.object({
     textractorWebSocketPort: z.number().default(6677),
