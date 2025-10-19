@@ -1,4 +1,10 @@
-import { ImageOffIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
+import {
+  ImageOffIcon,
+  SquirrelIcon,
+  TurtleIcon,
+  ZapIcon,
+  ZapOffIcon,
+} from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -14,6 +20,7 @@ import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
 import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
+import { Text } from "#/components/ui/text";
 import { type ClientStatus, setStore, store } from "#/lib/store";
 import { appToaster } from "./AppToaster";
 
@@ -109,25 +116,48 @@ export function HomeTab() {
         </Alert.Root>
       </Grid>
       <Stack>
-        <Heading size="lg">OBS Preview</Heading>
-        <Switch>
-          <Match when={sourceScreenshot()}>
-            <img
-              alt="OBS Preview"
-              src={sourceScreenshot() ?? ""}
-              class={css({
-                width: "md",
-                aspectRatio: "16 / 9",
-                objectFit: "contain",
-                borderColor: "border.default",
-                borderWidth: "thin",
-                rounded: "md",
-              })}
-            />
-          </Match>
-          <Match when={!sourceScreenshot()}>
+        <HStack alignItems="end">
+          <Stack flex="1">
+            <Heading size="lg">OBS Preview</Heading>
+            <Switch>
+              <Match when={sourceScreenshot()}>
+                <img
+                  alt="OBS Preview"
+                  src={sourceScreenshot() ?? ""}
+                  class={css({
+                    width: "md",
+                    aspectRatio: "16 / 9",
+                    objectFit: "contain",
+                    borderColor: "border.default",
+                    borderWidth: "thin",
+                    rounded: "md",
+                  })}
+                />
+              </Match>
+              <Match when={!sourceScreenshot()}>
+                <Stack
+                  aspectRatio="16 / 9"
+                  borderColor="border.default"
+                  borderWidth="thin"
+                  rounded="md"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Icon
+                    color="fg.muted"
+                    width="32"
+                    height="32"
+                    strokeWidth="1"
+                    asChild={(iconProps) => <SquirrelIcon {...iconProps()} />}
+                  />
+                  <Text color="fg.muted">Can't connect to OBS</Text>
+                </Stack>
+              </Match>
+            </Switch>
+          </Stack>
+          <Stack flex="1">
+            <Heading size="lg">Tutel</Heading>
             <Stack
-              width="md"
               aspectRatio="16 / 9"
               borderColor="border.default"
               borderWidth="thin"
@@ -137,13 +167,15 @@ export function HomeTab() {
             >
               <Icon
                 color="fg.muted"
-                width="24"
-                height="24"
-                asChild={(iconProps) => <ImageOffIcon {...iconProps()} />}
+                width="32"
+                height="32"
+                strokeWidth="1"
+                asChild={(iconProps) => <TurtleIcon {...iconProps()} />}
               />
+              <Text color="fg.muted">Tutel</Text>
             </Stack>
-          </Match>
-        </Switch>
+          </Stack>
+        </HStack>
       </Stack>
 
       <HStack>
