@@ -2,6 +2,7 @@ import "#/util/hmr";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
+import { format } from "date-fns";
 import { detect } from "detect-port";
 import { app } from "electron";
 import z from "zod";
@@ -56,6 +57,9 @@ async function createEnv_() {
   }
 
   const USER_DATA_PATH = app.getPath("userData");
+  const LOG_PATH = join(USER_DATA_PATH, "log");
+  const LOG_FILE_NAME = `${format(new Date(), "yyyyMMdd_HHmmss_SSS_zzz")}.jsonl`;
+  const LOG_FILE_PATH = join(LOG_PATH, LOG_FILE_NAME);
   const DB_PATH = join(USER_DATA_PATH, "db");
   const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
   const STORAGE_PATH = join(USER_DATA_PATH, "storage");
@@ -66,6 +70,7 @@ async function createEnv_() {
   const BIN_PATH = join(USER_DATA_PATH, "bin");
   const PYTHON_ENV_PATH = join(USER_DATA_PATH, "python");
 
+  await mkdir(LOG_PATH, { recursive: true });
   await mkdir(DB_PATH, { recursive: true });
   await mkdir(STORAGE_PATH, { recursive: true });
   await mkdir(CACHE_PATH, { recursive: true });
@@ -120,6 +125,8 @@ async function createEnv_() {
     DB_PATH,
     DB_FILE_PATH,
     STORAGE_PATH,
+    LOG_PATH,
+    LOG_FILE_PATH,
     CACHE_PATH,
     CACHE_FILE_PATH,
     TEMP_PATH,
@@ -149,3 +156,4 @@ async function createEnv_() {
 }
 
 export const env = await createEnv_();
+export type Env = typeof env;

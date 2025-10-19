@@ -15,6 +15,7 @@ import { yomitanWindow } from "./window/yomitan";
 import "./db/main";
 import { DB, mainDB } from "./db/main";
 import { startAnkiConnectProxtServer } from "./hono/ankiConnectProxy";
+import { bus } from "./util/bus";
 import { config } from "./util/config";
 import { registerAllWindow } from "./util/window";
 
@@ -35,6 +36,7 @@ app.on("web-contents-created", (_, contents) => {
 });
 
 export async function bootstrap() {
+  bus.emit("env:ready", env);
   await DB.migrate(mainDB().db);
   await app.whenReady();
   registerAllWindow();

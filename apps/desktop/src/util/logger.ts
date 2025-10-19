@@ -1,5 +1,33 @@
+import { createWriteStream, type WriteStream } from "node:fs";
 import { Roarr as log_ } from "roarr";
 import { bus } from "./bus";
+
+const logBuffer: string[] = [];
+let logFileWriteStream: WriteStream | undefined;
+
+bus.once("env:ready", ({ LOG_FILE_PATH }) => {
+  logFileWriteStream = createWriteStream(LOG_FILE_PATH, { flags: "a" });
+});
+
+declare global {
+  var ROARR: {
+    write: (...args: unknown[]) => void;
+  };
+}
+
+const originalWrite = ROARR.write;
+ROARR.write = (...args) => {
+  originalWrite?.(...args);
+  const logs = args[0]?.toString();
+  if (logs) logBuffer.push(logs);
+};
+
+setInterval(() => {
+  if (logBuffer.length && logFileWriteStream) {
+    logFileWriteStream.write(logBuffer.join("\n"));
+    logBuffer.length = 0;
+  }
+}, 500);
 
 export const log = log_.child<{
   error: unknown;
