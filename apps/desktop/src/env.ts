@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { createEnv } from "@t3-oss/env-core";
 import { detect } from "detect-port";
 import { app } from "electron";
-import { Roarr as log } from "roarr";
 import z from "zod";
+import { log } from "./util/logger";
 
 async function preferPort(preferredPort: number) {
   try {

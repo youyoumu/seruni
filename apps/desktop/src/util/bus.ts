@@ -1,5 +1,9 @@
 import { EventEmitter } from "node:events";
-import type { IPCFromMain, IPCFromMainChannel } from "@repo/preload/ipc";
+import type {
+  IPCFromMain,
+  IPCFromMainChannel,
+  LogMessage,
+} from "@repo/preload/ipc";
 
 interface StringKeyedObject {
   // biome-ignore lint: library
@@ -37,6 +41,7 @@ export type BusEvents = {
   };
   "mainWindow:reload": undefined;
   "anki:handleNewNote": { noteId: number };
+  "logIPC:send": LogMessage;
   //
   //
   "test:test": { key: "test:test:result"; data: string };
@@ -63,6 +68,8 @@ export const bus: TypeSafeEventEmitter<BusEvents> = new EventEmitter_();
   });
 };
 
+//TODO: delete this
+//
 // import { EventEmitter } from "node:events";
 // import type { IPCFromMain, IPCFromMainChannel } from "@repo/preload/ipc";
 //

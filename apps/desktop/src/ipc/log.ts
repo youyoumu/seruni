@@ -1,8 +1,11 @@
 import type {
+  LogMessage,
   ToastPromiseOptionsError,
   ToastPromiseOptionsLoading,
   ToastPromiseOptionsSuccess,
 } from "@repo/preload/ipc";
+import { bus } from "#/util/bus";
+import { log } from "#/util/logger";
 import { IPC } from "./base";
 
 type ToastPayloadPromise = Promise<
@@ -28,6 +31,23 @@ class LogIPC extends IPC()<"log"> {
         },
       };
     });
+
+    const uuid = crypto.randomUUID();
+    const listener = (message: LogMessage) => {
+      this.send("log:send", message);
+    };
+    bus.on("logIPC:send", listener);
+    this.controller.signal.addEventListener(
+      "abort",
+      () => {
+        log.trace(
+          { namespace: `IPC:${this.prefix}` },
+          `Removing listener logIPC:send ${uuid}`,
+        );
+        bus.off("logIPC:send", listener);
+      },
+      { once: true },
+    );
   }
 
   sendToastPromise(

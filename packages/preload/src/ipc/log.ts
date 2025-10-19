@@ -1,5 +1,13 @@
 import z from "zod";
 
+const zLogMessage = z.object({
+  context: z.record(z.string(), z.unknown()),
+  message: z.string(),
+  sequence: z.string(),
+  time: z.number(),
+  version: z.string(),
+});
+
 const zToastPromiseOptions = z.object({
   loading: z.object({
     title: z.string().optional(),
@@ -15,6 +23,8 @@ const zToastPromiseOptions = z.object({
   }),
 });
 
+export type LogMessage = z.infer<typeof zLogMessage>;
+
 export type ToastPromiseOptions = z.infer<typeof zToastPromiseOptions>;
 export type ToastPromiseOptionsLoading = {
   loading: ToastPromiseOptions["loading"];
@@ -29,15 +39,7 @@ export type ToastPromiseOptionsSuccess = {
 export const zLogIPC = {
   main: z.object({
     "log:send": z.object({
-      input: z.tuple([
-        z.object({
-          context: z.record(z.string(), z.unknown()),
-          message: z.string(),
-          sequence: z.string(),
-          time: z.number(),
-          version: z.string(),
-        }),
-      ]),
+      input: z.tuple([zLogMessage]),
       output: z.void(),
     }),
     "log:toast": z.object({

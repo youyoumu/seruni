@@ -1,5 +1,5 @@
 import { Roarr as log_ } from "roarr";
-import { logIPC } from "#/ipc/log";
+import { bus } from "./bus";
 
 export const log = log_.child<{
   error: unknown;
@@ -24,6 +24,6 @@ export const log = log_.child<{
       delete message_.context[key as keyof typeof message_.context];
   }
 
-  logIPC().send("log:send", message_);
+  bus.emit("logIPC:send", message_);
   return message_;
 });

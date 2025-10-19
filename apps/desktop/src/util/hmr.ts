@@ -1,5 +1,4 @@
 import "./setEnv";
-import { Roarr as log } from "roarr";
 
 type AnyValue = any;
 type HmrModule = Record<string, AnyValue>;
@@ -11,8 +10,7 @@ class HMR {
   #key = Symbol();
 
   log(meta: ImportMeta) {
-    if (import.meta.hot)
-      log.trace({ namespace: "HMR" }, `Importing ${meta.url}`);
+    if (import.meta.hot) console.log(`[HMR]: Importing ${meta.url}`);
   }
 
   module<T>(initialValue: T): () => T {

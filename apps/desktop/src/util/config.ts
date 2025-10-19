@@ -2,11 +2,11 @@ import { defaultConfig, zConfig } from "@repo/preload/ipc";
 import Config, { type Schema } from "conf";
 import { app } from "electron";
 import { debounce } from "es-toolkit";
-import { Roarr as log } from "roarr";
 import { parse, stringify } from "smol-toml";
 import type { PartialDeep } from "type-fest";
 import z from "zod";
 import { env } from "#/env";
+import { log } from "./logger";
 
 type ConfigSchema = z.infer<typeof zConfig>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;

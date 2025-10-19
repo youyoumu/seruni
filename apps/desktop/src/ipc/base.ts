@@ -5,8 +5,8 @@ import type {
   IPCFromRendererChannel,
 } from "@repo/preload/ipc";
 import { ipcMain } from "electron";
-import { Roarr as log } from "roarr";
 import { bus } from "#/util/bus";
+import { log } from "#/util/logger";
 
 type ChannelsWithPrefix<
   All extends string,
@@ -15,7 +15,7 @@ type ChannelsWithPrefix<
 
 const ipc = class IPC<Prefix extends string> {
   prefix: Prefix;
-  #controller = new AbortController();
+  controller = new AbortController();
 
   constructor(options: {
     prefix: Prefix;
@@ -32,7 +32,7 @@ const ipc = class IPC<Prefix extends string> {
   ) {
     const uuid = crypto.randomUUID();
     ipcMain.on(channel, listener);
-    this.#controller.signal.addEventListener(
+    this.controller.signal.addEventListener(
       "abort",
       () => {
         log.trace(
@@ -54,7 +54,7 @@ const ipc = class IPC<Prefix extends string> {
   ) {
     const uuid = crypto.randomUUID();
     ipcMain.handle(channel, listener);
-    this.#controller.signal.addEventListener(
+    this.controller.signal.addEventListener(
       "abort",
       () => {
         log.trace(
@@ -80,7 +80,7 @@ const ipc = class IPC<Prefix extends string> {
   register() {}
 
   unregister() {
-    this.#controller.abort();
+    this.controller.abort();
   }
 };
 
