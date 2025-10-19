@@ -59,6 +59,12 @@ export function Textractor() {
             Textractor WebSocket Port
           </NumberInput>
           <IconButton
+            variant={
+              textractorWebSocketPort() ===
+              defaultTextractorConfig.textractorWebSocketPort
+                ? "subtle"
+                : "solid"
+            }
             onClick={() => {
               setTextractorWebSocketPort(
                 defaultTextractorConfig.textractorWebSocketPort,

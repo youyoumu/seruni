@@ -58,6 +58,11 @@ export function OBS() {
             OBS WebSocket Port
           </NumberInput>
           <IconButton
+            variant={
+              obsWebSocketPort() === defaultObsConfig.obsWebSocketPort
+                ? "subtle"
+                : "solid"
+            }
             onClick={() => {
               setObsWebSocketPort(defaultObsConfig.obsWebSocketPort);
             }}

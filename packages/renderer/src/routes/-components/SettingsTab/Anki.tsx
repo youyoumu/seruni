@@ -11,11 +11,11 @@ import { NumberInput } from "#/components/ui/number-input";
 const defaultAnkiConfig = zConfig.shape.anki.parse({});
 
 export function Anki() {
-  const [ankiConfig, setAnkiConfig] = createStore(defaultAnkiConfig);
+  const [ankiConfig, setAnkiConfig] = createStore({ ...defaultAnkiConfig });
 
   let ready = false;
   createEffect(() => {
-    const payload = ankiConfig;
+    const payload = { ...ankiConfig };
     if (!ready) return;
     ipcRenderer.send("settings:setSettings", {
       anki: payload,
@@ -96,6 +96,7 @@ export function Anki() {
             AnkiConnect Port
           </NumberInput>
           <IconButton
+            variant={ankiConfig.ankiConnectPort === defaultAnkiConfig.ankiConnectPort ? "subtle" : "solid"}
             onClick={() => {
               setAnkiConfig(
                 "ankiConnectPort",
