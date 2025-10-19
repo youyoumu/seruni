@@ -222,6 +222,7 @@ export function ConsoleTab() {
 function DebugBox({ debugString }: { debugString: string }) {
   const [expanded, setExpanded] = createSignal(false);
   const [isOverflowing, setIsOverflowing] = createSignal(true);
+  const [showClipboard, setShowClipboard] = createSignal(false);
 
   let contentRef: HTMLDivElement | undefined;
 
@@ -233,6 +234,7 @@ function DebugBox({ debugString }: { debugString: string }) {
       const checkOverflow = () => {
         if (contentRef.scrollHeight === 0) return;
         setIsOverflowing(contentRef.scrollHeight > COLLAPSED_HEIGHT);
+        setShowClipboard(contentRef.scrollHeight > 50);
       };
       checkOverflow();
       const observer = new ResizeObserver(checkOverflow);
@@ -295,25 +297,28 @@ function DebugBox({ debugString }: { debugString: string }) {
             );
           }}
         ></IconButton>
-        <IconButton
-          position="absolute"
-          bottom="0"
-          right="0"
-          variant="ghost"
-          size="xs"
-          p="1.5"
-          color="fg.muted"
-          onClick={() => {
-            if (debugString) navigator.clipboard.writeText(debugString);
-            appToaster.create({
-              title: "Copied to clipboard",
-              description: `${debugString.slice(0, 50)}...`,
-            });
-          }}
-          asChild={(props) => {
-            return <ClipboardCopyIcon {...props()} />;
-          }}
-        ></IconButton>
+        <Show when={showClipboard()}>
+          <IconButton
+            position="absolute"
+            bottom="0"
+            right="0"
+            variant="ghost"
+            size="xs"
+            p="1.5"
+            color="fg.muted"
+            onClick={() => {
+              if (debugString) navigator.clipboard.writeText(debugString);
+              appToaster.create({
+                title: "Copied to clipboard",
+                description: `${debugString.slice(0, 50)}...`,
+                duration: 2000,
+              });
+            }}
+            asChild={(props) => {
+              return <ClipboardCopyIcon {...props()} />;
+            }}
+          ></IconButton>
+        </Show>
       </Box>
     </Box>
   );
