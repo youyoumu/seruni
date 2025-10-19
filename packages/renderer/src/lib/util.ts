@@ -2,6 +2,7 @@ import {
   zAnkiCollectionMediaUrlPath,
   zStorageUrlPath,
 } from "@repo/preload/ipc";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { setStore, store } from "./store";
 
 export function getMediaUrl(fileName: string, source: "anki" | "storage") {

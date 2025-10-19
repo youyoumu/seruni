@@ -8,6 +8,7 @@ import {
 import {
   createEffect,
   createSignal,
+  type JSX,
   Match,
   onCleanup,
   onMount,
@@ -15,6 +16,7 @@ import {
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Grid, HStack, Stack } from "styled-system/jsx";
+import { Flip } from "#/components/Flip";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
@@ -22,6 +24,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
 import { type ClientStatus, setStore, store } from "#/lib/store";
+import { createFlip } from "#/lib/util";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {
@@ -143,13 +146,15 @@ export function HomeTab() {
                   justifyContent="center"
                   alignItems="center"
                 >
-                  <Icon
-                    color="fg.muted"
-                    width="32"
-                    height="32"
-                    strokeWidth="1"
-                    asChild={(iconProps) => <SquirrelIcon {...iconProps()} />}
-                  />
+                  <Flip>
+                    <Icon
+                      color="fg.muted"
+                      width="32"
+                      height="32"
+                      strokeWidth="1"
+                      asChild={(iconProps) => <SquirrelIcon {...iconProps()} />}
+                    />
+                  </Flip>
                   <Text color="fg.muted">Can't connect to OBS</Text>
                 </Stack>
               </Match>
@@ -165,13 +170,15 @@ export function HomeTab() {
               justifyContent="center"
               alignItems="center"
             >
-              <Icon
-                color="fg.muted"
-                width="32"
-                height="32"
-                strokeWidth="1"
-                asChild={(iconProps) => <TurtleIcon {...iconProps()} />}
-              />
+              <Flip>
+                <Icon
+                  color="fg.muted"
+                  width="32"
+                  height="32"
+                  strokeWidth="1"
+                  asChild={(iconProps) => <TurtleIcon {...iconProps()} />}
+                />
+              </Flip>
               <Text color="fg.muted">Tutel</Text>
             </Stack>
           </Stack>

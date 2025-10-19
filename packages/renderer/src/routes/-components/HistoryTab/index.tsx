@@ -12,6 +12,7 @@ import {
   Switch,
 } from "solid-js";
 import { HStack, Stack } from "styled-system/jsx";
+import { Flip } from "#/components/Flip";
 import { Select_ } from "#/components/Form";
 import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
@@ -112,7 +113,9 @@ export function HistoryTab() {
         </Match>
         <Match when={!success()}>
           <Stack alignItems="center" justifyContent="center" h="full">
-            <BirdIcon size={250} strokeWidth={1}></BirdIcon>
+            <Flip>
+              <BirdIcon size={250} strokeWidth={1}></BirdIcon>
+            </Flip>
             <Text size="2xl" color="fg.muted">
               Can't connect to Anki
             </Text>
