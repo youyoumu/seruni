@@ -19,9 +19,9 @@ export const [store, setStore] = createStore<{
       isUvInstalled: boolean;
       isDependencyInstalled: boolean;
       pythonPipList: Array<Record<string, unknown>>;
-      pythonUvPipList: Array<Record<string, unknown>>;
+      pythonVenvPipList: Array<Record<string, unknown>>;
       pythonHealthcheck: Record<string, unknown>;
-      pythonMainHealthcheck: Record<string, unknown>;
+      pythonVenvHealthcheck: Record<string, unknown>;
     };
   };
   notifications: {
@@ -52,9 +52,9 @@ export const [store, setStore] = createStore<{
       isUvInstalled: false,
       isDependencyInstalled: false,
       pythonPipList: [],
-      pythonUvPipList: [],
+      pythonVenvPipList: [],
       pythonHealthcheck: {},
-      pythonMainHealthcheck: {},
+      pythonVenvHealthcheck: {},
     },
   },
   notifications: [],

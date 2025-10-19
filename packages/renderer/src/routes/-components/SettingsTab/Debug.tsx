@@ -12,16 +12,16 @@ export function Debug() {
     stringify(store.debug.python.pythonPipList, {
       indent: 2,
     });
-  const pythonUvPipList = () =>
-    stringify(store.debug.python.pythonUvPipList, {
+  const pythonVenvPipList = () =>
+    stringify(store.debug.python.pythonVenvPipList, {
       indent: 2,
     });
   const pythonHealthcheck = () =>
     stringify(store.debug.python.pythonHealthcheck, {
       indent: 2,
     });
-  const pythonMainCheckhealth = () =>
-    stringify(store.debug.python.pythonMainHealthcheck, {
+  const pythonVenvCheckhealth = () =>
+    stringify(store.debug.python.pythonVenvHealthcheck, {
       indent: 2,
     });
 
@@ -43,10 +43,10 @@ export function Debug() {
     setStore("debug", "python", "pythonHealthcheck", pythonHealthcheck);
 
     if (!store.debug.python.isUvInstalled) return;
-    const pythonUvPipList = await ipcRenderer.invoke(
-      "settings:pythonUvPipList",
+    const pythonVenvPipList = await ipcRenderer.invoke(
+      "settings:pythonVenvPipList",
     );
-    setStore("debug", "python", "pythonUvPipList", pythonUvPipList);
+    setStore("debug", "python", "pythonVenvPipList", pythonVenvPipList);
   });
 
   return (
@@ -69,16 +69,16 @@ export function Debug() {
         <DebugBox text={pythonPipList()} />
       </Stack>
       <Stack>
-        <Heading>uv PIP list</Heading>
-        <DebugBox text={pythonUvPipList()} />
+        <Heading>Pyhon venv PIP list</Heading>
+        <DebugBox text={pythonVenvPipList()} />
       </Stack>
       <Stack>
         <Heading>Pyhon Healthcheck</Heading>
         <DebugBox text={pythonHealthcheck()} />
       </Stack>
       <Stack>
-        <Heading>Pyhon Main Healthcheck</Heading>
-        <DebugBox text={pythonMainCheckhealth()} />
+        <Heading>Pyhon venv Healthcheck</Heading>
+        <DebugBox text={pythonVenvCheckhealth()} />
       </Stack>
     </Stack>
   );

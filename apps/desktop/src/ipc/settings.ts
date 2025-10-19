@@ -70,15 +70,15 @@ class SettingsIPC extends IPC()<"settings"> {
       return python().runPipList();
     });
 
-    this.handle("settings:pythonUvPipList", async () => {
-      return python().runUvPipList();
+    this.handle("settings:pythonVenvPipList", async () => {
+      return python().runVenvPipList();
     });
 
     this.handle("settings:pythonHealthcheck", async () => {
       return python().runHealthcheck();
     });
 
-    this.handle("settings:pythonMainHealthcheck", async () => {
+    this.handle("settings:pythonVenvHealthcheck", async () => {
       return python().runMainHealthcheck();
     });
   }

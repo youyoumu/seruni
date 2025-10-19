@@ -97,18 +97,10 @@ async function createEnv_() {
     import.meta.dirname,
     "../../../packages/python",
   );
-  const PYTHON_MAIN_PATH = join(import.meta.dirname, "python/src/main.py");
-  const PYTHON_MAIN_PATH_DEV = join(
+  const PYTHON_ENTRY_PATH = join(import.meta.dirname, "python/src/main.py");
+  const PYTHON_ENTRY_PATH_DEV = join(
     import.meta.dirname,
     "../../../packages/python/src/main.py",
-  );
-  const PYTHON_HEALTHCHECK_PATH = join(
-    import.meta.dirname,
-    "python/src/checkhealth.py",
-  );
-  const PYTHON_HEALTHCHECK_PATH_DEV = join(
-    import.meta.dirname,
-    "../../../packages/python/src/checkhealth.py",
   );
 
   const IPC_PRELOAD_PATH = join(import.meta.dirname, "_preload/ipc.js");
@@ -149,10 +141,7 @@ async function createEnv_() {
 
     PYTHON_BIN_PATH,
     PYTHON_VENV_PATH,
-    PYTHON_MAIN_PATH: DEV ? PYTHON_MAIN_PATH_DEV : PYTHON_MAIN_PATH,
-    PYTHON_HEALTHCHECK_PATH: DEV
-      ? PYTHON_HEALTHCHECK_PATH_DEV
-      : PYTHON_HEALTHCHECK_PATH,
+    PYTHON_ENTRY_PATH: DEV ? PYTHON_ENTRY_PATH_DEV : PYTHON_ENTRY_PATH,
     PYTHON_PROJECT_PATH: DEV ? PYTHON_PROJECT_PATH_DEV : PYTHON_PROJECT_PATH,
 
     IPC_PRELOAD_PATH: DEV ? IPC_PRELOAD_PATH_DEV : IPC_PRELOAD_PATH,

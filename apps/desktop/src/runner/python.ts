@@ -7,9 +7,14 @@ import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
 
 type SileroCommand = ["silero", string];
-type CheckhealthCommand = ["healthcheck"];
+type HealthcheckCommand = ["healthcheck"];
+type HealthcheckVenvCommand = ["healthcheck_venv"];
 type PipListCommand = ["pip_list"];
-type MainCommand = SileroCommand | CheckhealthCommand | PipListCommand;
+type MainCommand =
+  | SileroCommand
+  | HealthcheckCommand
+  | HealthcheckVenvCommand
+  | PipListCommand;
 
 class Python {
   async run(params: string[]) {
@@ -35,22 +40,22 @@ class Python {
       "run",
       "--directory",
       env.PYTHON_VENV_PATH,
-      env.PYTHON_MAIN_PATH,
+      env.PYTHON_ENTRY_PATH,
       ...params,
     ];
     return await this.run(finalParams);
   }
 
   async runMainHealthcheck() {
-    return JSON.parse((await this.runMain(["healthcheck"])).stdout);
+    return JSON.parse((await this.runMain(["healthcheck_venv"])).stdout);
   }
 
   async runHealthcheck() {
-    const finalParams = [env.PYTHON_HEALTHCHECK_PATH, "healthcheck"];
+    const finalParams = [env.PYTHON_ENTRY_PATH, "healthcheck"];
     return JSON.parse((await this.run(finalParams)).stdout);
   }
 
-  async runUvPipList() {
+  async runVenvPipList() {
     const finalParams = [
       "-m",
       "uv",

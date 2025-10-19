@@ -30,15 +30,16 @@ export async function checkPython() {
   setStore("debug", "python", "isUvInstalled", isUvInstalled);
   if (!isUvInstalled) return;
 
-  const pythonUvPipList = await ipcRenderer.invoke("settings:pythonUvPipList");
-  setStore("debug", "python", "pythonUvPipList", pythonUvPipList);
-  console.log("DEBUG[772]: pythonUvPipList=", pythonUvPipList);
-
-  const pythonMainCheckhealth = await ipcRenderer.invoke(
-    "settings:pythonMainHealthcheck",
+  const pythonVenvPipList = await ipcRenderer.invoke(
+    "settings:pythonVenvPipList",
   );
-  const isDependencyInstalled = pythonMainCheckhealth.ok === true;
+  setStore("debug", "python", "pythonVenvPipList", pythonVenvPipList);
 
-  setStore("debug", "python", "pythonMainHealthcheck", pythonMainCheckhealth);
+  const pythonVenvHealthcheck = await ipcRenderer.invoke(
+    "settings:pythonVenvHealthcheck",
+  );
+  const isDependencyInstalled = pythonVenvHealthcheck.ok === true;
+
+  setStore("debug", "python", "pythonVenvHealthcheck", pythonVenvHealthcheck);
   setStore("debug", "python", "isDependencyInstalled", isDependencyInstalled);
 }

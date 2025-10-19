@@ -45,7 +45,7 @@ export const zSettingsIPC = {
       input: z.tuple([]),
       output: z.array(z.record(z.string(), z.unknown())),
     }),
-    "settings:pythonUvPipList": z.object({
+    "settings:pythonVenvPipList": z.object({
       input: z.tuple([]),
       output: z.array(z.record(z.string(), z.unknown())),
     }),
@@ -53,7 +53,7 @@ export const zSettingsIPC = {
       input: z.tuple([]),
       output: z.record(z.string(), z.unknown()),
     }),
-    "settings:pythonMainHealthcheck": z.object({
+    "settings:pythonVenvHealthcheck": z.object({
       input: z.tuple([]),
       output: z.record(z.string(), z.unknown()),
     }),
