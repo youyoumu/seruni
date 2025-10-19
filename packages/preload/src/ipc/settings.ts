@@ -1,5 +1,6 @@
 import z from "zod";
 import { zConfig, zVnOverlaySettings } from "./_shared";
+import { zSimple } from "./_util";
 
 export const zSettingsIPC = {
   renderer: z.object({
@@ -22,10 +23,9 @@ export const zSettingsIPC = {
         z.union([z.string(), z.number(), z.boolean()]),
       ),
     }),
-    "settings:installPython": z.object({
-      input: z.tuple([]),
-      output: z.boolean(),
-    }),
+    "settings:installPython": zSimple,
+    "settings:installPythonUv": zSimple,
+    "settings:installPythonDependencies": zSimple,
     "settings:runPython": z.object({
       input: z.tuple([z.array(z.string())]),
       output: z.void(),

@@ -43,12 +43,15 @@ class SettingsIPC extends IPC()<"settings"> {
     });
 
     this.handle("settings:installPython", async (_) => {
-      try {
-        await python().install();
-        return true;
-      } catch {
-        return false;
-      }
+      await python().install();
+    });
+
+    this.handle("settings:installPythonUv", async (_) => {
+      await python().installUv();
+    });
+
+    this.handle("settings:installPythonDependencies", async (_) => {
+      await python().installDependencies();
     });
 
     this.on("settings:runPython", async (_, payload) => {

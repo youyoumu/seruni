@@ -104,12 +104,13 @@ class Python {
   async install() {
     const outputPath = await this.download();
     await this.extract({ tarPath: outputPath });
-    //TODO: separate install and install deps
-    await this.installDeps();
   }
 
-  async installDeps() {
+  async installUv() {
     await this.run(["-m", "pip", "install", "uv"]);
+  }
+
+  async installDependencies() {
     await cp(
       join(env.PYTHON_PROJECT_PATH, "pyproject.toml"),
       join(env.PYTHON_VENV_PATH, "pyproject.toml"),

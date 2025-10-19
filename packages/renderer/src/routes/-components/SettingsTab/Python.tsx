@@ -25,10 +25,9 @@ export function Python() {
     return isInstalled() && isUvInstalled() && isDependencyInstalled();
   }
 
-  onMount(async () => {
-    const isPythonInstalled = await ipcRenderer.invoke(
-      "settings:inPythonInstalled",
-    );
+  async function checkPython() {
+    const isPythonInstalled =
+      (await ipcRenderer.invoke("settings:inPythonInstalled")) === true;
     setIsInstalled(isPythonInstalled);
     if (!isPythonInstalled) return;
 
@@ -42,6 +41,72 @@ export function Python() {
     );
     const isDependencyInstalled = pythonMainCheckhealth.ok === true;
     setIsDependencyInstalled(isDependencyInstalled);
+  }
+
+  function installPythonUv() {
+    appToaster.promise(
+      ipcRenderer
+        .invoke("settings:installPythonUv")
+        .then(() => {
+          ipcRenderer.invoke("settings:inPythonInstalled");
+        })
+        .finally(() => {
+          checkPython();
+          setIsInstalling(false);
+        }),
+      {
+        loading: {
+          title: isUvInstalled() ? "Reinstalling uv" : "Installing uv",
+        },
+        error: {
+          title: "Failed to install uv",
+        },
+        success: {
+          title: isUvInstalled()
+            ? "uv has been reinstalled"
+            : "uv has been installed",
+          duration: Infinity,
+          action: {
+            label: "Install Dependencies",
+            onClick: () => installPythonDependencies(),
+          },
+        },
+      },
+    );
+  }
+
+  function installPythonDependencies() {
+    appToaster.promise(
+      ipcRenderer
+        .invoke("settings:installPythonDependencies")
+        .then(() => {
+          ipcRenderer.invoke("settings:installPythonDependencies");
+        })
+        .finally(() => {
+          checkPython();
+          setIsInstalling(false);
+        }),
+      {
+        loading: {
+          title: isDependencyInstalled()
+            ? "Reinstalling Python dependencies"
+            : "Installing Python dependencies",
+        },
+        error: {
+          title: "Failed to install Python dependencies",
+        },
+        success: {
+          title: isDependencyInstalled()
+            ? "Python dependencies have been reinstalled"
+            : "Python dependencies have been installed",
+          duration: 30000,
+        },
+      },
+    );
+  }
+
+  onMount(async () => {
+    checkPython();
   });
 
   return (
@@ -70,32 +135,32 @@ export function Python() {
           </Alert.Content>
         </Alert.Root>
       </Show>
+      <Field.Root>
+        <Field.Label>Python Command</Field.Label>
+        <HStack>
+          <Field.Input
+            placeholder="--version"
+            value={pythonCommand()}
+            onChange={(e) => {
+              setPythonCommand(e.target.value);
+            }}
+          />
+          <Button
+            disabled={!isInstalled() || isInstalling()}
+            onClick={() => {
+              const params = pythonCommand().split(" ");
+              ipcRenderer.send("settings:runPython", [...params]);
+            }}
+          >
+            Run
+          </Button>
+        </HStack>
+      </Field.Root>
       <Grid
         gap="4"
         gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
         alignItems="end"
       >
-        <Field.Root>
-          <Field.Label>Python Command</Field.Label>
-          <HStack>
-            <Field.Input
-              placeholder="--version"
-              value={pythonCommand()}
-              onChange={(e) => {
-                setPythonCommand(e.target.value);
-              }}
-            />
-            <Button
-              disabled={!isInstalled() || isInstalling()}
-              onClick={() => {
-                const params = pythonCommand().split(" ");
-                ipcRenderer.send("settings:runPython", [...params]);
-              }}
-            >
-              Run
-            </Button>
-          </HStack>
-        </Field.Root>
         <Button
           loading={isInstalling()}
           onClick={() => {
@@ -103,18 +168,11 @@ export function Python() {
             appToaster.promise(
               ipcRenderer
                 .invoke("settings:installPython")
-                .then((success) => {
-                  if (success) {
-                    ipcRenderer
-                      .invoke("settings:inPythonInstalled")
-                      .then((isInstalled) => {
-                        setIsInstalled(isInstalled);
-                      });
-                  } else {
-                    throw new Error("Failed to reinstall Python");
-                  }
+                .then(() => {
+                  ipcRenderer.invoke("settings:inPythonInstalled");
                 })
                 .finally(() => {
+                  checkPython();
                   setIsInstalling(false);
                 }),
               {
@@ -130,13 +188,37 @@ export function Python() {
                   title: isInstalled()
                     ? "Python has been reinstalled"
                     : "Python has been installed",
-                  duration: 5,
+                  duration: Infinity,
+                  action: {
+                    label: "Install uv",
+                    onClick: () => installPythonUv(),
+                  },
                 },
               },
             );
           }}
         >
           {isInstalled() ? "Reinstall" : "Install"} Python
+        </Button>
+        <Button
+          disabled={!isInstalled()}
+          loading={isInstalling()}
+          onClick={() => {
+            setIsInstalling(true);
+            installPythonUv();
+          }}
+        >
+          {isUvInstalled() ? "Reinstall" : "Install"} uv
+        </Button>
+        <Button
+          disabled={!isInstalled() || !isUvInstalled()}
+          loading={isInstalling()}
+          onClick={() => {
+            setIsInstalling(true);
+            installPythonDependencies();
+          }}
+        >
+          {isDependencyInstalled() ? "Reinstall" : "Install"} Dependencies
         </Button>
       </Grid>
     </Stack>
