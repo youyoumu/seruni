@@ -1,5 +1,6 @@
 import sys
 import json  # built-in, always safe
+import subprocess  # built-in, always safe
 
 # Only define commands if Typer is installed
 try:
@@ -110,6 +111,16 @@ if app:
     def checkhealth_cmd():
         checkhealth()
 
+    @app.command("pip_list")
+    def pip_list():
+        # Run pip list from the currently active Python (venv or system)
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format", "json"],
+            capture_output=True,
+            text=True,
+        )
+        print(result.stdout)
+
     if __name__ == "__main__":
         app()
 else:
@@ -117,4 +128,3 @@ else:
     if __name__ == "__main__":
         print("Typer not installed, running health check only", file=sys.stderr)
         checkhealth()
-

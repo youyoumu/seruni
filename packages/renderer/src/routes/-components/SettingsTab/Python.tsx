@@ -5,14 +5,17 @@ import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
+import { store } from "#/lib/store";
+import { checkPython } from "#/lib/util";
 import { appToaster } from "../AppToaster";
 
 export function Python() {
-  const [isInstalled, setIsInstalled] = createSignal(false);
-  const [isUvInstalled, setIsUvInstalled] = createSignal(false);
-  const [isDependencyInstalled, setIsDependencyInstalled] = createSignal(false);
   const [isInstalling, setIsInstalling] = createSignal(false);
   const [pythonCommand, setPythonCommand] = createSignal("--version");
+
+  const isInstalled = () => store.debug.python.isInstalled;
+  const isUvInstalled = () => store.debug.python.isUvInstalled;
+  const isDependencyInstalled = () => store.debug.python.isDependencyInstalled;
 
   function getAlertDescription() {
     if (!isInstalled()) return "Python is not installed";
@@ -23,24 +26,6 @@ export function Python() {
 
   function isPythonOk() {
     return isInstalled() && isUvInstalled() && isDependencyInstalled();
-  }
-
-  async function checkPython() {
-    const isPythonInstalled =
-      (await ipcRenderer.invoke("settings:inPythonInstalled")) === true;
-    setIsInstalled(isPythonInstalled);
-    if (!isPythonInstalled) return;
-
-    const pythonPipList = await ipcRenderer.invoke("settings:pythonPipList");
-    const isUvInstalled = pythonPipList.some(({ name }) => name === "uv");
-    setIsUvInstalled(isUvInstalled);
-    if (!isUvInstalled) return;
-
-    const pythonMainCheckhealth = await ipcRenderer.invoke(
-      "settings:pythonMainCheckhealth",
-    );
-    const isDependencyInstalled = pythonMainCheckhealth.ok === true;
-    setIsDependencyInstalled(isDependencyInstalled);
   }
 
   function installPythonUv() {

@@ -2,11 +2,28 @@ import stringify from "json-stringify-pretty-compact";
 import { createEffect, onMount } from "solid-js";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
-import { store } from "#/lib/store";
+import { setStore, store } from "#/lib/store";
+import { checkPython } from "#/lib/util";
 
 export function Debug() {
   const envString = () =>
     stringify(store.debug.env, { indent: 2 }).slice(1, -1);
+  const pythonPipList = () =>
+    stringify(store.debug.python.pythonPipList, {
+      indent: 2,
+    });
+  const pythonUvPipList = () =>
+    stringify(store.debug.python.pythonUvPipList, {
+      indent: 2,
+    });
+  const pythonHealthcheck = () =>
+    stringify(store.debug.python.pythonHealthcheck, {
+      indent: 2,
+    });
+  const pythonMainCheckhealth = () =>
+    stringify(store.debug.python.pythonMainHealthcheck, {
+      indent: 2,
+    });
 
   let ready = false;
   createEffect(() => {
@@ -15,6 +32,21 @@ export function Debug() {
 
   onMount(async () => {
     ready = true;
+    checkPython();
+  });
+
+  createEffect(async () => {
+    if (!store.debug.python.isInstalled) return;
+    const pythonHealthcheck = await ipcRenderer.invoke(
+      "settings:pythonHealthcheck",
+    );
+    setStore("debug", "python", "pythonHealthcheck", pythonHealthcheck);
+
+    if (!store.debug.python.isUvInstalled) return;
+    const pythonUvPipList = await ipcRenderer.invoke(
+      "settings:pythonUvPipList",
+    );
+    setStore("debug", "python", "pythonUvPipList", pythonUvPipList);
   });
 
   return (
@@ -30,20 +62,42 @@ export function Debug() {
 
       <Stack>
         <Heading>ENV</Heading>
-        <Box
-          as="pre"
-          p="2"
-          bg="bg.subtle"
-          borderWidth="thin"
-          borderColor="border.subtle"
-          borderRadius="sm"
-          fontSize="xs"
-          whiteSpace="pre-wrap"
-          color="gray.light.8"
-        >
-          {envString()}
-        </Box>
+        <DebugBox text={envString()} />
+      </Stack>
+      <Stack>
+        <Heading>Python PIP list</Heading>
+        <DebugBox text={pythonPipList()} />
+      </Stack>
+      <Stack>
+        <Heading>uv PIP list</Heading>
+        <DebugBox text={pythonUvPipList()} />
+      </Stack>
+      <Stack>
+        <Heading>Pyhon Healthcheck</Heading>
+        <DebugBox text={pythonHealthcheck()} />
+      </Stack>
+      <Stack>
+        <Heading>Pyhon Main Healthcheck</Heading>
+        <DebugBox text={pythonMainCheckhealth()} />
       </Stack>
     </Stack>
+  );
+}
+
+function DebugBox(props: { text: string }) {
+  return (
+    <Box
+      as="pre"
+      p="2"
+      bg="bg.subtle"
+      borderWidth="thin"
+      borderColor="border.subtle"
+      borderRadius="sm"
+      fontSize="xs"
+      whiteSpace="pre-wrap"
+      color="gray.light.8"
+    >
+      {props.text}
+    </Box>
   );
 }

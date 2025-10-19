@@ -8,7 +8,8 @@ import { log } from "#/util/logger";
 
 type SileroCommand = ["silero", string];
 type CheckhealthCommand = ["checkhealth"];
-type MainCommand = SileroCommand | CheckhealthCommand;
+type PipListCommand = ["pip_list"];
+type MainCommand = SileroCommand | CheckhealthCommand | PipListCommand;
 
 class Python {
   async run(params: string[]) {
@@ -50,8 +51,17 @@ class Python {
   }
 
   async runUvPipList() {
-    const finalParams = ["-m", "uv", "pip", "list", "--format", "json"];
-    return JSON.parse((await this.run(finalParams)).stdout);
+    const finalParams = [
+      "-m",
+      "uv",
+      "pip",
+      "--directory",
+      env.PYTHON_VENV_PATH,
+      "list",
+      "--format",
+      "json",
+    ];
+    return JSON.parse((await this.runMain(["pip_list"])).stdout);
   }
 
   async runPipList() {

@@ -49,11 +49,11 @@ export const zSettingsIPC = {
       input: z.tuple([]),
       output: z.array(z.record(z.string(), z.unknown())),
     }),
-    "settings:pythonCheckhealth": z.object({
+    "settings:pythonHealthcheck": z.object({
       input: z.tuple([]),
       output: z.record(z.string(), z.unknown()),
     }),
-    "settings:pythonMainCheckhealth": z.object({
+    "settings:pythonMainHealthcheck": z.object({
       input: z.tuple([]),
       output: z.record(z.string(), z.unknown()),
     }),

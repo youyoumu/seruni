@@ -14,6 +14,15 @@ export const [store, setStore] = createStore<{
   };
   debug: {
     env: Record<string, string | number | boolean | undefined | null>;
+    python: {
+      isInstalled: boolean;
+      isUvInstalled: boolean;
+      isDependencyInstalled: boolean;
+      pythonPipList: Array<Record<string, unknown>>;
+      pythonUvPipList: Array<Record<string, unknown>>;
+      pythonHealthcheck: Record<string, unknown>;
+      pythonMainHealthcheck: Record<string, unknown>;
+    };
   };
   notifications: {
     id: string | undefined;
@@ -38,6 +47,15 @@ export const [store, setStore] = createStore<{
   },
   debug: {
     env: {},
+    python: {
+      isInstalled: false,
+      isUvInstalled: false,
+      isDependencyInstalled: false,
+      pythonPipList: [],
+      pythonUvPipList: [],
+      pythonHealthcheck: {},
+      pythonMainHealthcheck: {},
+    },
   },
   notifications: [],
   client: {

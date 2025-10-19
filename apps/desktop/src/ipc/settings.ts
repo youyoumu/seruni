@@ -74,11 +74,11 @@ class SettingsIPC extends IPC()<"settings"> {
       return python().runUvPipList();
     });
 
-    this.handle("settings:pythonCheckhealth", async () => {
+    this.handle("settings:pythonHealthcheck", async () => {
       return python().runCheckhealth();
     });
 
-    this.handle("settings:pythonMainCheckhealth", async () => {
+    this.handle("settings:pythonMainHealthcheck", async () => {
       return python().runMainCheckhealth();
     });
   }

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
+  "pip>=25.2",
   "silero-vad>=6.0.0",
   "soundfile>=0.13.1",
   "torch==2.8.0",

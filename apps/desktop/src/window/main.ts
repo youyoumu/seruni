@@ -21,7 +21,7 @@ class MainWindow extends AppWindow() {
       yomitanWindow()
         .loadYomitan()
         .then(() => {
-          this.win?.reload();
+          this.win?.webContents.reloadIgnoringCache();
         });
     });
   }
