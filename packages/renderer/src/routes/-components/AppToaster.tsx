@@ -13,6 +13,18 @@ import { setStore, store } from "#/lib/store";
 
 export type AppToastType = "info" | "error" | "warning" | "success" | "loading";
 
+export const appToaster_ = Toast.createToaster({
+  placement: "bottom-end",
+  overlap: true,
+  gap: 16,
+  offsets: {
+    bottom: "40px",
+    left: "0px",
+    top: "0px",
+    right: "10px",
+  },
+});
+
 export const appToaster = {
   create(data: Parameters<typeof appToaster_.create>[0]) {
     const toastId = appToaster_.create(data);
@@ -91,19 +103,8 @@ export const appToaster = {
 
     return toast;
   },
+  original: appToaster_,
 };
-
-export const appToaster_ = Toast.createToaster({
-  placement: "bottom-end",
-  overlap: true,
-  gap: 16,
-  offsets: {
-    bottom: "40px",
-    left: "0px",
-    top: "0px",
-    right: "10px",
-  },
-});
 
 export function ToasterIcon(props: { type: AppToastType }) {
   return (

@@ -8,7 +8,7 @@ import { Drawer } from "#/components/ui/drawer";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { setStore, store } from "#/lib/store";
-import { type AppToastType, ToasterIcon } from "./AppToaster";
+import { type AppToastType, appToaster, ToasterIcon } from "./AppToaster";
 
 const notificationCard = cva({
   base: {
@@ -45,7 +45,17 @@ export function NotificationHistory(props: { trigger: Component }) {
   const height = () => `calc(100vh - ${store.element.statusBar.height}px)`;
 
   return (
-    <Drawer.Root>
+    <Drawer.Root
+      onOpenChange={(details) => {
+        if (details.open) {
+          appToaster.original.getVisibleToasts().forEach((toast) => {
+            appToaster.original.update(toast.id ?? "", {
+              duration: 0,
+            });
+          });
+        }
+      }}
+    >
       <Drawer.Trigger
         asChild={(triggerProps) => <Trigger {...triggerProps()}></Trigger>}
       />
@@ -78,7 +88,7 @@ export function NotificationHistory(props: { trigger: Component }) {
               />
             </Drawer.Header>
             <Drawer.Body gap="4" class="custom-scrollbar">
-              <For each={store.notifications}>
+              <For each={[...store.notifications].reverse()}>
                 {(item) => {
                   return (
                     <Show when={item.id}>
