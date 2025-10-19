@@ -9,14 +9,39 @@ import { appToaster } from "../AppToaster";
 
 export function Python() {
   const [isInstalled, setIsInstalled] = createSignal(false);
+  const [isUvInstalled, setIsUvInstalled] = createSignal(false);
+  const [isDependencyInstalled, setIsDependencyInstalled] = createSignal(false);
   const [isInstalling, setIsInstalling] = createSignal(false);
   const [pythonCommand, setPythonCommand] = createSignal("--version");
+
+  function getAlertDescription() {
+    if (!isInstalled()) return "Python is not installed";
+    if (!isUvInstalled()) return "Uv is not installed";
+    if (!isDependencyInstalled())
+      return "Dependencies are not installed or broken";
+  }
+
+  function isPythonOk() {
+    return isInstalled() && isUvInstalled() && isDependencyInstalled();
+  }
 
   onMount(async () => {
     const isPythonInstalled = await ipcRenderer.invoke(
       "settings:inPythonInstalled",
     );
     setIsInstalled(isPythonInstalled);
+    if (!isPythonInstalled) return;
+
+    const pythonPipList = await ipcRenderer.invoke("settings:pythonPipList");
+    const isUvInstalled = pythonPipList.some(({ name }) => name === "uv");
+    setIsUvInstalled(isUvInstalled);
+    if (!isUvInstalled) return;
+
+    const pythonMainCheckhealth = await ipcRenderer.invoke(
+      "settings:pythonMainCheckhealth",
+    );
+    const isDependencyInstalled = pythonMainCheckhealth.ok === true;
+    setIsDependencyInstalled(isDependencyInstalled);
   });
 
   return (
@@ -31,7 +56,7 @@ export function Python() {
           Python
         </Heading>
       </Stack>
-      <Show when={!isInstalled()}>
+      <Show when={!isPythonOk()}>
         <Alert.Root>
           <Alert.Icon
             color="yellow.dark.a10"
@@ -39,7 +64,10 @@ export function Python() {
               return <ShieldAlertIcon {...props()} />;
             }}
           ></Alert.Icon>
-          <Alert.Title>Python is not installed</Alert.Title>
+          <Alert.Content>
+            <Alert.Title>Python is not ready to use</Alert.Title>
+            <Alert.Description>{getAlertDescription()}</Alert.Description>
+          </Alert.Content>
         </Alert.Root>
       </Show>
       <Grid

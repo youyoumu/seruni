@@ -40,14 +40,23 @@ class Python {
     return await this.run(finalParams);
   }
 
+  async runMainCheckhealth() {
+    return JSON.parse(await this.runMain(["checkhealth"]));
+  }
+
   async runCheckhealth() {
     const finalParams = [env.PYTHON_HEALTHCHECK_PATH];
-    return await this.run(finalParams);
+    return JSON.parse(await this.run(finalParams));
+  }
+
+  async runUvPipList() {
+    const finalParams = ["-m", "uv", "pip", "list", "--format", "json"];
+    return JSON.parse(await this.run(finalParams));
   }
 
   async runPipList() {
-    const finalParams = ["-m", "uv", "pip", "list", "--format=json"];
-    return await this.run(finalParams);
+    const finalParams = ["-m", "pip", "list", "--format", "json"];
+    return JSON.parse(await this.run(finalParams));
   }
 
   async download() {

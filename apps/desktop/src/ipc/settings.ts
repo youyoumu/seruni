@@ -62,6 +62,22 @@ class SettingsIPC extends IPC()<"settings"> {
     this.handle("settings:isYomitanInstalled", async () => {
       return yomitanExtension.isInstalled();
     });
+
+    this.handle("settings:pythonPipList", async () => {
+      return python().runPipList();
+    });
+
+    this.handle("settings:pythonUvPipList", async () => {
+      return python().runUvPipList();
+    });
+
+    this.handle("settings:pythonCheckhealth", async () => {
+      return python().runCheckhealth();
+    });
+
+    this.handle("settings:pythonMainCheckhealth", async () => {
+      return python().runMainCheckhealth();
+    });
   }
 }
 
