@@ -1,7 +1,12 @@
 import type { IPCRendererHandler } from "@repo/preload/ipc";
 import { makePersisted } from "@solid-primitives/storage";
 import stringify from "json-stringify-pretty-compact";
-import { ChevronDown, ChevronUp, SnailIcon } from "lucide-solid";
+import {
+  ChevronDown,
+  ChevronUp,
+  ClipboardCopyIcon,
+  SnailIcon,
+} from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -17,6 +22,7 @@ import { Box, HStack, Stack } from "styled-system/jsx";
 import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";
 import { store } from "#/lib/store";
+import { appToaster } from "./AppToaster";
 
 const MAX_LOGS = 1000;
 const [state, setState] = hmr.createState<{ logs: Log[] }>(
@@ -50,7 +56,9 @@ export function ConsoleTab() {
     name: "logLevel",
   });
   const [logs, setLogs] = createSignal<Log[]>([]);
-  const [tailing, setTailing] = createSignal(true);
+  const [tailing, setTailing] = makePersisted(createSignal(true), {
+    name: "tailing",
+  });
 
   const abortController = new AbortController();
 
@@ -271,6 +279,8 @@ function DebugBox({ debugString }: { debugString: string }) {
           right="0"
           variant="ghost"
           size="xs"
+          p="0.5"
+          color="fg.muted"
           onClick={() => setExpanded(!expanded())}
           asChild={(props) => {
             return (
@@ -283,6 +293,25 @@ function DebugBox({ debugString }: { debugString: string }) {
                 </Match>
               </Switch>
             );
+          }}
+        ></IconButton>
+        <IconButton
+          position="absolute"
+          bottom="0"
+          right="0"
+          variant="ghost"
+          size="xs"
+          p="1.5"
+          color="fg.muted"
+          onClick={() => {
+            if (debugString) navigator.clipboard.writeText(debugString);
+            appToaster.create({
+              title: "Copied to clipboard",
+              description: `${debugString.slice(0, 50)}...`,
+            });
+          }}
+          asChild={(props) => {
+            return <ClipboardCopyIcon {...props()} />;
           }}
         ></IconButton>
       </Box>
