@@ -9,7 +9,6 @@ dependencies = [
   "soundfile>=0.13.1",
   "torch==2.8.0",
   "torchaudio==2.8.0",
-  "typer>=0.19.2",
 ]
 
 [dependency-groups]

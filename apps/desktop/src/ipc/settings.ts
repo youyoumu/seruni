@@ -75,11 +75,11 @@ class SettingsIPC extends IPC()<"settings"> {
     });
 
     this.handle("settings:pythonHealthcheck", async () => {
-      return python().runCheckhealth();
+      return python().runHealthcheck();
     });
 
     this.handle("settings:pythonMainHealthcheck", async () => {
-      return python().runMainCheckhealth();
+      return python().runMainHealthcheck();
     });
   }
 }

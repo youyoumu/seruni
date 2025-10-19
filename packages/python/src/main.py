@@ -2,15 +2,6 @@ import sys
 import json  # built-in, always safe
 import subprocess  # built-in, always safe
 
-# Only define commands if Typer is installed
-try:
-    import typer
-
-    # raise Exception("Something went wrong")
-    app = typer.Typer()
-except Exception:
-    app = None  # fallback, won't crash script
-
 
 def checkhealth():
     """Check that dependencies are installed and working."""
@@ -30,7 +21,6 @@ def checkhealth():
                 sys, "base_prefix", None
             ),  # the base/system Python prefix
         },
-        "typer": {"installed": False, "version": None, "error": None},
         "json_module": {"installed": True, "error": None},  # always built-in
         "silero_vad": {
             "installed": False,
@@ -47,15 +37,6 @@ def checkhealth():
         },
         "ok": False,
     }
-
-    # Check Typer
-    try:
-        import typer
-
-        result["typer"]["installed"] = True
-        result["typer"]["version"] = typer.__version__
-    except Exception as e:
-        result["typer"]["error"] = str(e)
 
     # Check Silero VAD
     try:
@@ -86,45 +67,39 @@ def checkhealth():
     # Overall status
     result["ok"] = (
         result["venv"]["active"]
-        and result["typer"]["installed"]
         and result["torch"]["installed"]
         and result["silero_vad"]["installed"]
         and result["silero_vad"]["model_loaded"]
     )
-
     print(json.dumps(result))
 
 
-# If Typer is installed, register commands
-if app:
+def silero(filename: str):
+    from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
 
-    @app.command("silero")
-    def silero_vad_cmd(filename: str):
-        from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
+    model = load_silero_vad()
+    wav = read_audio(filename)
+    speech_timestamps = get_speech_timestamps(wav, model, return_seconds=True)
+    print(json.dumps(speech_timestamps))
 
-        model = load_silero_vad()
-        wav = read_audio(filename)
-        speech_timestamps = get_speech_timestamps(wav, model, return_seconds=True)
-        print(json.dumps(speech_timestamps))
 
-    @app.command("checkhealth")
-    def checkhealth_cmd():
+def pip_list():
+    # Run pip list from the currently active Python (venv or system)
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "list", "--format", "json"],
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout)
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1].lower()
+    if cmd == "healthcheck":
         checkhealth()
-
-    @app.command("pip_list")
-    def pip_list():
-        # Run pip list from the currently active Python (venv or system)
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "list", "--format", "json"],
-            capture_output=True,
-            text=True,
-        )
-        print(result.stdout)
-
-    if __name__ == "__main__":
-        app()
-else:
-    # fallback if Typer not installed
-    if __name__ == "__main__":
-        print("Typer not installed, running health check only", file=sys.stderr)
-        checkhealth()
+    elif cmd == "pip_list":
+        pip_list()
+    elif cmd == "silero":
+        silero(sys.argv[2])
+    else:
+        raise Exception("Unknown command")

@@ -7,7 +7,7 @@ import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
 
 type SileroCommand = ["silero", string];
-type CheckhealthCommand = ["checkhealth"];
+type CheckhealthCommand = ["healthcheck"];
 type PipListCommand = ["pip_list"];
 type MainCommand = SileroCommand | CheckhealthCommand | PipListCommand;
 
@@ -41,12 +41,12 @@ class Python {
     return await this.run(finalParams);
   }
 
-  async runMainCheckhealth() {
-    return JSON.parse((await this.runMain(["checkhealth"])).stdout);
+  async runMainHealthcheck() {
+    return JSON.parse((await this.runMain(["healthcheck"])).stdout);
   }
 
-  async runCheckhealth() {
-    const finalParams = [env.PYTHON_HEALTHCHECK_PATH];
+  async runHealthcheck() {
+    const finalParams = [env.PYTHON_HEALTHCHECK_PATH, "healthcheck"];
     return JSON.parse((await this.run(finalParams)).stdout);
   }
 
