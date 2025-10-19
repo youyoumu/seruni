@@ -24,7 +24,7 @@ class Python {
 
     const { stdout, stderr } = await subprocess;
     log.debug({ params, stdout, stderr }, "python");
-    return stdout;
+    return { stdout, stderr };
   }
 
   async runMain(params: MainCommand) {
@@ -41,22 +41,22 @@ class Python {
   }
 
   async runMainCheckhealth() {
-    return JSON.parse(await this.runMain(["checkhealth"]));
+    return JSON.parse((await this.runMain(["checkhealth"])).stdout);
   }
 
   async runCheckhealth() {
     const finalParams = [env.PYTHON_HEALTHCHECK_PATH];
-    return JSON.parse(await this.run(finalParams));
+    return JSON.parse((await this.run(finalParams)).stdout);
   }
 
   async runUvPipList() {
     const finalParams = ["-m", "uv", "pip", "list", "--format", "json"];
-    return JSON.parse(await this.run(finalParams));
+    return JSON.parse((await this.run(finalParams)).stdout);
   }
 
   async runPipList() {
     const finalParams = ["-m", "pip", "list", "--format", "json"];
-    return JSON.parse(await this.run(finalParams));
+    return JSON.parse((await this.run(finalParams)).stdout);
   }
 
   async download() {

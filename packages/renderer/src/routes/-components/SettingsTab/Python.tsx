@@ -149,7 +149,28 @@ export function Python() {
             disabled={!isInstalled() || isInstalling()}
             onClick={() => {
               const params = pythonCommand().split(" ");
-              ipcRenderer.send("settings:runPython", [...params]);
+              let result: { stdout: string; stderr: string } | undefined;
+              appToaster.promise(
+                ipcRenderer
+                  .invoke("settings:runPython", [...params])
+                  .then((result_) => {
+                    result = result_;
+                  }),
+                {
+                  loading: {
+                    title: "Running Python...",
+                    description: pythonCommand(),
+                  },
+                  error: () => ({
+                    title: "Python command failed",
+                    description: result?.stderr ?? "Unknown Error",
+                  }),
+                  success: () => ({
+                    title: "Python command succeeded",
+                    description: result?.stdout ?? "",
+                  }),
+                },
+              );
             }}
           >
             Run

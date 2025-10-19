@@ -54,8 +54,8 @@ class SettingsIPC extends IPC()<"settings"> {
       await python().installDependencies();
     });
 
-    this.on("settings:runPython", async (_, payload) => {
-      await python().run(payload);
+    this.handle("settings:runPython", async (_, payload) => {
+      return await python().run(payload);
     });
 
     this.handle("settings:inPythonInstalled", async () => {

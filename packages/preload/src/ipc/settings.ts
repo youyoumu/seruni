@@ -28,7 +28,10 @@ export const zSettingsIPC = {
     "settings:installPythonDependencies": zSimple,
     "settings:runPython": z.object({
       input: z.tuple([z.array(z.string())]),
-      output: z.void(),
+      output: z.object({
+        stdout: z.string(),
+        stderr: z.string(),
+      }),
     }),
     "settings:inPythonInstalled": z.object({
       input: z.tuple([]),
