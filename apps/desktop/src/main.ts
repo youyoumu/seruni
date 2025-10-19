@@ -1,6 +1,6 @@
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { app } from "electron";
+import { app, Menu } from "electron";
 import { textractorClient } from "./client/textractor";
 import { env } from "./env";
 import { startHttpServer } from "./hono/main";
@@ -44,6 +44,16 @@ export async function bootstrap() {
   startHttpServer();
   startAnkiConnectProxtServer();
   await yomitanWindow().loadYomitan();
+
+  const menu = Menu.getApplicationMenu();
+  if (menu) {
+    menu.items = menu.items.filter(
+      (item) => item.role !== "help" && item.label !== "Help",
+    );
+    const newMenu = Menu.buildFromTemplate(menu.items);
+    Menu.setApplicationMenu(newMenu);
+  }
+
   await mainWindow().open();
   await generalIPC().ready.promise;
   log.debug(config.store, "Config value");
