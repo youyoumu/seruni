@@ -82,6 +82,9 @@ importers:
       roarr:
         specifier: ^7.21.1
         version: 7.21.1
+      serialize-error:
+        specifier: ^12.0.0
+        version: 12.0.0
       smol-toml:
         specifier: ^1.4.2
         version: 1.4.2
@@ -3863,6 +3866,10 @@ packages:
   seq-logging@2.2.0:
     resolution: {integrity: sha512-2dzK9Ma6iK45lb1FoqokzFGR7v3HaF4mKuGtLeQ0991fQif7SatFxuLFw/bYNzq+Fe4y4hYfFy/02Qb61itfUw==}
     engines: {node: '>=14.18'}
+
+  serialize-error@12.0.0:
+    resolution: {integrity: sha512-ZYkZLAvKTKQXWuh5XpBw7CdbSzagarX39WyZ2H07CDLC5/KfsRGlIXV8d4+tfqX1M7916mRqR1QfNHSij+c9Pw==}
+    engines: {node: '>=18'}
 
   serialize-error@7.0.1:
     resolution: {integrity: sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==}
@@ -8623,6 +8630,10 @@ snapshots:
       node-fetch: 2.7.0
     transitivePeerDependencies:
       - encoding
+
+  serialize-error@12.0.0:
+    dependencies:
+      type-fest: 4.41.0
 
   serialize-error@7.0.1:
     dependencies:

@@ -3,6 +3,7 @@ import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { isBefore, parse, subDays } from "date-fns";
 import { Roarr as log_ } from "roarr";
+import { serializeError } from "serialize-error";
 import { bus } from "./bus";
 
 declare global {
@@ -14,18 +15,16 @@ declare global {
 export const log = log_.child<{
   error: unknown;
 }>((message) => {
-  const error_ =
-    message.context.error && message.context.error instanceof Error
-      ? {
-          message: message.context.error.message,
-        }
+  const serializedError =
+    message.context.error !== undefined
+      ? serializeError(message.context.error)
       : undefined;
 
   const message_ = {
     ...message,
     context: {
       ...message.context,
-      error: error_,
+      error: serializedError,
     },
   };
 
@@ -89,3 +88,45 @@ bus.once("env:ready", ({ LOG_PATH, LOG_FILE_PATH }) => {
   logFileWriteStream = createWriteStream(LOG_FILE_PATH, { flags: "a" });
   cleanupOldLogs(LOG_PATH);
 });
+
+process.on("unhandledRejection", (r) =>
+  log.error(
+    { error: r },
+    r instanceof Error ? r.message : "Unhandled rejection",
+  ),
+);
+process.on("uncaughtException", (e) =>
+  log.fatal(
+    { error: e },
+    e instanceof Error ? e.message : "Unhandled exception",
+  ),
+);
+process.on("warning", (w) =>
+  log.warn({ name: w.name, message: w.message }, "Warning"),
+);
+
+function simulateError() {
+  let count = 0;
+  setInterval(() => {
+    count++;
+    const type = count % 3;
+    switch (type) {
+      case 0:
+        // Unhandled rejection
+        Promise.reject(new Error("Simulated unhandled rejection"));
+        break;
+      case 1:
+        // Uncaught exception
+        throw new Error("Simulated uncaught exception");
+      case 2:
+        // Process warning
+        process.emitWarning("Simulated warning", {
+          code: "TEST_WARNING",
+          detail: "This is just a test warning",
+        });
+        break;
+    }
+  }, 3000);
+}
+
+// simulateError();
