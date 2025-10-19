@@ -10,7 +10,8 @@ class HMR {
   #key = Symbol();
 
   log(meta: ImportMeta) {
-    if (import.meta.hot) console.log(`[HMR]: Importing ${meta.url}`);
+    if (import.meta.hot)
+      console.log(`\x1b[36m[HMR]\x1b[0m: Importing \x1b[33m${meta.url}\x1b[0m`);
   }
 
   module<T>(initialValue: T): () => T {

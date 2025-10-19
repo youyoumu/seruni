@@ -24,8 +24,6 @@ const appWindow = class AppWindow {
         ...options.webPreferences,
       },
     };
-
-    this.register();
   }
 
   register() {

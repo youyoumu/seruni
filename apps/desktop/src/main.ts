@@ -13,7 +13,10 @@ import { devWS } from "./websocket/dev";
 import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
 import "./db/main";
+import { DB, mainDB } from "./db/main";
 import { startAnkiConnectProxtServer } from "./hono/ankiConnectProxy";
+import { config } from "./util/config";
+import { registerAllWindow } from "./util/window";
 
 // NOTE: Workaround for https://github.com/electron/electron/issues/41614
 app.on("web-contents-created", (_, contents) => {
@@ -32,13 +35,16 @@ app.on("web-contents-created", (_, contents) => {
 });
 
 export async function bootstrap() {
+  await DB.migrate(mainDB().db);
   await app.whenReady();
+  registerAllWindow();
   registerAllIPC();
   startHttpServer();
   startAnkiConnectProxtServer();
   await yomitanWindow().loadYomitan();
   await mainWindow().open();
   await generalIPC().ready.promise;
+  log.debug(config.store, "Config value");
   log.debug(env, "Env value");
 
   registerAllWS();

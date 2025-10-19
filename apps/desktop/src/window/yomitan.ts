@@ -80,6 +80,7 @@ if (import.meta.hot) {
   );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
+    yomitanWindow().register();
     yomitanWindow().open();
   });
   import.meta.hot.dispose(() => {

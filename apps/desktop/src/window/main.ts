@@ -66,6 +66,7 @@ if (import.meta.hot) {
   );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
+    mainWindow().register();
     mainWindow().open();
   });
   import.meta.hot.dispose(() => {

@@ -6,7 +6,6 @@ import { parse, stringify } from "smol-toml";
 import type { PartialDeep } from "type-fest";
 import z from "zod";
 import { env } from "#/env";
-import { log } from "./logger";
 
 type ConfigSchema = z.infer<typeof zConfig>;
 type ConfigSchemaPartial = PartialDeep<ConfigSchema>;
@@ -38,5 +37,3 @@ class Config_ extends Config<ConfigSchema> {
 }
 
 export const config = new Config_();
-
-log.debug(config.store, "Config value");

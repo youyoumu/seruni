@@ -33,6 +33,7 @@ if (import.meta.hot) {
   );
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
+    vnOverlayWindow().register();
     vnOverlayWindow().open();
   });
   import.meta.hot.dispose(() => {

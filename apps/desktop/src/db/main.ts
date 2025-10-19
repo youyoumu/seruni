@@ -8,7 +8,7 @@ import { log } from "#/util/logger";
 import type { VadData } from "#/util/schema";
 import { mediaTable, notesTable } from "./schema";
 
-class DB {
+export class DB {
   db: ReturnType<typeof drizzle>;
   constructor() {
     this.db = drizzle(`file:${env.DB_FILE_PATH}`);
@@ -83,12 +83,10 @@ class DB {
 
 export const mainDB = hmr.module(new DB());
 
-await DB.migrate(mainDB().db);
-
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 type Self = typeof import("./main");
-const module: Self = { mainDB };
+const module: Self = { mainDB, DB };
 if (import.meta.hot) {
   hmr.register<Self>(import.meta, module);
   import.meta.hot.accept((mod) => {
