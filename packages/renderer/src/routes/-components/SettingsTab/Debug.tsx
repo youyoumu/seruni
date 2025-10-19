@@ -1,9 +1,12 @@
 import stringify from "json-stringify-pretty-compact";
-import { createEffect, onMount } from "solid-js";
+import { ClipboardCopyIcon } from "lucide-solid";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
+import { IconButton } from "#/components/ui/icon-button";
 import { setStore, store } from "#/lib/store";
 import { checkPython } from "#/lib/util";
+import { appToaster } from "../AppToaster";
 
 export function Debug() {
   const envString = () =>
@@ -69,15 +72,15 @@ export function Debug() {
         <DebugBox text={pythonPipList()} />
       </Stack>
       <Stack>
-        <Heading>Pyhon venv PIP list</Heading>
+        <Heading>Python venv PIP list</Heading>
         <DebugBox text={pythonVenvPipList()} />
       </Stack>
       <Stack>
-        <Heading>Pyhon Healthcheck</Heading>
+        <Heading>Python Healthcheck</Heading>
         <DebugBox text={pythonHealthcheck()} />
       </Stack>
       <Stack>
-        <Heading>Pyhon venv Healthcheck</Heading>
+        <Heading>Python venv Healthcheck</Heading>
         <DebugBox text={pythonVenvCheckhealth()} />
       </Stack>
     </Stack>
@@ -85,8 +88,32 @@ export function Debug() {
 }
 
 function DebugBox(props: { text: string }) {
+  const [showClipboard, setShowClipboard] = createSignal(false);
+
+  let contentRef: HTMLDivElement | undefined;
+
+  const abortController = new AbortController();
+  onMount(() => {
+    if (contentRef) {
+      const checkOverflow = () => {
+        if (contentRef.scrollHeight === 0) return;
+        setShowClipboard(contentRef.scrollHeight > 50);
+      };
+      checkOverflow();
+      const observer = new ResizeObserver(checkOverflow);
+      observer.observe(contentRef);
+
+      abortController.signal.addEventListener("abort", () => {
+        observer.disconnect();
+      });
+    }
+  }); // recalc when content changes
+  onCleanup(() => abortController.abort());
+
   return (
     <Box
+      ref={contentRef}
+      position="relative"
       as="pre"
       p="2"
       bg="bg.subtle"
@@ -98,6 +125,28 @@ function DebugBox(props: { text: string }) {
       color="gray.light.8"
     >
       {props.text}
+      <Show when={showClipboard()}>
+        <IconButton
+          position="absolute"
+          bottom="2"
+          right="2"
+          variant="ghost"
+          size="xs"
+          p="1.5"
+          color="fg.muted"
+          onClick={() => {
+            if (props.text) navigator.clipboard.writeText(props.text);
+            appToaster.create({
+              title: "Copied to clipboard",
+              description: `${props.text.slice(0, 50)}...`,
+              duration: 2000,
+            });
+          }}
+          asChild={(props) => {
+            return <ClipboardCopyIcon {...props()} />;
+          }}
+        ></IconButton>
+      </Show>
     </Box>
   );
 }
