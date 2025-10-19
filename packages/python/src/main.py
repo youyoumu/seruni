@@ -1,18 +1,120 @@
-import typer
-import json
-from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
+import sys
+import json  # built-in, always safe
 
-app = typer.Typer()
+# Only define commands if Typer is installed
+try:
+    import typer
 
-
-@app.command()
-def detect(filename: str):
-    """Detect speech timestamps from an audio file."""
-    model = load_silero_vad()
-    wav = read_audio(filename)
-    speech_timestamps = get_speech_timestamps(wav, model, return_seconds=True)
-    print(json.dumps(speech_timestamps))  # easy for Node to parse
+    # raise Exception("Something went wrong")
+    app = typer.Typer()
+except Exception:
+    app = None  # fallback, won't crash script
 
 
-if __name__ == "__main__":
-    app()
+def checkhealth():
+    """Check that dependencies are installed and working."""
+
+    result = {
+        "python": {
+            "executable": sys.executable,
+            "version": sys.version,
+        },
+        "venv": {
+            "active": hasattr(sys, "real_prefix")
+            or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix),
+            "prefix": getattr(
+                sys, "prefix", None
+            ),  # the current Python prefix (venv or system)
+            "base_prefix": getattr(
+                sys, "base_prefix", None
+            ),  # the base/system Python prefix
+        },
+        "typer": {"installed": False, "version": None, "error": None},
+        "json_module": {"installed": True, "error": None},  # always built-in
+        "silero_vad": {
+            "installed": False,
+            "version": None,
+            "model_loaded": False,
+            "error": None,
+        },
+        "torch": {
+            "installed": False,
+            "version": None,
+            "cuda_available": False,
+            "cuda_version": None,
+            "error": None,
+        },
+        "ok": False,
+    }
+
+    # Check Typer
+    try:
+        import typer
+
+        result["typer"]["installed"] = True
+        result["typer"]["version"] = typer.__version__
+    except Exception as e:
+        result["typer"]["error"] = str(e)
+
+    # Check Silero VAD
+    try:
+        from silero_vad import load_silero_vad, __version__ as silero_version
+
+        result["silero_vad"]["installed"] = True
+        result["silero_vad"]["version"] = silero_version
+
+        # optional: try loading the model
+        try:
+            load_silero_vad()
+            result["silero_vad"]["model_loaded"] = True
+        except Exception as e:
+            result["silero_vad"]["error"] = str(e)
+    except Exception as e:
+        result["silero_vad"]["error"] = str(e)
+
+    try:
+        import torch
+
+        result["torch"]["installed"] = True
+        result["torch"]["version"] = torch.__version__
+        result["torch"]["cuda_available"] = torch.cuda.is_available()
+        result["torch"]["cuda_version"] = torch.version.cuda  # type: ignore
+    except Exception as e:
+        result["torch"]["error"] = str(e)
+
+    # Overall status
+    result["ok"] = (
+        result["venv"]["active"]
+        and result["typer"]["installed"]
+        and result["torch"]["installed"]
+        and result["silero_vad"]["installed"]
+        and result["silero_vad"]["model_loaded"]
+    )
+
+    print(json.dumps(result))
+
+
+# If Typer is installed, register commands
+if app:
+
+    @app.command("silero")
+    def silero_vad_cmd(filename: str):
+        from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
+
+        model = load_silero_vad()
+        wav = read_audio(filename)
+        speech_timestamps = get_speech_timestamps(wav, model, return_seconds=True)
+        print(json.dumps(speech_timestamps))
+
+    @app.command("checkhealth")
+    def checkhealth_cmd():
+        checkhealth()
+
+    if __name__ == "__main__":
+        app()
+else:
+    # fallback if Typer not installed
+    if __name__ == "__main__":
+        print("Typer not installed, running health check only", file=sys.stderr)
+        checkhealth()
+

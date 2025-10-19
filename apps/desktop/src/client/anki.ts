@@ -262,7 +262,7 @@ const AnkiClient_ = class AnkiClient {
       let audioStage1VadData: VadData;
       try {
         audioStage1VadData = zVadData.parse(
-          JSON.parse(await python().runEntry([audioStage1Path])),
+          JSON.parse(await python().runMain(["silero", audioStage1Path])),
         );
       } catch (e) {
         throw new Error("Failed to extract audio VAD data", { cause: e });

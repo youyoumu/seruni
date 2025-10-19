@@ -68,7 +68,7 @@ async function createEnv_() {
   const TEMP_PATH = join(USER_DATA_PATH, "temp");
   const EXTENSION_PATH = join(USER_DATA_PATH, "extension");
   const BIN_PATH = join(USER_DATA_PATH, "bin");
-  const PYTHON_ENV_PATH = join(USER_DATA_PATH, "python");
+  const PYTHON_VENV_PATH = join(USER_DATA_PATH, "python");
 
   await mkdir(LOG_PATH, { recursive: true });
   await mkdir(DB_PATH, { recursive: true });
@@ -77,7 +77,7 @@ async function createEnv_() {
   await mkdir(TEMP_PATH, { recursive: true });
   await mkdir(EXTENSION_PATH, { recursive: true });
   await mkdir(BIN_PATH, { recursive: true });
-  await mkdir(PYTHON_ENV_PATH, { recursive: true });
+  await mkdir(PYTHON_VENV_PATH, { recursive: true });
 
   const DRIZZLE_PATH = join(import.meta.dirname, "drizzle");
   const DRIZZLE_PATH_DEV = join(import.meta.dirname, "../drizzle");
@@ -92,12 +92,24 @@ async function createEnv_() {
       `No python bin path found for platform ${process.platform}`,
     );
   }
-  const PYTHON_PACKAGE_PATH = join(import.meta.dirname, "python");
-  const PYTHON_PACKAGE_PATH_DEV = join(
+  const PYTHON_PROJECT_PATH = join(import.meta.dirname, "python");
+  const PYTHON_PROJECT_PATH_DEV = join(
     import.meta.dirname,
     "../../../packages/python",
   );
-  const PYTHON_ENTRY_PATH = join(PYTHON_ENV_PATH, "src/main.py");
+  const PYTHON_MAIN_PATH = join(import.meta.dirname, "python/src/main.py");
+  const PYTHON_MAIN_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/python/src/main.py",
+  );
+  const PYTHON_HEALTHCHECK_PATH = join(
+    import.meta.dirname,
+    "python/src/checkhealth.py",
+  );
+  const PYTHON_HEALTHCHECK_PATH_DEV = join(
+    import.meta.dirname,
+    "../../../packages/python/src/checkhealth.py",
+  );
 
   const IPC_PRELOAD_PATH = join(import.meta.dirname, "_preload/ipc.js");
   const IPC_PRELOAD_PATH_DEV = join(
@@ -120,8 +132,10 @@ async function createEnv_() {
 
   const constant = {
     APP_NAME: "Seruni",
-    ELECTRON_PATH: app.getPath("userData"),
     USER_DATA_PATH,
+    ELECTRON_PATH: app.getPath("userData"),
+    EXTENSION_PATH,
+    BIN_PATH,
     DB_PATH,
     DB_FILE_PATH,
     STORAGE_PATH,
@@ -130,15 +144,16 @@ async function createEnv_() {
     CACHE_PATH,
     CACHE_FILE_PATH,
     TEMP_PATH,
-    EXTENSION_PATH,
-    BIN_PATH,
 
     DRIZZLE_PATH: DEV ? DRIZZLE_PATH_DEV : DRIZZLE_PATH,
 
-    PYTHON_ENV_PATH,
     PYTHON_BIN_PATH,
-    PYTHON_ENTRY_PATH,
-    PYTHON_PACKAGE_PATH: DEV ? PYTHON_PACKAGE_PATH_DEV : PYTHON_PACKAGE_PATH,
+    PYTHON_VENV_PATH,
+    PYTHON_MAIN_PATH: DEV ? PYTHON_MAIN_PATH_DEV : PYTHON_MAIN_PATH,
+    PYTHON_HEALTHCHECK_PATH: DEV
+      ? PYTHON_HEALTHCHECK_PATH_DEV
+      : PYTHON_HEALTHCHECK_PATH,
+    PYTHON_PROJECT_PATH: DEV ? PYTHON_PROJECT_PATH_DEV : PYTHON_PROJECT_PATH,
 
     IPC_PRELOAD_PATH: DEV ? IPC_PRELOAD_PATH_DEV : IPC_PRELOAD_PATH,
     CHROME_PRELOAD_PATH: DEV ? CHROME_PRELOAD_PATH_DEV : CHROME_PRELOAD_PATH,

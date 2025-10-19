@@ -6,6 +6,10 @@ import { env } from "#/env";
 import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
 
+type SileroCommand = ["silero", string];
+type CheckhealthCommand = ["checkhealth"];
+type MainCommand = SileroCommand | CheckhealthCommand;
+
 class Python {
   async run(params: string[]) {
     log.info({ params }, `Running python`);
@@ -23,16 +27,26 @@ class Python {
     return stdout;
   }
 
-  async runEntry(params: string[]) {
+  async runMain(params: MainCommand) {
     const finalParams = [
       "-m",
       "uv",
       "run",
       "--directory",
-      env.PYTHON_ENV_PATH,
-      env.PYTHON_ENTRY_PATH,
+      env.PYTHON_VENV_PATH,
+      env.PYTHON_MAIN_PATH,
       ...params,
     ];
+    return await this.run(finalParams);
+  }
+
+  async runCheckhealth() {
+    const finalParams = [env.PYTHON_HEALTHCHECK_PATH];
+    return await this.run(finalParams);
+  }
+
+  async runPipList() {
+    const finalParams = ["-m", "uv", "pip", "list", "--format=json"];
     return await this.run(finalParams);
   }
 
@@ -88,21 +102,16 @@ class Python {
   async installDeps() {
     await this.run(["-m", "pip", "install", "uv"]);
     await cp(
-      join(env.PYTHON_PACKAGE_PATH, "pyproject.toml"),
-      join(env.PYTHON_ENV_PATH, "pyproject.toml"),
+      join(env.PYTHON_PROJECT_PATH, "pyproject.toml"),
+      join(env.PYTHON_VENV_PATH, "pyproject.toml"),
       { recursive: true },
     );
     await cp(
-      join(env.PYTHON_PACKAGE_PATH, "uv.lock"),
-      join(env.PYTHON_ENV_PATH, "uv.lock"),
+      join(env.PYTHON_PROJECT_PATH, "uv.lock"),
+      join(env.PYTHON_VENV_PATH, "uv.lock"),
       { recursive: true },
     );
-    await cp(
-      join(env.PYTHON_PACKAGE_PATH, "src"),
-      join(env.PYTHON_ENV_PATH, "src"),
-      { recursive: true },
-    );
-    await this.run(["-m", "uv", "sync", "--directory", env.PYTHON_ENV_PATH]);
+    await this.run(["-m", "uv", "sync", "--directory", env.PYTHON_VENV_PATH]);
   }
 
   async isPythonInstalled() {
