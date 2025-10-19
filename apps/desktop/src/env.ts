@@ -58,7 +58,7 @@ async function createEnv_() {
 
   const USER_DATA_PATH = app.getPath("userData");
   const LOG_PATH = join(USER_DATA_PATH, "log");
-  const LOG_FILE_NAME = `${format(new Date(), "yyyyMMdd_HHmmss_SSS_zzz")}.jsonl`;
+  const LOG_FILE_NAME = `${format(new Date(), "yyyyMMdd_HHmmss_SSS_xxxx")}.jsonl`;
   const LOG_FILE_PATH = join(LOG_PATH, LOG_FILE_NAME);
   const DB_PATH = join(USER_DATA_PATH, "db");
   const DB_FILE_PATH = join(DB_PATH, "db.sqlite");
