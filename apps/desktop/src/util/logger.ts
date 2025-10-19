@@ -1,6 +1,7 @@
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createReadStream, createWriteStream, type WriteStream } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { createGzip } from "node:zlib";
 import { isBefore, parse, subDays } from "date-fns";
 import { Roarr as log_ } from "roarr";
 import { serializeError } from "serialize-error";
@@ -40,28 +41,57 @@ export const log = log_.child<{
 const logBuffer: string[] = [];
 let logFileWriteStream: WriteStream | undefined;
 
-async function cleanupOldLogs(LOG_PATH: string) {
+async function cleanupOldLogs({
+  LOG_PATH,
+  LOG_FILE_PATH,
+}: {
+  LOG_PATH: string;
+  LOG_FILE_PATH: string;
+}) {
   //TODO: configurable
   const nDaysAgo = subDays(new Date(), 7);
   const files = await readdir(LOG_PATH);
   const filesToDelete: string[] = [];
+  const filesToGzip: string[] = [];
 
-  files.forEach((file) => {
+  for (const file of files) {
+    if (file.endsWith(".gz")) continue;
     if (!file.endsWith(".jsonl")) {
       filesToDelete.push(file);
-    } else {
-      const dateString = file.replace(".jsonl", "");
-      try {
-        const date = parse(dateString, "yyyyMMdd_HHmmss_SSS_xxxx", new Date());
-        if (isBefore(date, nDaysAgo)) {
-          filesToDelete.push(file);
-        }
-      } catch (e) {
-        log.error({ error: e }, "Failed to parse date from log file name");
-        filesToDelete.push(file);
-      }
+      continue;
     }
-  });
+
+    const dateString = file.replace(".jsonl", "");
+    try {
+      const date = parse(dateString, "yyyyMMdd_HHmmss_SSS_xxxx", new Date());
+      if (isBefore(date, nDaysAgo)) {
+        filesToDelete.push(file);
+      } else {
+        filesToGzip.push(file);
+      }
+    } catch (e) {
+      log.error({ error: e }, "Failed to parse date from log file name");
+      filesToDelete.push(file);
+    }
+  }
+
+  // Gzip recent files that aren’t already compressed
+  for (const file of filesToGzip) {
+    const filePath = join(LOG_PATH, file);
+    if (filePath === LOG_FILE_PATH) continue;
+    const destination = `${filePath}.gz`;
+
+    await new Promise<void>((resolve, reject) => {
+      createReadStream(filePath)
+        .pipe(createGzip({ level: 9 }))
+        .pipe(createWriteStream(destination))
+        .on("finish", resolve)
+        .on("error", reject);
+    });
+
+    await rm(filePath);
+    log.debug(`Compressed and removed ${file}`);
+  }
 
   for (const file of filesToDelete) {
     await rm(join(LOG_PATH, file));
@@ -94,7 +124,7 @@ setInterval(() => {
 
 bus.once("env:ready", ({ LOG_PATH, LOG_FILE_PATH }) => {
   logFileWriteStream = createWriteStream(LOG_FILE_PATH, { flags: "a" });
-  cleanupOldLogs(LOG_PATH);
+  cleanupOldLogs({ LOG_PATH, LOG_FILE_PATH });
 });
 
 process.on("unhandledRejection", (r) =>
