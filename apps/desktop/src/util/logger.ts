@@ -74,12 +74,20 @@ const originalWrite = ROARR.write;
 ROARR.write = (...args) => {
   originalWrite?.(...args);
   const logs = args[0]?.toString();
+
   if (logs) logBuffer.push(logs);
 };
 
 setInterval(() => {
   if (logBuffer.length && logFileWriteStream) {
-    logFileWriteStream.write(logBuffer.join("\n"));
+    const joined = logBuffer
+      .map((line) => {
+        // Ensure each log ends with exactly one newline
+        return line.endsWith("\n") ? line : `${line}\n`;
+      })
+      .join("");
+
+    logFileWriteStream.write(joined);
     logBuffer.length = 0;
   }
 }, 500);
