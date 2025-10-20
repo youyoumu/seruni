@@ -3,9 +3,10 @@ import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
 import { ffmpeg } from "#/runner/ffmpeg";
 import { config } from "#/util/config";
-import { log } from "../util/logger";
+import { logWithNamespace } from "../util/logger";
 
 class ObsClient {
+  log = logWithNamespace("OBS");
   client: OBSWebSocket | undefined;
   url = () => `ws://localhost:${config.store.obs.obsWebSocketPort}`;
   reconnecting = false;
@@ -40,7 +41,7 @@ class ObsClient {
   }
 
   unregister() {
-    log.trace("OBS: Aborting AbortController");
+    this.log.trace("Aborting AbortController");
     this.#abortController.abort();
   }
 
@@ -52,13 +53,13 @@ class ObsClient {
 
     try {
       await this.client.connect(this.url());
-      log.info(`OBS: Connected on ${this.url()}`);
+      this.log.info(`Connected on ${this.url()}`);
       this.status = "connected";
       this.retryCount = 0;
       this.replayBufferRetryCount = 0;
 
       // Auto-start Replay Buffer if not active
-      log.info("OBS: Ensuring Replay Buffer is active");
+      this.log.info("Ensuring Replay Buffer is active");
       this.startReplayBuffer();
 
       // listen for replay buffer state changes
@@ -66,26 +67,26 @@ class ObsClient {
         if (!this.client) throw new Error("OBS client not connected");
         if (outputState !== "OBS_WEBSOCKET_OUTPUT_STOPPED") return;
         this.unMonitorReplayBufferDuration();
-        log.warn("OBS: Replay Buffer stopped, starting again");
+        this.log("Replay Buffer stopped, starting again");
         this.replayBufferStartTime(undefined);
         this.restartReplayBuffer();
       });
 
       // Listen for disconnections
       this.client.on("ConnectionError", () => {
-        log.error("OBS: Connection error");
+        this.log.error("Connection error");
         this.unMonitorReplayBufferDuration();
         this.reconnect();
       });
       this.client.on("ConnectionClosed", () => {
         if (!this.reconnecting) {
-          log.error("OBS: Connection closed");
+          this.log.error("Connection closed");
         }
         this.unMonitorReplayBufferDuration();
         this.reconnect();
       });
     } catch {
-      log.warn(`OBS: Failed to connect on ${this.url()}`);
+      this.log.warn(`Failed to connect on ${this.url()}`);
       this.reconnect();
     }
   }
@@ -94,7 +95,7 @@ class ObsClient {
     if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
     const delay = Math.min(16000, 1000 * 2 ** this.retryCount); // exponential backoff
-    log.info(`OBS: Reconnecting in ${delay / 1000} seconds...`);
+    this.log.info(`Reconnecting in ${delay / 1000} seconds...`);
     this.retryCount++;
 
     if (this.retryTimer) clearTimeout(this.retryTimer);
@@ -122,16 +123,16 @@ class ObsClient {
       if (!this.client) throw new Error("OBS client not connected");
       const res = await this.client.call("GetReplayBufferStatus");
       if (res.outputActive) {
-        log.info("OBS: Replay Buffer already active");
+        this.log.info("Replay Buffer already active");
       } else {
         await this.client.call("StartReplayBuffer");
-        log.info("OBS: Replay Buffer started");
+        this.log.info("Replay Buffer started");
       }
       this.replayBufferRetryCount = 0;
       this.replayBufferStartTime(new Date());
       this.monitorReplayBufferDuration();
     } catch {
-      log.warn("OBS: Failed to start Replay Buffer");
+      this.log.warn("Failed to start Replay Buffer");
       this.restartReplayBuffer();
     }
   }
@@ -140,7 +141,7 @@ class ObsClient {
     if (this.restartingReplayBuffer) return;
     this.restartingReplayBuffer = true;
     const delay = Math.min(16000, 1000 * 2 ** this.replayBufferRetryCount);
-    log.info(`OBS: Restarting Replay Buffer in ${delay / 1000} seconds...`);
+    this.log.info(`Restarting Replay Buffer in ${delay / 1000} seconds...`);
     this.replayBufferRetryCount++;
 
     if (this.replayBufferRetryTimer) clearTimeout(this.replayBufferRetryTimer);
@@ -155,7 +156,7 @@ class ObsClient {
     const { promise, resolve, reject } = Promise.withResolvers<string>();
 
     const handler = ({ savedReplayPath }: { savedReplayPath: string }) => {
-      log.debug({ savedReplayPath }, "ReplayBufferSaved");
+      this.log.debug({ savedReplayPath }, "ReplayBufferSaved");
       this.client?.off("ReplayBufferSaved", handler);
       resolve(savedReplayPath);
     };
@@ -181,7 +182,7 @@ class ObsClient {
 
     const delta = Math.abs(duration - this.lastReplayBufferDuration);
     if (delta < 5000) {
-      log.debug(
+      this.log.debug(
         `Replay buffer duration don't changes much since last time, assumming ${this.lastReplayBufferDuration / 1000}s`,
       );
       this.replayBufferDuration(this.lastReplayBufferDuration);

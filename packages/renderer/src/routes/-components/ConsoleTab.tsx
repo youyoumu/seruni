@@ -160,11 +160,11 @@ export function ConsoleTab() {
             .slice(logs().length - MAX_LOGS)
             .filter((log) => {
               const logLevel_ = log.context.logLevel as number;
-              //TODO: slider ui
               return logLevel_ >= logLevel();
             })}
         >
           {(log) => {
+            const namespace = log.context.namespace as string | undefined;
             const logLevel_ = log.context.logLevel as number;
             const logLevel = (() => {
               switch (logLevel_) {
@@ -185,10 +185,11 @@ export function ConsoleTab() {
               }
             })();
 
-            const debugObj = structuredClone(log.context);
-            delete debugObj.logLevel;
-            const debugString = Object.keys(debugObj).length
-              ? stringify(debugObj, { indent: 2 }).slice(1, -1)
+            const context = structuredClone(log.context);
+            delete context.logLevel;
+            delete context.namespace;
+            const contextString = Object.keys(context).length
+              ? stringify(context, { indent: 2 }).slice(1, -1)
               : undefined;
 
             return (
@@ -207,11 +208,11 @@ export function ConsoleTab() {
                     whiteSpace="pre-wrap" // preserves line breaks
                     wordBreak="break-all" // allows breaking long words
                   >
-                    {log.message}
+                    {namespace ? `#${namespace}: ${log.message}` : log.message}
                   </Box>
                 </HStack>
-                <Show when={debugString}>
-                  <DebugBox debugString={debugString ?? ""} />
+                <Show when={contextString}>
+                  <DebugBox debugString={contextString ?? ""} />
                 </Show>
               </Stack>
             );

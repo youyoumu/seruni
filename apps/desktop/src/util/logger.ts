@@ -38,6 +38,20 @@ export const log = log_.child<{
   return message_;
 });
 
+export const logWithNamespace = (namespace: string) =>
+  log.child<{
+    namespace: string;
+  }>((message) => {
+    const message_ = {
+      ...message,
+      context: {
+        ...message.context,
+        namespace,
+      },
+    };
+    return message_;
+  });
+
 const logBuffer: string[] = [];
 let logFileWriteStream: WriteStream | undefined;
 
