@@ -23,3 +23,5 @@
 - remote mobile support
 - google image
 - zod parse settings
+- obs password
+- namespace on renderer
