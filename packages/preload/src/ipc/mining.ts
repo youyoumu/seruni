@@ -41,6 +41,16 @@ export type Media = z.infer<typeof zMedia>;
 export type SelectionData = z.infer<typeof zSelectionData>;
 
 export const zMiningIPC = {
+  main: z.object({
+    "mining:sendReplayBufferStartTime": z.object({
+      input: z.tuple([
+        z.object({
+          time: z.date().optional(),
+        }),
+      ]),
+      output: z.void(),
+    }),
+  }),
   renderer: z.object({
     "mining:setTextUuid": z.object({
       input: z.tuple([
@@ -61,6 +71,12 @@ export const zMiningIPC = {
           time: z.date(),
         }),
       ),
+    }),
+    "mining:getReplayBufferStartTime": z.object({
+      input: z.tuple([]),
+      output: z.object({
+        time: z.date().optional(),
+      }),
     }),
     "mining:getSourceScreenshot": z.object({
       input: z.tuple([]),

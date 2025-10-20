@@ -1,4 +1,5 @@
 import type { ClientStatus } from "@repo/preload/ipc";
+import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
 import { config } from "#/util/config";
 import { log } from "../util/logger";
@@ -15,7 +16,7 @@ class ObsClient {
   replayBufferRetryTimer: NodeJS.Timeout | null = null;
 
   status: ClientStatus = "disconnected";
-  replayBufferStartTime: Date | undefined;
+  replayBufferStartTime = signal<Date | undefined>(undefined);
 
   async connect() {
     if (this.reconnecting) return;
@@ -39,7 +40,7 @@ class ObsClient {
         if (!this.client) throw new Error("OBS client not connected");
         if (outputState !== "OBS_WEBSOCKET_OUTPUT_STOPPED") return;
         log.warn("OBS: Replay Buffer stopped, starting again");
-        this.replayBufferStartTime = undefined;
+        this.replayBufferStartTime(undefined);
         this.restartReplayBuffer();
       });
 
@@ -98,7 +99,7 @@ class ObsClient {
         log.info("OBS: Replay Buffer started");
       }
       this.replayBufferRetryCount = 0;
-      this.replayBufferStartTime = new Date();
+      this.replayBufferStartTime(new Date());
     } catch {
       log.warn("OBS: Failed to start Replay Buffer");
       this.restartReplayBuffer();

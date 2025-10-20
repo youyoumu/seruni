@@ -1,3 +1,4 @@
+import { effect, effectScope } from "alien-signals";
 import { AnkiClient, ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
@@ -8,6 +9,7 @@ import { log } from "#/util/logger";
 import { IPC } from "./base";
 
 class MiningIPC extends IPC()<"mining"> {
+  stopScope = () => {};
   constructor() {
     super({
       prefix: "mining",
@@ -22,6 +24,20 @@ class MiningIPC extends IPC()<"mining"> {
 
     this.handle("mining:getTextHistory", async () => {
       return textractorClient().history;
+    });
+
+    this.handle("mining:getReplayBufferStartTime", async () => {
+      return {
+        time: obsClient().replayBufferStartTime(),
+      };
+    });
+
+    this.stopScope = effectScope(() => {
+      effect(() => {
+        this.send("mining:sendReplayBufferStartTime", {
+          time: obsClient().replayBufferStartTime(),
+        });
+      });
     });
 
     this.handle("mining:getSourceScreenshot", async () => {
@@ -138,6 +154,11 @@ class MiningIPC extends IPC()<"mining"> {
     const soundMatch = fieldValue.match(soundRegex);
 
     return imageMatch?.[1] ?? soundMatch?.[1] ?? "";
+  }
+
+  override unregister(): void {
+    super.unregister();
+    this.stopScope();
   }
 }
 

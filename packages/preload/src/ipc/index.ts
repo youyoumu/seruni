@@ -31,6 +31,7 @@ export type IPCFromRendererChannel = z.infer<typeof zIpcFromRendererChannel>;
 //  ──────────────────────── From Main To Renderer ────────────────────────
 const zIpcFromMain = z.object({
   ...zLogIPC.main.shape,
+  ...zMiningIPC.main.shape,
   ...zVnOverlayIPC.main.shape,
 });
 const ipcFromMainChannel = zIpcFromMain.keyof();

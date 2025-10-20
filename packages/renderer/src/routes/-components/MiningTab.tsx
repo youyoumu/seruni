@@ -1,5 +1,5 @@
 import { makePersisted } from "@solid-primitives/storage";
-import { intervalToDuration } from "date-fns";
+import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
 import {
   ArrowBigRight,
@@ -65,11 +65,20 @@ export function MiningTab() {
       setTexts(result);
     },
   });
+  const [replayBufferStartTime, setReplayBufferStartTime] = createSignal<
+    Date | undefined
+  >(undefined);
   let textContainerRef: HTMLDivElement | undefined;
 
-  const expiredTexts = () =>
+  const notInHistoryTexts = () =>
     texts().filter((item) => {
       return !textHistory().some((item_) => item_.uuid === item.uuid);
+    });
+
+  const withinBufferTexts = () =>
+    textHistory().filter((item) => {
+      const time = replayBufferStartTime();
+      return time && isAfter(item.time, time);
     });
 
   const isNotJapaneseRegex =
@@ -112,6 +121,14 @@ export function MiningTab() {
   });
 
   onMount(async () => {
+    const replayBufferStartTime = await ipcRenderer.invoke(
+      "mining:getReplayBufferStartTime",
+    );
+    setReplayBufferStartTime(replayBufferStartTime.time);
+    ipcRenderer.on("mining:sendReplayBufferStartTime", ({ time }) => {
+      setReplayBufferStartTime(time);
+    });
+
     ipcRenderer.on("vnOverlay:sendText", (payload) => {
       if (textContainerRef) {
         textContainerRef.scrollTop = textContainerRef.scrollHeight;
@@ -253,9 +270,15 @@ export function MiningTab() {
                   fontSize="xl"
                   flex="1"
                   color={
-                    expiredTexts().some((item_) => item_.uuid === item.uuid)
+                    notInHistoryTexts().some(
+                      (item_) => item_.uuid === item.uuid,
+                    )
                       ? "fg.muted"
-                      : "fg.default"
+                      : withinBufferTexts().some(
+                            (item_) => item_.uuid === item.uuid,
+                          )
+                        ? "fg.default"
+                        : "fg.error"
                   }
                 >
                   {item.text}

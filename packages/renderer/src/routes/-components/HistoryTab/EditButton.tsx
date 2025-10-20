@@ -475,9 +475,6 @@ function CropperImage(props: { src: string; editing: boolean }) {
     });
   });
 
-  createEffect(() => {
-    console.log("DEBUG[760]: selectionData=", selectionData());
-  });
   return (
     <div
       ref={cropperContainer}
@@ -593,9 +590,6 @@ export function PictureWithCropper(props: {
     });
   });
 
-  createEffect(() => {
-    console.log("DEBUG[760]: selectionData=", selectionData());
-  });
   return (
     <Dialog.Root>
       <Dialog.Trigger
