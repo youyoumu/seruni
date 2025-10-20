@@ -3,18 +3,24 @@ import Cropper from "cropperjs";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { css } from "styled-system/css";
 
-export function PictureCropper(props: { src: string; editing: boolean }) {
+export function PictureCropper(props: {
+  src: string;
+  editing: boolean;
+  onSave: (details: { selectionData: SelectionData }) => void;
+}) {
   const [selectionData, setSelectionData] = createSignal<SelectionData>({
     x: 0,
     y: 0,
     width: 0,
     height: 0,
   });
+  createEffect(() => {
+    props.onSave?.({ selectionData: selectionData() });
+  });
   const [naturalSize, setNaturalSize] = createSignal<{
     width: number;
     height: number;
   }>({ width: 0, height: 0 });
-  const [isPreselect, setIsPreselect] = createSignal(true);
   const image = new Image();
   image.alt = "Picture";
   image.src = props.src;
@@ -51,7 +57,7 @@ export function PictureCropper(props: { src: string; editing: boolean }) {
       const cropperImage = cropper?.getCropperImage();
       cropperImage?.$center("contain");
 
-      if (props.editing && isPreselect()) {
+      if (props.editing) {
         const cropperSelection = cropper?.getCropperSelection();
         const rect = cropperImage?.getBoundingClientRect();
         if (!rect) return;
@@ -69,7 +75,6 @@ export function PictureCropper(props: { src: string; editing: boolean }) {
         const cropY = (h - cropHeight) / 2;
 
         cropperSelection?.$change(cropX, cropY, cropWidth, cropHeight);
-        setIsPreselect(false);
       }
     };
     const observer = new ResizeObserver(centerImage);
@@ -82,23 +87,38 @@ export function PictureCropper(props: { src: string; editing: boolean }) {
       const parsed = zSelectionData.safeParse(
         (e as Event & { detail: unknown }).detail,
       );
-      if (parsed.success) {
-        const cropperImageRect = cropper
-          ?.getCropperImage()
-          ?.getBoundingClientRect();
-        const maxSelection: SelectionData = {
-          x: 0,
-          y: 0,
-          width: cropperImageRect?.width ?? 0,
-          height: cropperImageRect?.height ?? 0,
-        };
-        if (!inSelection(parsed.data, maxSelection)) {
-          e.preventDefault();
-        } else {
-          setSelectionData(parsed.data);
-        }
+      if (!parsed.success) return;
+
+      const cropperImage = cropper?.getCropperImage();
+      const cropperImageRect = cropperImage?.getBoundingClientRect();
+      if (!cropperImageRect) return;
+
+      const maxSelection: SelectionData = {
+        x: 0,
+        y: 0,
+        width: cropperImageRect.width,
+        height: cropperImageRect.height,
+      };
+
+      if (!inSelection(parsed.data, maxSelection)) {
+        e.preventDefault();
+        return;
       }
+
+      // ✅ Convert displayed → natural pixel coordinates for FFmpeg
+      const scaleX = image.naturalWidth / cropperImageRect.width;
+      const scaleY = image.naturalHeight / cropperImageRect.height;
+      const realSelection = {
+        x: parsed.data.x * scaleX,
+        y: parsed.data.y * scaleY,
+        width: parsed.data.width * scaleX,
+        height: parsed.data.height * scaleY,
+      };
+
+      // Update displayed selection
+      setSelectionData(realSelection);
     };
+
     cropper.getCropperSelection()?.addEventListener("change", listener2);
 
     abortController.signal.addEventListener("abort", () => {
