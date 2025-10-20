@@ -52,6 +52,16 @@ export const zMiningIPC = {
         uuid: z.string(),
       }),
     }),
+    "mining:getTextHistory": z.object({
+      input: z.tuple([]),
+      output: z.array(
+        z.object({
+          uuid: z.string(),
+          text: z.string(),
+          time: z.date(),
+        }),
+      ),
+    }),
     "mining:getSourceScreenshot": z.object({
       input: z.tuple([]),
       output: z.object({

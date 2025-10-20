@@ -55,6 +55,9 @@ export function MiningTab() {
     // vnDialogues.map((text) => ({ text, uuid: crypto.randomUUID() })),
     [],
   );
+  const [textHistory, setTextHistory] = createSignal<
+    { text: string; uuid: string; time: Date }[]
+  >([]);
   const [textUuid, setTextUuid] = createSignal("");
   const textObservable = liveQuery(() => texthoookerDB.text.toArray());
   textObservable.subscribe({
@@ -63,6 +66,11 @@ export function MiningTab() {
     },
   });
   let textContainerRef: HTMLDivElement | undefined;
+
+  const expiredTexts = () =>
+    texts().filter((item) => {
+      return !textHistory().some((item_) => item_.uuid === item.uuid);
+    });
 
   const isNotJapaneseRegex =
     /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
@@ -120,7 +128,14 @@ export function MiningTab() {
         text: payload.text,
         uuid: payload.uuid,
       });
+
+      ipcRenderer.invoke("mining:getTextHistory").then((history) => {
+        setTextHistory(history);
+      });
     });
+
+    const textHistory = await ipcRenderer.invoke("mining:getTextHistory");
+    setTextHistory(textHistory);
   });
 
   let hoverTimeout: number | undefined;
@@ -233,7 +248,16 @@ export function MiningTab() {
                   }}
                 ></Icon>
                 {"\n"}
-                <Text as="p" fontSize="xl" flex="1">
+                <Text
+                  as="p"
+                  fontSize="xl"
+                  flex="1"
+                  color={
+                    expiredTexts().some((item_) => item_.uuid === item.uuid)
+                      ? "fg.muted"
+                      : "fg.default"
+                  }
+                >
                   {item.text}
                 </Text>
                 {"\n"}

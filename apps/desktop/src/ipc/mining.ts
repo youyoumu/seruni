@@ -1,5 +1,6 @@
 import { AnkiClient, ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
+import { textractorClient } from "#/client/textractor";
 import { mainDB } from "#/db/main";
 import { env } from "#/env";
 import { config } from "#/util/config";
@@ -17,6 +18,10 @@ class MiningIPC extends IPC()<"mining"> {
     this.handle("mining:setTextUuid", async (_, { uuid }) => {
       ankiClient().selectedTextUuid = uuid;
       return { uuid };
+    });
+
+    this.handle("mining:getTextHistory", async () => {
+      return textractorClient().history;
     });
 
     this.handle("mining:getSourceScreenshot", async () => {
