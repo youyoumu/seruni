@@ -1,4 +1,3 @@
-import type { AnkiHistory } from "@repo/preload/ipc";
 import { createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
@@ -8,15 +7,14 @@ import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { getMediaUrl } from "#/lib/util";
 import { appToaster } from "../AppToaster";
-import { history, nsfwUpdateLock, srcSet } from "./_util";
+import { nsfwUpdateLock, srcSet } from "./_util";
+import { useNoteContext } from "./NoteContext";
 
-export function PicturePreview(props: { noteId: number }) {
-  const note = () =>
-    history.find((item) => item.id === props.noteId) as AnkiHistory[number];
-  if (!note()) return null;
+export function PicturePreview() {
+  const note = useNoteContext();
   //TODO: modify via context
-  const [nsfw, setNsfw] = createSignal(note().nsfw);
-  const pictureSrc = () => getMediaUrl(note().picture, "anki");
+  const [nsfw, setNsfw] = createSignal(note.nsfw);
+  const pictureSrc = () => getMediaUrl(note.picture, "anki");
 
   return (
     <Dialog.Root>
@@ -100,13 +98,13 @@ export function PicturePreview(props: { noteId: number }) {
               <Toggle
                 checked={nsfw()}
                 onCheckedChange={() => {
-                  if (nsfwUpdateLock.has(note().id)) return;
-                  nsfwUpdateLock.add(note().id);
+                  if (nsfwUpdateLock.has(note.id)) return;
+                  nsfwUpdateLock.add(note.id);
                   setNsfw(!nsfw());
                   appToaster.promise(
                     ipcRenderer
                       .invoke("mining:toggleNoteNsfw", {
-                        noteId: note().id,
+                        noteId: note.id,
                         checked: nsfw(),
                       })
                       .then((success) => {
@@ -119,20 +117,20 @@ export function PicturePreview(props: { noteId: number }) {
                         setNsfw(!nsfw());
                       })
                       .finally(() => {
-                        nsfwUpdateLock.delete(note().id);
+                        nsfwUpdateLock.delete(note.id);
                       }),
                     {
                       loading: {
                         title: "Updating note NSFW tag...",
-                        description: `${note().expression}`,
+                        description: `${note.expression}`,
                       },
                       error: {
                         title: "Failed to update note NSFW tag",
-                        description: note().expression,
+                        description: note.expression,
                       },
                       success: {
                         title: "Note NSFW tag updated",
-                        description: `${note().expression}`,
+                        description: `${note.expression}`,
                       },
                     },
                   );

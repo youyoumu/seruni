@@ -1,11 +1,5 @@
-import type { AnkiHistory, Media } from "@repo/preload/ipc";
-import {
-  FishIcon,
-  FishSymbolIcon,
-  FullscreenIcon,
-  MoveRightIcon,
-  ZoomInIcon,
-} from "lucide-solid";
+import type { Media } from "@repo/preload/ipc";
+import { FishSymbolIcon, ZoomInIcon } from "lucide-solid";
 import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
@@ -13,24 +7,22 @@ import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { getMediaUrl } from "#/lib/util";
-import { history } from "./_util";
 import { ImageWithFallback } from "./ImageWithFallback";
+import { useNoteContext } from "./NoteContext";
 import { PictureWithZoom } from "./PictureWithZoom";
 
-export function EditButton(props: { noteId: number }) {
-  const note = () =>
-    history.find((item) => item.id === props.noteId) as AnkiHistory[number];
+export function EditButton() {
+  const note = useNoteContext();
   const [media, setMedia] = createSignal<Media>([]);
   const pictureMedia = () => media().filter((m) => m.type === "picture");
   const sentenceAudioMedia = () =>
     media().find((m) => m.type === "sentenceAudio");
-  const pictureSrc = () => getMediaUrl(note().picture, "anki");
 
   const [selectedImage, setSelectedImage] = createSignal<{
     fileName: string | undefined;
     source: "storage" | "anki";
   }>({
-    fileName: note().picture,
+    fileName: note.picture,
     source: "anki",
   });
   const selectedImageSrc = () =>
@@ -42,7 +34,7 @@ export function EditButton(props: { noteId: number }) {
 
   onMount(async () => {
     const media = await ipcRenderer.invoke("mining:getNoteMedia", {
-      noteId: note().id,
+      noteId: note.id,
     });
     setMedia(media);
   });
@@ -68,13 +60,12 @@ export function EditButton(props: { noteId: number }) {
               <HStack justifyContent="center">
                 <CurrentImage
                   isSelected={
-                    selectedImage().fileName === note().picture &&
+                    selectedImage().fileName === note.picture &&
                     selectedImage().source === "anki"
                   }
-                  src={pictureSrc()}
                   onClick={() => {
                     setSelectedImage({
-                      fileName: note().picture,
+                      fileName: note.picture,
                       source: "anki",
                     });
                   }}
@@ -164,6 +155,8 @@ const zoomIconCva = cva({
 
 function SelectedImage(props: { src: string }) {
   const pictureSrc = () => props.src;
+  const note = useNoteContext();
+
   return (
     <PictureWithZoom
       src={pictureSrc()}
@@ -198,15 +191,13 @@ function SelectedImage(props: { src: string }) {
   );
 }
 
-function CurrentImage(props: {
-  src: string;
-  onClick: () => void;
-  isSelected: boolean;
-}) {
-  const pictureSrc = () => props.src;
+function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
+  const note = useNoteContext();
+  const src = getMediaUrl(note.picture, "anki");
+
   return (
     <PictureWithZoom
-      src={pictureSrc()}
+      src={src}
       trigger={(triggerProps) => {
         return (
           <Box
@@ -222,7 +213,7 @@ function CurrentImage(props: {
               class={zoomIconCva({ size: "default" })}
             />
             <ImageWithFallback
-              src={pictureSrc()}
+              src={src}
               height="56"
               image={(imageProps) => {
                 return (
@@ -242,7 +233,7 @@ function CurrentImage(props: {
                       rounded: "sm",
                       cursor: "pointer",
                     })}
-                    src={pictureSrc()}
+                    src={src}
                     alt="PictureField"
                   />
                 );
@@ -260,7 +251,9 @@ function AvailableImage(props: {
   onClick: () => void;
   isSelected: boolean;
 }) {
+  const note = useNoteContext();
   const pictureSrc = () => props.src;
+
   return (
     <PictureWithZoom
       src={pictureSrc()}

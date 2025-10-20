@@ -20,6 +20,7 @@ import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
 import { history, setHistory } from "./_util";
 import { AnkiCard } from "./AnkiCard";
+import { NoteContextProvider } from "./NoteContext";
 
 export function HistoryTab() {
   const [success, setSuccess] = createSignal(false);
@@ -87,7 +88,11 @@ export function HistoryTab() {
           >
             <For each={slicedHistory()}>
               {(item) => {
-                return <AnkiCard noteId={item.id} />;
+                return (
+                  <NoteContextProvider value={item}>
+                    <AnkiCard />
+                  </NoteContextProvider>
+                );
               }}
             </For>
           </Stack>

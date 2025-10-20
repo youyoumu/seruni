@@ -29,6 +29,11 @@ export const zMedia = z.array(
   }),
 );
 
+export const zMediaSrc = z.object({
+  fileName: z.string().optional(),
+  source: z.union([z.literal("storage"), z.literal("anki")]),
+});
+
 export const zSelectionData = z.object({
   x: z.number(),
   y: z.number(),
@@ -38,6 +43,7 @@ export const zSelectionData = z.object({
 
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 export type Media = z.infer<typeof zMedia>;
+export type MediaSrc = z.infer<typeof zMediaSrc>;
 export type SelectionData = z.infer<typeof zSelectionData>;
 
 export const zMiningIPC = {
@@ -121,6 +127,10 @@ export const zMiningIPC = {
         }),
       ]),
       output: zMedia,
+    }),
+    "mining:cropPicture": z.object({
+      input: z.tuple([z.number(), zMediaSrc, zSelectionData]),
+      output: z.void(),
     }),
   }),
 };

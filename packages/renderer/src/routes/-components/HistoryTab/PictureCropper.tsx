@@ -6,7 +6,7 @@ import { css } from "styled-system/css";
 export function PictureCropper(props: {
   src: string;
   editing: boolean;
-  onSave: (details: { selectionData: SelectionData }) => void;
+  onSelectionChange: (details: { selectionData: SelectionData }) => void;
 }) {
   const [selectionData, setSelectionData] = createSignal<SelectionData>({
     x: 0,
@@ -15,7 +15,7 @@ export function PictureCropper(props: {
     height: 0,
   });
   createEffect(() => {
-    props.onSave?.({ selectionData: selectionData() });
+    props.onSelectionChange?.({ selectionData: selectionData() });
   });
   const [naturalSize, setNaturalSize] = createSignal<{
     width: number;

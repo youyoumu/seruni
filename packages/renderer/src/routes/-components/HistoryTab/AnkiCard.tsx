@@ -1,7 +1,4 @@
-import {
-  type AnkiHistory,
-  zAnkiCollectionMediaUrlPath,
-} from "@repo/preload/ipc";
+import { zAnkiCollectionMediaUrlPath } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
 import { Show } from "solid-js";
 import { cva } from "styled-system/css";
@@ -10,9 +7,9 @@ import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
 import { Text } from "#/components/ui/text";
 import { store } from "#/lib/store";
-import { history } from "./_util";
 import { AudioButton } from "./AudioButton";
 import { EditButton } from "./EditButton";
+import { useNoteContext } from "./NoteContext";
 import { PicturePreview } from "./PicturePreview";
 
 const expressionVariant = cva({
@@ -49,15 +46,13 @@ const expressionVariant = cva({
   },
 });
 
-export function AnkiCard(props: { noteId: number }) {
-  const note = () =>
-    history.find((item) => item.id === props.noteId) as AnkiHistory[number];
-  if (!note()) return null;
+export function AnkiCard() {
+  const note = useNoteContext();
   //TODO: modify via context
-  const time = () => formatRelative(new Date(note().id), new Date());
+  const time = () => formatRelative(new Date(note.id), new Date());
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
   const sentenceAudioSrc = () =>
-    `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${note().sentenceAudio}`;
+    `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${note.sentenceAudio}`;
 
   return (
     <Stack
@@ -82,24 +77,24 @@ export function AnkiCard(props: { noteId: number }) {
         >
           <Text
             class={expressionVariant({
-              wordLength: note().expression.length.toString(),
+              wordLength: note.expression.length.toString(),
             } as TextVariant)}
           >
-            {note().expression}
+            {note.expression}
           </Text>
-          <Show when={note().sentenceAudio}>
+          <Show when={note.sentenceAudio}>
             <AudioButton src={sentenceAudioSrc()} />
           </Show>
         </Stack>
-        <Show when={note().picture}>
-          <PicturePreview noteId={note().id} />
+        <Show when={note.picture}>
+          <PicturePreview />
         </Show>
       </HStack>
       <Stack>
         <HStack gap="4" justifyContent="space-between" alignItems="end">
           <HStack>
             <Button size="sm">Open in Anki</Button>
-            <EditButton noteId={note().id} />
+            <EditButton />
           </HStack>
 
           <Text size="xs" color="fg.muted">

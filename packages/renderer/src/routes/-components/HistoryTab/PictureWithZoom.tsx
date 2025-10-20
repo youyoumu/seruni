@@ -1,3 +1,4 @@
+import type { SelectionData } from "@repo/preload/ipc";
 import { CropIcon } from "lucide-solid";
 import { createSignal, type JSX, type ParentProps, Show } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -12,6 +13,12 @@ export function PictureWithZoom(props: {
   src: string;
   trigger: (props: () => ParentProps) => JSX.Element;
 }) {
+  const [selectionData, setSelectionData] = createSignal<SelectionData>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
   const [editing, setEditing] = createSignal(false);
 
   return (
@@ -52,7 +59,13 @@ export function PictureWithZoom(props: {
                   </Show>
 
                   <Box maxW="8xl" hidden={!editing()}>
-                    <PictureCropper src={props.src} editing={editing()} />
+                    <PictureCropper
+                      src={props.src}
+                      editing={editing()}
+                      onSelectionChange={(details) => {
+                        setSelectionData(details.selectionData);
+                      }}
+                    />
                   </Box>
 
                   <HStack justifyContent="end" px="8">

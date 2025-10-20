@@ -162,6 +162,16 @@ class MiningIPC extends IPC()<"mining"> {
     this.handle("mining:getNoteMedia", async (_, { noteId }) => {
       return await mainDB().getNoteMedia(noteId);
     });
+
+    this.handle(
+      "mining:cropPicture",
+      async (_, noteId, { source, fileName }, selectionData) => {
+        console.log("DEBUG[790]: noteId=", noteId);
+        console.log("DEBUG[793]: source=", source);
+        console.log("DEBUG[792]: selectionData=", selectionData);
+        console.log("DEBUG[791]: fileName=", fileName);
+      },
+    );
   }
 
   parseAnkiMediaPath(fieldValue: string) {
