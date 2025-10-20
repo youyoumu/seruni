@@ -83,13 +83,13 @@ export function MiningTab() {
 
   const withinBufferTexts = () => {
     const startTime = replayBufferStartTime();
-    const maxDurationMs = replayBufferDuration(); // in milliseconds
-    if (!startTime || maxDurationMs <= 0) return [];
+    const maxDuration = replayBufferDuration();
+    if (!startTime || maxDuration <= 0) return [];
 
-    const timeSinceStartMs = now().getTime() - startTime.getTime();
-    const effectiveDurationMs = Math.min(timeSinceStartMs, maxDurationMs);
+    const timeSinceStart = now().getTime() - startTime.getTime();
+    const effectiveDuration = Math.min(timeSinceStart, maxDuration);
 
-    const bufferStartTime = new Date(now().getTime() - effectiveDurationMs);
+    const bufferStartTime = new Date(now().getTime() - effectiveDuration);
     return textHistory().filter((item) => {
       // Only include text that falls inside the active replay buffer window
       return (

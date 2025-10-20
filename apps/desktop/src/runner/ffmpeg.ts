@@ -17,12 +17,8 @@ class FFmpeg {
     return timestamp;
   }
 
-  //TODO: parse is ms
-  /**
-   * @returns duration in seconds
-   */
   async getFileDuration(filePath: string): Promise<number> {
-    const { stdout, stderr } = await execa("ffprobe", [
+    const params = [
       "-v",
       "quiet",
       "-show_entries",
@@ -30,21 +26,22 @@ class FFmpeg {
       "-of",
       "csv=p=0",
       filePath,
-    ]);
-    log.debug({ stdout, stderr }, "ffprobe");
-    return parseFloat(stdout.trim());
+    ];
+    const { stdout, stderr } = await execa("ffprobe", params);
+    log.debug({ params, stdout, stderr }, "ffprobe");
+    return parseFloat(stdout.trim()) * 1000;
   }
 
   //TODO: offset +-
   async process({
     inputPath,
-    seekMs = 0,
-    durationMs,
+    seek = 0,
+    duration,
     format,
   }: {
     inputPath: string;
-    seekMs?: number;
-    durationMs?: number;
+    seek?: number;
+    duration?: number;
     format:
       | "wav"
       | "opus"
@@ -72,18 +69,18 @@ class FFmpeg {
     );
 
     //TODO: configurable
-    const defaultDurationMs = 1000;
+    const defaultDuration = 1000;
     const numberOfFrames = 6;
-    const fps = numberOfFrames / ((durationMs ?? defaultDurationMs) / 1000);
+    const fps = numberOfFrames / ((duration ?? defaultDuration) / 1000);
 
     const params = {
       wav: [
         "-y", // overwrite existing
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath, // input file
-        ...(durationMs !== undefined ? ["-t", `${durationMs}ms`] : []),
+        ...(duration !== undefined ? ["-t", `${duration}ms`] : []),
         "-vn", // no video
         "-acodec",
         "pcm_s16le", // WAV codec
@@ -97,10 +94,10 @@ class FFmpeg {
       opus: [
         "-y",
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath,
-        ...(durationMs !== undefined ? ["-t", `${durationMs}ms`] : []),
+        ...(duration !== undefined ? ["-t", `${duration}ms`] : []),
         "-vn",
         "-ac",
         "2", // 1 = mono, 2 = stereo
@@ -116,7 +113,7 @@ class FFmpeg {
       webp: [
         "-y",
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath,
         "-frames:v",
@@ -131,11 +128,11 @@ class FFmpeg {
       "webp:multiple": [
         "-y",
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath,
         "-t",
-        `${durationMs ?? defaultDurationMs}ms`,
+        `${duration ?? defaultDuration}ms`,
         "-r",
         `${fps}`,
         "-c:v",
@@ -150,11 +147,11 @@ class FFmpeg {
       "png:multiple": [
         "-y",
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath,
         "-t",
-        `${durationMs ?? defaultDurationMs}ms`,
+        `${duration ?? defaultDuration}ms`,
         "-r",
         `${fps}`,
         "-vf",
@@ -167,11 +164,11 @@ class FFmpeg {
       "webp:animated": [
         "-y",
         "-ss",
-        `${seekMs}ms`,
+        `${seek}ms`,
         "-i",
         inputPath,
         "-t",
-        `${durationMs ?? defaultDurationMs}ms`,
+        `${duration ?? defaultDuration}ms`,
         "-r",
         "24",
         "-c:v",

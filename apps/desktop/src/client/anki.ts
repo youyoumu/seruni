@@ -82,15 +82,15 @@ const AnkiClient_ = class AnkiClient {
   reconnect() {
     if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
-    const delayMs = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
-    log.info(`AnkiConnect: Reconnecting in ${delayMs / 1000} seconds...`);
+    const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
+    log.info(`AnkiConnect: Reconnecting in ${delay / 1000} seconds...`);
     this.retryCount++;
 
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = setTimeout(() => {
       this.reconnecting = false;
       this.connect();
-    }, delayMs);
+    }, delay);
   }
 
   async getLastAddedNote() {
@@ -231,16 +231,16 @@ const AnkiClient_ = class AnkiClient {
 
       // calculate offset
       const fileEnd = new Date();
-      let durationSeconds: number;
+      let duration: number;
       try {
-        durationSeconds = await ffmpeg().getFileDuration(savedReplayPath);
+        duration = await ffmpeg().getFileDuration(savedReplayPath);
       } catch (e) {
         throw new Error("Failed to get replay buffer duration duration", {
           cause: e,
         });
       }
-      const fileStart = new Date(fileEnd.getTime() - durationSeconds * 1000);
-      const offsetMs = Math.max(
+      const fileStart = new Date(fileEnd.getTime() - duration);
+      const offset = Math.max(
         0,
         Math.floor(history.time.getTime() - fileStart.getTime()),
       );
@@ -249,7 +249,7 @@ const AnkiClient_ = class AnkiClient {
       try {
         audioStage1Path = await ffmpeg().process({
           inputPath: savedReplayPath,
-          seekMs: offsetMs,
+          seek: offset,
           format: "wav",
         });
       } catch (e) {
@@ -280,7 +280,7 @@ const AnkiClient_ = class AnkiClient {
           try {
             return await ffmpeg().process({
               inputPath: audioStage1Path,
-              durationMs: lastEnd * 1000,
+              duration: lastEnd * 1000,
               format: "opus",
             });
           } catch (e) {
@@ -301,7 +301,7 @@ const AnkiClient_ = class AnkiClient {
           );
           return await ffmpeg().process({
             inputPath: savedReplayPath,
-            seekMs: offsetMs + extraSeek,
+            seek: offset + extraSeek,
             format: "webp",
           });
         } catch (e) {
@@ -319,12 +319,12 @@ const AnkiClient_ = class AnkiClient {
           const lastEndSecond =
             audioStage1VadData[audioStage1VadData.length - 1]?.end ??
             recordDurationFallbackSecond;
-          const offsetMsToLeft = 5000;
-          const offsetMsToRight = 5000;
+          const offsetToLeft = 5000;
+          const offsetToRight = 5000;
           return await ffmpeg().process({
             inputPath: savedReplayPath,
-            seekMs: offsetMs - offsetMsToLeft,
-            durationMs: lastEndSecond * 1000 + offsetMsToLeft + offsetMsToRight,
+            seek: offset - offsetToLeft,
+            duration: lastEndSecond * 1000 + offsetToLeft + offsetToRight,
             format: "opus",
           });
         } catch (e) {
@@ -338,9 +338,9 @@ const AnkiClient_ = class AnkiClient {
         try {
           return await ffmpeg().process({
             inputPath: savedReplayPath,
-            seekMs: offsetMs,
+            seek: offset,
             //TODO: configurable
-            durationMs: (lastEnd ?? 3) * 1000,
+            duration: (lastEnd ?? 3) * 1000,
             format: `${imageFormat}:multiple`,
           });
         } catch (e) {

@@ -177,8 +177,7 @@ class ObsClient {
       return;
     }
     const replayBufferFilePath = await this.saveReplayBuffer();
-    const duration =
-      (await ffmpeg().getFileDuration(replayBufferFilePath)) * 1000;
+    const duration = await ffmpeg().getFileDuration(replayBufferFilePath);
 
     const delta = Math.abs(duration - this.lastReplayBufferDuration);
     if (delta < 5000) {

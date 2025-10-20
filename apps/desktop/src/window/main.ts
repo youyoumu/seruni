@@ -34,13 +34,13 @@ class MainWindow extends AppWindow() {
     return true;
   }
 
-  async waitForRenderer(url: string, retries = 30, delayMs = 500) {
+  async waitForRenderer(url: string, retries = 30, delayDuration = 500) {
     for (let i = 0; i < retries; i++) {
       try {
         await this.ping(url);
         return;
       } catch {
-        await delay(delayMs);
+        await delay(delayDuration);
       }
     }
     throw new Error(`Renderer at ${url} not responding after ${retries} tries`);
