@@ -261,16 +261,12 @@ const AnkiClient_ = class AnkiClient {
       // generate vad data
       let audioStage1VadData: VadData;
       try {
-        audioStage1VadData = zVadData.parse(
-          JSON.parse(
-            (await python().runMain(["silero", audioStage1Path])).stdout,
-          ),
-        );
+        audioStage1VadData = await python().runSilero(audioStage1Path);
       } catch (e) {
         throw new Error("Failed to extract audio VAD data", { cause: e });
       }
       let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
-      if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1.5) {
+      if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1000) {
         lastEnd = undefined;
       }
 
@@ -280,7 +276,7 @@ const AnkiClient_ = class AnkiClient {
           try {
             return await ffmpeg().process({
               inputPath: audioStage1Path,
-              duration: lastEnd * 1000,
+              duration: lastEnd,
               format: "opus",
             });
           } catch (e) {
@@ -316,7 +312,7 @@ const AnkiClient_ = class AnkiClient {
         try {
           //TODO: configuratble
           const recordDurationFallbackSecond = 10;
-          const lastEndSecond =
+          const lastEnd =
             audioStage1VadData[audioStage1VadData.length - 1]?.end ??
             recordDurationFallbackSecond;
           const offsetToLeft = 5000;
@@ -324,7 +320,7 @@ const AnkiClient_ = class AnkiClient {
           return await ffmpeg().process({
             inputPath: savedReplayPath,
             seek: offset - offsetToLeft,
-            duration: lastEndSecond * 1000 + offsetToLeft + offsetToRight,
+            duration: lastEnd + offsetToLeft + offsetToRight,
             format: "opus",
           });
         } catch (e) {
@@ -340,7 +336,7 @@ const AnkiClient_ = class AnkiClient {
             inputPath: savedReplayPath,
             seek: offset,
             //TODO: configurable
-            duration: (lastEnd ?? 3) * 1000,
+            duration: lastEnd ?? 3000,
             format: `${imageFormat}:multiple`,
           });
         } catch (e) {

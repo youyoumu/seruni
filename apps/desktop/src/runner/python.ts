@@ -5,6 +5,7 @@ import * as tar from "tar";
 import { env } from "#/env";
 import { cache } from "#/util/cache";
 import { log } from "#/util/logger";
+import { zVadData } from "#/util/schema";
 
 type SileroCommand = ["silero", string];
 type HealthcheckCommand = ["healthcheck"];
@@ -44,6 +45,16 @@ class Python {
       ...params,
     ];
     return await this.run(finalParams);
+  }
+
+  async runSilero(filePath: string) {
+    return zVadData
+      .parse(JSON.parse((await python().runMain(["silero", filePath])).stdout))
+      .map((item) => {
+        item.start = item.start * 1000;
+        item.end = item.end * 1000;
+        return item;
+      });
   }
 
   async runMainHealthcheck() {
