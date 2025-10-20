@@ -1,9 +1,11 @@
+import { join } from "node:path";
 import { effect, effectScope } from "alien-signals";
 import { AnkiClient, ankiClient } from "#/client/anki";
 import { obsClient } from "#/client/obs";
 import { textractorClient } from "#/client/textractor";
 import { mainDB } from "#/db/main";
 import { env } from "#/env";
+import { ffmpeg } from "#/runner/ffmpeg";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { IPC } from "./base";
@@ -166,10 +168,36 @@ class MiningIPC extends IPC()<"mining"> {
     this.handle(
       "mining:cropPicture",
       async (_, noteId, { source, fileName }, selectionData) => {
-        console.log("DEBUG[790]: noteId=", noteId);
-        console.log("DEBUG[793]: source=", source);
-        console.log("DEBUG[792]: selectionData=", selectionData);
-        console.log("DEBUG[791]: fileName=", fileName);
+        const inputPath = () => {
+          if (source === "anki") {
+            const ankiMediaDir = ankiClient().mediaDir;
+            if (!ankiMediaDir)
+              throw new Error(
+                "Anki media dir not found, is AnkiConnect running?",
+              );
+            return join(ankiMediaDir, fileName);
+          } else {
+            return join(env.STORAGE_PATH, fileName);
+          }
+        };
+        log.debug(
+          { inputPath: inputPath(), selectionData },
+          "Cropping picture",
+        );
+        const filePath = await ffmpeg().process({
+          inputPath: inputPath(),
+          selectionData,
+          format: "webp:crop",
+        });
+        await mainDB().insertNoteAndMedia({
+          noteId,
+          media: [
+            {
+              filePath,
+              type: "picture",
+            },
+          ],
+        });
       },
     );
   }

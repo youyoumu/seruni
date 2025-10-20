@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import type { SelectionData } from "@repo/preload/ipc";
 import { format as formatDate } from "date-fns";
 import { execa } from "execa";
 import { env } from "#/env";
@@ -38,14 +39,17 @@ class FFmpeg {
     seek = 0,
     duration,
     format,
+    selectionData,
   }: {
     inputPath: string;
     seek?: number;
     duration?: number;
+    selectionData?: SelectionData;
     format:
       | "wav"
       | "opus"
       | "webp"
+      | "webp:crop"
       | "webp:multiple"
       | "webp:animated"
       | "png:multiple";
@@ -53,6 +57,7 @@ class FFmpeg {
     const timestamp = this.getTimestamp();
     const actualFormat = () => {
       if (format === "png:multiple") return "png";
+      if (format === "webp:crop") return "webp";
       if (format === "webp:multiple") return "webp";
       if (format === "webp:animated") return "webp";
       return format;
@@ -72,6 +77,16 @@ class FFmpeg {
     const defaultDuration = 1000;
     const numberOfFrames = 6;
     const fps = numberOfFrames / ((duration ?? defaultDuration) / 1000);
+    let { x, y, width, height } = selectionData ?? {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    };
+    x = Math.floor(x);
+    y = Math.floor(y);
+    width = Math.floor(width);
+    height = Math.floor(height);
 
     const params = {
       wav: [
@@ -122,6 +137,21 @@ class FFmpeg {
         "scale='if(gt(iw,ih),-1,720)':'if(gt(ih,iw),-1,720)':force_original_aspect_ratio=decrease", // max 720p
         "-q:v",
         "75", // quality (1-100, worst to best)
+        outputPath,
+      ],
+
+      "webp:crop": [
+        "-y",
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath,
+        "-frames:v",
+        "1",
+        "-vf",
+        `crop=${width}:${height}:${x}:${y}`,
+        "-q:v",
+        "75",
         outputPath,
       ],
 

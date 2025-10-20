@@ -30,7 +30,7 @@ export class DB {
     media: Array<{
       type: "picture" | "sentenceAudio";
       filePath: string;
-      vadData: VadData | undefined;
+      vadData?: VadData;
     }>;
   }) {
     media.forEach((m) => {
@@ -42,8 +42,16 @@ export class DB {
       .values({ noteId })
       .onConflictDoNothing({ target: notesTable.noteId })
       .returning({ id: notesTable.id });
-    const noteRowId = insertedNotes[0]?.id;
-    if (!noteRowId) throw new Error("Note ID not found");
+    let noteRowId = insertedNotes[0]?.id;
+    if (!noteRowId) {
+      noteRowId = await this.db
+        .select()
+        .from(notesTable)
+        .where(eq(notesTable.noteId, noteId))
+        .limit(1)
+        .then((result) => result[0]?.id);
+      if (!noteRowId) throw new Error("Note ID not found");
+    }
 
     log.debug({ noteId, media }, "Saving note and media to database");
     await this.db.insert(mediaTable).values(

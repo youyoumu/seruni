@@ -16,7 +16,7 @@ export function PictureWithZoom(props: {
   trigger: (props: () => ParentProps) => JSX.Element;
 }) {
   const note = useNoteContext();
-  const mediaSrc = useMediaSrcContext();
+  const [mediaSrc] = useMediaSrcContext();
   const [selectionData, setSelectionData] = createSignal<SelectionData>({
     x: 0,
     y: 0,
@@ -89,7 +89,21 @@ export function PictureWithZoom(props: {
                       >
                         Cancel
                       </Button>
-                      <Button onClick={() => {}}>Save</Button>
+                      <Button
+                        onClick={async () => {
+                          await ipcRenderer.invoke(
+                            "mining:cropPicture",
+                            note.id,
+                            {
+                              fileName: mediaSrc().fileName,
+                              source: mediaSrc().source,
+                            },
+                            selectionData(),
+                          );
+                        }}
+                      >
+                        Save
+                      </Button>
                     </Show>
                     <Show when={!editing()}>
                       <IconButton
