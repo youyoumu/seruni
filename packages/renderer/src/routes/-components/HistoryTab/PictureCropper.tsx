@@ -48,13 +48,19 @@ export function PictureCropper(props: { src: string; editing: boolean }) {
     image.addEventListener("load", listener1);
 
     const centerImage = () => {
-      cropper?.getCropperImage()?.$center("contain");
+      const cropperImage = cropper?.getCropperImage();
+      cropperImage?.$center("contain");
+
       if (props.editing && isPreselect()) {
         const cropperSelection = cropper?.getCropperSelection();
-        const w = image.naturalWidth;
-        const h = image.naturalHeight;
+        const rect = cropperImage?.getBoundingClientRect();
+        if (!rect) return;
 
-        // target crop size (50%)
+        // rendered (scaled) width/height, not natural
+        const w = rect.width;
+        const h = rect.height;
+
+        // target crop size (50% of displayed image)
         const cropWidth = w * 0.5;
         const cropHeight = h * 0.5;
 
