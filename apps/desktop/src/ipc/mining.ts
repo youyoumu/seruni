@@ -9,7 +9,7 @@ import { log } from "#/util/logger";
 import { IPC } from "./base";
 
 class MiningIPC extends IPC()<"mining"> {
-  stopScope = () => {};
+  stopScopes = new Set<() => void>();
   constructor() {
     super({
       prefix: "mining",
@@ -32,13 +32,31 @@ class MiningIPC extends IPC()<"mining"> {
       };
     });
 
-    this.stopScope = effectScope(() => {
-      effect(() => {
-        this.send("mining:sendReplayBufferStartTime", {
-          time: obsClient().replayBufferStartTime(),
-        });
-      });
+    this.handle("mining:getReplayBufferDuration", async () => {
+      return {
+        duration: obsClient().replayBufferDuration(),
+      };
     });
+
+    this.stopScopes.add(
+      effectScope(() => {
+        effect(() => {
+          this.send("mining:sendReplayBufferStartTime", {
+            time: obsClient().replayBufferStartTime(),
+          });
+        });
+      }),
+    );
+
+    this.stopScopes.add(
+      effectScope(() => {
+        effect(() => {
+          this.send("mining:sendReplayBufferDuration", {
+            duration: obsClient().replayBufferDuration(),
+          });
+        });
+      }),
+    );
 
     this.handle("mining:getSourceScreenshot", async () => {
       const currentProgramScene = await obsClient()
@@ -158,7 +176,9 @@ class MiningIPC extends IPC()<"mining"> {
 
   override unregister(): void {
     super.unregister();
-    this.stopScope();
+    this.stopScopes.forEach((stopScope) => {
+      stopScope();
+    });
   }
 }
 

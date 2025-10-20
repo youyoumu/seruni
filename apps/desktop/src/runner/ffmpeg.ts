@@ -17,6 +17,10 @@ class FFmpeg {
     return timestamp;
   }
 
+  //TODO: parse is ms
+  /**
+   * @returns duration in seconds
+   */
   async getFileDuration(filePath: string): Promise<number> {
     const { stdout, stderr } = await execa("ffprobe", [
       "-v",

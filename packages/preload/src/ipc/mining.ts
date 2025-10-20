@@ -50,6 +50,14 @@ export const zMiningIPC = {
       ]),
       output: z.void(),
     }),
+    "mining:sendReplayBufferDuration": z.object({
+      input: z.tuple([
+        z.object({
+          duration: z.number(),
+        }),
+      ]),
+      output: z.void(),
+    }),
   }),
   renderer: z.object({
     "mining:setTextUuid": z.object({
@@ -76,6 +84,12 @@ export const zMiningIPC = {
       input: z.tuple([]),
       output: z.object({
         time: z.date().optional(),
+      }),
+    }),
+    "mining:getReplayBufferDuration": z.object({
+      input: z.tuple([]),
+      output: z.object({
+        duration: z.number(),
       }),
     }),
     "mining:getSourceScreenshot": z.object({

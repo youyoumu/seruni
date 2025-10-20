@@ -46,6 +46,11 @@ export function MiningTab() {
     "ちょっと！寝てる場合じゃないってば！",
     "……ねえ、私のこと、どう思ってるの？",
   ];
+  const [now, setNow] = createSignal(new Date());
+  createEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    onCleanup(() => clearInterval(interval));
+  });
 
   const [timer, setTimer] = makePersisted(createSignal(0), {
     name: "texthookerTimer",
@@ -68,6 +73,7 @@ export function MiningTab() {
   const [replayBufferStartTime, setReplayBufferStartTime] = createSignal<
     Date | undefined
   >(undefined);
+  const [replayBufferDuration, setReplayBufferDuration] = createSignal(0);
   let textContainerRef: HTMLDivElement | undefined;
 
   const notInHistoryTexts = () =>
@@ -75,11 +81,22 @@ export function MiningTab() {
       return !textHistory().some((item_) => item_.uuid === item.uuid);
     });
 
-  const withinBufferTexts = () =>
-    textHistory().filter((item) => {
-      const time = replayBufferStartTime();
-      return time && isAfter(item.time, time);
+  const withinBufferTexts = () => {
+    const startTime = replayBufferStartTime();
+    const maxDurationMs = replayBufferDuration(); // in milliseconds
+    if (!startTime || maxDurationMs <= 0) return [];
+
+    const timeSinceStartMs = now().getTime() - startTime.getTime();
+    const effectiveDurationMs = Math.min(timeSinceStartMs, maxDurationMs);
+
+    const bufferStartTime = new Date(now().getTime() - effectiveDurationMs);
+    return textHistory().filter((item) => {
+      // Only include text that falls inside the active replay buffer window
+      return (
+        isAfter(item.time, bufferStartTime) && isAfter(item.time, startTime)
+      );
     });
+  };
 
   const isNotJapaneseRegex =
     /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
@@ -127,6 +144,13 @@ export function MiningTab() {
     setReplayBufferStartTime(replayBufferStartTime.time);
     ipcRenderer.on("mining:sendReplayBufferStartTime", ({ time }) => {
       setReplayBufferStartTime(time);
+    });
+    const replayBufferDuration = await ipcRenderer.invoke(
+      "mining:getReplayBufferDuration",
+    );
+    setReplayBufferDuration(replayBufferDuration.duration);
+    ipcRenderer.on("mining:sendReplayBufferDuration", ({ duration }) => {
+      setReplayBufferDuration(duration);
     });
 
     ipcRenderer.on("vnOverlay:sendText", (payload) => {

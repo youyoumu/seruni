@@ -25,3 +25,4 @@
 - zod parse settings
 - obs password
 - namespace on renderer
+- vscode layout
