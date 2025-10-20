@@ -169,12 +169,29 @@ class ObsClient {
     return promise;
   }
 
-  // TODO: use cache result if we get same duraiont multiple times
+  useCache = false;
+  lastReplayBufferDuration = 0;
   async updateReplayBufferDuration() {
-    const replayBufferFulePath = await this.saveReplayBuffer();
-    const durationSeconds =
-      await ffmpeg().getFileDuration(replayBufferFulePath);
-    this.replayBufferDuration(durationSeconds * 1000);
+    if (this.useCache) {
+      this.replayBufferDuration(this.lastReplayBufferDuration);
+      return;
+    }
+    const replayBufferFilePath = await this.saveReplayBuffer();
+    const duration =
+      (await ffmpeg().getFileDuration(replayBufferFilePath)) * 1000;
+
+    const delta = Math.abs(duration - this.lastReplayBufferDuration);
+    if (delta < 5000) {
+      log.debug(
+        `Replay buffer duration don't changes much since last time, assumming ${this.lastReplayBufferDuration / 1000}s`,
+      );
+      this.replayBufferDuration(this.lastReplayBufferDuration);
+      this.useCache = true;
+      return;
+    }
+
+    this.lastReplayBufferDuration = duration;
+    this.replayBufferDuration(duration);
   }
 }
 
