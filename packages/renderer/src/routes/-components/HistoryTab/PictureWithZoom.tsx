@@ -1,9 +1,11 @@
+import { CropIcon } from "lucide-solid";
 import { createSignal, type JSX, type ParentProps, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
+import { IconButton } from "#/components/ui/icon-button";
 import { PictureCropper } from "./PictureCropper";
 
 export function PictureWithZoom(props: {
@@ -73,13 +75,13 @@ export function PictureWithZoom(props: {
                       <Button onClick={() => {}}>Save</Button>
                     </Show>
                     <Show when={!editing()}>
-                      <Button
+                      <IconButton
                         onClick={() => {
                           setEditing(true);
                         }}
                       >
-                        Crop
-                      </Button>
+                        <CropIcon />
+                      </IconButton>
                     </Show>
                   </HStack>
                 </Stack>

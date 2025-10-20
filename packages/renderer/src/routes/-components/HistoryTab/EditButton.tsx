@@ -1,5 +1,11 @@
 import type { AnkiHistory, Media } from "@repo/preload/ipc";
-import { ArrowRightFromLineIcon, FullscreenIcon } from "lucide-solid";
+import {
+  FishIcon,
+  FishSymbolIcon,
+  FullscreenIcon,
+  MoveRightIcon,
+  ZoomInIcon,
+} from "lucide-solid";
 import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
@@ -73,7 +79,7 @@ export function EditButton(props: { noteId: number }) {
                     });
                   }}
                 />
-                <ArrowRightFromLineIcon
+                <FishSymbolIcon
                   class={css({
                     h: "full",
                     w: "full",
@@ -123,16 +129,21 @@ export function EditButton(props: { noteId: number }) {
 
 const zoomIconCva = cva({
   base: {
+    opacity: 0,
+    transition: "opacity",
     cursor: "pointer",
     rounded: "sm",
-    bg: "bg.default/75",
+    bg: "bg.default",
     w: "6",
     h: "6",
-    p: "0.5",
+    p: "1",
     position: "absolute",
     top: "2",
     right: "2",
     strokeWidth: "1.5",
+    borderColor: "border.default",
+    borderWidth: "thin",
+    color: "fg.muted",
   },
   variants: {
     size: {
@@ -141,6 +152,7 @@ const zoomIconCva = cva({
         h: "8",
       },
       sm: {
+        p: "0.5",
         top: "1",
         right: "1",
         w: "6",
@@ -197,8 +209,15 @@ function CurrentImage(props: {
       src={pictureSrc()}
       trigger={(triggerProps) => {
         return (
-          <Box position="relative">
-            <FullscreenIcon
+          <Box
+            class={css({
+              position: "relative",
+              "&:hover > svg": {
+                opacity: 1,
+              },
+            })}
+          >
+            <ZoomInIcon
               {...triggerProps()}
               class={zoomIconCva({ size: "default" })}
             />
@@ -247,8 +266,15 @@ function AvailableImage(props: {
       src={pictureSrc()}
       trigger={(triggerProps) => {
         return (
-          <Box position="relative">
-            <FullscreenIcon
+          <Box
+            class={css({
+              position: "relative",
+              "&:hover > svg": {
+                opacity: 1,
+              },
+            })}
+          >
+            <ZoomInIcon
               {...triggerProps()}
               class={zoomIconCva({ size: "sm" })}
             />
