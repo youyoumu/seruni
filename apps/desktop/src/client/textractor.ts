@@ -3,9 +3,10 @@ import type { ClientStatus } from "@repo/preload/ipc";
 import { WebSocket } from "ws";
 import { vnOverlayIPC } from "#/ipc/vnOverlay";
 import { config } from "#/util/config";
-import { log } from "../util/logger";
+import { logWithNamespace } from "../util/logger";
 
 class TextractorClient {
+  log = logWithNamespace("Textractor");
   history: { time: Date; text: string; uuid: string }[] = [];
   client: WebSocket | undefined;
   retryCount = 0;
@@ -23,7 +24,7 @@ class TextractorClient {
       this.client = new WebSocket(this.url());
 
       this.client.on("open", () => {
-        log.info(`Textractor: Connected on ${this.url()}`);
+        this.log.info(`Connected on ${this.url()}`);
         this.status = "connected";
         this.retryCount = 0;
       });
@@ -32,25 +33,25 @@ class TextractorClient {
         const text = Buffer.isBuffer(data)
           ? data.toString("utf8")
           : data.toString();
-        log.debug({ text }, "Received from Textractor");
+        this.log.debug({ text }, "Received text");
         const payload = { time: new Date(), text, uuid: randomUUID() };
         this.history.push(payload);
         vnOverlayIPC().send("vnOverlay:sendText", payload);
       });
 
       this.client.on("error", () => {
-        log.warn(`Textractor: Failed to connect on ${this.url()}`);
+        this.log.warn(`Failed to connect on ${this.url()}`);
         this.reconnect();
       });
 
       this.client.on("close", () => {
         if (!this.reconnecting) {
-          log.error("Textractor: Connection closed");
+          this.log.error("Connection closed");
         }
         this.reconnect();
       });
     } catch {
-      log.error(`Textractor: Failed to connect on ${this.url()}`);
+      this.log.error(`Failed to connect on ${this.url()}`);
       this.reconnect();
     }
   }
@@ -60,7 +61,7 @@ class TextractorClient {
     if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
     const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount); // exponential backoff
-    log.info(`Textractor: Reconnecting in ${delay / 1000} seconds...`);
+    this.log.info(`Reconnecting in ${delay / 1000} seconds...`);
 
     this.retryCount++;
     if (this.retryTimer) clearTimeout(this.retryTimer);

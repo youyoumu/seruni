@@ -12,8 +12,8 @@ import { ffmpeg } from "#/runner/ffmpeg";
 import { python } from "#/runner/python";
 import { type BusEvents, bus } from "#/util/bus";
 import { config } from "#/util/config";
-import { log } from "#/util/logger";
-import { type AnkiNote, type VadData, zVadData } from "#/util/schema";
+import { logWithNamespace } from "#/util/logger";
+import type { AnkiNote, VadData } from "#/util/schema";
 import { obsClient } from "./obs";
 import { textractorClient } from "./textractor";
 
@@ -25,6 +25,7 @@ type TextUuidQueueResult =
   | undefined;
 
 const AnkiClient_ = class AnkiClient {
+  log = logWithNamespace("AnkiConnect");
   client: YankiConnect | undefined;
   lastAddedNote: number | undefined;
   reconnecting = false;
@@ -35,10 +36,12 @@ const AnkiClient_ = class AnkiClient {
   selectedTextUuid: string | undefined;
   textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
   mediaDir: string | undefined;
+  //TODO: reactivity?
+  port = config.store.anki.ankiConnectPort;
   #abortController = new AbortController();
 
   register() {
-    log.trace("AnkiConnect: Registering event listeners");
+    this.log.trace("Registering event listeners");
     const listener = ({ noteId }: BusEvents["anki:handleNewNote"]) => {
       this.preHandleNewNote(noteId);
     };
@@ -49,7 +52,7 @@ const AnkiClient_ = class AnkiClient {
   }
 
   unregister() {
-    log.trace("AnkiConnect: Unregistering event listeners");
+    this.log.trace("Unregistering event listeners");
     this.#abortController.abort();
   }
 
@@ -67,13 +70,11 @@ const AnkiClient_ = class AnkiClient {
       this.mediaDir = await this.client?.media.getMediaDirPath();
       this.retryCount = 0;
       this.status = "connected";
-      log.info(
-        `AnkiConnect: Connected on port ${config.store.anki.ankiConnectPort}`,
-      );
+      this.log.info(`Connected on port ${config.store.anki.ankiConnectPort}`);
       this.monitor();
     } catch {
-      log.error(
-        `AnkiConnect: Failed to connect on port ${config.store.anki.ankiConnectPort}`,
+      this.log.error(
+        `Failed to connect on port ${config.store.anki.ankiConnectPort}`,
       );
       this.reconnect();
     }
@@ -83,7 +84,7 @@ const AnkiClient_ = class AnkiClient {
     if (this.reconnecting || this.status === "disconnected") return;
     this.reconnecting = true;
     const delay = Math.min(this.maxDelay, 1000 * 2 ** this.retryCount);
-    log.info(`AnkiConnect: Reconnecting in ${delay / 1000} seconds...`);
+    this.log.info(`Reconnecting in ${delay / 1000} seconds...`);
     this.retryCount++;
 
     if (this.retryTimer) clearTimeout(this.retryTimer);
@@ -102,7 +103,7 @@ const AnkiClient_ = class AnkiClient {
   async monitor() {
     while (true) {
       if (!this.client) {
-        log.warn("Anki client unavailable, reconnecting...");
+        this.log.warn("Client unavailable, reconnecting...");
         this.reconnect();
         break;
       }
@@ -119,9 +120,9 @@ const AnkiClient_ = class AnkiClient {
         // }
       } catch (error) {
         // log.error({ error }, "Failed to fetch last added note");
-        log.error(
+        this.log.error(
           { error },
-          "Failed to connect to AnkiConnect, reconnecting...",
+          `Failed to connect on port ${this.port}, reconnecting...`,
         );
         this.reconnect();
         break;
@@ -139,7 +140,7 @@ const AnkiClient_ = class AnkiClient {
 
   async preHandleNewNote(noteId: number) {
     const noteInfo = await this.getNote(noteId);
-    log.debug({ noteInfo }, "noteInfo");
+    this.log.debug({ noteInfo }, "Note Info");
     const expression = AnkiClient.getExpression(noteInfo);
     //TODO: test this
     const { expressionField, pictureField, sentenceAudioField } =
@@ -160,7 +161,7 @@ const AnkiClient_ = class AnkiClient {
             },
           };
         } catch (e) {
-          log.error({ error: e }, "Failed to handle new note");
+          this.log.error({ error: e }, "Failed to handle new note");
           return {
             error: {
               title: "Failed to handle new note",
@@ -178,6 +179,7 @@ const AnkiClient_ = class AnkiClient {
     );
   }
 
+  //TODO: move this out from anki client
   async handleNewNote(noteId: number) {
     //get history
     const now = new Date();
@@ -188,7 +190,7 @@ const AnkiClient_ = class AnkiClient {
       });
     if (!history) throw new Error("Failed to find history");
 
-    log.debug(
+    this.log.debug(
       {
         text: history?.text,
         time: format(history?.time, "yyyy-MM-dd HH:mm:ss"),
@@ -208,10 +210,10 @@ const AnkiClient_ = class AnkiClient {
     try {
       // if text is already processed, reuse the media file
       if (alreadyProcessed) {
-        log.info("Trying to reuse media files");
+        this.log.info("Trying to reuse media files");
         const result = await this.textUuidQueue[history.uuid];
         if (result) {
-          log.debug({ ...result }, "Reusing media files");
+          this.log.debug({ ...result }, "Reusing media files");
           await this.updateNoteMedia({
             noteId,
             picturePath: result.picturePath,
@@ -324,7 +326,7 @@ const AnkiClient_ = class AnkiClient {
             format: "opus",
           });
         } catch (e) {
-          log.error({ error: e }, "Failed to extract audio for editing");
+          this.log.error({ error: e }, "Failed to extract audio for editing");
         }
       })();
 
@@ -340,7 +342,7 @@ const AnkiClient_ = class AnkiClient {
             format: `${imageFormat}:multiple`,
           });
         } catch (e) {
-          log.error({ error: e }, "Failed to extract images for editing");
+          this.log.error({ error: e }, "Failed to extract images for editing");
         }
       })();
 
@@ -371,7 +373,10 @@ const AnkiClient_ = class AnkiClient {
                 }));
               mediaEntries.push(...imageFiles);
             } catch (e) {
-              log.error({ error: e }, "Failed to read images from directory:");
+              this.log.error(
+                { error: e },
+                "Failed to read images from directory:",
+              );
             }
           }
 
@@ -382,7 +387,7 @@ const AnkiClient_ = class AnkiClient {
                 media: mediaEntries,
               });
             } catch (e) {
-              log.error({ error: e }, "Failed to insert note and media");
+              this.log.error({ error: e }, "Failed to insert note and media");
             }
           }
         },
@@ -422,7 +427,7 @@ const AnkiClient_ = class AnkiClient {
     picturePath: string | undefined | null;
     sentenceAudioPath: string | undefined | null;
   }) {
-    log.debug(
+    this.log.debug(
       { noteId, picturePath, sentenceAudioPath },
       "Updating note media",
     );
@@ -450,7 +455,7 @@ const AnkiClient_ = class AnkiClient {
         }),
       },
     });
-    log.debug(`Adding tag ${env.APP_NAME} to note ${noteId}`);
+    this.log.debug(`Adding tag ${env.APP_NAME} to note ${noteId}`);
     await this.client?.note.addTags({
       notes: [noteId],
       tags: env.APP_NAME,
