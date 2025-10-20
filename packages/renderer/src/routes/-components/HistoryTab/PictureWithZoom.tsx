@@ -7,12 +7,16 @@ import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
+import { useMediaSrcContext } from "./MediaSrcContext";
+import { useNoteContext } from "./NoteContext";
 import { PictureCropper } from "./PictureCropper";
 
 export function PictureWithZoom(props: {
   src: string;
   trigger: (props: () => ParentProps) => JSX.Element;
 }) {
+  const note = useNoteContext();
+  const mediaSrc = useMediaSrcContext();
   const [selectionData, setSelectionData] = createSignal<SelectionData>({
     x: 0,
     y: 0,

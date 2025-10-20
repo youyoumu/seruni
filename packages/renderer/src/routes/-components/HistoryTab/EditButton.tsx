@@ -1,4 +1,4 @@
-import type { Media } from "@repo/preload/ipc";
+import type { Media, MediaSrc } from "@repo/preload/ipc";
 import { FishSymbolIcon, ZoomInIcon } from "lucide-solid";
 import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -8,6 +8,7 @@ import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { getMediaUrl } from "#/lib/util";
 import { ImageWithFallback } from "./ImageWithFallback";
+import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
 import { PictureWithZoom } from "./PictureWithZoom";
 
@@ -18,19 +19,10 @@ export function EditButton() {
   const sentenceAudioMedia = () =>
     media().find((m) => m.type === "sentenceAudio");
 
-  const [selectedImage, setSelectedImage] = createSignal<{
-    fileName: string | undefined;
-    source: "storage" | "anki";
-  }>({
+  const [selectedMedisSrc, setSelectedMediaSrc] = createSignal<MediaSrc>({
     fileName: note.picture,
     source: "anki",
   });
-  const selectedImageSrc = () =>
-    selectedImage().fileName
-      ? selectedImage().source === "anki"
-        ? getMediaUrl(selectedImage().fileName ?? "", "anki")
-        : getMediaUrl(selectedImage().fileName ?? "", "storage")
-      : "";
 
   onMount(async () => {
     const media = await ipcRenderer.invoke("mining:getNoteMedia", {
@@ -58,18 +50,25 @@ export function EditButton() {
           <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
             <Stack gap="8">
               <HStack justifyContent="center">
-                <CurrentImage
-                  isSelected={
-                    selectedImage().fileName === note.picture &&
-                    selectedImage().source === "anki"
-                  }
-                  onClick={() => {
-                    setSelectedImage({
-                      fileName: note.picture,
-                      source: "anki",
-                    });
-                  }}
-                />
+                <MediaSrcContextProvider
+                  value={createSignal<MediaSrc>({
+                    fileName: note.picture,
+                    source: "anki" as const,
+                  })}
+                >
+                  <CurrentImage
+                    isSelected={
+                      selectedMedisSrc().fileName === note.picture &&
+                      selectedMedisSrc().source === "anki"
+                    }
+                    onClick={() => {
+                      setSelectedMediaSrc({
+                        fileName: note.picture,
+                        source: "anki",
+                      });
+                    }}
+                  />
+                </MediaSrcContextProvider>
                 <FishSymbolIcon
                   class={css({
                     h: "full",
@@ -79,10 +78,11 @@ export function EditButton() {
                   })}
                   strokeWidth="1"
                 />
-                <SelectedImage
-                  src={selectedImageSrc()}
-                  //TODO: crop pop up
-                />
+                <MediaSrcContextProvider
+                  value={[selectedMedisSrc, setSelectedMediaSrc]}
+                >
+                  <SelectedImage />
+                </MediaSrcContextProvider>
               </HStack>
               <Grid
                 gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -90,22 +90,26 @@ export function EditButton() {
               >
                 <For each={pictureMedia()}>
                   {(item) => {
-                    const pictureSrc = () =>
-                      getMediaUrl(item.fileName, "storage");
                     const isSelected = () =>
-                      selectedImage().fileName === item.fileName &&
-                      selectedImage().source === "storage";
+                      selectedMedisSrc().fileName === item.fileName &&
+                      selectedMedisSrc().source === "storage";
                     return (
-                      <AvailableImage
-                        isSelected={isSelected()}
-                        src={pictureSrc()}
-                        onClick={() => {
-                          setSelectedImage({
-                            fileName: item.fileName,
-                            source: "storage",
-                          });
-                        }}
-                      />
+                      <MediaSrcContextProvider
+                        value={createSignal<MediaSrc>({
+                          fileName: item.fileName,
+                          source: "storage",
+                        })}
+                      >
+                        <AvailableImage
+                          isSelected={isSelected()}
+                          onClick={() => {
+                            setSelectedMediaSrc({
+                              fileName: item.fileName,
+                              source: "storage",
+                            });
+                          }}
+                        />
+                      </MediaSrcContextProvider>
                     );
                   }}
                 </For>
@@ -153,18 +157,19 @@ const zoomIconCva = cva({
   },
 });
 
-function SelectedImage(props: { src: string }) {
-  const pictureSrc = () => props.src;
+function SelectedImage() {
   const note = useNoteContext();
+  const [mediaSrc] = useMediaSrcContext();
+  const src = () => getMediaUrl(mediaSrc().fileName, mediaSrc().source);
 
   return (
     <PictureWithZoom
-      src={pictureSrc()}
+      src={src()}
       trigger={(triggerProps) => {
         return (
           <Box position="relative">
             <ImageWithFallback
-              src={pictureSrc()}
+              src={src()}
               height="56"
               image={(imageProps) => {
                 return (
@@ -178,7 +183,7 @@ function SelectedImage(props: { src: string }) {
                       rounded: "sm",
                       cursor: "pointer",
                     })}
-                    src={pictureSrc()}
+                    src={src()}
                     alt="PictureField"
                   />
                 );
@@ -193,7 +198,8 @@ function SelectedImage(props: { src: string }) {
 
 function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
   const note = useNoteContext();
-  const src = getMediaUrl(note.picture, "anki");
+  const [mediaSrc] = useMediaSrcContext();
+  const src = getMediaUrl(mediaSrc().fileName, mediaSrc().source);
 
   return (
     <PictureWithZoom
@@ -246,17 +252,14 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
   );
 }
 
-function AvailableImage(props: {
-  src: string;
-  onClick: () => void;
-  isSelected: boolean;
-}) {
+function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
   const note = useNoteContext();
-  const pictureSrc = () => props.src;
+  const [mediaSrc] = useMediaSrcContext();
+  const src = getMediaUrl(mediaSrc().fileName, mediaSrc().source);
 
   return (
     <PictureWithZoom
-      src={pictureSrc()}
+      src={src}
       trigger={(triggerProps) => {
         return (
           <Box
@@ -272,7 +275,7 @@ function AvailableImage(props: {
               class={zoomIconCva({ size: "sm" })}
             />
             <ImageWithFallback
-              src={pictureSrc()}
+              src={src}
               height="28"
               image={(imageProps) => {
                 return (
@@ -292,7 +295,7 @@ function AvailableImage(props: {
                       rounded: "sm",
                       cursor: "pointer",
                     })}
-                    src={pictureSrc()}
+                    src={src}
                     alt="PictureField"
                   />
                 );

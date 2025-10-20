@@ -30,7 +30,7 @@ export const zMedia = z.array(
 );
 
 export const zMediaSrc = z.object({
-  fileName: z.string().optional(),
+  fileName: z.string(),
   source: z.union([z.literal("storage"), z.literal("anki")]),
 });
 
