@@ -113,7 +113,10 @@ export function ConsoleTab() {
       <HStack px="6" gap="8" alignItems="center">
         <Slider
           value={[logLevel()]}
-          onValueChange={(details) => setLogLevel(details.value[0] ?? 10)}
+          onValueChange={(details) => {
+            setLogLevel(details.value[0] ?? 10);
+            if (tailing()) scrollToBottom();
+          }}
           step={10}
           marks={[
             { value: 10, label: "TRACE" },

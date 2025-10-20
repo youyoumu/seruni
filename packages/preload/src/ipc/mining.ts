@@ -1,5 +1,6 @@
 import z from "zod";
 
+export const zAnkiConnectUrlPath = z.literal("/anki/connect/");
 export const zAnkiCollectionMediaUrlPath = z.literal("/anki/collection.media/");
 export const zStorageUrlPath = z.literal("/storage/");
 

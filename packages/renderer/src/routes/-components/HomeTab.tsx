@@ -24,7 +24,6 @@ import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
 import { type ClientStatus, setStore, store } from "#/lib/store";
-import { createFlip } from "#/lib/util";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {

@@ -1,8 +1,5 @@
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import z from "zod";
-import { env } from "#/env";
 import { bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
@@ -10,9 +7,7 @@ import { zAnkiConnectAddNote } from "#/util/schema";
 
 const app = new Hono();
 
-app.use("*", cors());
-
-app.all("*", async (c) => {
+app.post("/", async (c) => {
   const url = new URL(c.req.url);
   const target = `http://localhost:${config.store.anki.ankiConnectPort}${url.pathname}${url.search}`;
 
@@ -75,12 +70,4 @@ app.all("*", async (c) => {
   });
 });
 
-export function startAnkiConnectProxtServer() {
-  log.info(
-    `Starting AnkiConnect proxy server on port ${env.ANKI_CONNECT_PROXY_PORT}`,
-  );
-  serve({
-    fetch: app.fetch,
-    port: env.ANKI_CONNECT_PROXY_PORT,
-  });
-}
+export { app };

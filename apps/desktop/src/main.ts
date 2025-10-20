@@ -14,7 +14,6 @@ import { mainWindow } from "./window/main";
 import { yomitanWindow } from "./window/yomitan";
 import "./db/main";
 import { DB, mainDB } from "./db/main";
-import { startAnkiConnectProxtServer } from "./hono/ankiConnectProxy";
 import { bus } from "./util/bus";
 import { config } from "./util/config";
 import { registerAllWindow } from "./util/window";
@@ -42,7 +41,6 @@ export async function bootstrap() {
   registerAllWindow();
   registerAllIPC();
   startHttpServer();
-  startAnkiConnectProxtServer();
   await yomitanWindow().loadYomitan();
 
   const menu = Menu.getApplicationMenu();
