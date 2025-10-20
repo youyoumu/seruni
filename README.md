@@ -5,7 +5,6 @@
 - anilist interaction
 - media quality settings
 - blinking/marker when processing text
-- marker for text that can't be processed
 - guard when the text doesn't contain the word
 - offset crop
 - edit existing media files
@@ -24,5 +23,4 @@
 - google image
 - zod parse settings
 - obs password
-- namespace on renderer
 - vscode layout

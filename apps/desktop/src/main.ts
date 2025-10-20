@@ -34,6 +34,10 @@ app.on("web-contents-created", (_, contents) => {
   );
 });
 
+app.on("before-quit", () => {
+  textractorClient().close();
+});
+
 export async function bootstrap() {
   bus.emit("env:ready", env);
   await DB.migrate(mainDB().db);

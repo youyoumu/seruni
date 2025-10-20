@@ -25,7 +25,7 @@ import { app as app_storage } from "./storage/";
 (() => {
 app.route(zAnkiCollectionMediaUrlPath.parse("/anki/collection.media/"), app_anki__collection_media);
 app.route(zAnkiConnectUrlPath.parse("/anki/connect/"), app_anki__connect);
-app.route(zAnkiConnectUrlPath.parse("/anki/connect/").replace(/\/$/, ""), app_anki__connect);
+app.route(zAnkiConnectUrlPath.parse("/anki/connect/").replace(/\/$/, ""), app_anki__connect); // allow without trailing slash
 app.route(zStorageUrlPath.parse("/storage/"), app_storage);
 })()
 

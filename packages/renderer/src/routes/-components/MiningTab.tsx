@@ -259,6 +259,12 @@ export function MiningTab() {
                 borderColor="border.default"
                 borderBottomWidth="thin"
                 onMouseEnter={() => {
+                  if (
+                    notInHistoryTexts().some(
+                      (item_) => item_.uuid === item.uuid,
+                    )
+                  )
+                    return;
                   hoverTimeout = window.setTimeout(() => {
                     ipcRenderer
                       .invoke("mining:setTextUuid", { uuid: item.uuid })
