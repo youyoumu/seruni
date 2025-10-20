@@ -12,21 +12,22 @@ import { env } from "#/env";
 import { log } from "#/util/logger";
 import { handleMediaRequest } from "./_util";
 
+const app = new Hono();
+
+app.use("*", cors());
+
 //  ──────────────────────────────── Hono ─────────────────────────────
 import { app as app_anki__collection_media } from "./anki/collections.media";
 import { app as app_anki__connect } from "./anki/connect/";
 import { app as app_storage } from "./storage/";
 
-const app = new Hono();
-
-app.use("*", cors());
-
-// /anki/collection.media/
-app.route(zAnkiCollectionMediaUrlPath.value, app_anki__collection_media);
-// /anki/connect/
-app.route(zAnkiConnectUrlPath.value, app_anki__connect);
-// /storage/
-app.route(zStorageUrlPath.value, app_storage);
+// biome-ignore format: this looks better
+(() => {
+app.route(zAnkiCollectionMediaUrlPath.parse("/anki/collection.media/"), app_anki__collection_media);
+app.route(zAnkiConnectUrlPath.parse("/anki/connect/"), app_anki__connect);
+app.route(zAnkiConnectUrlPath.parse("/anki/connect/").replace(/\/$/, ""), app_anki__connect);
+app.route(zStorageUrlPath.parse("/storage/"), app_storage);
+})()
 
 // during development, we use vite dev server
 if (!env.DEV) {
