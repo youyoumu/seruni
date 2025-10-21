@@ -52,9 +52,7 @@ export function Debug() {
     setStore("debug", "python", "pythonVenvPipList", pythonVenvPipList);
   });
 
-  createEffect(() => {
-    console.log(envQuery().data);
-  });
+  createEffect(() => {});
 
   return (
     <Stack gap="2" w="full">

@@ -1,3 +1,4 @@
+import { createElementSize } from "@solid-primitives/resize-observer";
 import { XIcon } from "lucide-solid";
 import { type Component, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -42,7 +43,9 @@ const notificationCard = cva({
 
 export function NotificationHistory(props: { trigger: Component }) {
   const Trigger = props.trigger;
-  const height = () => `calc(100vh - ${store.element.statusBar.height}px)`;
+  const [statusBarEl] = store.element.statusBar;
+  const statusBarSize = createElementSize(statusBarEl);
+  const height = () => `calc(100vh - ${statusBarSize.height ?? 0}px)`;
 
   return (
     <Drawer.Root

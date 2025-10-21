@@ -1,8 +1,8 @@
 import type {
-  ToastPromiseOptions,
   ToastPromiseOptionsError,
   ToastPromiseOptionsSuccess,
 } from "@repo/preload/ipc";
+import { createElementSize } from "@solid-primitives/resize-observer";
 import { ShellIcon, XIcon } from "lucide-solid";
 import {
   createEffect,
@@ -42,24 +42,20 @@ export function Page() {
     { id: "settings", label: "Settings" },
   ];
 
-  onMount(() => {
-    ipcRenderer.send("general:ready");
-  });
-
-  let tabListRef: HTMLDivElement | undefined;
-  const [tabListHeight, setTabListHeight] = createSignal(0);
-  const contentHeight = (gap = 8) =>
-    `calc(100vh - ${tabListHeight() + store.element.statusBar.height + gap}px)`;
+  const [tabListEl, setTabListEl] = createSignal<HTMLDivElement>();
+  const [statusBarEl] = store.element.statusBar;
+  const tabListSize = createElementSize(tabListEl);
+  const statusBarSize = createElementSize(statusBarEl);
+  const contentHeight = (gap = 8) => {
+    return `calc(100vh - ${(tabListSize.height ?? 0) + (statusBarSize.height ?? 0) + gap}px)`;
+  };
 
   createEffect(() => {
-    // console.log(tabListHeight());
+    // console.log("DEBUG[802]: size=", tabListSize.height);
   });
 
   onMount(() => {
-    setTabListHeight(tabListRef?.clientHeight ?? 0);
-    tabListRef?.addEventListener("resize", () => {
-      setTabListHeight(tabListRef?.clientHeight ?? 0);
-    });
+    ipcRenderer.send("general:ready");
   });
 
   return (
@@ -94,7 +90,7 @@ export function Page() {
           px="2"
           pt="4"
           pb="2"
-          ref={tabListRef}
+          ref={setTabListEl}
           justifyContent="center"
         >
           <HStack maxW="8xl" w="full">

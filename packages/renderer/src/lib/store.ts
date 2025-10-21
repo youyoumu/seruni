@@ -1,4 +1,5 @@
 import type { ToastType } from "@ark-ui/solid";
+import { createSignal, type Signal } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
 import { createStore } from "solid-js/store";
 
@@ -36,9 +37,7 @@ export const [store, setStore] = createStore<{
     obs: Client;
   };
   element: {
-    statusBar: {
-      height: number;
-    };
+    statusBar: Signal<HTMLDivElement | undefined>;
   };
 }>({
   general: {
@@ -70,8 +69,6 @@ export const [store, setStore] = createStore<{
     },
   },
   element: {
-    statusBar: {
-      height: 0,
-    },
+    statusBar: createSignal<HTMLDivElement>(),
   },
 });

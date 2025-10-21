@@ -77,7 +77,7 @@ function App() {
         <RouterProvider router={router} />
       </Suspense>
       {/* keep this empty div https://github.com/solidjs/solid/issues/2515 */}
-      <div></div>
+      <div style={{ display: "none" }}></div>
     </QueryClientProvider>
   );
 }
