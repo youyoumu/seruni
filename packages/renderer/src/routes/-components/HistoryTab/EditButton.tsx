@@ -6,7 +6,7 @@ import { css, cva } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { noteMediaQuery } from "#/lib/query/noteMedia";
+import { noteMediaQuery } from "#/lib/query/mining";
 import { getMediaUrl } from "#/lib/util";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";

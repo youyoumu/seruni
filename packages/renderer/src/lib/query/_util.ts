@@ -16,7 +16,10 @@ export const noUndefinedArray = <T extends unknown[]>(
 };
 
 export const queryKey = createQueryKeyStore({
-  mediaSrc: {
+  "mining:noteMedia": {
     one: (noteId: number) => [noteId],
+  },
+  "settings:env": {
+    detail: null,
   },
 });

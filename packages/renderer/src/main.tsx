@@ -49,7 +49,13 @@ declare global {
 
 if (!window.hmr) window.hmr = new HMR();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity,
+    },
+  },
+});
 
 const router = createRouter({
   routeTree,
@@ -75,10 +81,6 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-ipcRenderer.invoke("settings:getEnv").then((env) => {
-  setStore("debug", "env", env);
-});
 
 ipcRenderer.invoke("general:httpServerUrl").then(({ url }) => {
   setStore("general", "httpServerUrl", url);

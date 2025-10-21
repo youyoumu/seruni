@@ -4,13 +4,13 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
+import { envQuery } from "#/lib/query/settings";
 import { setStore, store } from "#/lib/store";
 import { checkPython } from "#/lib/util";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {
-  const envString = () =>
-    stringify(store.debug.env, { indent: 2 }).slice(1, -1);
+  const envString = () => stringify(envQuery().data, { indent: 2 }) ?? "";
   const pythonPipList = () =>
     stringify(store.debug.python.pythonPipList, {
       indent: 2,
@@ -50,6 +50,10 @@ export function Debug() {
       "settings:pythonVenvPipList",
     );
     setStore("debug", "python", "pythonVenvPipList", pythonVenvPipList);
+  });
+
+  createEffect(() => {
+    console.log(envQuery().data);
   });
 
   return (
