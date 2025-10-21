@@ -1,11 +1,11 @@
-import type { MediaSrc } from "@repo/preload/ipc";
+import type { NoteMediaSrc } from "@repo/preload/ipc";
 import { createContext, type JSX, type Signal, useContext } from "solid-js";
 
-export const MediaSrcContext = createContext<Signal<MediaSrc>>();
+export const MediaSrcContext = createContext<Signal<NoteMediaSrc>>();
 
 export function MediaSrcContextProvider(props: {
   children: JSX.Element;
-  value: Signal<MediaSrc>;
+  value: Signal<NoteMediaSrc>;
 }) {
   return (
     <MediaSrcContext.Provider value={props.value}>

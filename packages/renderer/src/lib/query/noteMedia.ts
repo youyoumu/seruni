@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/solid-query";
 import { noUndefinedArray, queryKey } from "./_util";
 
-export const mediaSrcQuery = ({ noteId }: { noteId: number }) => {
+export const noteMediaQuery = ({ noteId }: { noteId: number }) => {
   const query = useQuery(() => ({
     ...queryKey.mediaSrc.one(noteId),
     queryFn: async () => {

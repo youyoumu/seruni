@@ -14,7 +14,7 @@ export const zAnkiHistory = z.array(
   }),
 );
 
-export const zMedia = z.array(
+export const zNoteMedia = z.array(
   z.object({
     fileName: z.string(),
     type: z.union([z.literal("picture"), z.literal("sentenceAudio")]),
@@ -29,7 +29,7 @@ export const zMedia = z.array(
   }),
 );
 
-export const zMediaSrc = z.object({
+export const zNoteMediaSrc = z.object({
   fileName: z.string(),
   source: z.union([z.literal("storage"), z.literal("anki")]),
 });
@@ -42,8 +42,8 @@ export const zSelectionData = z.object({
 });
 
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
-export type Media = z.infer<typeof zMedia>;
-export type MediaSrc = z.infer<typeof zMediaSrc>;
+export type NoteMedia = z.infer<typeof zNoteMedia>;
+export type NoteMediaSrc = z.infer<typeof zNoteMediaSrc>;
 export type SelectionData = z.infer<typeof zSelectionData>;
 
 export const zMiningIPC = {
@@ -126,10 +126,10 @@ export const zMiningIPC = {
           noteId: z.number(),
         }),
       ]),
-      output: zMedia,
+      output: zNoteMedia,
     }),
     "mining:cropPicture": z.object({
-      input: z.tuple([z.number(), zMediaSrc, zSelectionData]),
+      input: z.tuple([z.number(), zNoteMediaSrc, zSelectionData]),
       output: z.void(),
     }),
   }),
