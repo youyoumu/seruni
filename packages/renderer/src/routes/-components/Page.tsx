@@ -3,13 +3,21 @@ import type {
   ToastPromiseOptionsError,
   ToastPromiseOptionsSuccess,
 } from "@repo/preload/ipc";
-import { XIcon } from "lucide-solid";
-import { createEffect, createMemo, createSignal, For, onMount } from "solid-js";
+import { ShellIcon, XIcon } from "lucide-solid";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onMount,
+  Suspense,
+} from "solid-js";
 import { css, cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
+import { Text } from "#/components/ui/text";
 import { Toast } from "#/components/ui/toast";
 import { setStore, store } from "#/lib/store";
 import {
@@ -55,7 +63,27 @@ export function Page() {
   });
 
   return (
-    <>
+    <Suspense
+      fallback={
+        <Stack h="screen" w="full" alignItems="center" justifyContent="center">
+          <ShellIcon
+            strokeWidth="1"
+            size="100"
+            class={css({
+              color: "fg.muted",
+              animationName: "spin",
+              animationDuration: "slowest",
+              animationIterationCount: "infinite",
+              animationTimingFunction: "pulse",
+              animationDirection: "reverse",
+            })}
+          />
+          <Text color="fg.muted" size="xl">
+            Loading...
+          </Text>
+        </Stack>
+      }
+    >
       <Tabs.Root
         defaultValue="home"
         onValueChange={(details) => {
@@ -134,7 +162,7 @@ export function Page() {
       </Tabs.Root>
       <AppToaster />
       <StatusBar />
-    </>
+    </Suspense>
   );
 }
 

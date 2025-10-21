@@ -7,7 +7,6 @@ export const mediaSrcQuery = ({ noteId }: { noteId: number }) => {
     queryFn: async () => {
       return await ipcRenderer.invoke("mining:getNoteMedia", { noteId });
     },
-    initialData: [],
   }));
 
   return noUndefinedArray(query);

@@ -1,6 +1,6 @@
 import type { Media, MediaSrc } from "@repo/preload/ipc";
 import { FishSymbolIcon, ZoomInIcon } from "lucide-solid";
-import { createEffect, createSignal, For, onMount, untrack } from "solid-js";
+import { createEffect, createSignal, For, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
@@ -90,8 +90,7 @@ export function EditButton() {
                 gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
                 gap="4"
               >
-                {/* TODO: fix this */}
-                <For each={untrack(pictureMedia)}>
+                <For each={pictureMedia()}>
                   {(item) => {
                     const isSelected = () =>
                       selectedMedisSrc().fileName === item.fileName &&

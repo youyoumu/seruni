@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { createRouter, RouterProvider } from "@tanstack/solid-router";
-import { render } from "solid-js/web";
+import { render, Suspense } from "solid-js/web";
 import { setStore } from "./lib/store";
 import { routeTree } from "./routeTree.gen";
 
@@ -67,7 +67,11 @@ declare module "@tanstack/solid-router" {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <Suspense>
+        <RouterProvider router={router} />
+      </Suspense>
+      {/* keep this empty div https://github.com/solidjs/solid/issues/2515 */}
+      <div></div>
     </QueryClientProvider>
   );
 }

@@ -93,6 +93,11 @@ export default defineConfig({
         colors: {
           ...tokens,
         },
+        animations: {
+          spin: {
+            value: "spin 1s linear infinite",
+          },
+        },
       },
       semanticTokens: {
         colors: {
