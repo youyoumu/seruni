@@ -1,9 +1,10 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { createRouter, RouterProvider } from "@tanstack/solid-router";
 import { render } from "solid-js/web";
-
-import { routeTree } from "./routeTree.gen";
-import "./index.css";
 import { setStore } from "./lib/store";
+import { routeTree } from "./routeTree.gen";
+
+import "./index.css";
 
 type State = Record<string, any>;
 class HMR {
@@ -48,6 +49,8 @@ declare global {
 
 if (!window.hmr) window.hmr = new HMR();
 
+const queryClient = new QueryClient();
+
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
@@ -63,9 +66,9 @@ declare module "@tanstack/solid-router" {
 
 function App() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-    </>
+    </QueryClientProvider>
   );
 }
 

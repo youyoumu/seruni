@@ -1,0 +1,22 @@
+import { createQueryKeyStore } from "@lukemorales/query-key-factory";
+import type { UseQueryResult } from "@tanstack/solid-query";
+
+export const noUndefinedArray = <T extends unknown[]>(
+  query: UseQueryResult<T>,
+) => {
+  const proxy = new Proxy(query, {
+    get(target, prop, receiver) {
+      if (prop === "data") {
+        return target.data ?? [];
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+  return proxy as typeof proxy & { data: NonNullable<typeof proxy.data> };
+};
+
+export const queryKey = createQueryKeyStore({
+  mediaSrc: {
+    one: (noteId: number) => [noteId],
+  },
+});

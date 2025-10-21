@@ -24,3 +24,4 @@
 - zod parse settings
 - obs password
 - vscode layout
+- mining session

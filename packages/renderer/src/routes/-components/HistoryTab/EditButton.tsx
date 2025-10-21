@@ -1,11 +1,12 @@
 import type { Media, MediaSrc } from "@repo/preload/ipc";
 import { FishSymbolIcon, ZoomInIcon } from "lucide-solid";
-import { createEffect, createSignal, For, onMount } from "solid-js";
+import { createEffect, createSignal, For, onMount, untrack } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
+import { mediaSrcQuery } from "#/lib/query/useMediaSrc";
 import { getMediaUrl } from "#/lib/util";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
@@ -14,8 +15,9 @@ import { PictureWithZoom } from "./PictureWithZoom";
 
 export function EditButton() {
   const note = useNoteContext();
+  const mediaSrc = mediaSrcQuery({ noteId: note.id });
   const [media, setMedia] = createSignal<Media>([]);
-  const pictureMedia = () => media().filter((m) => m.type === "picture");
+  const pictureMedia = () => mediaSrc.data.filter((m) => m.type === "picture");
   const sentenceAudioMedia = () =>
     media().find((m) => m.type === "sentenceAudio");
 
@@ -88,7 +90,8 @@ export function EditButton() {
                 gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
                 gap="4"
               >
-                <For each={pictureMedia()}>
+                {/* TODO: fix this */}
+                <For each={untrack(pictureMedia)}>
                   {(item) => {
                     const isSelected = () =>
                       selectedMedisSrc().fileName === item.fileName &&
