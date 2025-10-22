@@ -33,7 +33,7 @@ export const zSettingsIPC = {
         stderr: z.string(),
       }),
     }),
-    "settings:inPythonInstalled": z.object({
+    "settings:isPythonInstalled": z.object({
       input: z.tuple([]),
       output: z.boolean(),
     }),

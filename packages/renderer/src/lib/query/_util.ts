@@ -25,7 +25,7 @@ export const queryKey = createQueryKeyStore({
   "settings:python": {
     isInstalled: {
       queryKey: [undefined],
-      queryFn: () => ipcRenderer.invoke("settings:inPythonInstalled"),
+      queryFn: () => ipcRenderer.invoke("settings:isPythonInstalled"),
     },
     healthcheck: {
       queryKey: [undefined],

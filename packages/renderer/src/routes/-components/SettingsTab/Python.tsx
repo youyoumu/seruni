@@ -48,15 +48,14 @@ export function Python() {
       ipcRenderer
         .invoke("settings:installPythonUv")
         .then(() => {
-          ipcRenderer.invoke("settings:inPythonInstalled");
-        })
-        .finally(() => {
           queryClient.invalidateQueries({
             queryKey: pythonPipListQueryOptions().queryKey,
           });
           queryClient.invalidateQueries({
             queryKey: pythonHealthcheckQueryOptions().queryKey,
           });
+        })
+        .finally(() => {
           setIsInstalling(false);
         }),
       {
@@ -196,12 +195,11 @@ export function Python() {
                 ipcRenderer
                   .invoke("settings:installPython")
                   .then(() => {
-                    ipcRenderer.invoke("settings:inPythonInstalled");
-                  })
-                  .finally(() => {
                     queryClient.invalidateQueries({
                       queryKey: isPythonInstalledQueryOptions().queryKey,
                     });
+                  })
+                  .finally(() => {
                     setIsInstalling(false);
                   }),
                 {
