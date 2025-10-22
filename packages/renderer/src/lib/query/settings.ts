@@ -53,19 +53,14 @@ export const usePythonPipListQuery = () =>
     }));
   });
 
-export const isUvInstalledQueryOptions = () => {
-  const { queryKey, queryFn } = pythonPipListQueryOptions();
-  return queryOptions({
-    queryKey,
-    queryFn,
-    select: (data) => data.some(({ name }) => name === "uv"),
-  });
-};
 export const useIsUvInstalledQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
+    const { queryKey, queryFn } = pythonPipListQueryOptions();
     return useQuery(() => ({
-      ...isUvInstalledQueryOptions(),
+      queryKey,
+      queryFn,
+      select: (data) => data.some(({ name }) => name === "uv"),
       enabled: isPythonInstalledQuery().data === true,
     }));
   });
@@ -96,19 +91,14 @@ export const usePythonVenvHealthcheckQuery = () =>
     }));
   });
 
-export const isVenvDependeciesInstalledQueryOptions = () => {
-  const { queryKey, queryFn } = pythonVenvHealthcheckQueryOptions();
-  return queryOptions({
-    queryKey,
-    queryFn,
-    select: (data) => data.ok === true,
-  });
-};
 export const useIsVenvDependeciesInstalledQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
+    const { queryKey, queryFn } = pythonVenvHealthcheckQueryOptions();
     return useQuery(() => ({
-      ...isVenvDependeciesInstalledQueryOptions(),
+      queryKey,
+      queryFn,
+      select: (data) => data.ok === true,
       enabled: isUvInstalledQuery().data === true,
     }));
   });

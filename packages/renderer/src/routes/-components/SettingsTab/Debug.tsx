@@ -8,12 +8,15 @@ import {
   Show,
   Suspense,
 } from "solid-js";
+import { cva } from "styled-system/css";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import {
   useEnvQuery,
   useIsPythonInstalledQuery,
+  useIsUvInstalledQuery,
+  useIsVenvDependeciesInstalledQuery,
   usePythonHealthcheckQuery,
   usePythonPipListQuery,
   usePythonVenvHealthcheckQuery,
@@ -26,24 +29,40 @@ export function Debug() {
   const envString = () => stringify(envQuery().data, { indent: 2 }) ?? "";
 
   const isPythonInstalledQuery = useIsPythonInstalledQuery();
+  const isPythonInstalled = () => isPythonInstalledQuery().data === true;
+
+  const isUvInstalledQuery = useIsUvInstalledQuery();
+  const isUvInstalled = () => isUvInstalledQuery().data === true;
+
+  const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
+  const isVenvDependenciesInstalled = () =>
+    isVenvDependenciesInstalledQuery().data === true;
 
   const pythonPipListQuery = usePythonPipListQuery();
   const pythonPipListString = () =>
-    stringify(pythonPipListQuery().data, {
-      indent: 2,
-    }) ?? "";
+    isPythonInstalled()
+      ? (stringify(pythonPipListQuery().data, {
+          indent: 2,
+        }) ?? "")
+      : "Python is not installed";
 
   const pythonVenvPipListQuery = usePythonVenvPipListQuery();
   const pythonVenvPipListString = () =>
-    stringify(pythonVenvPipListQuery().data, { indent: 2 }) ?? "";
+    isUvInstalled()
+      ? (stringify(pythonVenvPipListQuery().data, { indent: 2 }) ?? "")
+      : "uv is not installed";
 
   const pythonHealthcheckQuery = usePythonHealthcheckQuery();
   const pythonHealthcheckString = () =>
-    stringify(pythonHealthcheckQuery().data, { indent: 2 }) ?? "";
+    isPythonInstalled()
+      ? (stringify(pythonHealthcheckQuery().data, { indent: 2 }) ?? "")
+      : "Python is not installed";
 
   const pythonVenvHealthcheckQuery = usePythonVenvHealthcheckQuery();
   const pythonVenvHealthcheckString = () =>
-    stringify(pythonVenvHealthcheckQuery().data, { indent: 2 }) ?? "";
+    isUvInstalled()
+      ? (stringify(pythonVenvHealthcheckQuery().data, { indent: 2 }) ?? "")
+      : "uv is not installed";
 
   let ready = false;
   createEffect(() => {
@@ -54,12 +73,7 @@ export function Debug() {
     ready = true;
   });
 
-  createEffect(() => {
-    console.log(
-      pythonPipListQuery().isEnabled,
-      isPythonInstalledQuery().isEnabled,
-    );
-  });
+  createEffect(() => {});
 
   return (
     <Suspense>
@@ -75,30 +89,82 @@ export function Debug() {
 
         <Stack>
           <Heading>ENV</Heading>
-          <DebugBox text={envString()} />
+          <DebugBox text={envString()} variant="default" />
         </Stack>
         <Stack>
           <Heading>Python PIP list</Heading>
-          <DebugBox text={pythonPipListString()} />
+          <DebugBox
+            text={pythonPipListString()}
+            variant={isPythonInstalled() ? "default" : "error"}
+          />
         </Stack>
         <Stack>
           <Heading>Python venv PIP list</Heading>
-          <DebugBox text={pythonVenvPipListString()} />
+          <DebugBox
+            text={pythonVenvPipListString()}
+            variant={isUvInstalled() ? "default" : "error"}
+          />
         </Stack>
         <Stack>
           <Heading>Python Healthcheck</Heading>
-          <DebugBox text={pythonHealthcheckString()} />
+          <DebugBox
+            text={pythonHealthcheckString()}
+            variant={
+              isPythonInstalled() ? (isUvInstalled() ? "ok" : "warn") : "error"
+            }
+          />
         </Stack>
         <Stack>
           <Heading>Python venv Healthcheck</Heading>
-          <DebugBox text={pythonVenvHealthcheckString()} />
+          <DebugBox
+            text={pythonVenvHealthcheckString()}
+            variant={
+              isUvInstalled()
+                ? isVenvDependenciesInstalled()
+                  ? "ok"
+                  : "warn"
+                : "error"
+            }
+          />
         </Stack>
       </Stack>
     </Suspense>
   );
 }
 
-function DebugBox(props: { text: string }) {
+const debugBoxCva = cva({
+  base: {
+    position: "relative",
+    p: "2",
+    bg: "bg.subtle",
+    borderWidth: "thin",
+    borderColor: "border.subtle",
+    borderRadius: "sm",
+    fontSize: "xs",
+    whiteSpace: "pre-wrap",
+  },
+  variants: {
+    status: {
+      default: {
+        color: "gray.dark.a10",
+      },
+      ok: {
+        color: "green.dark.a11",
+      },
+      error: {
+        color: "fg.error",
+      },
+      warn: {
+        color: "yellow.dark.a9",
+      },
+    },
+  },
+});
+
+function DebugBox(props: {
+  text: string;
+  variant: "default" | "ok" | "error" | "warn";
+}) {
   const [showClipboard, setShowClipboard] = createSignal(false);
 
   let contentRef: HTMLDivElement | undefined;
@@ -122,42 +188,36 @@ function DebugBox(props: { text: string }) {
   onCleanup(() => abortController.abort());
 
   return (
-    <Box
-      ref={contentRef}
-      position="relative"
-      as="pre"
-      p="2"
-      bg="bg.subtle"
-      borderWidth="thin"
-      borderColor="border.subtle"
-      borderRadius="sm"
-      fontSize="xs"
-      whiteSpace="pre-wrap"
-      color="gray.light.8"
-    >
-      {props.text}
-      <Show when={showClipboard()}>
-        <IconButton
-          position="absolute"
-          bottom="2"
-          right="2"
-          variant="ghost"
-          size="xs"
-          p="1.5"
-          color="fg.muted"
-          onClick={() => {
-            if (props.text) navigator.clipboard.writeText(props.text);
-            appToaster.create({
-              title: "Copied to clipboard",
-              description: `${props.text.slice(0, 50)}...`,
-              duration: 2000,
-            });
-          }}
-          asChild={(props) => {
-            return <ClipboardCopyIcon {...props()} />;
-          }}
-        ></IconButton>
-      </Show>
-    </Box>
+    <Suspense>
+      <Box
+        ref={contentRef}
+        as="pre"
+        class={debugBoxCva({ status: props.variant })}
+      >
+        {props.text}
+        <Show when={showClipboard()}>
+          <IconButton
+            position="absolute"
+            bottom="2"
+            right="2"
+            variant="ghost"
+            size="xs"
+            p="1.5"
+            color="fg.muted"
+            onClick={() => {
+              if (props.text) navigator.clipboard.writeText(props.text);
+              appToaster.create({
+                title: "Copied to clipboard",
+                description: `${props.text.slice(0, 50)}...`,
+                duration: 2000,
+              });
+            }}
+            asChild={(props) => {
+              return <ClipboardCopyIcon {...props()} />;
+            }}
+          ></IconButton>
+        </Show>
+      </Box>
+    </Suspense>
   );
 }

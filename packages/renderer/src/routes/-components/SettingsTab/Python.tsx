@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/solid-query";
 import { ShieldAlertIcon } from "lucide-solid";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, Suspense } from "solid-js";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
@@ -8,7 +8,8 @@ import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
 import {
   isPythonInstalledQueryOptions,
-  isUvInstalledQueryOptions,
+  pythonHealthcheckQueryOptions,
+  pythonPipListQueryOptions,
   pythonVenvHealthcheckQueryOptions,
   useIsPythonInstalledQuery,
   useIsUvInstalledQuery,
@@ -51,7 +52,10 @@ export function Python() {
         })
         .finally(() => {
           queryClient.invalidateQueries({
-            queryKey: isUvInstalledQueryOptions().queryKey,
+            queryKey: pythonPipListQueryOptions().queryKey,
+          });
+          queryClient.invalidateQueries({
+            queryKey: pythonHealthcheckQueryOptions().queryKey,
           });
           setIsInstalling(false);
         }),
@@ -109,140 +113,145 @@ export function Python() {
   }
 
   return (
-    <Stack gap="2" w="full">
-      <Stack>
-        <Heading
-          size="2xl"
-          borderBottomColor="border.default"
-          borderBottomWidth="medium"
-          pb="2"
+    <Suspense>
+      <Stack gap="2" w="full">
+        <Stack>
+          <Heading
+            size="2xl"
+            borderBottomColor="border.default"
+            borderBottomWidth="medium"
+            pb="2"
+          >
+            Python
+          </Heading>
+        </Stack>
+        <Show when={!isPythonOk()}>
+          <Alert.Root>
+            <Alert.Icon
+              color="yellow.dark.a10"
+              asChild={(props) => {
+                return <ShieldAlertIcon {...props()} />;
+              }}
+            ></Alert.Icon>
+            <Alert.Content>
+              <Alert.Title>Python is not ready to use</Alert.Title>
+              <Suspense>
+                <Alert.Description>{getAlertDescription()}</Alert.Description>
+              </Suspense>
+            </Alert.Content>
+          </Alert.Root>
+        </Show>
+        <Field.Root>
+          <Field.Label>Python Command</Field.Label>
+          <HStack>
+            <Field.Input
+              placeholder="--version"
+              value={pythonCommand()}
+              onChange={(e) => {
+                setPythonCommand(e.target.value);
+              }}
+            />
+            <Button
+              disabled={!isPythonInstalled() || isInstalling()}
+              onClick={() => {
+                const params = pythonCommand().split(" ");
+                let result: { stdout: string; stderr: string } | undefined;
+                appToaster.promise(
+                  ipcRenderer
+                    .invoke("settings:runPython", [...params])
+                    .then((result_) => {
+                      result = result_;
+                    }),
+                  {
+                    loading: {
+                      title: "Running Python...",
+                      description: pythonCommand(),
+                    },
+                    error: () => ({
+                      title: "Python command failed",
+                      description: result?.stderr ?? "Unknown Error",
+                    }),
+                    success: () => ({
+                      title: "Python command succeeded",
+                      description: result?.stdout ?? "",
+                    }),
+                  },
+                );
+              }}
+            >
+              Run
+            </Button>
+          </HStack>
+        </Field.Root>
+        <Grid
+          gap="4"
+          gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
+          alignItems="end"
         >
-          Python
-        </Heading>
-      </Stack>
-      <Show when={!isPythonOk()}>
-        <Alert.Root>
-          <Alert.Icon
-            color="yellow.dark.a10"
-            asChild={(props) => {
-              return <ShieldAlertIcon {...props()} />;
-            }}
-          ></Alert.Icon>
-          <Alert.Content>
-            <Alert.Title>Python is not ready to use</Alert.Title>
-            <Alert.Description>{getAlertDescription()}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
-      </Show>
-      <Field.Root>
-        <Field.Label>Python Command</Field.Label>
-        <HStack>
-          <Field.Input
-            placeholder="--version"
-            value={pythonCommand()}
-            onChange={(e) => {
-              setPythonCommand(e.target.value);
-            }}
-          />
           <Button
-            disabled={!isPythonInstalled() || isInstalling()}
+            loading={isInstalling()}
             onClick={() => {
-              const params = pythonCommand().split(" ");
-              let result: { stdout: string; stderr: string } | undefined;
+              setIsInstalling(true);
               appToaster.promise(
                 ipcRenderer
-                  .invoke("settings:runPython", [...params])
-                  .then((result_) => {
-                    result = result_;
+                  .invoke("settings:installPython")
+                  .then(() => {
+                    ipcRenderer.invoke("settings:inPythonInstalled");
+                  })
+                  .finally(() => {
+                    queryClient.invalidateQueries({
+                      queryKey: isPythonInstalledQueryOptions().queryKey,
+                    });
+                    setIsInstalling(false);
                   }),
                 {
                   loading: {
-                    title: "Running Python...",
-                    description: pythonCommand(),
+                    title: isPythonInstalled()
+                      ? "Reinstalling Python..."
+                      : "Installing Python...",
                   },
-                  error: () => ({
-                    title: "Python command failed",
-                    description: result?.stderr ?? "Unknown Error",
-                  }),
-                  success: () => ({
-                    title: "Python command succeeded",
-                    description: result?.stdout ?? "",
-                  }),
+                  error: {
+                    title: "Failed to install Python",
+                  },
+                  success: {
+                    title: isPythonInstalled()
+                      ? "Python has been reinstalled"
+                      : "Python has been installed",
+                    duration: Infinity,
+                    action: {
+                      label: "Install uv",
+                      onClick: () => installPythonUv(),
+                    },
+                  },
                 },
               );
             }}
           >
-            Run
+            {isPythonInstalled() ? "Reinstall" : "Install"} Python
           </Button>
-        </HStack>
-      </Field.Root>
-      <Grid
-        gap="4"
-        gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
-        alignItems="end"
-      >
-        <Button
-          loading={isInstalling()}
-          onClick={() => {
-            setIsInstalling(true);
-            appToaster.promise(
-              ipcRenderer
-                .invoke("settings:installPython")
-                .then(() => {
-                  ipcRenderer.invoke("settings:inPythonInstalled");
-                })
-                .finally(() => {
-                  queryClient.invalidateQueries({
-                    queryKey: isPythonInstalledQueryOptions().queryKey,
-                  });
-                  setIsInstalling(false);
-                }),
-              {
-                loading: {
-                  title: isPythonInstalled()
-                    ? "Reinstalling Python..."
-                    : "Installing Python...",
-                },
-                error: {
-                  title: "Failed to install Python",
-                },
-                success: {
-                  title: isPythonInstalled()
-                    ? "Python has been reinstalled"
-                    : "Python has been installed",
-                  duration: Infinity,
-                  action: {
-                    label: "Install uv",
-                    onClick: () => installPythonUv(),
-                  },
-                },
-              },
-            );
-          }}
-        >
-          {isPythonInstalled() ? "Reinstall" : "Install"} Python
-        </Button>
-        <Button
-          disabled={!isPythonInstalled()}
-          loading={isInstalling()}
-          onClick={() => {
-            setIsInstalling(true);
-            installPythonUv();
-          }}
-        >
-          {isUvInstalled() ? "Reinstall" : "Install"} uv
-        </Button>
-        <Button
-          disabled={!isPythonInstalled() || !isUvInstalled()}
-          loading={isInstalling()}
-          onClick={() => {
-            setIsInstalling(true);
-            installPythonDependencies();
-          }}
-        >
-          {isVenvDependenciesInstalled() ? "Reinstall" : "Install"} Dependencies
-        </Button>
-      </Grid>
-    </Stack>
+          <Button
+            disabled={!isPythonInstalled()}
+            loading={isInstalling()}
+            onClick={() => {
+              setIsInstalling(true);
+              installPythonUv();
+            }}
+          >
+            {isUvInstalled() ? "Reinstall" : "Install"} uv
+          </Button>
+          <Button
+            disabled={!isPythonInstalled() || !isUvInstalled()}
+            loading={isInstalling()}
+            onClick={() => {
+              setIsInstalling(true);
+              installPythonDependencies();
+            }}
+          >
+            {isVenvDependenciesInstalled() ? "Reinstall" : "Install"}{" "}
+            Dependencies
+          </Button>
+        </Grid>
+      </Stack>
+    </Suspense>
   );
 }
