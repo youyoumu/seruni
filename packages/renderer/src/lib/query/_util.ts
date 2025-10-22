@@ -22,6 +22,28 @@ export const queryKey = createQueryKeyStore({
   "settings:env": {
     detail: null,
   },
+  "settings:python": {
+    isInstalled: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:inPythonInstalled"),
+    },
+    healthcheck: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:pythonHealthcheck"),
+    },
+    pipList: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:pythonPipList"),
+    },
+    venvPipList: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:pythonVenvPipList"),
+    },
+    venvHealthcheck: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:pythonVenvHealthcheck"),
+    },
+  },
   "general:httpServerUrl": {
     value: null,
   },

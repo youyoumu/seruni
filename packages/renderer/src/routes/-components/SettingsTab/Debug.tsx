@@ -11,30 +11,39 @@ import {
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import { useEnvQuery } from "#/lib/query/settings";
-import { setStore, store } from "#/lib/store";
-import { checkPython } from "#/lib/util";
+import {
+  useEnvQuery,
+  useIsPythonInstalledQuery,
+  usePythonHealthcheckQuery,
+  usePythonPipListQuery,
+  usePythonVenvHealthcheckQuery,
+  usePythonVenvPipListQuery,
+} from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {
   const envQuery = useEnvQuery();
   const envString = () => stringify(envQuery().data, { indent: 2 }) ?? "";
-  const pythonPipList = () =>
-    stringify(store.debug.python.pythonPipList, {
+
+  const isPythonInstalledQuery = useIsPythonInstalledQuery();
+
+  const pythonPipListQuery = usePythonPipListQuery();
+  const pythonPipListString = () =>
+    stringify(pythonPipListQuery().data, {
       indent: 2,
-    });
-  const pythonVenvPipList = () =>
-    stringify(store.debug.python.pythonVenvPipList, {
-      indent: 2,
-    });
-  const pythonHealthcheck = () =>
-    stringify(store.debug.python.pythonHealthcheck, {
-      indent: 2,
-    });
-  const pythonVenvCheckhealth = () =>
-    stringify(store.debug.python.pythonVenvHealthcheck, {
-      indent: 2,
-    });
+    }) ?? "";
+
+  const pythonVenvPipListQuery = usePythonVenvPipListQuery();
+  const pythonVenvPipListString = () =>
+    stringify(pythonVenvPipListQuery().data, { indent: 2 }) ?? "";
+
+  const pythonHealthcheckQuery = usePythonHealthcheckQuery();
+  const pythonHealthcheckString = () =>
+    stringify(pythonHealthcheckQuery().data, { indent: 2 }) ?? "";
+
+  const pythonVenvHealthcheckQuery = usePythonVenvHealthcheckQuery();
+  const pythonVenvHealthcheckString = () =>
+    stringify(pythonVenvHealthcheckQuery().data, { indent: 2 }) ?? "";
 
   let ready = false;
   createEffect(() => {
@@ -43,24 +52,14 @@ export function Debug() {
 
   onMount(async () => {
     ready = true;
-    checkPython();
   });
 
-  createEffect(async () => {
-    if (!store.debug.python.isInstalled) return;
-    const pythonHealthcheck = await ipcRenderer.invoke(
-      "settings:pythonHealthcheck",
+  createEffect(() => {
+    console.log(
+      pythonPipListQuery().isEnabled,
+      isPythonInstalledQuery().isEnabled,
     );
-    setStore("debug", "python", "pythonHealthcheck", pythonHealthcheck);
-
-    if (!store.debug.python.isUvInstalled) return;
-    const pythonVenvPipList = await ipcRenderer.invoke(
-      "settings:pythonVenvPipList",
-    );
-    setStore("debug", "python", "pythonVenvPipList", pythonVenvPipList);
   });
-
-  createEffect(() => {});
 
   return (
     <Suspense>
@@ -80,19 +79,19 @@ export function Debug() {
         </Stack>
         <Stack>
           <Heading>Python PIP list</Heading>
-          <DebugBox text={pythonPipList()} />
+          <DebugBox text={pythonPipListString()} />
         </Stack>
         <Stack>
           <Heading>Python venv PIP list</Heading>
-          <DebugBox text={pythonVenvPipList()} />
+          <DebugBox text={pythonVenvPipListString()} />
         </Stack>
         <Stack>
           <Heading>Python Healthcheck</Heading>
-          <DebugBox text={pythonHealthcheck()} />
+          <DebugBox text={pythonHealthcheckString()} />
         </Stack>
         <Stack>
           <Heading>Python venv Healthcheck</Heading>
-          <DebugBox text={pythonVenvCheckhealth()} />
+          <DebugBox text={pythonVenvHealthcheckString()} />
         </Stack>
       </Stack>
     </Suspense>

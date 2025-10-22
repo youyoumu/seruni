@@ -1,31 +1,45 @@
+import { useQueryClient } from "@tanstack/solid-query";
 import { ShieldAlertIcon } from "lucide-solid";
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
-import { store } from "#/lib/store";
-import { checkPython } from "#/lib/util";
+import {
+  isPythonInstalledQueryOptions,
+  isUvInstalledQueryOptions,
+  pythonVenvHealthcheckQueryOptions,
+  useIsPythonInstalledQuery,
+  useIsUvInstalledQuery,
+  useIsVenvDependeciesInstalledQuery,
+} from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Python() {
+  const queryClient = useQueryClient();
   const [isInstalling, setIsInstalling] = createSignal(false);
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
-  const isInstalled = () => store.debug.python.isInstalled;
-  const isUvInstalled = () => store.debug.python.isUvInstalled;
-  const isDependencyInstalled = () => store.debug.python.isDependencyInstalled;
+  const isPythonInstalledQuery = useIsPythonInstalledQuery();
+  const isPythonInstalled = () => isPythonInstalledQuery().data === true;
+  const isUvInstalledQuery = useIsUvInstalledQuery();
+  const isUvInstalled = () => isUvInstalledQuery().data === true;
+  const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
+  const isVenvDependenciesInstalled = () =>
+    isVenvDependenciesInstalledQuery().data === true;
 
   function getAlertDescription() {
-    if (!isInstalled()) return "Python is not installed";
+    if (!isPythonInstalled()) return "Python is not installed";
     if (!isUvInstalled()) return "Uv is not installed";
-    if (!isDependencyInstalled())
+    if (!isVenvDependenciesInstalled())
       return "Dependencies are not installed or broken";
   }
 
   function isPythonOk() {
-    return isInstalled() && isUvInstalled() && isDependencyInstalled();
+    return (
+      isPythonInstalled() && isUvInstalled() && isVenvDependenciesInstalled()
+    );
   }
 
   function installPythonUv() {
@@ -36,7 +50,9 @@ export function Python() {
           ipcRenderer.invoke("settings:inPythonInstalled");
         })
         .finally(() => {
-          checkPython();
+          queryClient.invalidateQueries({
+            queryKey: isUvInstalledQueryOptions().queryKey,
+          });
           setIsInstalling(false);
         }),
       {
@@ -68,12 +84,14 @@ export function Python() {
           ipcRenderer.invoke("settings:installPythonDependencies");
         })
         .finally(() => {
-          checkPython();
+          queryClient.invalidateQueries({
+            queryKey: pythonVenvHealthcheckQueryOptions().queryKey,
+          });
           setIsInstalling(false);
         }),
       {
         loading: {
-          title: isDependencyInstalled()
+          title: isVenvDependenciesInstalled()
             ? "Reinstalling Python dependencies"
             : "Installing Python dependencies",
         },
@@ -81,7 +99,7 @@ export function Python() {
           title: "Failed to install Python dependencies",
         },
         success: {
-          title: isDependencyInstalled()
+          title: isVenvDependenciesInstalled()
             ? "Python dependencies have been reinstalled"
             : "Python dependencies have been installed",
           duration: 30000,
@@ -89,10 +107,6 @@ export function Python() {
       },
     );
   }
-
-  onMount(async () => {
-    checkPython();
-  });
 
   return (
     <Stack gap="2" w="full">
@@ -131,7 +145,7 @@ export function Python() {
             }}
           />
           <Button
-            disabled={!isInstalled() || isInstalling()}
+            disabled={!isPythonInstalled() || isInstalling()}
             onClick={() => {
               const params = pythonCommand().split(" ");
               let result: { stdout: string; stderr: string } | undefined;
@@ -178,12 +192,14 @@ export function Python() {
                   ipcRenderer.invoke("settings:inPythonInstalled");
                 })
                 .finally(() => {
-                  checkPython();
+                  queryClient.invalidateQueries({
+                    queryKey: isPythonInstalledQueryOptions().queryKey,
+                  });
                   setIsInstalling(false);
                 }),
               {
                 loading: {
-                  title: isInstalled()
+                  title: isPythonInstalled()
                     ? "Reinstalling Python..."
                     : "Installing Python...",
                 },
@@ -191,7 +207,7 @@ export function Python() {
                   title: "Failed to install Python",
                 },
                 success: {
-                  title: isInstalled()
+                  title: isPythonInstalled()
                     ? "Python has been reinstalled"
                     : "Python has been installed",
                   duration: Infinity,
@@ -204,10 +220,10 @@ export function Python() {
             );
           }}
         >
-          {isInstalled() ? "Reinstall" : "Install"} Python
+          {isPythonInstalled() ? "Reinstall" : "Install"} Python
         </Button>
         <Button
-          disabled={!isInstalled()}
+          disabled={!isPythonInstalled()}
           loading={isInstalling()}
           onClick={() => {
             setIsInstalling(true);
@@ -217,14 +233,14 @@ export function Python() {
           {isUvInstalled() ? "Reinstall" : "Install"} uv
         </Button>
         <Button
-          disabled={!isInstalled() || !isUvInstalled()}
+          disabled={!isPythonInstalled() || !isUvInstalled()}
           loading={isInstalling()}
           onClick={() => {
             setIsInstalling(true);
             installPythonDependencies();
           }}
         >
-          {isDependencyInstalled() ? "Reinstall" : "Install"} Dependencies
+          {isVenvDependenciesInstalled() ? "Reinstall" : "Install"} Dependencies
         </Button>
       </Grid>
     </Stack>
