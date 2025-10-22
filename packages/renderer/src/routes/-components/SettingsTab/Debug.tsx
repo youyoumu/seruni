@@ -1,15 +1,23 @@
 import stringify from "json-stringify-pretty-compact";
 import { ClipboardCopyIcon } from "lucide-solid";
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
+  Show,
+  Suspense,
+} from "solid-js";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import { envQuery } from "#/lib/query/settings";
+import { useEnvQuery } from "#/lib/query/settings";
 import { setStore, store } from "#/lib/store";
 import { checkPython } from "#/lib/util";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {
+  const envQuery = useEnvQuery();
   const envString = () => stringify(envQuery().data, { indent: 2 }) ?? "";
   const pythonPipList = () =>
     stringify(store.debug.python.pythonPipList, {
@@ -55,37 +63,39 @@ export function Debug() {
   createEffect(() => {});
 
   return (
-    <Stack gap="2" w="full">
-      <Heading
-        size="2xl"
-        borderBottomColor="border.default"
-        borderBottomWidth="medium"
-        pb="2"
-      >
-        Debug
-      </Heading>
+    <Suspense>
+      <Stack gap="2" w="full">
+        <Heading
+          size="2xl"
+          borderBottomColor="border.default"
+          borderBottomWidth="medium"
+          pb="2"
+        >
+          Debug
+        </Heading>
 
-      <Stack>
-        <Heading>ENV</Heading>
-        <DebugBox text={envString()} />
+        <Stack>
+          <Heading>ENV</Heading>
+          <DebugBox text={envString()} />
+        </Stack>
+        <Stack>
+          <Heading>Python PIP list</Heading>
+          <DebugBox text={pythonPipList()} />
+        </Stack>
+        <Stack>
+          <Heading>Python venv PIP list</Heading>
+          <DebugBox text={pythonVenvPipList()} />
+        </Stack>
+        <Stack>
+          <Heading>Python Healthcheck</Heading>
+          <DebugBox text={pythonHealthcheck()} />
+        </Stack>
+        <Stack>
+          <Heading>Python venv Healthcheck</Heading>
+          <DebugBox text={pythonVenvCheckhealth()} />
+        </Stack>
       </Stack>
-      <Stack>
-        <Heading>Python PIP list</Heading>
-        <DebugBox text={pythonPipList()} />
-      </Stack>
-      <Stack>
-        <Heading>Python venv PIP list</Heading>
-        <DebugBox text={pythonVenvPipList()} />
-      </Stack>
-      <Stack>
-        <Heading>Python Healthcheck</Heading>
-        <DebugBox text={pythonHealthcheck()} />
-      </Stack>
-      <Stack>
-        <Heading>Python venv Healthcheck</Heading>
-        <DebugBox text={pythonVenvCheckhealth()} />
-      </Stack>
-    </Stack>
+    </Suspense>
   );
 }
 
