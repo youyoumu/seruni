@@ -13,7 +13,7 @@ import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { useMediaUrlQuery } from "#/lib/query/general";
-import { noteMediaQuery } from "#/lib/query/mining";
+import { useNoteMediaQuery } from "#/lib/query/mining";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
@@ -21,8 +21,9 @@ import { PictureWithZoom } from "./PictureWithZoom";
 
 export function EditButton() {
   const note = useNoteContext();
-  const noteMedia = noteMediaQuery({ noteId: note.id });
-  const pictureMedia = () => noteMedia.data.filter((m) => m.type === "picture");
+  const noteMediaQuery = useNoteMediaQuery({ noteId: note.id });
+  const availablePictures = () =>
+    noteMediaQuery().data.filter((m) => m.type === "picture");
 
   const [selectedMedisSrc, setSelectedMediaSrc] = createSignal<NoteMediaSrc>({
     fileName: note.picture,
@@ -50,73 +51,75 @@ export function EditButton() {
         <Portal mount={document.querySelector("#app") ?? document.body}>
           <Dialog.Positioner p="4">
             <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
-              <Stack gap="8">
-                <HStack justifyContent="center">
-                  <MediaSrcContextProvider
-                    value={createSignal<NoteMediaSrc>({
-                      fileName: note.picture,
-                      source: "anki" as const,
-                    })}
-                  >
-                    <CurrentImage
-                      isSelected={
-                        selectedMedisSrc().fileName === note.picture &&
-                        selectedMedisSrc().source === "anki"
-                      }
-                      onClick={() => {
-                        setSelectedMediaSrc({
-                          fileName: note.picture,
-                          source: "anki",
-                        });
-                      }}
+              <Suspense>
+                <Stack gap="8">
+                  <HStack justifyContent="center">
+                    <MediaSrcContextProvider
+                      value={createSignal<NoteMediaSrc>({
+                        fileName: note.picture,
+                        source: "anki" as const,
+                      })}
+                    >
+                      <CurrentImage
+                        isSelected={
+                          selectedMedisSrc().fileName === note.picture &&
+                          selectedMedisSrc().source === "anki"
+                        }
+                        onClick={() => {
+                          setSelectedMediaSrc({
+                            fileName: note.picture,
+                            source: "anki",
+                          });
+                        }}
+                      />
+                    </MediaSrcContextProvider>
+                    <FishSymbolIcon
+                      class={css({
+                        h: "full",
+                        w: "full",
+                        maxW: "24",
+                        color: "fg.subtle",
+                      })}
+                      strokeWidth="1"
                     />
-                  </MediaSrcContextProvider>
-                  <FishSymbolIcon
-                    class={css({
-                      h: "full",
-                      w: "full",
-                      maxW: "24",
-                      color: "fg.subtle",
-                    })}
-                    strokeWidth="1"
-                  />
-                  <MediaSrcContextProvider
-                    value={[selectedMedisSrc, setSelectedMediaSrc]}
+                    <MediaSrcContextProvider
+                      value={[selectedMedisSrc, setSelectedMediaSrc]}
+                    >
+                      <SelectedImage />
+                    </MediaSrcContextProvider>
+                  </HStack>
+                  <Grid
+                    gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+                    gap="4"
                   >
-                    <SelectedImage />
-                  </MediaSrcContextProvider>
-                </HStack>
-                <Grid
-                  gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-                  gap="4"
-                >
-                  <For each={pictureMedia()}>
-                    {(item) => {
-                      return (
-                        <MediaSrcContextProvider
-                          value={createSignal<NoteMediaSrc>({
-                            fileName: item.fileName,
-                            source: "storage",
-                          })}
-                        >
-                          <AvailableImage
-                            isSelected={isSelected({
+                    <For each={availablePictures()}>
+                      {(item) => {
+                        return (
+                          <MediaSrcContextProvider
+                            value={createSignal<NoteMediaSrc>({
                               fileName: item.fileName,
                               source: "storage",
                             })}
-                            onClick={() => {
-                              setSelectedMediaSrc({
+                          >
+                            <AvailableImage
+                              isSelected={isSelected({
                                 fileName: item.fileName,
                                 source: "storage",
-                              });
-                            }}
-                          />
-                        </MediaSrcContextProvider>
-                      );
-                    }}
-                  </For>
-                </Grid>
-              </Stack>
+                              })}
+                              onClick={() => {
+                                setSelectedMediaSrc({
+                                  fileName: item.fileName,
+                                  source: "storage",
+                                });
+                              }}
+                            />
+                          </MediaSrcContextProvider>
+                        );
+                      }}
+                    </For>
+                  </Grid>
+                </Stack>
+              </Suspense>
             </Dialog.Content>
           </Dialog.Positioner>
         </Portal>
