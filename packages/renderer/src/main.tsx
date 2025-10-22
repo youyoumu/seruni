@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { createRouter, RouterProvider } from "@tanstack/solid-router";
 import { render, Suspense } from "solid-js/web";
-import { setStore } from "./lib/store";
 import { routeTree } from "./routeTree.gen";
 
 import "./index.css";
@@ -49,7 +48,7 @@ declare global {
 
 if (!window.hmr) window.hmr = new HMR();
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: Infinity,
@@ -82,10 +81,7 @@ function App() {
   );
 }
 
-ipcRenderer.invoke("general:httpServerUrl").then(({ url }) => {
-  setStore("general", "httpServerUrl", url);
-  const rootElement = document.getElementById("app");
-  if (rootElement) {
-    render(() => <App />, rootElement);
-  }
-});
+const rootElement = document.getElementById("app");
+if (rootElement) {
+  render(() => <App />, rootElement);
+}

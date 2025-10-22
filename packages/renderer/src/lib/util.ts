@@ -1,17 +1,9 @@
-import {
-  zAnkiCollectionMediaUrlPath,
-  zStorageUrlPath,
-} from "@repo/preload/ipc";
-import { createSignal, onCleanup, onMount } from "solid-js";
-import { setStore, store } from "./store";
+import { getOwner, runWithOwner } from "solid-js";
+import { setStore } from "./store";
 
-export function getMediaUrl(fileName: string, source: "anki" | "storage") {
-  if (source === "anki") {
-    return `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${fileName}`;
-  } else if (source === "storage") {
-    return `${store.general.httpServerUrl}${zStorageUrlPath.value}${fileName}`;
-  }
-  return "";
+export function useOwner<T>(fn: () => T): () => T {
+  const owner = getOwner();
+  return () => runWithOwner(owner, fn) as T;
 }
 
 export async function checkPython() {

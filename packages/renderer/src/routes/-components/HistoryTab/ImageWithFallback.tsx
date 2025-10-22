@@ -1,4 +1,10 @@
-import { createSignal, type JSX, type ParentProps, Show } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  type JSX,
+  type ParentProps,
+  Show,
+} from "solid-js";
 import { css } from "styled-system/css";
 import { Stack } from "styled-system/jsx";
 import { Spinner } from "#/components/ui/spinner";
@@ -13,6 +19,10 @@ export function ImageWithFallback(props: {
 }) {
   const [loaded, setLoaded] = createSignal(srcSet.has(props.src));
   const [error, setError] = createSignal(false);
+  createEffect(() => {
+    props.src;
+    setError(false);
+  });
   return (
     <>
       <Show when={!error()}>

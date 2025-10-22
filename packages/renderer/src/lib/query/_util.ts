@@ -22,4 +22,7 @@ export const queryKey = createQueryKeyStore({
   "settings:env": {
     detail: null,
   },
+  "general:httpServerUrl": {
+    value: null,
+  },
 });

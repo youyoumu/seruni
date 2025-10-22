@@ -1,12 +1,11 @@
-import { zAnkiCollectionMediaUrlPath } from "@repo/preload/ipc";
 import { formatRelative } from "date-fns";
-import { Show } from "solid-js";
+import { Show, Suspense } from "solid-js";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
 import { Text } from "#/components/ui/text";
-import { store } from "#/lib/store";
+import { useMediaUrlQuery } from "#/lib/query/general";
 import { AudioButton } from "./AudioButton";
 import { EditButton } from "./EditButton";
 import { useNoteContext } from "./NoteContext";
@@ -51,8 +50,11 @@ export function AnkiCard() {
   //TODO: modify via context
   const time = () => formatRelative(new Date(note.id), new Date());
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
-  const sentenceAudioSrc = () =>
-    `${store.general.httpServerUrl}${zAnkiCollectionMediaUrlPath.value}${note.sentenceAudio}`;
+  const mediaUrlQuery = useMediaUrlQuery(
+    () => note.sentenceAudio,
+    () => "anki",
+  );
+  const sentenceAudioSrc = () => mediaUrlQuery().data ?? "";
 
   return (
     <Stack
@@ -83,7 +85,9 @@ export function AnkiCard() {
             {note.expression}
           </Text>
           <Show when={note.sentenceAudio}>
-            <AudioButton src={sentenceAudioSrc()} />
+            <Suspense>
+              <AudioButton src={sentenceAudioSrc()} />
+            </Suspense>
           </Show>
         </Stack>
         <Show when={note.picture}>

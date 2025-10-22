@@ -10,7 +10,6 @@ export type Client = {
 
 export const [store, setStore] = createStore<{
   general: {
-    httpServerUrl: string | undefined;
     currentTab: string;
   };
   debug: {
@@ -42,7 +41,6 @@ export const [store, setStore] = createStore<{
 }>({
   general: {
     currentTab: "home",
-    httpServerUrl: undefined,
   },
   debug: {
     env: {},

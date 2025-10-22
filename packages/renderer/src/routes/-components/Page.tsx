@@ -50,9 +50,7 @@ export function Page() {
     return `calc(100vh - ${(tabListSize.height ?? 0) + (statusBarSize.height ?? 0) + gap}px)`;
   };
 
-  createEffect(() => {
-    // console.log("DEBUG[802]: size=", tabListSize.height);
-  });
+  createEffect(() => {});
 
   onMount(() => {
     ipcRenderer.send("general:ready");
