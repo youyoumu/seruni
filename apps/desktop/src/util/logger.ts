@@ -1,11 +1,37 @@
+import { spawn } from "node:child_process";
 import { createReadStream, createWriteStream, type WriteStream } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { createGzip } from "node:zlib";
 import { isBefore, parse, subDays } from "date-fns";
-import { Roarr as log_, ROARR } from "roarr";
 import { serializeError } from "serialize-error";
 import { bus } from "./bus";
+
+process.env.ROARR_LOG = "true";
+const { Roarr: log_, ROARR } = await import("roarr");
+const roarr = spawn("roarr", ["--output-format", "pretty"], {
+  stdio: ["pipe", "inherit", "inherit"],
+});
+const logBuffer: string[] = [];
+let logFileWriteStream: WriteStream | undefined;
+ROARR.write = (message) => {
+  roarr.stdin.write(`${message}\n`);
+  logBuffer.push(message);
+};
+
+setInterval(() => {
+  if (logBuffer.length && logFileWriteStream) {
+    const joined = logBuffer
+      .map((line) => {
+        // Ensure each log ends with exactly one newline
+        return line.endsWith("\n") ? line : `${line}\n`;
+      })
+      .join("");
+
+    logFileWriteStream.write(joined);
+    logBuffer.length = 0;
+  }
+}, 500);
 
 export const log = log_.child<{
   error: unknown;
@@ -45,9 +71,6 @@ export const logWithNamespace = (namespace: string) =>
     };
     return message_;
   });
-
-const logBuffer: string[] = [];
-let logFileWriteStream: WriteStream | undefined;
 
 async function cleanupOldLogs({
   LOG_PATH,
@@ -107,28 +130,6 @@ async function cleanupOldLogs({
 
   log.debug(`Deleted ${filesToDelete.length} old logs`);
 }
-
-const originalWrite = ROARR.write;
-ROARR.write = (...args) => {
-  originalWrite?.(...args);
-  const logs = args[0]?.toString();
-
-  if (logs) logBuffer.push(logs);
-};
-
-setInterval(() => {
-  if (logBuffer.length && logFileWriteStream) {
-    const joined = logBuffer
-      .map((line) => {
-        // Ensure each log ends with exactly one newline
-        return line.endsWith("\n") ? line : `${line}\n`;
-      })
-      .join("");
-
-    logFileWriteStream.write(joined);
-    logBuffer.length = 0;
-  }
-}, 500);
 
 bus.once("env:ready", ({ LOG_PATH, LOG_FILE_PATH }) => {
   logFileWriteStream = createWriteStream(LOG_FILE_PATH, { flags: "a" });

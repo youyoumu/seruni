@@ -1,5 +1,3 @@
-import "./setEnv";
-
 type AnyValue = any;
 type HmrModule = Record<string, AnyValue>;
 

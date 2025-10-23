@@ -9,7 +9,6 @@ const { Roarr, ROARR } = await import("roarr");
 const roarr = spawn("roarr", ["--output-format", "pretty"], {
   stdio: ["pipe", "inherit", "inherit"],
 });
-
 ROARR.write = (message) => {
   roarr.stdin.write(`${message}\n`);
 };
@@ -30,9 +29,6 @@ class DevManager {
     message.context.namespace = "DEV";
     return message;
   }).debug;
-  roarr = spawn("roarr", ["--output-format", "pretty"], {
-    stdio: ["pipe", "inherit", "inherit"],
-  });
 
   constructor() {
     const env = this.loadEnv();
@@ -57,18 +53,15 @@ class DevManager {
     }
   }
 
-  spawnElectronWithRoarr(): ChildProcess {
+  spawnElectron(): ChildProcess {
     const ELECTRON_BIN = process.env.ELECTRON_BIN || "electron";
     const args = ["."];
-
     if (process.env.SSH_PREFER_FISH !== "1") {
       args.unshift("--ozone-platform=wayland");
     }
     const electron = spawn(ELECTRON_BIN, args, {
-      stdio: ["inherit", "pipe", "inherit"],
+      stdio: ["inherit", "inherit", "inherit"],
     });
-
-    electron.stdout.pipe(this.roarr.stdin);
     return electron;
   }
 
@@ -110,7 +103,7 @@ class DevManager {
   }
 
   async start() {
-    this.child = this.spawnElectronWithRoarr();
+    this.child = this.spawnElectron();
     this.child.on("close", (code) => {
       if (this.restarting) {
         this.log("Restarting dev server...");

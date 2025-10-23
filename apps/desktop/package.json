@@ -6,7 +6,7 @@
   "type": "module",
   "main": "script/dev/main.ts",
   "scripts": {
-    "start": "NODE_ENV=production ${ELECTRON_BIN:-electron} --ozone-platform=wayland dist | roarr",
+    "start": "NODE_ENV=production ${ELECTRON_BIN:-electron} --ozone-platform=wayland dist",
     "build": "vite build",
     "dev": "node ./script/dev/dev.ts",
     "package": "node ./script/package.ts",
