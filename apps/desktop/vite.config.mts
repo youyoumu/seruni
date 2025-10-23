@@ -37,6 +37,11 @@ export default defineConfig(({ command }) => ({
       "#": resolve(import.meta.dirname, "./src"),
     },
   },
+  server: {
+    watch: {
+      ignored: ["**/.userData/**"],
+    },
+  },
   appType: "custom",
   environments: {
     electron: {
