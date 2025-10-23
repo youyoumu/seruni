@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "main": "dist/main.js",
+  "main": "script/dev/main.ts",
   "scripts": {
     "start": "NODE_ENV=production ${ELECTRON_BIN:-electron} --ozone-platform=wayland dist | roarr",
     "build": "vite build",

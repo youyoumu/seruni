@@ -7,7 +7,6 @@ import { Roarr } from "roarr";
 
 const log = (str: string) => Roarr.debug({ namespace: "DEV" }, str);
 
-//TODO: make more structured
 const envJson = (() => {
   try {
     return JSON.parse(
@@ -21,6 +20,32 @@ const envJson = (() => {
 
 let child: ChildProcess;
 let restarting = false;
+
+function spawnElectronWithRoarr() {
+  const ELECTRON_BIN = process.env.ELECTRON_BIN || "electron";
+  const args = ["."];
+
+  if (process.env.SSH_PREFER_FISH !== "1") {
+    args.unshift("--ozone-platform=wayland");
+  }
+
+  // spawn roarr CLI as pretty-printer
+  const roarr = spawn("roarr", ["--output-format", "pretty"], {
+    stdio: ["pipe", "inherit", "inherit"],
+  });
+
+  const electron = spawn(ELECTRON_BIN, args, {
+    stdio: ["inherit", "pipe", "inherit"],
+  });
+  electron.stdout.pipe(roarr.stdin);
+
+  electron.on("close", (code) => {
+    roarr.stdin.end();
+    roarr.kill();
+  });
+
+  return electron;
+}
 
 const preloadDir = path.join(
   import.meta.dirname,
@@ -66,7 +91,7 @@ const handleTerminationSignal = (signal: "SIGINT" | "SIGTERM") => {
 };
 
 async function start() {
-  child = spawn("./script/dev/dev.sh", { stdio: "inherit" });
+  child = spawnElectronWithRoarr();
   child.on("close", (code) => {
     if (restarting) {
       log("Restarting dev server");
@@ -74,9 +99,7 @@ async function start() {
       start();
       return;
     }
-    if (code === null) {
-      process.exit(1);
-    }
+    if (code === null) process.exit(1);
     process.exit(code);
   });
 
@@ -86,20 +109,10 @@ async function start() {
 
 function watch() {
   log(`Watching ${ipcPath}`);
-  chokidar
-    .watch(ipcPath, { ignoreInitial: true })
-    // .on("all", (event, path) => {
-    //   console.log(`Chokidar event ${event} detected on ${path}`);
-    //   handleFileEvent(path);
-    // })
-    // .on("add", (path) => {
-    //   console.log(`Chokidar event 'add' detected on ${path}`);
-    //   handleFileEvent(path);
-    // })
-    .on("change", (path) => {
-      log(`Change detected on ${path}`);
-      handleFileEvent(path);
-    });
+  chokidar.watch(ipcPath, { ignoreInitial: true }).on("change", (path) => {
+    log(`Change detected on ${path}`);
+    handleFileEvent(path);
+  });
 }
 
 function handleFileEvent(filePath: string) {
