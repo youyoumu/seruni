@@ -3,15 +3,10 @@ import { readFileSync } from "node:fs";
 import path, { join } from "node:path";
 import { createSocketClient, type WsClient } from "@repo/preload/websocket";
 import chokidar, { type FSWatcher } from "chokidar";
+import { createServer, isRunnableDevEnvironment } from "vite";
 
 process.env.ROARR_LOG = "true";
 const { Roarr, ROARR } = await import("roarr");
-const roarr = spawn("roarr", ["--output-format", "pretty"], {
-  stdio: ["pipe", "inherit", "inherit"],
-});
-ROARR.write = (message) => {
-  roarr.stdin.write(`${message}\n`);
-};
 
 class DevManager {
   child?: ChildProcess;
@@ -34,7 +29,7 @@ class DevManager {
     const env = this.loadEnv();
     const PRELOAD_DIR = path.join(
       import.meta.dirname,
-      "../../../../packages/preload/dist/_preload/",
+      "../../../packages/preload/dist/_preload/",
     );
     this.env = {
       PRELOAD_DIR,
@@ -45,7 +40,7 @@ class DevManager {
 
   loadEnv(): Record<string, string | number | undefined | null> {
     try {
-      const envPath = join(import.meta.dirname, "../../env.json");
+      const envPath = join(import.meta.dirname, "../env.json");
       return JSON.parse(readFileSync(envPath, "utf-8"));
     } catch {
       console.error("Failed to read env.json");
@@ -55,7 +50,8 @@ class DevManager {
 
   spawnElectron(): ChildProcess {
     const ELECTRON_BIN = process.env.ELECTRON_BIN || "electron";
-    const args = ["."];
+    // spawn this script with --vite flag to enable vite dev server
+    const args = ["--vite", "."];
     if (process.env.SSH_PREFER_FISH !== "1") {
       args.unshift("--ozone-platform=wayland");
     }
@@ -138,12 +134,32 @@ class DevManager {
   }
 
   async init() {
+    const roarr = spawn("roarr", ["--output-format", "pretty"], {
+      stdio: ["pipe", "inherit", "inherit"],
+    });
+    ROARR.write = (message) => {
+      roarr.stdin.write(`${message}\n`);
+    };
+
     await this.waitForFile(this.env.IPC_PATH);
     await this.start();
     await this.setupWebSocket();
     setTimeout(() => this.startWatching(), 2000);
   }
+
+  async vite() {
+    const viteServer = await createServer();
+    const electronEnv = viteServer.environments.electron;
+    if (electronEnv && isRunnableDevEnvironment(electronEnv)) {
+      await electronEnv.runner.import("/src/main.ts");
+    }
+  }
 }
 
+const args = process.argv.slice(2);
 const dev = new DevManager();
-dev.init();
+if (args.includes("--vite")) {
+  dev.vite();
+} else {
+  dev.init();
+}
