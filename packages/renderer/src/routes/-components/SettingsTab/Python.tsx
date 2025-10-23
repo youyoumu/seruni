@@ -7,10 +7,9 @@ import { Button } from "#/components/ui/button";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
 import {
-  isPythonInstalledQueryOptions,
-  pythonHealthcheckQueryOptions,
-  pythonPipListQueryOptions,
-  pythonVenvHealthcheckQueryOptions,
+  useInstallPythonDependenciesMutation,
+  useInstallPythonMutation,
+  useInstallPythonUvMutation,
   useIsPythonInstalledQuery,
   useIsUvInstalledQuery,
   useIsVenvDependeciesInstalledQuery,
@@ -18,7 +17,6 @@ import {
 import { appToaster } from "../AppToaster";
 
 export function Python() {
-  const queryClient = useQueryClient();
   const [isInstalling, setIsInstalling] = createSignal(false);
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
@@ -43,29 +41,52 @@ export function Python() {
     );
   }
 
+  const installPythonMutation = useInstallPythonMutation();
+  const installPythonUvMutation = useInstallPythonUvMutation();
+  const installPythonDependenciesMutation =
+    useInstallPythonDependenciesMutation();
+
+  function installPython() {
+    setIsInstalling(true);
+    const toastId = appToaster.loading({
+      title: isPythonInstalled()
+        ? "Reinstalling Python..."
+        : "Installing Python...",
+    });
+    installPythonMutation.mutate(undefined, {
+      onSuccess: () => {
+        appToaster.update(toastId, {
+          title: isPythonInstalled()
+            ? "Python has been reinstalled"
+            : "Python has been installed",
+          duration: Infinity,
+          action: {
+            label: "Install uv",
+            onClick: () => installPythonUv(),
+          },
+          type: "success",
+        });
+      },
+      onError: () => {
+        appToaster.update(toastId, {
+          title: "Failed to install Python",
+          type: "error",
+        });
+      },
+      onSettled: () => {
+        setIsInstalling(false);
+      },
+    });
+  }
+
   function installPythonUv() {
-    appToaster.promise(
-      ipcRenderer
-        .invoke("settings:installPythonUv")
-        .then(() => {
-          queryClient.invalidateQueries({
-            queryKey: pythonPipListQueryOptions().queryKey,
-          });
-          queryClient.invalidateQueries({
-            queryKey: pythonHealthcheckQueryOptions().queryKey,
-          });
-        })
-        .finally(() => {
-          setIsInstalling(false);
-        }),
-      {
-        loading: {
-          title: isUvInstalled() ? "Reinstalling uv" : "Installing uv",
-        },
-        error: {
-          title: "Failed to install uv",
-        },
-        success: {
+    setIsInstalling(true);
+    const toastId = appToaster.loading({
+      title: isUvInstalled() ? "Reinstalling uv" : "Installing uv",
+    });
+    installPythonUvMutation.mutate(undefined, {
+      onSuccess: () => {
+        appToaster.update(toastId, {
           title: isUvInstalled()
             ? "uv has been reinstalled"
             : "uv has been installed",
@@ -74,41 +95,48 @@ export function Python() {
             label: "Install Dependencies",
             onClick: () => installPythonDependencies(),
           },
-        },
+          type: "success",
+        });
       },
-    );
+      onError: () => {
+        appToaster.update(toastId, {
+          title: "Failed to install uv",
+          type: "error",
+        });
+      },
+      onSettled: () => {
+        setIsInstalling(false);
+      },
+    });
   }
 
   function installPythonDependencies() {
-    appToaster.promise(
-      ipcRenderer
-        .invoke("settings:installPythonDependencies")
-        .then(() => {
-          ipcRenderer.invoke("settings:installPythonDependencies");
-        })
-        .finally(() => {
-          queryClient.invalidateQueries({
-            queryKey: pythonVenvHealthcheckQueryOptions().queryKey,
-          });
-          setIsInstalling(false);
-        }),
-      {
-        loading: {
-          title: isVenvDependenciesInstalled()
-            ? "Reinstalling Python dependencies"
-            : "Installing Python dependencies",
-        },
-        error: {
-          title: "Failed to install Python dependencies",
-        },
-        success: {
+    setIsInstalling(true);
+    const toastId = appToaster.loading({
+      title: isVenvDependenciesInstalled()
+        ? "Reinstalling Python dependencies"
+        : "Installing Python dependencies",
+    });
+    installPythonDependenciesMutation.mutate(undefined, {
+      onSuccess: () => {
+        appToaster.update(toastId, {
           title: isVenvDependenciesInstalled()
             ? "Python dependencies have been reinstalled"
             : "Python dependencies have been installed",
           duration: 30000,
-        },
+          type: "success",
+        });
       },
-    );
+      onError: () => {
+        appToaster.update(toastId, {
+          title: "Failed to install Python dependencies",
+          type: "error",
+        });
+      },
+      onSettled: () => {
+        setIsInstalling(false);
+      },
+    });
   }
 
   return (
@@ -188,39 +216,7 @@ export function Python() {
           <Button
             loading={isInstalling()}
             onClick={() => {
-              setIsInstalling(true);
-              appToaster.promise(
-                ipcRenderer
-                  .invoke("settings:installPython")
-                  .then(() => {
-                    queryClient.invalidateQueries({
-                      queryKey: isPythonInstalledQueryOptions().queryKey,
-                    });
-                  })
-                  .finally(() => {
-                    setIsInstalling(false);
-                  }),
-                {
-                  loading: {
-                    title: isPythonInstalled()
-                      ? "Reinstalling Python..."
-                      : "Installing Python...",
-                  },
-                  error: {
-                    title: "Failed to install Python",
-                  },
-                  success: {
-                    title: isPythonInstalled()
-                      ? "Python has been reinstalled"
-                      : "Python has been installed",
-                    duration: Infinity,
-                    action: {
-                      label: "Install uv",
-                      onClick: () => installPythonUv(),
-                    },
-                  },
-                },
-              );
+              installPython();
             }}
           >
             {isPythonInstalled() ? "Reinstall" : "Install"} Python
@@ -229,7 +225,6 @@ export function Python() {
             disabled={!isPythonInstalled()}
             loading={isInstalling()}
             onClick={() => {
-              setIsInstalling(true);
               installPythonUv();
             }}
           >
@@ -239,7 +234,6 @@ export function Python() {
             disabled={!isPythonInstalled() || !isUvInstalled()}
             loading={isInstalling()}
             onClick={() => {
-              setIsInstalling(true);
               installPythonDependencies();
             }}
           >

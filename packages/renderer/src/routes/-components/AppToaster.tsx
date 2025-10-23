@@ -76,6 +76,8 @@ class AppToaster {
     id: string | undefined,
     data: Parameters<typeof this.toaster.update>[1],
   ) {
+    this.toaster.update(id ?? "", data);
+
     const notificationIndex = store.notifications.findIndex((n) => n.id === id);
     setStore("notifications", notificationIndex, {
       id,

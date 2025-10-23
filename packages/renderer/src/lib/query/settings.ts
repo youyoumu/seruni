@@ -1,4 +1,9 @@
-import { queryOptions, useQuery } from "@tanstack/solid-query";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { untrack } from "solid-js";
 import { useOwner } from "../util";
 import { queryKey } from "./_util";
@@ -114,4 +119,68 @@ export const useIsVenvDependeciesInstalledQuery = () =>
         isUvInstalledQuery().status &&
         untrack(() => isUvInstalledQuery().data === true),
     }));
+  });
+
+export const useInstallPythonMutation = () =>
+  useMutation(() => {
+    const queryClient = useQueryClient();
+    return {
+      mutationFn: () => ipcRenderer.invoke("settings:installPython"),
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].isInstalled.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].healthcheck.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].pipList.queryKey,
+          }),
+        ]);
+      },
+    };
+  });
+
+export const useInstallPythonUvMutation = () =>
+  useMutation(() => {
+    const queryClient = useQueryClient();
+    return {
+      mutationFn: () => ipcRenderer.invoke("settings:installPythonUv"),
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].healthcheck.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].pipList.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].venvHealthcheck.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].venvPipList.queryKey,
+          }),
+        ]);
+      },
+    };
+  });
+
+export const useInstallPythonDependenciesMutation = () =>
+  useMutation(() => {
+    const queryClient = useQueryClient();
+    return {
+      mutationFn: () =>
+        ipcRenderer.invoke("settings:installPythonDependencies"),
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].venvHealthcheck.queryKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKey["settings:python"].venvPipList.queryKey,
+          }),
+        ]);
+      },
+    };
   });
