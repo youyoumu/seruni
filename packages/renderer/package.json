@@ -37,6 +37,7 @@
     "fast-sort": "^3.4.1",
     "json-stringify-pretty-compact": "^4.0.0",
     "lucide-solid": "^0.544.0",
+    "roarr": "^7.21.1",
     "solid-js": "^1.9.9"
   },
   "devDependencies": {

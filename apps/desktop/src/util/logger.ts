@@ -3,15 +3,9 @@ import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { createGzip } from "node:zlib";
 import { isBefore, parse, subDays } from "date-fns";
-import { Roarr as log_ } from "roarr";
+import { Roarr as log_, ROARR } from "roarr";
 import { serializeError } from "serialize-error";
 import { bus } from "./bus";
-
-declare global {
-  var ROARR: {
-    write: (...args: unknown[]) => void;
-  };
-}
 
 export const log = log_.child<{
   error: unknown;

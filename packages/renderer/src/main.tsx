@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from "@tanstack/solid-router";
 import { render, Suspense } from "solid-js/web";
 import { routeTree } from "./routeTree.gen";
 import "./lib/hmr";
+import "./lib/log";
 import "./index.css";
 
 export const queryClient = new QueryClient({

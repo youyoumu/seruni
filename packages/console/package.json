@@ -1,0 +1,16 @@
+{
+  "name": "@repo/console",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/main.ts"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@roarr/cli": "^5.12.4",
+    "ws": "^8.18.3"
+  }
+}
