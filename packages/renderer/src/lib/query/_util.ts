@@ -17,10 +17,16 @@ export const noUndefinedArray = <T extends unknown[]>(
 
 export const queryKey = createQueryKeyStore({
   "mining:noteMedia": {
-    one: (noteId: number) => [noteId],
+    one: (noteId) => ({
+      queryKey: [noteId],
+      queryFn: () => ipcRenderer.invoke("mining:getNoteMedia", { noteId }),
+    }),
   },
   "settings:env": {
-    detail: null,
+    detail: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:getEnv"),
+    },
   },
   "settings:python": {
     isInstalled: {
@@ -45,7 +51,10 @@ export const queryKey = createQueryKeyStore({
     },
   },
   "general:httpServerUrl": {
-    value: null,
+    value: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("general:httpServerUrl"),
+    },
   },
   "general:clientStatus": {
     detail: {

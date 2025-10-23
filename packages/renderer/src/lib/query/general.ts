@@ -13,9 +13,6 @@ export const httpServerUrlQueryOptions = () =>
     initialData: {
       url: window.location.origin,
     },
-    queryFn: async () => {
-      return await ipcRenderer.invoke("general:httpServerUrl");
-    },
   });
 
 export const mediaUrlQueryOptions = (
