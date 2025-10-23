@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/solid-query";
+import { untrack } from "solid-js";
 import { useOwner } from "../util";
 import { queryKey } from "./_util";
 
@@ -36,7 +37,9 @@ export const usePythonHealthcheckQuery = () =>
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     return useQuery(() => ({
       ...pythonHealthcheckQueryOptions(),
-      enabled: isPythonInstalledQuery().data === true,
+      enabled:
+        isPythonInstalledQuery().status &&
+        untrack(() => isPythonInstalledQuery().data === true),
     }));
   });
 
@@ -49,7 +52,9 @@ export const usePythonPipListQuery = () =>
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     return useQuery(() => ({
       ...pythonPipListQueryOptions(),
-      enabled: isPythonInstalledQuery().data === true,
+      enabled:
+        isPythonInstalledQuery().status &&
+        untrack(() => isPythonInstalledQuery().data === true),
     }));
   });
 
@@ -61,7 +66,9 @@ export const useIsUvInstalledQuery = () =>
       queryKey,
       queryFn,
       select: (data) => data.some(({ name }) => name === "uv"),
-      enabled: isPythonInstalledQuery().data === true,
+      enabled:
+        isPythonInstalledQuery().status &&
+        untrack(() => isPythonInstalledQuery().data === true),
     }));
   });
 
@@ -74,7 +81,9 @@ export const usePythonVenvPipListQuery = () =>
     const isUvInstalledQuery = useIsUvInstalledQuery();
     return useQuery(() => ({
       ...pythonVenvPipListQueryOptions(),
-      enabled: isUvInstalledQuery().data === true,
+      enabled:
+        isUvInstalledQuery().status &&
+        untrack(() => isUvInstalledQuery().data === true),
     }));
   });
 
@@ -87,7 +96,9 @@ export const usePythonVenvHealthcheckQuery = () =>
     const isUvInstalledQuery = useIsUvInstalledQuery();
     return useQuery(() => ({
       ...pythonVenvHealthcheckQueryOptions(),
-      enabled: isUvInstalledQuery().data === true,
+      enabled:
+        isUvInstalledQuery().status &&
+        untrack(() => isUvInstalledQuery().data === true),
     }));
   });
 
@@ -99,6 +110,8 @@ export const useIsVenvDependeciesInstalledQuery = () =>
       queryKey,
       queryFn,
       select: (data) => data.ok === true,
-      enabled: isUvInstalledQuery().data === true,
+      enabled:
+        isUvInstalledQuery().status &&
+        untrack(() => isUvInstalledQuery().data === true),
     }));
   });

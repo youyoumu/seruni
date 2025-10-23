@@ -134,9 +134,7 @@ export function Python() {
             ></Alert.Icon>
             <Alert.Content>
               <Alert.Title>Python is not ready to use</Alert.Title>
-              <Suspense>
-                <Alert.Description>{getAlertDescription()}</Alert.Description>
-              </Suspense>
+              <Alert.Description>{getAlertDescription()}</Alert.Description>
             </Alert.Content>
           </Alert.Root>
         </Show>
