@@ -47,4 +47,10 @@ export const queryKey = createQueryKeyStore({
   "general:httpServerUrl": {
     value: null,
   },
+  "general:clientStatus": {
+    detail: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("general:getClientStatus"),
+    },
+  },
 });

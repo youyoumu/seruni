@@ -9,6 +9,7 @@ import {
   Match,
   onCleanup,
   onMount,
+  Suspense,
   Switch,
 } from "solid-js";
 import { HStack, Stack } from "styled-system/jsx";
@@ -17,12 +18,13 @@ import { Select_ } from "#/components/Form";
 import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
-import { store } from "#/lib/store";
+import { useClientStatusQuery } from "#/lib/query/general";
 import { history, setHistory } from "./_util";
 import { AnkiCard } from "./AnkiCard";
 import { NoteContextProvider } from "./NoteContext";
 
 export function HistoryTab() {
+  const clientStatusQuery = useClientStatusQuery();
   const [success, setSuccess] = createSignal(false);
 
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -61,7 +63,7 @@ export function HistoryTab() {
   });
 
   createEffect(async () => {
-    if (store.client.anki.status === "connected") {
+    if (clientStatusQuery().data.anki === "connected") {
       const { success, data } = await ipcRenderer.invoke(
         "mining:getAnkiHistory",
       );
@@ -76,57 +78,59 @@ export function HistoryTab() {
   }));
 
   return (
-    <Stack h="full" maxW="8xl" mx="auto" gap="4">
-      <Switch>
-        <Match when={success()}>
-          <Stack
-            overflow="auto"
-            class="custom-scrollbar"
-            pe="4"
-            gap="4"
-            alignItems="center"
-          >
-            <For each={slicedHistory()}>
-              {(item) => {
-                return (
-                  <NoteContextProvider value={item}>
-                    <AnkiCard />
-                  </NoteContextProvider>
-                );
-              }}
-            </For>
-          </Stack>
-          <HStack justifyContent="center" gap="4">
-            <Pagination
-              justifyContent="center"
-              count={history.length}
-              pageSize={pageSize()}
-              siblingCount={3}
-              page={currentPage()}
-              onPageChange={(page) => setCurrentPage(page.page)}
-            />
-            <Select_
-              value={[pageSize().toString() ?? ""]}
-              collection={createListCollection({
-                items: pageSizeItems,
-              })}
-              onValueChange={(e) => {
-                setPageSize(parseInt(e.items[0]?.value ?? "20"));
-              }}
-            />
-          </HStack>
-        </Match>
-        <Match when={!success()}>
-          <Stack alignItems="center" justifyContent="center" h="full">
-            <Flip>
-              <BirdIcon size={250} strokeWidth={1}></BirdIcon>
-            </Flip>
-            <Text size="2xl" color="fg.muted">
-              Can't connect to Anki
-            </Text>
-          </Stack>
-        </Match>
-      </Switch>
-    </Stack>
+    <Suspense>
+      <Stack h="full" maxW="8xl" mx="auto" gap="4">
+        <Switch>
+          <Match when={success()}>
+            <Stack
+              overflow="auto"
+              class="custom-scrollbar"
+              pe="4"
+              gap="4"
+              alignItems="center"
+            >
+              <For each={slicedHistory()}>
+                {(item) => {
+                  return (
+                    <NoteContextProvider value={item}>
+                      <AnkiCard />
+                    </NoteContextProvider>
+                  );
+                }}
+              </For>
+            </Stack>
+            <HStack justifyContent="center" gap="4">
+              <Pagination
+                justifyContent="center"
+                count={history.length}
+                pageSize={pageSize()}
+                siblingCount={3}
+                page={currentPage()}
+                onPageChange={(page) => setCurrentPage(page.page)}
+              />
+              <Select_
+                value={[pageSize().toString() ?? ""]}
+                collection={createListCollection({
+                  items: pageSizeItems,
+                })}
+                onValueChange={(e) => {
+                  setPageSize(parseInt(e.items[0]?.value ?? "20"));
+                }}
+              />
+            </HStack>
+          </Match>
+          <Match when={!success()}>
+            <Stack alignItems="center" justifyContent="center" h="full">
+              <Flip>
+                <BirdIcon size={250} strokeWidth={1}></BirdIcon>
+              </Flip>
+              <Text size="2xl" color="fg.muted">
+                Can't connect to Anki
+              </Text>
+            </Stack>
+          </Match>
+        </Switch>
+      </Stack>
+    </Suspense>
   );
 }

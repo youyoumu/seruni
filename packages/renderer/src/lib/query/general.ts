@@ -3,6 +3,7 @@ import {
   zStorageUrlPath,
 } from "@repo/preload/ipc";
 import { queryOptions, useQuery } from "@tanstack/solid-query";
+import { reconcile } from "solid-js/store";
 import { useOwner } from "../util";
 import { queryKey } from "./_util";
 
@@ -46,3 +47,22 @@ export const useMediaUrlQuery = (
     });
   });
 };
+
+export const clientStatusQueryOptions = () =>
+  queryOptions({
+    ...queryKey["general:clientStatus"].detail,
+    initialData: {
+      anki: "disconnected" as const,
+      obs: "disconnected" as const,
+      textractor: "disconnected" as const,
+    },
+    refetchInterval: 2000,
+    reconcile: (old, data) => reconcile(data)(old),
+  });
+
+export const useClientStatusQuery = () =>
+  useOwner(() => {
+    return useQuery(() => ({
+      ...clientStatusQueryOptions(),
+    }));
+  });

@@ -1,17 +1,12 @@
-import {
-  ImageOffIcon,
-  SquirrelIcon,
-  TurtleIcon,
-  ZapIcon,
-  ZapOffIcon,
-} from "lucide-solid";
+import type { ClientStatus } from "@repo/preload/ipc";
+import { SquirrelIcon, TurtleIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
-  type JSX,
   Match,
   onCleanup,
   onMount,
+  Suspense,
   Switch,
 } from "solid-js";
 import { css } from "styled-system/css";
@@ -23,7 +18,7 @@ import { Heading } from "#/components/ui/heading";
 import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
-import { type ClientStatus, setStore, store } from "#/lib/store";
+import { useClientStatusQuery } from "#/lib/query/general";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {
@@ -31,18 +26,11 @@ function capitalize(str: string) {
 }
 
 export function HomeTab() {
+  const clientStatusQuery = useClientStatusQuery();
   const [sourceScreenshot, setSourceScreenshot] = createSignal<string | null>(
     null,
   );
   onMount(() => {
-    const id = setInterval(() => {
-      ipcRenderer.invoke("general:getClientStatus").then((status) => {
-        setStore("client", "anki", "status", status.anki);
-        setStore("client", "obs", "status", status.obs);
-        setStore("client", "textractor", "status", status.textractor);
-      });
-    }, 1000);
-
     const id2 = setInterval(() => {
       ipcRenderer.invoke("mining:getSourceScreenshot").then(({ image }) => {
         setSourceScreenshot(image);
@@ -50,7 +38,6 @@ export function HomeTab() {
     }, 8000);
 
     onCleanup(() => {
-      clearInterval(id);
       clearInterval(id2);
     });
   });
@@ -85,150 +72,157 @@ export function HomeTab() {
   }
 
   return (
-    <Stack gap="4" maxW="8xl" mx="auto">
-      <Grid gap="2" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
-        <Alert.Root>
-          <StatusIcon status={store.client.anki.status} />
-          <Alert.Content>
-            <Alert.Title>Anki</Alert.Title>
-            <Alert.Description>
-              Status: {capitalize(store.client.anki.status)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+    <Suspense>
+      <Stack gap="4" maxW="8xl" mx="auto">
+        <Grid
+          gap="2"
+          gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
+        >
+          <Alert.Root>
+            <StatusIcon status={clientStatusQuery().data.anki} />
+            <Alert.Content>
+              <Alert.Title>Anki</Alert.Title>
+              <Alert.Description>
+                Status: {capitalize(clientStatusQuery().data.anki)}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
 
-        <Alert.Root>
-          <StatusIcon status={store.client.obs.status} />
-          <Alert.Content>
-            <Alert.Title>OBS</Alert.Title>
-            <Alert.Description>
-              Status: {capitalize(store.client.obs.status)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+          <Alert.Root>
+            <StatusIcon status={clientStatusQuery().data.obs} />
+            <Alert.Content>
+              <Alert.Title>OBS</Alert.Title>
+              <Alert.Description>
+                Status: {capitalize(clientStatusQuery().data.obs)}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
 
-        <Alert.Root>
-          <StatusIcon status={store.client.textractor.status} />
-          <Alert.Content>
-            <Alert.Title>Textractor</Alert.Title>
-            <Alert.Description>
-              Status: {capitalize(store.client.textractor.status)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
-      </Grid>
-      <Stack>
-        <HStack alignItems="end">
-          <Stack flex="1">
-            <Heading size="lg">OBS Preview</Heading>
-            <Switch>
-              <Match when={sourceScreenshot()}>
-                <img
-                  alt="OBS Preview"
-                  src={sourceScreenshot() ?? ""}
-                  class={css({
-                    width: "md",
-                    aspectRatio: "16 / 9",
-                    objectFit: "contain",
-                    borderColor: "border.default",
-                    borderWidth: "thin",
-                    rounded: "md",
-                  })}
-                />
-              </Match>
-              <Match when={!sourceScreenshot()}>
-                <Stack
-                  aspectRatio="16 / 9"
-                  borderColor="border.default"
-                  borderWidth="thin"
-                  rounded="md"
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Flip>
-                    <Icon
-                      color="fg.muted"
-                      width="32"
-                      height="32"
-                      strokeWidth="1"
-                      asChild={(iconProps) => <SquirrelIcon {...iconProps()} />}
-                    />
-                  </Flip>
-                  <Text color="fg.muted">Can't connect to OBS</Text>
-                </Stack>
-              </Match>
-            </Switch>
-          </Stack>
-          <Stack flex="1">
-            <Heading size="lg">Tutel</Heading>
-            <Stack
-              aspectRatio="16 / 9"
-              borderColor="border.default"
-              borderWidth="thin"
-              rounded="md"
-              justifyContent="center"
-              alignItems="center"
-            >
-              <Flip>
-                <Icon
-                  color="fg.muted"
-                  width="32"
-                  height="32"
-                  strokeWidth="1"
-                  asChild={(iconProps) => <TurtleIcon {...iconProps()} />}
-                />
-              </Flip>
-              <Text color="fg.muted">Tutel</Text>
+          <Alert.Root>
+            <StatusIcon status={clientStatusQuery().data.textractor} />
+            <Alert.Content>
+              <Alert.Title>Textractor</Alert.Title>
+              <Alert.Description>
+                Status: {capitalize(clientStatusQuery().data.textractor)}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
+        </Grid>
+        <Stack>
+          <HStack alignItems="end">
+            <Stack flex="1">
+              <Heading size="lg">OBS Preview</Heading>
+              <Switch>
+                <Match when={sourceScreenshot()}>
+                  <img
+                    alt="OBS Preview"
+                    src={sourceScreenshot() ?? ""}
+                    class={css({
+                      width: "md",
+                      aspectRatio: "16 / 9",
+                      objectFit: "contain",
+                      borderColor: "border.default",
+                      borderWidth: "thin",
+                      rounded: "md",
+                    })}
+                  />
+                </Match>
+                <Match when={!sourceScreenshot()}>
+                  <Stack
+                    aspectRatio="16 / 9"
+                    borderColor="border.default"
+                    borderWidth="thin"
+                    rounded="md"
+                    justifyContent="center"
+                    alignItems="center"
+                  >
+                    <Flip>
+                      <Icon
+                        color="fg.muted"
+                        width="32"
+                        height="32"
+                        strokeWidth="1"
+                        asChild={(iconProps) => (
+                          <SquirrelIcon {...iconProps()} />
+                        )}
+                      />
+                    </Flip>
+                    <Text color="fg.muted">Can't connect to OBS</Text>
+                  </Stack>
+                </Match>
+              </Switch>
             </Stack>
-          </Stack>
+            <Stack flex="1">
+              <Heading size="lg">Tutel</Heading>
+              <Stack
+                aspectRatio="16 / 9"
+                borderColor="border.default"
+                borderWidth="thin"
+                rounded="md"
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Flip>
+                  <Icon
+                    color="fg.muted"
+                    width="32"
+                    height="32"
+                    strokeWidth="1"
+                    asChild={(iconProps) => <TurtleIcon {...iconProps()} />}
+                  />
+                </Flip>
+                <Text color="fg.muted">Tutel</Text>
+              </Stack>
+            </Stack>
+          </HStack>
+        </Stack>
+
+        <HStack>
+          <Button
+            onClick={() => {
+              ipcRenderer.send("vnOverlay:open");
+            }}
+          >
+            Open VN Overlay
+          </Button>
+
+          <Button
+            onClick={() => {
+              // appToaster.create({
+              //   title: "Info",
+              //   description: "This is an info toast.",
+              //   action: {
+              //     label: "Action",
+              //     onClick: () => {
+              //       console.log("clicked");
+              //     },
+              //   },
+              //   type: "loading",
+              //   // duration: Infinity,
+              // });
+              appToaster.promise(
+                new Promise((resolve, reject) => setTimeout(resolve, 1000)),
+                {
+                  loading: {
+                    title: "Loading",
+                    description: "This is a loading toast.",
+                  },
+                  success: {
+                    title: "Success",
+                    description: "This is a success toast.",
+                  },
+                  error: {
+                    title: "Error",
+                    description: "This is an error toast.",
+                  },
+                },
+              );
+            }}
+          >
+            Toast
+          </Button>
         </HStack>
       </Stack>
-
-      <HStack>
-        <Button
-          onClick={() => {
-            ipcRenderer.send("vnOverlay:open");
-          }}
-        >
-          Open VN Overlay
-        </Button>
-
-        <Button
-          onClick={() => {
-            // appToaster.create({
-            //   title: "Info",
-            //   description: "This is an info toast.",
-            //   action: {
-            //     label: "Action",
-            //     onClick: () => {
-            //       console.log("clicked");
-            //     },
-            //   },
-            //   type: "loading",
-            //   // duration: Infinity,
-            // });
-            appToaster.promise(
-              new Promise((resolve, reject) => setTimeout(resolve, 1000)),
-              {
-                loading: {
-                  title: "Loading",
-                  description: "This is a loading toast.",
-                },
-                success: {
-                  title: "Success",
-                  description: "This is a success toast.",
-                },
-                error: {
-                  title: "Error",
-                  description: "This is an error toast.",
-                },
-              },
-            );
-          }}
-        >
-          Toast
-        </Button>
-      </HStack>
-    </Stack>
+    </Suspense>
   );
 }
