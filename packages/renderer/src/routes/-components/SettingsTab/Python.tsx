@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/solid-query";
 import { ShieldAlertIcon } from "lucide-solid";
 import { createSignal, Show, Suspense } from "solid-js";
 import { Grid, HStack, Stack } from "styled-system/jsx";
@@ -48,15 +47,14 @@ export function Python() {
 
   function installPython() {
     setIsInstalling(true);
+    const isReinstall = isPythonInstalled();
     const toastId = appToaster.loading({
-      title: isPythonInstalled()
-        ? "Reinstalling Python..."
-        : "Installing Python...",
+      title: isReinstall ? "Reinstalling Python..." : "Installing Python...",
     });
     installPythonMutation.mutate(undefined, {
       onSuccess: () => {
         appToaster.update(toastId, {
-          title: isPythonInstalled()
+          title: isReinstall
             ? "Python has been reinstalled"
             : "Python has been installed",
           duration: Infinity,
@@ -81,13 +79,14 @@ export function Python() {
 
   function installPythonUv() {
     setIsInstalling(true);
+    const isReinstall = isUvInstalled();
     const toastId = appToaster.loading({
       title: isUvInstalled() ? "Reinstalling uv" : "Installing uv",
     });
     installPythonUvMutation.mutate(undefined, {
       onSuccess: () => {
         appToaster.update(toastId, {
-          title: isUvInstalled()
+          title: isReinstall
             ? "uv has been reinstalled"
             : "uv has been installed",
           duration: Infinity,
@@ -112,15 +111,16 @@ export function Python() {
 
   function installPythonDependencies() {
     setIsInstalling(true);
+    const isReinstall = isVenvDependenciesInstalled();
     const toastId = appToaster.loading({
-      title: isVenvDependenciesInstalled()
+      title: isReinstall
         ? "Reinstalling Python dependencies"
         : "Installing Python dependencies",
     });
     installPythonDependenciesMutation.mutate(undefined, {
       onSuccess: () => {
         appToaster.update(toastId, {
-          title: isVenvDependenciesInstalled()
+          title: isReinstall
             ? "Python dependencies have been reinstalled"
             : "Python dependencies have been installed",
           duration: 30000,
