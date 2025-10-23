@@ -20,12 +20,7 @@ import { Tabs } from "#/components/ui/tabs";
 import { Text } from "#/components/ui/text";
 import { Toast } from "#/components/ui/toast";
 import { setStore, store } from "#/lib/store";
-import {
-  type AppToastType,
-  appToaster,
-  appToaster_,
-  ToasterIcon,
-} from "./AppToaster";
+import { type AppToastType, appToaster, ToasterIcon } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { HistoryTab } from "./HistoryTab";
 import { HomeTab } from "./HomeTab";
@@ -221,7 +216,7 @@ export function AppToaster() {
   });
 
   return (
-    <Toast.Toaster toaster={appToaster_}>
+    <Toast.Toaster toaster={appToaster.original}>
       {(toast) => {
         const type = createMemo(() => toast().type) as () => AppToastType;
         return (

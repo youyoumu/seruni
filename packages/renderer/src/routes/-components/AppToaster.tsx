@@ -13,21 +13,21 @@ import { setStore, store } from "#/lib/store";
 
 export type AppToastType = "info" | "error" | "warning" | "success" | "loading";
 
-export const appToaster_ = Toast.createToaster({
-  placement: "bottom-end",
-  overlap: true,
-  gap: 16,
-  offsets: {
-    bottom: "40px",
-    left: "0px",
-    top: "0px",
-    right: "10px",
-  },
-});
+class AppToaster {
+  private toaster = Toast.createToaster({
+    placement: "bottom-end",
+    overlap: true,
+    gap: 16,
+    offsets: {
+      bottom: "40px",
+      left: "0px",
+      top: "0px",
+      right: "10px",
+    },
+  });
 
-export const appToaster = {
-  create(data: Parameters<typeof appToaster_.create>[0]) {
-    const toastId = appToaster_.create(data);
+  create(data: Parameters<typeof this.toaster.create>[0]) {
+    const toastId = this.toaster.create(data);
     setStore("notifications", store.notifications.length, {
       id: toastId,
       title: data.title,
@@ -35,13 +35,61 @@ export const appToaster = {
       type: data.type as AppToastType,
     });
     return toastId;
-  },
-  promise(
-    promise: Parameters<typeof appToaster_.promise>[0],
-    options: Parameters<typeof appToaster_.promise>[1],
-  ) {
-    const toast = appToaster_.promise(promise, options);
+  }
 
+  info(data: Parameters<typeof this.toaster.info>[0]) {
+    return this.create({
+      ...data,
+      type: "info",
+    });
+  }
+
+  loading(data: Parameters<typeof this.toaster.loading>[0]) {
+    return this.create({
+      ...data,
+      type: "loading",
+    });
+  }
+
+  error(data: Parameters<typeof this.toaster.error>[0]) {
+    return this.create({
+      ...data,
+      type: "error",
+    });
+  }
+
+  success(data: Parameters<typeof this.toaster.success>[0]) {
+    return this.create({
+      ...data,
+      type: "success",
+    });
+  }
+
+  warn(data: Parameters<typeof this.toaster.create>[0]) {
+    return this.create({
+      ...data,
+      type: "warning",
+    });
+  }
+
+  update(
+    id: string | undefined,
+    data: Parameters<typeof this.toaster.update>[1],
+  ) {
+    const notificationIndex = store.notifications.findIndex((n) => n.id === id);
+    setStore("notifications", notificationIndex, {
+      id,
+      title: data.title,
+      description: data.description,
+      type: data.type,
+    });
+  }
+
+  promise(
+    promise: Parameters<typeof this.toaster.promise>[0],
+    options: Parameters<typeof this.toaster.promise>[1],
+  ) {
+    const toast = this.toaster.promise(promise, options);
     setStore("notifications", store.notifications.length, {
       id: toast?.id,
       title: options.loading.title,
@@ -49,29 +97,23 @@ export const appToaster = {
       type: "loading",
     });
 
-    const notificationIndex = store.notifications.findIndex(
-      (notification) => notification.id === toast?.id,
-    );
-
     const promise_ = typeof promise === "function" ? promise() : promise;
+    const title =
+      typeof options.success === "object"
+        ? options.success.title
+        : typeof options.success === "function"
+          ? options.success(undefined).title
+          : undefined;
+    const description =
+      typeof options.success === "object"
+        ? options.success.description
+        : typeof options.success === "function"
+          ? options.success(undefined).description
+          : undefined;
 
     promise_
       .then(() => {
-        const title =
-          typeof options.success === "object"
-            ? options.success.title
-            : typeof options.success === "function"
-              ? options.success(undefined).title
-              : undefined;
-
-        const description =
-          typeof options.success === "object"
-            ? options.success.description
-            : typeof options.success === "function"
-              ? options.success(undefined).description
-              : undefined;
-
-        setStore("notifications", notificationIndex, {
+        this.update(toast?.id, {
           id: toast?.id,
           title,
           description,
@@ -79,21 +121,7 @@ export const appToaster = {
         });
       })
       .catch(() => {
-        const title =
-          typeof options.error === "object"
-            ? options.error.title
-            : typeof options.error === "function"
-              ? options.error(undefined).title
-              : undefined;
-
-        const description =
-          typeof options.error === "object"
-            ? options.error.description
-            : typeof options.error === "function"
-              ? options.error(undefined).description
-              : undefined;
-
-        setStore("notifications", notificationIndex, {
+        this.update(toast?.id, {
           id: toast?.id,
           title,
           description,
@@ -102,9 +130,14 @@ export const appToaster = {
       });
 
     return toast;
-  },
-  original: appToaster_,
-};
+  }
+
+  get original() {
+    return this.toaster;
+  }
+}
+
+export const appToaster = new AppToaster();
 
 export function ToasterIcon(props: { type: AppToastType }) {
   return (
