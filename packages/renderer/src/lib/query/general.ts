@@ -9,6 +9,9 @@ import { queryKey } from "./_util";
 export const httpServerUrlQueryOptions = () =>
   queryOptions({
     ...queryKey["general:httpServerUrl"].value,
+    initialData: {
+      url: window.location.origin,
+    },
     queryFn: async () => {
       return await ipcRenderer.invoke("general:httpServerUrl");
     },

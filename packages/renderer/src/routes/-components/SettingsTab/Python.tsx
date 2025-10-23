@@ -16,7 +16,6 @@ import {
 import { appToaster } from "../AppToaster";
 
 export function Python() {
-  const [isInstalling, setIsInstalling] = createSignal(false);
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
   const isPythonInstalledQuery = useIsPythonInstalledQuery();
@@ -45,8 +44,12 @@ export function Python() {
   const installPythonDependenciesMutation =
     useInstallPythonDependenciesMutation();
 
+  const isInstalling = () =>
+    installPythonMutation.isPending ||
+    installPythonUvMutation.isPending ||
+    installPythonDependenciesMutation.isPending;
+
   function installPython() {
-    setIsInstalling(true);
     const isReinstall = isPythonInstalled();
     const toastId = appToaster.loading({
       title: isReinstall ? "Reinstalling Python..." : "Installing Python...",
@@ -71,14 +74,10 @@ export function Python() {
           type: "error",
         });
       },
-      onSettled: () => {
-        setIsInstalling(false);
-      },
     });
   }
 
   function installPythonUv() {
-    setIsInstalling(true);
     const isReinstall = isUvInstalled();
     const toastId = appToaster.loading({
       title: isUvInstalled() ? "Reinstalling uv" : "Installing uv",
@@ -103,14 +102,10 @@ export function Python() {
           type: "error",
         });
       },
-      onSettled: () => {
-        setIsInstalling(false);
-      },
     });
   }
 
   function installPythonDependencies() {
-    setIsInstalling(true);
     const isReinstall = isVenvDependenciesInstalled();
     const toastId = appToaster.loading({
       title: isReinstall
@@ -132,9 +127,6 @@ export function Python() {
           title: "Failed to install Python dependencies",
           type: "error",
         });
-      },
-      onSettled: () => {
-        setIsInstalling(false);
       },
     });
   }

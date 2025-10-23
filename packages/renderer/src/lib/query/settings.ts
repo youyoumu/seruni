@@ -25,6 +25,7 @@ export const useEnvQuery = () =>
 export const isPythonInstalledQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].isInstalled,
+    initialData: false,
   });
 export const useIsPythonInstalledQuery = () =>
   useOwner(() => {
@@ -36,6 +37,7 @@ export const useIsPythonInstalledQuery = () =>
 export const pythonHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].healthcheck,
+    initialData: {},
   });
 export const usePythonHealthcheckQuery = () =>
   useOwner(() => {
@@ -51,6 +53,7 @@ export const usePythonHealthcheckQuery = () =>
 export const pythonPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].pipList,
+    initialData: [],
   });
 export const usePythonPipListQuery = () =>
   useOwner(() => {
@@ -66,11 +69,12 @@ export const usePythonPipListQuery = () =>
 export const useIsUvInstalledQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    const { queryKey, queryFn } = pythonPipListQueryOptions();
+    const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
     return useQuery(() => ({
       queryKey,
       queryFn,
-      select: (data) => data.some(({ name }) => name === "uv"),
+      initialData,
+      select: (data) => data?.some(({ name }) => name === "uv"),
       enabled:
         isPythonInstalledQuery().status &&
         untrack(() => isPythonInstalledQuery().data === true),
@@ -80,6 +84,7 @@ export const useIsUvInstalledQuery = () =>
 export const pythonVenvPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvPipList,
+    initialData: [],
   });
 export const usePythonVenvPipListQuery = () =>
   useOwner(() => {
@@ -95,6 +100,7 @@ export const usePythonVenvPipListQuery = () =>
 export const pythonVenvHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvHealthcheck,
+    initialData: {},
   });
 export const usePythonVenvHealthcheckQuery = () =>
   useOwner(() => {
@@ -110,11 +116,13 @@ export const usePythonVenvHealthcheckQuery = () =>
 export const useIsVenvDependeciesInstalledQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    const { queryKey, queryFn } = pythonVenvHealthcheckQueryOptions();
+    const { queryKey, queryFn, initialData } =
+      pythonVenvHealthcheckQueryOptions();
     return useQuery(() => ({
       queryKey,
       queryFn,
-      select: (data) => data.ok === true,
+      initialData,
+      select: (data) => data?.ok === true,
       enabled:
         isUvInstalledQuery().status &&
         untrack(() => isUvInstalledQuery().data === true),
