@@ -1,35 +1,52 @@
-import { zConfig } from "@repo/preload/ipc";
+import { defaultConfig } from "@repo/preload/ipc";
+import { debounce } from "es-toolkit";
 import { UndoIcon } from "lucide-solid";
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect } from "solid-js";
+import { createStore } from "solid-js/store";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { appToaster } from "../AppToaster";
 
-const defaultTextractorConfig = zConfig.shape.textractor.parse({});
+const defaultTextractorConfig = defaultConfig.textractor;
 
 export function Textractor() {
-  const [textractorWebSocketPort, setTextractorWebSocketPort] = createSignal(
-    defaultTextractorConfig.textractorWebSocketPort,
+  const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const configMutation = SettingsMutation.ConfigMutation.setConfig();
+  const [textractorConfig, setTextractorConfig] = createStore(
+    structuredClone(defaultTextractorConfig),
   );
+
+  const mutateConfigDebounce = debounce((payload: typeof textractorConfig) => {
+    configMutation.mutate(
+      { textractor: payload },
+      {
+        onSuccess: () => {
+          appToaster.success({ title: "Textractor Settings Saved" });
+        },
+        onError: () => {
+          appToaster.error({ title: "Failed to save Textractor Settings" });
+        },
+      },
+    );
+  }, 1000);
 
   let ready = false;
   createEffect(() => {
-    const payload = {
-      textractorWebSocketPort: textractorWebSocketPort(),
-    };
-    if (!ready) return;
-    ipcRenderer.send("settings:setSettings", {
-      textractor: payload,
-    });
-  });
-
-  onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig"))
-      .textractor;
-    setTextractorWebSocketPort(settings.textractorWebSocketPort);
-
-    ready = true;
+    const newConfig = configQuery.data?.textractor;
+    if (!configQuery.isPlaceholderData && newConfig) {
+      setTextractorConfig(newConfig);
+      createEffect(() => {
+        const payload = { ...textractorConfig };
+        if (!ready) {
+          ready = true;
+          return;
+        }
+        mutateConfigDebounce(payload);
+      });
+    }
   });
 
   return (
@@ -47,10 +64,10 @@ export function Textractor() {
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <HStack alignItems="end">
           <NumberInput
-            value={textractorWebSocketPort().toString()}
+            value={textractorConfig.textractorWebSocketPort.toString()}
             clampValueOnBlur
             onValueChange={(e) => {
-              setTextractorWebSocketPort(e.valueAsNumber);
+              setTextractorConfig("textractorWebSocketPort", e.valueAsNumber);
             }}
             min={1023}
             max={65535}
@@ -60,13 +77,14 @@ export function Textractor() {
           </NumberInput>
           <IconButton
             variant={
-              textractorWebSocketPort() ===
+              textractorConfig.textractorWebSocketPort ===
               defaultTextractorConfig.textractorWebSocketPort
                 ? "subtle"
                 : "solid"
             }
             onClick={() => {
-              setTextractorWebSocketPort(
+              setTextractorConfig(
+                "textractorWebSocketPort",
                 defaultTextractorConfig.textractorWebSocketPort,
               );
             }}
