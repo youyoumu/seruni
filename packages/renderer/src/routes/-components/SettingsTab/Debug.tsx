@@ -18,7 +18,7 @@ import { appToaster } from "../AppToaster";
 export function Debug() {
   const { PythonQuery, EnvQuery } = SettingsQuery;
   const envString = () =>
-    stringify(EnvQuery.detail.query().data, { indent: 2 }) ?? "";
+    stringify(EnvQuery.detail.use().data, { indent: 2 }) ?? "";
 
   const isPythonInstalled = () => PythonQuery.isInstalled.use().data === true;
   const isUvInstalled = () => PythonQuery.isUvInstalled.use().data === true;

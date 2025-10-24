@@ -29,6 +29,8 @@ export const zConfig = z.object({
   }),
 });
 
+export type Config = z.infer<typeof zConfig>;
+
 export const defaultConfig = zConfig.parse({
   window: {},
   anki: {},

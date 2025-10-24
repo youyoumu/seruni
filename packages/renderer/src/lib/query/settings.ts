@@ -1,9 +1,11 @@
+import { type Config, defaultConfig } from "@repo/preload/ipc";
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
+import { reconcile } from "solid-js/store";
 import { keyStore, type RemovePrototype } from "./_util";
 
 class PythonQuery {
@@ -131,15 +133,42 @@ class EnvQuery {
   //biome-ignore format: this looks nicer
   static detail = {
     options: () => queryOptions({ ...keyStore["settings:env"].detail, placeholderData: {} }),
-    query: () => useQuery(() => ({ ...EnvQuery.detail.options() })),
+    use: () => useQuery(() => ({ ...EnvQuery.detail.options() })),
   };
+}
+
+class ConfigQuery {
+  //biome-ignore format: this looks nicer
+  static detail = {
+    options: () => queryOptions({ ...keyStore["settings:config"].detail, placeholderData: defaultConfig, reconcile: (old, data) => reconcile(data)(old) }),
+    use: () => useQuery(() => ({ ...ConfigQuery.detail.options() })),
+  };
+}
+
+class ConfigMutation {
+  static setConfig = () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: (config: Partial<Config>) =>
+          ipcRenderer.invoke("settings:setSettings", config),
+        onSuccess: () =>
+          Promise.all([
+            qc.invalidateQueries({
+              queryKey: keyStore["settings:config"].detail.queryKey,
+            }),
+          ]),
+      };
+    });
 }
 
 export const SettingsQuery = {
   EnvQuery: EnvQuery as RemovePrototype<typeof EnvQuery>,
+  ConfigQuery: ConfigQuery as RemovePrototype<typeof ConfigQuery>,
   PythonQuery: PythonQuery as RemovePrototype<typeof PythonQuery>,
 };
 
 export const SettingsMutation = {
   PythonMutation: PythonMutation as RemovePrototype<typeof PythonMutation>,
+  ConfigMutation: ConfigMutation as RemovePrototype<typeof ConfigMutation>,
 };

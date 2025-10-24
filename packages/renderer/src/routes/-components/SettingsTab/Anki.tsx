@@ -1,32 +1,51 @@
-import { zConfig } from "@repo/preload/ipc";
+import { defaultConfig } from "@repo/preload/ipc";
+import { debounce } from "es-toolkit";
 import { UndoIcon } from "lucide-solid";
-import { createEffect, onMount } from "solid-js";
+import { createEffect } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { appToaster } from "../AppToaster";
 
-const defaultAnkiConfig = zConfig.shape.anki.parse({});
+const defaultAnkiConfig = { ...defaultConfig.anki };
 
 export function Anki() {
+  const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const configMutation = SettingsMutation.ConfigMutation.setConfig();
   const [ankiConfig, setAnkiConfig] = createStore({ ...defaultAnkiConfig });
+
+  const mutateConfigDebounce = debounce((payload: typeof ankiConfig) => {
+    configMutation.mutate(
+      { anki: payload },
+      {
+        onSuccess: () => {
+          appToaster.success({ title: "Anki Settings Saved" });
+        },
+        onError: () => {
+          appToaster.error({ title: "Failed to save Anki Settings" });
+        },
+      },
+    );
+  }, 1000);
 
   let ready = false;
   createEffect(() => {
-    const payload = { ...ankiConfig };
-    if (!ready) return;
-    ipcRenderer.send("settings:setSettings", {
-      anki: payload,
-    });
-  });
-
-  onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig")).anki;
-    setAnkiConfig(settings);
-
-    ready = true;
+    const newConfig = configQuery.data?.anki;
+    if (!configQuery.isPlaceholderData && newConfig) {
+      setAnkiConfig(newConfig);
+      createEffect(() => {
+        const payload = { ...ankiConfig };
+        if (!ready) {
+          ready = true;
+          return;
+        }
+        mutateConfigDebounce(payload);
+      });
+    }
   });
 
   return (
@@ -96,7 +115,11 @@ export function Anki() {
             AnkiConnect Port
           </NumberInput>
           <IconButton
-            variant={ankiConfig.ankiConnectPort === defaultAnkiConfig.ankiConnectPort ? "subtle" : "solid"}
+            variant={
+              ankiConfig.ankiConnectPort === defaultAnkiConfig.ankiConnectPort
+                ? "subtle"
+                : "solid"
+            }
             onClick={() => {
               setAnkiConfig(
                 "ankiConnectPort",

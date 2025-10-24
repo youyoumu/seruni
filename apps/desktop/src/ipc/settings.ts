@@ -21,7 +21,7 @@ class SettingsIPC extends IPC()<"settings"> {
   }
 
   override register() {
-    this.on("settings:setSettings", (_, payload) => {
+    this.handle("settings:setSettings", async (_, payload) => {
       this.dLogTrace(payload, "settings:setSettings");
       config.debouncedSet(payload);
     });

@@ -43,6 +43,12 @@ const settings = [
       queryFn: () => ipcRenderer.invoke("settings:getEnv"),
     },
   }),
+  createQueryKeys("settings:config", {
+    detail: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:getConfig"),
+    },
+  }),
   createQueryKeys("settings:python", {
     isInstalled: {
       queryKey: [undefined],
