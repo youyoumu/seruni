@@ -5,16 +5,17 @@ import { HStack, Stack } from "styled-system/jsx";
 import { Dialog } from "#/components/ui/dialog";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
-import { useMediaUrlQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/general";
 import { appToaster } from "../AppToaster";
 import { nsfwUpdateLock, srcSet } from "./_util";
 import { useNoteContext } from "./NoteContext";
 
 export function PicturePreview() {
+  const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   //TODO: modify via context
   const [nsfw, setNsfw] = createSignal(note.nsfw);
-  const mediaUrlQuery = useMediaUrlQuery(
+  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => note.picture,
     () => "anki",
   );

@@ -12,16 +12,17 @@ import { css, cva } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { useMediaUrlQuery } from "#/lib/query/general";
-import { useNoteMediaQuery } from "#/lib/query/mining";
+import { GeneralQuery } from "#/lib/query/general";
+import { MiningQuery } from "#/lib/query/mining";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
 import { PictureWithZoom } from "./PictureWithZoom";
 
 export function EditButton() {
+  const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
-  const noteMediaQuery = useNoteMediaQuery({ noteId: note.id });
+  const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
   const availablePictures = () =>
     noteMediaQuery.data.filter((m) => m.type === "picture");
 
@@ -164,9 +165,10 @@ const zoomIconCva = cva({
 });
 
 function SelectedImage() {
+  const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = useMediaUrlQuery(
+  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );
@@ -208,9 +210,10 @@ function SelectedImage() {
 }
 
 function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
+  const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = useMediaUrlQuery(
+  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );
@@ -270,9 +273,10 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
 }
 
 function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
+  const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = useMediaUrlQuery(
+  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );

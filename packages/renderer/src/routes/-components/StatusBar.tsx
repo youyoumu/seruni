@@ -5,12 +5,13 @@ import { HStack } from "styled-system/jsx";
 import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
-import { useClientStatusQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/general";
 import { store } from "#/lib/store";
 import { NotificationHistory } from "./NotificationHistory";
 
 export function StatusBar() {
-  const clientStatusQuery = useClientStatusQuery();
+  const { ClientStatusQuery } = GeneralQuery;
+  const clientStatusQuery = ClientStatusQuery.detail.use();
   const [_, setStatusBarEl] = store.element.statusBar;
 
   function StatusIcon(props: { status: ClientStatus }) {

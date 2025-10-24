@@ -1,6 +1,8 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 import type { UseQueryResult } from "@tanstack/solid-query";
 
+export type RemovePrototype<T> = Omit<T, "prototype">;
+
 export const queryWithPlaceholderData = <T>(
   query: UseQueryResult<T>,
   placeholderData: T,

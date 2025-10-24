@@ -5,7 +5,7 @@ import { HStack, Stack } from "styled-system/jsx";
 import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
 import { Text } from "#/components/ui/text";
-import { useMediaUrlQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/general";
 import { AudioButton } from "./AudioButton";
 import { EditButton } from "./EditButton";
 import { useNoteContext } from "./NoteContext";
@@ -46,11 +46,12 @@ const expressionVariant = cva({
 });
 
 export function AnkiCard() {
+  const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   //TODO: modify via context
   const time = () => formatRelative(new Date(note.id), new Date());
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
-  const mediaUrlQuery = useMediaUrlQuery(
+  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => note.sentenceAudio,
     () => "anki",
   );

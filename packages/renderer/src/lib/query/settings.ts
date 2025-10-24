@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/solid-query";
 import { untrack } from "solid-js";
-import { queryKey } from "./_util";
+import { queryKey, type RemovePrototype } from "./_util";
 
 class PythonQuery {
   //biome-ignore format: this looks nicer
@@ -129,7 +129,6 @@ class PythonMutation {
 }
 
 class EnvQuery {
-  private constructor() {}
   static detail = {
     options: () =>
       queryOptions({ ...queryKey["settings:env"].detail, placeholderData: {} }),
@@ -138,10 +137,10 @@ class EnvQuery {
 }
 
 export const SettingsQuery = {
-  EnvQuery: EnvQuery as Omit<typeof EnvQuery, "prototype">,
-  PythonQuery: PythonQuery as Omit<typeof PythonQuery, "prototype">,
+  EnvQuery: EnvQuery as RemovePrototype<typeof EnvQuery>,
+  PythonQuery: PythonQuery as RemovePrototype<typeof PythonQuery>,
 };
 
 export const SettingsMutation = {
-  PythonMutation: PythonMutation as Omit<typeof PythonMutation, "prototype">,
+  PythonMutation: PythonMutation as RemovePrototype<typeof PythonMutation>,
 };

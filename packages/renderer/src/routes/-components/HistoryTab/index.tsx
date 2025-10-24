@@ -18,13 +18,14 @@ import { Select_ } from "#/components/Form";
 import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
-import { useClientStatusQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/general";
 import { history, setHistory } from "./_util";
 import { AnkiCard } from "./AnkiCard";
 import { NoteContextProvider } from "./NoteContext";
 
 export function HistoryTab() {
-  const clientStatusQuery = useClientStatusQuery();
+  const { ClientStatusQuery } = GeneralQuery;
+  const clientStatusQuery = ClientStatusQuery.detail.use();
   const [success, setSuccess] = createSignal(false);
 
   const [currentPage, setCurrentPage] = createSignal(1);

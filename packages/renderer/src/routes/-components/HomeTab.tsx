@@ -18,7 +18,7 @@ import { Heading } from "#/components/ui/heading";
 import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
-import { useClientStatusQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/general";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {
@@ -26,7 +26,8 @@ function capitalize(str: string) {
 }
 
 export function HomeTab() {
-  const clientStatusQuery = useClientStatusQuery();
+  const { ClientStatusQuery } = GeneralQuery;
+  const clientStatusQuery = ClientStatusQuery.detail.use();
   const [sourceScreenshot, setSourceScreenshot] = createSignal<string | null>(
     null,
   );
