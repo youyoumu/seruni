@@ -4,7 +4,7 @@ import {
 } from "@repo/preload/ipc";
 import { queryOptions, useQuery } from "@tanstack/solid-query";
 import { reconcile } from "solid-js/store";
-import { queryKey } from "./_util";
+import { queryKey, queryWithPlaceholderData } from "./_util";
 
 export const httpServerUrlQueryOptions = () =>
   queryOptions({
@@ -55,7 +55,12 @@ export const clientStatusQueryOptions = () =>
   });
 
 export const useClientStatusQuery = () => {
-  return useQuery(() => ({
+  const query = useQuery(() => ({
     ...clientStatusQueryOptions(),
   }));
+  return queryWithPlaceholderData(query, {
+    anki: "disconnected" as const,
+    obs: "disconnected" as const,
+    textractor: "disconnected" as const,
+  });
 };

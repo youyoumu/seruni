@@ -1,18 +1,19 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 import type { UseQueryResult } from "@tanstack/solid-query";
 
-export const noUndefinedArray = <T extends unknown[]>(
+export const queryWithPlaceholderData = <T>(
   query: UseQueryResult<T>,
+  placeholderData: T,
 ) => {
   const proxy = new Proxy(query, {
     get(target, prop, receiver) {
       if (prop === "data") {
-        return target.data ?? [];
+        return target.data === undefined ? placeholderData : target.data;
       }
       return Reflect.get(target, prop, receiver);
     },
   });
-  return proxy as typeof proxy & { data: NonNullable<typeof proxy.data> };
+  return proxy as typeof proxy & { data: T };
 };
 
 export const queryKey = createQueryKeyStore({
