@@ -19,7 +19,7 @@ class NoteMediaQuery {
   static one = {
     options: ({ noteId }: { noteId: number }) => queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], }),
     use: ({ noteId }: { noteId: number }) => {
-      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old), }));
+      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old)}));
       return queryWithPlaceholderData(query, []);
     },
   };

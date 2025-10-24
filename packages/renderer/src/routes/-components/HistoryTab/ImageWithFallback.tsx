@@ -1,3 +1,4 @@
+import { RatIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -7,6 +8,8 @@ import {
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Stack } from "styled-system/jsx";
+import { Flip } from "#/components/Flip";
+import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";
 import { srcSet } from "./_util";
 
@@ -15,13 +18,16 @@ export function ImageWithFallback(props: {
   image: (
     props: () => ParentProps<JSX.ImgHTMLAttributes<HTMLImageElement>>,
   ) => JSX.Element;
-  height: string;
+  onErrorChange?: (error: boolean) => void;
 }) {
   const [loaded, setLoaded] = createSignal(srcSet.has(props.src));
   const [error, setError] = createSignal(false);
   createEffect(() => {
     props.src;
     setError(false);
+  });
+  createEffect(() => {
+    props.onErrorChange?.(error());
   });
   return (
     <>
@@ -48,14 +54,13 @@ export function ImageWithFallback(props: {
             aspectRatio: "16 / 9",
             alignItems: "center",
             justifyContent: "center",
-            height: `[${props.height}]`,
             width: "full",
           })}
         >
           <Spinner size="lg" />
         </Stack>
       </Show>
-      <Show when={loaded() && error()}>
+      <Show when={error()}>
         <Stack
           class={css({
             rounded: "sm",
@@ -64,11 +69,20 @@ export function ImageWithFallback(props: {
             aspectRatio: "16 / 9",
             alignItems: "center",
             justifyContent: "center",
-            //TODO: this doesn't work
-            height: `[${props.height}]`,
+            height: "auto",
             width: "full",
           })}
-        ></Stack>
+        >
+          <Flip>
+            <Icon
+              color="fg.muted"
+              width="12"
+              height="12"
+              strokeWidth="1"
+              asChild={(iconProps) => <RatIcon {...iconProps()} />}
+            />
+          </Flip>
+        </Stack>
       </Show>
     </>
   );

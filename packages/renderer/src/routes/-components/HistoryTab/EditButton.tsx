@@ -5,6 +5,7 @@ import {
   createSelector,
   createSignal,
   For,
+  Show,
   Suspense,
 } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -191,7 +192,6 @@ function SelectedImage() {
           <Box position="relative">
             <ImageWithFallback
               src={src()}
-              height="56"
               image={(imageProps) => {
                 return (
                   <img
@@ -227,6 +227,7 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
     () => mediaSrc().source,
   );
   const src = () => mediaUrlQuery.data ?? "";
+  const [error, setError] = createSignal(false);
 
   createEffect(() => {});
 
@@ -243,13 +244,15 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
               },
             })}
           >
-            <ZoomInIcon
-              {...triggerProps()}
-              class={zoomIconCva({ size: "default" })}
-            />
+            <Show when={!error()}>
+              <ZoomInIcon
+                {...triggerProps()}
+                class={zoomIconCva({ size: "default" })}
+              />
+            </Show>
             <ImageWithFallback
+              onErrorChange={setError}
               src={src()}
-              height="56"
               image={(imageProps) => {
                 return (
                   <img
@@ -291,6 +294,7 @@ function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
     () => mediaSrc().source,
   );
   const src = () => mediaUrlQuery.data ?? "";
+  const [error, setError] = createSignal(false);
 
   return (
     <PictureWithZoom
@@ -305,13 +309,15 @@ function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
               },
             })}
           >
-            <ZoomInIcon
-              {...triggerProps()}
-              class={zoomIconCva({ size: "sm" })}
-            />
+            <Show when={!error()}>
+              <ZoomInIcon
+                {...triggerProps()}
+                class={zoomIconCva({ size: "sm" })}
+              />
+            </Show>
             <ImageWithFallback
+              onErrorChange={setError}
               src={src()}
-              height="28"
               image={(imageProps) => {
                 return (
                   <img
