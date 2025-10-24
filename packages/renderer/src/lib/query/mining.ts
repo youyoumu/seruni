@@ -5,6 +5,7 @@ import { noUndefinedArray, queryKey } from "./_util";
 export const noteMediaQueryOptions = ({ noteId }: { noteId: number }) => {
   return queryOptions({
     ...queryKey["mining:noteMedia"].one(noteId),
+    placeholderData: [],
   });
 };
 

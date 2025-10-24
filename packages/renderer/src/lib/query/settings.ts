@@ -10,9 +10,7 @@ import { queryKey } from "./_util";
 export const envQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:env"].detail,
-    queryFn: () => {
-      return ipcRenderer.invoke("settings:getEnv");
-    },
+    placeholderData: {},
   });
 export const useEnvQuery = () =>
   useQuery(() => ({
@@ -22,7 +20,7 @@ export const useEnvQuery = () =>
 export const isPythonInstalledQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].isInstalled,
-    initialData: false,
+    placeholderData: false,
   });
 export const useIsPythonInstalledQuery = () =>
   useQuery(() => ({
@@ -32,7 +30,7 @@ export const useIsPythonInstalledQuery = () =>
 export const pythonHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].healthcheck,
-    initialData: {},
+    placeholderData: {},
   });
 export const usePythonHealthcheckQuery = () => {
   return useQuery(() => {
@@ -48,7 +46,7 @@ export const usePythonHealthcheckQuery = () => {
 export const pythonPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].pipList,
-    initialData: [],
+    placeholderData: [],
   });
 export const usePythonPipListQuery = () => {
   return useQuery(() => {
@@ -62,14 +60,14 @@ export const usePythonPipListQuery = () => {
 };
 
 export const useIsUvInstalledQuery = () => {
-  const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
+  const { queryKey, queryFn, placeholderData } = pythonPipListQueryOptions();
   return useQuery(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     isPythonInstalledQuery.isStale;
     return {
       queryKey,
       queryFn,
-      initialData,
+      placeholderData,
       select: (data) => data?.some(({ name }) => name === "uv"),
       enabled: untrack(() => isPythonInstalledQuery.data === true),
     };
@@ -79,7 +77,7 @@ export const useIsUvInstalledQuery = () => {
 export const pythonVenvPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvPipList,
-    initialData: [],
+    placeholderData: [],
   });
 export const usePythonVenvPipListQuery = () => {
   return useQuery(() => {
@@ -95,7 +93,7 @@ export const usePythonVenvPipListQuery = () => {
 export const pythonVenvHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvHealthcheck,
-    initialData: {},
+    placeholderData: {},
   });
 export const usePythonVenvHealthcheckQuery = () => {
   return useQuery(() => {
@@ -109,7 +107,7 @@ export const usePythonVenvHealthcheckQuery = () => {
 };
 
 export const useIsVenvDependeciesInstalledQuery = () => {
-  const { queryKey, queryFn, initialData } =
+  const { queryKey, queryFn, placeholderData } =
     pythonVenvHealthcheckQueryOptions();
   return useQuery(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
@@ -117,7 +115,7 @@ export const useIsVenvDependeciesInstalledQuery = () => {
     return {
       queryKey,
       queryFn,
-      initialData,
+      placeholderData,
       select: (data) => data?.ok === true,
       enabled: untrack(() => isUvInstalledQuery.data === true),
     };

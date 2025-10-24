@@ -9,7 +9,7 @@ import { queryKey } from "./_util";
 export const httpServerUrlQueryOptions = () =>
   queryOptions({
     ...queryKey["general:httpServerUrl"].value,
-    initialData: {
+    placeholderData: {
       url: window.location.origin,
     },
   });
@@ -45,7 +45,7 @@ export const useMediaUrlQuery = (
 export const clientStatusQueryOptions = () =>
   queryOptions({
     ...queryKey["general:clientStatus"].detail,
-    initialData: {
+    placeholderData: {
       anki: "disconnected" as const,
       obs: "disconnected" as const,
       textractor: "disconnected" as const,
