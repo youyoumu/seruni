@@ -1,5 +1,5 @@
 import type { NoteMediaSrc } from "@repo/preload/ipc";
-import { FishSymbolIcon, ZoomInIcon } from "lucide-solid";
+import { ArrowRightIcon, ZoomInIcon } from "lucide-solid";
 import {
   createEffect,
   createSelector,
@@ -54,39 +54,45 @@ export function EditButton() {
             <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
               <Suspense>
                 <Stack gap="8">
-                  <HStack justifyContent="center">
+                  <HStack justifyContent="center" maxH="64">
                     <MediaSrcContextProvider
                       value={createSignal<NoteMediaSrc>({
                         fileName: note.picture,
                         source: "anki" as const,
                       })}
                     >
-                      <CurrentImage
-                        isSelected={
-                          selectedMedisSrc().fileName === note.picture &&
-                          selectedMedisSrc().source === "anki"
-                        }
-                        onClick={() => {
-                          setSelectedMediaSrc({
-                            fileName: note.picture,
-                            source: "anki",
-                          });
-                        }}
-                      />
+                      <Box flex="1" bg="bg.subtle" rounded="sm">
+                        <CurrentImage
+                          isSelected={
+                            selectedMedisSrc().fileName === note.picture &&
+                            selectedMedisSrc().source === "anki"
+                          }
+                          onClick={() => {
+                            setSelectedMediaSrc({
+                              fileName: note.picture,
+                              source: "anki",
+                            });
+                          }}
+                        />
+                      </Box>
                     </MediaSrcContextProvider>
-                    <FishSymbolIcon
-                      class={css({
-                        h: "full",
-                        w: "full",
-                        maxW: "24",
-                        color: "fg.subtle",
-                      })}
-                      strokeWidth="1"
-                    />
+                    <Box flexBasis="24">
+                      <ArrowRightIcon
+                        class={css({
+                          h: "full",
+                          w: "full",
+                          maxW: "24",
+                          color: "fg.subtle",
+                        })}
+                        strokeWidth="1"
+                      />
+                    </Box>
                     <MediaSrcContextProvider
                       value={[selectedMedisSrc, setSelectedMediaSrc]}
                     >
-                      <SelectedImage />
+                      <Box flex="1" bg="bg.subtle" rounded="sm">
+                        <SelectedImage />
+                      </Box>
                     </MediaSrcContextProvider>
                   </HStack>
                   <Grid
@@ -102,18 +108,20 @@ export function EditButton() {
                               source: "storage",
                             })}
                           >
-                            <AvailableImage
-                              isSelected={isSelected({
-                                fileName: item.fileName,
-                                source: "storage",
-                              })}
-                              onClick={() => {
-                                setSelectedMediaSrc({
+                            <Box bg="bg.subtle" rounded="sm">
+                              <AvailableImage
+                                isSelected={isSelected({
                                   fileName: item.fileName,
                                   source: "storage",
-                                });
-                              }}
-                            />
+                                })}
+                                onClick={() => {
+                                  setSelectedMediaSrc({
+                                    fileName: item.fileName,
+                                    source: "storage",
+                                  });
+                                }}
+                              />
+                            </Box>
                           </MediaSrcContextProvider>
                         );
                       }}
@@ -190,6 +198,7 @@ function SelectedImage() {
                     {...triggerProps()}
                     {...imageProps()}
                     class={css({
+                      aspectRatio: "16 / 9",
                       width: "full",
                       height: "full",
                       objectFit: "contain",
@@ -255,6 +264,7 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
                       transition: "[outline-color 0.1s]",
                       height: "full",
                       width: "full",
+                      aspectRatio: "16 / 9",
                       objectFit: "contain",
                       rounded: "sm",
                       cursor: "pointer",
@@ -314,6 +324,7 @@ function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
                       outlineWidth: "medium",
                       outlineStyle: "solid",
                       transition: "[outline-color 0.1s]",
+                      aspectRatio: "16 / 9",
                       height: "full",
                       width: "full",
                       objectFit: "contain",
