@@ -17,6 +17,20 @@ class NoteMediaQuery {
   };
 }
 
+class SourceScreenshotQuery {
+  //biome-ignore format: this looks nicer
+  static data = {
+    options: () =>
+      queryOptions({ ...keyStore["mining:sourceScreenshot"].data,
+        placeholderData: { image: null },
+        refetchInterval: 4000,
+      }),
+    use: () => useQuery(() => ({ ...SourceScreenshotQuery.data.options() })),
+  };
+}
+
+//biome-ignore format: this looks nicer
 export const MiningQuery = {
   NoteMediaQuery: NoteMediaQuery as RemovePrototype<typeof NoteMediaQuery>,
+  SourceScreenshotQuery: SourceScreenshotQuery as RemovePrototype<typeof SourceScreenshotQuery>,
 };

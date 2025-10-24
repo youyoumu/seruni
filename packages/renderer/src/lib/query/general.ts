@@ -56,11 +56,8 @@ class ClientStatusQuery {
   };
 }
 
+//biome-ignore format: this looks nicer
 export const GeneralQuery = {
-  HttpServerUrlQuery: HttpServerUrlQuery as RemovePrototype<
-    typeof HttpServerUrlQuery
-  >,
-  ClientStatusQuery: ClientStatusQuery as RemovePrototype<
-    typeof ClientStatusQuery
-  >,
+  HttpServerUrlQuery: HttpServerUrlQuery as RemovePrototype<typeof HttpServerUrlQuery>,
+  ClientStatusQuery: ClientStatusQuery as RemovePrototype<typeof ClientStatusQuery>,
 };

@@ -28,6 +28,12 @@ const mining = [
       queryFn: () => ipcRenderer.invoke("mining:getNoteMedia", { noteId }),
     }),
   }),
+  createQueryKeys("mining:sourceScreenshot", {
+    data: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("mining:getSourceScreenshot"),
+    },
+  }),
 ] as const;
 
 const settings = [

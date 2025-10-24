@@ -1,14 +1,6 @@
 import type { ClientStatus } from "@repo/preload/ipc";
 import { SquirrelIcon, TurtleIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  Match,
-  onCleanup,
-  onMount,
-  Suspense,
-  Switch,
-} from "solid-js";
+import { createEffect, Match, onMount, Suspense, Switch } from "solid-js";
 import { css } from "styled-system/css";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Flip } from "#/components/Flip";
@@ -19,6 +11,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
+import { MiningQuery } from "#/lib/query/mining";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {
@@ -27,22 +20,11 @@ function capitalize(str: string) {
 
 export function HomeTab() {
   const { ClientStatusQuery } = GeneralQuery;
+  const { SourceScreenshotQuery } = MiningQuery;
   const clientStatusQuery = ClientStatusQuery.detail.use();
-  const [sourceScreenshot, setSourceScreenshot] = createSignal<string | null>(
-    null,
-  );
-  onMount(() => {
-    const id2 = setInterval(() => {
-      ipcRenderer.invoke("mining:getSourceScreenshot").then(({ image }) => {
-        setSourceScreenshot(image);
-      });
-    }, 8000);
+  const sourceScreenshotQuery = SourceScreenshotQuery.data.use();
 
-    onCleanup(() => {
-      clearInterval(id2);
-    });
-  });
-
+  onMount(() => {});
   createEffect(() => {});
 
   function StatusIcon(props: { status: ClientStatus }) {
@@ -114,10 +96,10 @@ export function HomeTab() {
             <Stack flex="1">
               <Heading size="lg">OBS Preview</Heading>
               <Switch>
-                <Match when={sourceScreenshot()}>
+                <Match when={sourceScreenshotQuery.data?.image}>
                   <img
                     alt="OBS Preview"
-                    src={sourceScreenshot() ?? ""}
+                    src={sourceScreenshotQuery.data?.image ?? ""}
                     class={css({
                       width: "md",
                       aspectRatio: "16 / 9",
@@ -128,7 +110,7 @@ export function HomeTab() {
                     })}
                   />
                 </Match>
-                <Match when={!sourceScreenshot()}>
+                <Match when={!sourceScreenshotQuery.data?.image}>
                   <Stack
                     aspectRatio="16 / 9"
                     borderColor="border.default"
