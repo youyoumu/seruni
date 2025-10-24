@@ -95,7 +95,7 @@ class PythonMutation {
       const qc = useQueryClient();
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPython"),
-        onSuccess: () => Promise.all([
+        onSuccess: async () => await Promise.all([
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].isInstalled.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].healthcheck.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].pipList.queryKey, }), ]),
@@ -108,7 +108,7 @@ class PythonMutation {
       const qc = useQueryClient();
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPythonUv"),
-        onSuccess: () => Promise.all([
+        onSuccess: async () => await Promise.all([
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].healthcheck.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].pipList.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvHealthcheck.queryKey, }),
@@ -122,7 +122,7 @@ class PythonMutation {
       const qc = useQueryClient();
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPythonDependencies"),
-        onSuccess: () => Promise.all([
+        onSuccess: async () => await Promise.all([
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvHealthcheck.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvPipList.queryKey, }), ]),
       };
@@ -158,8 +158,8 @@ class ConfigMutation {
       const qc = useQueryClient();
       return {
         mutationFn: (config: Partial<Config>) => ipcRenderer.invoke("settings:setSettings", config),
-        onSuccess: () =>
-          Promise.all([
+        onSuccess: async () =>
+          await Promise.all([
             qc.invalidateQueries({ queryKey: keyStore["settings:config"].detail.queryKey, }), ]),
       };
     });
@@ -170,8 +170,8 @@ class ConfigMutation {
       const qc = useQueryClient();
       return {
         mutationFn: () => ipcRenderer.invoke("yomitan:reinstall"),
-        onSuccess: () =>
-          Promise.all([
+        onSuccess: async () =>
+          await Promise.all([
             qc.invalidateQueries({
               queryKey: keyStore["settings:config"].isYomitanInstalled.queryKey,
             }),

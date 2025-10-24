@@ -1,4 +1,10 @@
-import { queryOptions, useQuery } from "@tanstack/solid-query";
+import type { NoteMediaSrc, SelectionData } from "@repo/preload/ipc";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { sort } from "fast-sort";
 import { reconcile } from "solid-js/store";
 import {
@@ -94,10 +100,43 @@ class AnkiHistoryQuery {
   };
 }
 
+class AnkiMutation {
+  static cropPicture = () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: async (payload: {
+          noteId: number;
+          mediaSrc: NoteMediaSrc;
+          selectionData: SelectionData;
+        }) => {
+          await ipcRenderer.invoke(
+            "mining:cropPicture",
+            payload.noteId,
+            payload.mediaSrc,
+            payload.selectionData,
+          );
+          return { noteId: payload.noteId };
+        },
+        onSuccess: async (data) => {
+          await Promise.all([
+            qc.invalidateQueries({
+              queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey,
+            }),
+          ]);
+        },
+      };
+    });
+}
+
 //biome-ignore format: this looks nicer
 export const MiningQuery = {
   NoteMediaQuery: NoteMediaQuery as RemovePrototype<typeof NoteMediaQuery>,
   ObsQuery: ObsQuery as RemovePrototype<typeof ObsQuery>,
   SessionQuery: SessionQuery as RemovePrototype<typeof SessionQuery>,
   AnkiHistoryQuery: AnkiHistoryQuery as RemovePrototype<typeof AnkiHistoryQuery>,
+};
+
+export const MiningMutation = {
+  AnkiMutation: AnkiMutation as RemovePrototype<typeof AnkiMutation>,
 };

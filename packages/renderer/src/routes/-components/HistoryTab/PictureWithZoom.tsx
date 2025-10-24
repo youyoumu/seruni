@@ -1,4 +1,5 @@
 import type { SelectionData } from "@repo/preload/ipc";
+import { useQueryClient } from "@tanstack/solid-query";
 import { CropIcon } from "lucide-solid";
 import { createSignal, type JSX, type ParentProps, Show } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -7,6 +8,9 @@ import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
+import { keyStore } from "#/lib/query/_util";
+import { MiningMutation } from "#/lib/query/mining";
+import { appToaster } from "../AppToaster";
 import { useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
 import { PictureCropper } from "./PictureCropper";
@@ -15,6 +19,8 @@ export function PictureWithZoom(props: {
   src: string;
   trigger: (props: () => ParentProps) => JSX.Element;
 }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = createSignal(false);
   const note = useNoteContext();
   const [mediaSrc] = useMediaSrcContext();
   const [selectionData, setSelectionData] = createSignal<SelectionData>({
@@ -24,9 +30,45 @@ export function PictureWithZoom(props: {
     height: 0,
   });
   const [editing, setEditing] = createSignal(false);
+  const cropPictureMutation = MiningMutation.AnkiMutation.cropPicture();
+
+  function cropPicture() {
+    appToaster.promise(
+      cropPictureMutation.mutateAsync(
+        {
+          noteId: note.id,
+          mediaSrc: {
+            fileName: mediaSrc().fileName,
+            source: mediaSrc().source,
+          },
+          selectionData: selectionData(),
+        },
+        {
+          onSuccess: () => {
+            setEditing(false);
+            setOpen(false);
+          },
+        },
+      ),
+      {
+        loading: {
+          title: "Cropping picture...",
+          description: `${mediaSrc().fileName}`,
+        },
+        error: {
+          title: "Failed to crop picture",
+          description: `${mediaSrc().fileName}`,
+        },
+        success: {
+          title: "Picture cropped",
+          description: `${mediaSrc().fileName}`,
+        },
+      },
+    );
+  }
 
   return (
-    <Dialog.Root lazyMount>
+    <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger
         asChild={(triggerProps) => {
           return props.trigger(triggerProps);
@@ -90,16 +132,9 @@ export function PictureWithZoom(props: {
                         Cancel
                       </Button>
                       <Button
-                        onClick={async () => {
-                          await ipcRenderer.invoke(
-                            "mining:cropPicture",
-                            note.id,
-                            {
-                              fileName: mediaSrc().fileName,
-                              source: mediaSrc().source,
-                            },
-                            selectionData(),
-                          );
+                        loading={cropPictureMutation.isPending}
+                        onClick={() => {
+                          cropPicture();
                         }}
                       >
                         Save
