@@ -1,4 +1,5 @@
 import type { ToastType } from "@ark-ui/solid";
+import { makePersisted } from "@solid-primitives/storage";
 import { createSignal, type Signal } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
 import { createStore } from "solid-js/store";
@@ -31,3 +32,13 @@ export const [store, setStore] = createStore<{
     statusBar: createSignal<HTMLDivElement>(),
   },
 });
+
+export const [localStore, setLocalStore] = makePersisted(
+  createStore({
+    currentTab: "home",
+    consoleTailing: true,
+    consoleLogLevel: 10,
+    texthookerTimer: 0,
+  }),
+  { name: "localStore" },
+);

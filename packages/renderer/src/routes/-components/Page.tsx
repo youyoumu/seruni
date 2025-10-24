@@ -19,9 +19,10 @@ import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
 import { Text } from "#/components/ui/text";
 import { Toast } from "#/components/ui/toast";
-import { setStore, store } from "#/lib/store";
+import { localStore, setLocalStore, setStore, store } from "#/lib/store";
 import { type AppToastType, appToaster, ToasterIcon } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
+import { DebugTab } from "./DebugTab";
 import { HistoryTab } from "./HistoryTab";
 import { HomeTab } from "./HomeTab";
 import { MiningTab } from "./MiningTab";
@@ -35,6 +36,7 @@ export function Page() {
     { id: "history", label: "History" },
     { id: "console", label: "Console" },
     { id: "settings", label: "Settings" },
+    { id: "debug", label: "Debug" },
   ];
 
   const [tabListEl, setTabListEl] = createSignal<HTMLDivElement>();
@@ -74,9 +76,9 @@ export function Page() {
       }
     >
       <Tabs.Root
-        defaultValue="home"
+        value={localStore.currentTab}
         onValueChange={(details) => {
-          setStore("general", "currentTab", details.value);
+          setLocalStore("currentTab", details.value);
         }}
       >
         <Tabs.List
@@ -147,6 +149,15 @@ export function Page() {
           }}
         >
           <SettingsTab />
+        </Tabs.Content>
+        <Tabs.Content
+          value="debug"
+          px="4"
+          style={{
+            height: contentHeight(16),
+          }}
+        >
+          <DebugTab />
         </Tabs.Content>
       </Tabs.Root>
       <AppToaster />
