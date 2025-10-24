@@ -7,42 +7,42 @@ import {
 import { untrack } from "solid-js";
 import { queryKey } from "./_util";
 
-class PythonQueries {
+class PythonQuery {
   //biome-ignore format: this looks nicer
   static isInstalled = {
     options: () => queryOptions({ ...queryKey["settings:python"].isInstalled, placeholderData: false, }),
-    query: () => useQuery(() => ({ ...PythonQueries.isInstalled.options(), })),
+    use: () => useQuery(() => ({ ...PythonQuery.isInstalled.options(), })),
   };
 
   //biome-ignore format: this looks nicer
   static healthcheck = {
     options: () => queryOptions({ ...queryKey["settings:python"].healthcheck, placeholderData: {}, }),
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const installed = PythonQueries.isInstalled.query();
+        const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQueries.healthcheck.options(), enabled: untrack(() => installed.data === true), };
+        return { ...PythonQuery.healthcheck.options(), enabled: untrack(() => installed.data === true), };
       }),
   };
 
   //biome-ignore format: this looks nicer
   static pipList = {
     options: () => queryOptions({ ...queryKey["settings:python"].pipList, placeholderData: [], }),
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const installed = PythonQueries.isInstalled.query();
+        const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQueries.pipList.options(), enabled: untrack(() => installed.data === true), };
+        return { ...PythonQuery.pipList.options(), enabled: untrack(() => installed.data === true), };
       }),
   };
 
   //biome-ignore format: this looks nicer
   static isUvInstalled = {
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const installed = PythonQueries.isInstalled.query();
+        const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        const { queryKey, queryFn, placeholderData } = PythonQueries.pipList.options();
+        const { queryKey, queryFn, placeholderData } = PythonQuery.pipList.options();
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.some((p) => p.name === "uv"),
           enabled: untrack(() => installed.data === true),
@@ -53,31 +53,31 @@ class PythonQueries {
   //biome-ignore format: this looks nicer
   static venvPipList = {
     options: () => queryOptions({ ...queryKey["settings:python"].venvPipList, placeholderData: [], }),
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const uv = PythonQueries.isUvInstalled.query();
+        const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQueries.venvPipList.options(), enabled: untrack(() => uv.data === true), };
+        return { ...PythonQuery.venvPipList.options(), enabled: untrack(() => uv.data === true), };
       }),
   };
 
   //biome-ignore format: this looks nicer
   static venvHealthcheck = {
     options: () => queryOptions({ ...queryKey["settings:python"].venvHealthcheck, placeholderData: {}, }),
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const uv = PythonQueries.isUvInstalled.query();
+        const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQueries.venvHealthcheck.options(), enabled: untrack(() => uv.data === true), };
+        return { ...PythonQuery.venvHealthcheck.options(), enabled: untrack(() => uv.data === true), };
       }),
   };
 
   //biome-ignore format: this looks nicer
   static venvDependenciesInstalled = {
-    query: () =>
+    use: () =>
       useQuery(() => {
-        const { queryKey, queryFn, placeholderData } = PythonQueries.venvHealthcheck.options();
-        const uv = PythonQueries.isUvInstalled.query();
+        const { queryKey, queryFn, placeholderData } = PythonQuery.venvHealthcheck.options();
+        const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.ok === true,
@@ -128,16 +128,20 @@ class PythonMutation {
     });
 }
 
-export class SettingsQuery {
-  //biome-ignore format: this looks nicer
-  static env = {
-    options: () => queryOptions({ ...queryKey["settings:env"].detail, placeholderData: {}, }),
-    query: () => useQuery(() => ({ ...SettingsQuery.env.options(), })),
+class EnvQuery {
+  private constructor() {}
+  static detail = {
+    options: () =>
+      queryOptions({ ...queryKey["settings:env"].detail, placeholderData: {} }),
+    query: () => useQuery(() => ({ ...EnvQuery.detail.options() })),
   };
-
-  static python = PythonQueries;
 }
 
-export class SettingsMutation {
-  static python = PythonMutation;
-}
+export const SettingsQuery = {
+  EnvQuery: EnvQuery as Omit<typeof EnvQuery, "prototype">,
+  PythonQuery: PythonQuery as Omit<typeof PythonQuery, "prototype">,
+};
+
+export const SettingsMutation = {
+  PythonMutation: PythonMutation as Omit<typeof PythonMutation, "prototype">,
+};

@@ -16,42 +16,39 @@ import { SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {
+  const { PythonQuery, EnvQuery } = SettingsQuery;
   const envString = () =>
-    stringify(SettingsQuery.env.query().data, { indent: 2 }) ?? "";
+    stringify(EnvQuery.detail.query().data, { indent: 2 }) ?? "";
 
-  const isPythonInstalled = () =>
-    SettingsQuery.python.isInstalled.query().data === true;
-
-  const isUvInstalled = () =>
-    SettingsQuery.python.isUvInstalled.query().data === true;
-
+  const isPythonInstalled = () => PythonQuery.isInstalled.use().data === true;
+  const isUvInstalled = () => PythonQuery.isUvInstalled.use().data === true;
   const isVenvDependenciesInstalled = () =>
-    SettingsQuery.python.venvDependenciesInstalled.query().data === true;
+    PythonQuery.venvDependenciesInstalled.use().data === true;
 
   const pythonPipListString = () =>
     isPythonInstalled()
-      ? (stringify(SettingsQuery.python.pipList.query().data, {
+      ? (stringify(PythonQuery.pipList.use().data, {
           indent: 2,
         }) ?? "")
       : "Python is not installed";
 
   const pythonVenvPipListString = () =>
     isUvInstalled()
-      ? (stringify(SettingsQuery.python.venvPipList.query().data, {
+      ? (stringify(PythonQuery.venvPipList.use().data, {
           indent: 2,
         }) ?? "")
       : "uv is not installed";
 
   const pythonHealthcheckString = () =>
     isPythonInstalled()
-      ? (stringify(SettingsQuery.python.healthcheck.query().data, {
+      ? (stringify(PythonQuery.healthcheck.use().data, {
           indent: 2,
         }) ?? "")
       : "Python is not installed";
 
   const pythonVenvHealthcheckString = () =>
     isUvInstalled()
-      ? (stringify(SettingsQuery.python.venvHealthcheck.query().data, {
+      ? (stringify(PythonQuery.venvHealthcheck.use().data, {
           indent: 2,
         }) ?? "")
       : "uv is not installed";

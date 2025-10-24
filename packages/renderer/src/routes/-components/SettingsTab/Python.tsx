@@ -9,14 +9,16 @@ import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Python() {
+  const { PythonQuery } = SettingsQuery;
+  const { PythonMutation } = SettingsMutation;
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
-  const isPythonInstalledQuery = SettingsQuery.python.isInstalled.query();
+  const isPythonInstalledQuery = PythonQuery.isInstalled.use();
   const isPythonInstalled = () => isPythonInstalledQuery.data === true;
-  const isUvInstalledQuery = SettingsQuery.python.isUvInstalled.query();
+  const isUvInstalledQuery = PythonQuery.isUvInstalled.use();
   const isUvInstalled = () => isUvInstalledQuery.data === true;
   const isVenvDependenciesInstalledQuery =
-    SettingsQuery.python.venvDependenciesInstalled.query();
+    PythonQuery.venvDependenciesInstalled.use();
   const isVenvDependenciesInstalled = () =>
     isVenvDependenciesInstalledQuery.data === true;
 
@@ -33,10 +35,10 @@ export function Python() {
     );
   }
 
-  const installPythonMutation = SettingsMutation.python.installPython();
-  const installPythonUvMutation = SettingsMutation.python.installUv();
+  const installPythonMutation = PythonMutation.installPython();
+  const installPythonUvMutation = PythonMutation.installUv();
   const installPythonDependenciesMutation =
-    SettingsMutation.python.installDependencies();
+    PythonMutation.installDependencies();
 
   const isInstalling = () =>
     installPythonMutation.isPending ||

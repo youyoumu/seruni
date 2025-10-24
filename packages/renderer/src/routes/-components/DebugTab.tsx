@@ -4,7 +4,8 @@ import { Button } from "#/components/ui/button";
 import { SettingsQuery } from "#/lib/query/settings";
 
 export function DebugTab() {
-  const isPythonInstalledQuery = SettingsQuery.python.isInstalled.query();
+  const { PythonQuery } = SettingsQuery;
+  const isPythonInstalledQuery = PythonQuery.isInstalled.use();
   const isPythonInstalled = () => isPythonInstalledQuery.data === true;
 
   onMount(() => {});
