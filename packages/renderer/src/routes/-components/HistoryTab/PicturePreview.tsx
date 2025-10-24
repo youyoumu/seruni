@@ -23,7 +23,7 @@ export function PicturePreview() {
 
   return (
     <Suspense>
-      <Dialog.Root>
+      <Dialog.Root lazyMount>
         <Dialog.Trigger
           asChild={(triggerProps) => {
             const [loaded, setLoaded] = createSignal(srcSet.has(pictureSrc()));

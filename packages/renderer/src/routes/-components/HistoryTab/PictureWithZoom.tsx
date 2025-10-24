@@ -26,7 +26,7 @@ export function PictureWithZoom(props: {
   const [editing, setEditing] = createSignal(false);
 
   return (
-    <Dialog.Root>
+    <Dialog.Root lazyMount>
       <Dialog.Trigger
         asChild={(triggerProps) => {
           return props.trigger(triggerProps);

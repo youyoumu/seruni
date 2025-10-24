@@ -38,7 +38,7 @@ export function EditButton() {
 
   return (
     <Suspense>
-      <Dialog.Root>
+      <Dialog.Root lazyMount>
         <Dialog.Trigger
           asChild={(triggerProps) => {
             return (
