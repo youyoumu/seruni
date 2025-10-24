@@ -34,6 +34,12 @@ const mining = [
       queryFn: () => ipcRenderer.invoke("mining:getSourceScreenshot"),
     },
   }),
+  createQueryKeys("mining:ankiHistory", {
+    all: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("mining:getAnkiHistory"),
+    },
+  }),
 ] as const;
 
 const settings = [

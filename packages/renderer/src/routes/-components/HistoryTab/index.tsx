@@ -1,13 +1,12 @@
 import { usePagination } from "@ark-ui/solid";
 import type { AnkiHistory } from "@repo/preload/ipc";
-import { sort } from "fast-sort";
+import { useQueryClient } from "@tanstack/solid-query";
 import { BirdIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
   For,
   Match,
-  onCleanup,
   onMount,
   Suspense,
   Switch,
@@ -18,58 +17,39 @@ import { Select_ } from "#/components/Form";
 import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
+import { keyStore } from "#/lib/query/_util";
 import { GeneralQuery } from "#/lib/query/general";
-import { history, setHistory } from "./_util";
+import { MiningQuery } from "#/lib/query/mining";
 import { AnkiCard } from "./AnkiCard";
 import { NoteContextProvider } from "./NoteContext";
 
 export function HistoryTab() {
+  const queryClient = useQueryClient();
   const { ClientStatusQuery } = GeneralQuery;
   const clientStatusQuery = ClientStatusQuery.detail.use();
-  const [success, setSuccess] = createSignal(false);
+  const ankiHistoryQuery = MiningQuery.AnkiHistoryQuery.data.use();
 
   const [currentPage, setCurrentPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
   const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
 
   createEffect(() => {
-    const count = history.length;
+    const count = ankiHistoryQuery.data.length;
     const pagination = usePagination({
       count,
       pageSize: pageSize(),
       page: currentPage(),
     });
-    setSlicedHistory(pagination().slice(history));
+    setSlicedHistory(pagination().slice(ankiHistoryQuery.data));
   });
 
-  let id = setInterval(() => {});
-  onMount(async () => {
-    const { success, data } = await ipcRenderer.invoke("mining:getAnkiHistory");
-    setSuccess(success);
-    setHistory(sort(data).desc((item) => item.id));
-    //TODO: use event listener
-    id = setInterval(async () => {
-      const { success, data } = await ipcRenderer.invoke(
-        "mining:getAnkiHistory",
-      );
-      setSuccess(success);
-      if (history.length !== data.length) {
-        setHistory(sort(data).desc((item) => item.id));
-      }
-    }, 5000);
-  });
-
-  onCleanup(() => {
-    clearInterval(id);
-  });
+  onMount(async () => {});
 
   createEffect(async () => {
     if (clientStatusQuery.data.anki === "connected") {
-      const { success, data } = await ipcRenderer.invoke(
-        "mining:getAnkiHistory",
-      );
-      setSuccess(success);
-      setHistory(sort(data).desc((item) => item.id));
+      queryClient.invalidateQueries({
+        queryKey: keyStore["mining:ankiHistory"].all.queryKey,
+      });
     }
   });
 
@@ -82,7 +62,17 @@ export function HistoryTab() {
     <Suspense>
       <Stack h="full" maxW="8xl" mx="auto" gap="4">
         <Switch>
-          <Match when={success()}>
+          <Match when={ankiHistoryQuery.isError || !ankiHistoryQuery.isEnabled}>
+            <Stack alignItems="center" justifyContent="center" h="full">
+              <Flip>
+                <BirdIcon size={250} strokeWidth={1}></BirdIcon>
+              </Flip>
+              <Text size="2xl" color="fg.muted">
+                Can't connect to Anki
+              </Text>
+            </Stack>
+          </Match>
+          <Match when={ankiHistoryQuery.isSuccess}>
             <Stack
               overflow="auto"
               class="custom-scrollbar"
@@ -103,7 +93,7 @@ export function HistoryTab() {
             <HStack justifyContent="center" gap="4">
               <Pagination
                 justifyContent="center"
-                count={history.length}
+                count={ankiHistoryQuery.data.length}
                 pageSize={pageSize()}
                 siblingCount={3}
                 page={currentPage()}
@@ -119,16 +109,6 @@ export function HistoryTab() {
                 }}
               />
             </HStack>
-          </Match>
-          <Match when={!success()}>
-            <Stack alignItems="center" justifyContent="center" h="full">
-              <Flip>
-                <BirdIcon size={250} strokeWidth={1}></BirdIcon>
-              </Flip>
-              <Text size="2xl" color="fg.muted">
-                Can't connect to Anki
-              </Text>
-            </Stack>
           </Match>
         </Switch>
       </Stack>

@@ -75,57 +75,37 @@ class MiningIPC extends IPC()<"mining"> {
     });
 
     this.handle("mining:getAnkiHistory", async () => {
-      try {
-        const noteIds = await ankiClient().client?.note.findNotes({
-          query: `tag:${env.APP_NAME}`,
-        });
+      const noteIds = await ankiClient().client?.note.findNotes({
+        query: `tag:${env.APP_NAME}`,
+      });
+      if (!noteIds) return [];
 
-        if (!noteIds)
-          return {
-            success: false,
-            data: [],
-          };
+      const notes = await ankiClient().client?.note.notesInfo({
+        notes: noteIds,
+      });
+      if (!notes) return [];
 
-        const notes = await ankiClient().client?.note.notesInfo({
-          notes: noteIds,
-        });
+      const data = notes.map((note) => {
+        const expression = AnkiClient().getExpression(note);
 
-        if (!notes)
-          return {
-            success: false,
-            data: [],
-          };
+        const pictureFieldValue =
+          note.fields[config.store.anki.pictureField]?.value ?? "";
+        const sentenceAudioFieldValue =
+          note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
 
-        const data = notes.map((note) => {
-          const expression = AnkiClient().getExpression(note);
-
-          const pictureFieldValue =
-            note.fields[config.store.anki.pictureField]?.value ?? "";
-          const sentenceAudioFieldValue =
-            note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
-
-          const pictureMedia = this.parseAnkiMediaPath(pictureFieldValue);
-          const audioMedia = this.parseAnkiMediaPath(sentenceAudioFieldValue);
-
-          return {
-            id: note.noteId,
-            expression,
-            picture: pictureMedia,
-            sentenceAudio: audioMedia,
-            nsfw: AnkiClient().inNsfw(note),
-          };
-        });
+        const pictureMedia = this.parseAnkiMediaPath(pictureFieldValue);
+        const audioMedia = this.parseAnkiMediaPath(sentenceAudioFieldValue);
 
         return {
-          success: true,
-          data,
+          id: note.noteId,
+          expression,
+          picture: pictureMedia,
+          sentenceAudio: audioMedia,
+          nsfw: AnkiClient().inNsfw(note),
         };
-      } catch {
-        return {
-          success: false,
-          data: [],
-        };
-      }
+      });
+
+      return data;
     });
 
     this.handle("mining:toggleNoteNsfw", async (_, { noteId, checked }) => {
