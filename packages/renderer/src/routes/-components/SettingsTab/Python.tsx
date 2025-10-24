@@ -11,12 +11,14 @@ import { appToaster } from "../AppToaster";
 export function Python() {
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
-  const isPythonInstalled = () =>
-    SettingsQuery.python.isInstalled.query().data === true;
-  const isUvInstalled = () =>
-    SettingsQuery.python.isUvInstalled.query().data === true;
+  const isPythonInstalledQuery = SettingsQuery.python.isInstalled.query();
+  const isPythonInstalled = () => isPythonInstalledQuery.data === true;
+  const isUvInstalledQuery = SettingsQuery.python.isUvInstalled.query();
+  const isUvInstalled = () => isUvInstalledQuery.data === true;
+  const isVenvDependenciesInstalledQuery =
+    SettingsQuery.python.venvDependenciesInstalled.query();
   const isVenvDependenciesInstalled = () =>
-    SettingsQuery.python.venvDependenciesInstalled.query().data === true;
+    isVenvDependenciesInstalledQuery.data === true;
 
   function getAlertDescription() {
     if (!isPythonInstalled()) return "Python is not installed";
