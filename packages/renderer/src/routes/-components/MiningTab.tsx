@@ -1,4 +1,5 @@
 import { makePersisted } from "@solid-primitives/storage";
+import { useQueryClient } from "@tanstack/solid-query";
 import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
 import {
@@ -26,26 +27,16 @@ import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
+import { keyStore } from "#/lib/query/_util";
+import { MiningQuery } from "#/lib/query/mining";
 import { appToaster } from "./AppToaster";
 
+const isNotJapaneseRegex =
+  /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
+
 export function MiningTab() {
-  const vnDialogues = [
-    "おはよう、昨日はよく眠れた？",
-    "あれ、もう来てたの？早いね。",
-    "ちょっと待って、髪にゴミついてるよ。",
-    "ねえ、放課後に少し話せる？",
-    "そんな顔しないでよ、冗談だってば。",
-    "この場所、なんか落ち着くね。",
-    "今日の授業、全然わからなかった……。",
-    "その笑い方、昔と変わってないね。",
-    "一緒に帰ろうか？",
-    "あっ、雨降ってきた！傘持ってる？",
-    "あのさ、前から言いたかったことがあるんだ。",
-    "ありがとう。君がいてくれてよかった。",
-    "ねえ、もし明日も晴れたら、どこか行こうよ。",
-    "ちょっと！寝てる場合じゃないってば！",
-    "……ねえ、私のこと、どう思ってるの？",
-  ];
+  const queryClient = useQueryClient();
+  let textContainerRef: HTMLDivElement | undefined;
   const [now, setNow] = createSignal(new Date());
   createEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
@@ -56,13 +47,7 @@ export function MiningTab() {
     name: "texthookerTimer",
   });
   const [timerRunning, setTimerRunning] = createSignal(false);
-  const [texts, setTexts] = createSignal<{ text: string; uuid: string }[]>(
-    // vnDialogues.map((text) => ({ text, uuid: crypto.randomUUID() })),
-    [],
-  );
-  const [textHistory, setTextHistory] = createSignal<
-    { text: string; uuid: string; time: Date }[]
-  >([]);
+  const [texts, setTexts] = createSignal<{ text: string; uuid: string }[]>([]);
   const [textUuid, setTextUuid] = createSignal("");
   const textObservable = liveQuery(() => texthoookerDB.text.toArray());
   textObservable.subscribe({
@@ -70,11 +55,15 @@ export function MiningTab() {
       setTexts(result);
     },
   });
-  const [replayBufferStartTime, setReplayBufferStartTime] = createSignal<
-    Date | undefined
-  >(undefined);
-  const [replayBufferDuration, setReplayBufferDuration] = createSignal(0);
-  let textContainerRef: HTMLDivElement | undefined;
+
+  const replayBufferStartTimeQuery =
+    MiningQuery.ObsQuery.replayBufferStartTime.use();
+  const replayBufferStartTime = () => replayBufferStartTimeQuery.data?.time;
+  const replayBufferDurationQuery =
+    MiningQuery.ObsQuery.replayBufferDuration.use();
+  const replayBufferDuration = () => replayBufferDurationQuery.data.duration;
+  const textHistoryQuery = MiningQuery.SessionQuery.textHistory.use();
+  const textHistory = () => textHistoryQuery.data;
 
   const notInHistoryTexts = () =>
     texts().filter((item) => {
@@ -98,9 +87,6 @@ export function MiningTab() {
     });
   };
 
-  const isNotJapaneseRegex =
-    /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
-
   function getCharacterCount(text: string) {
     if (!text) return 0;
     return Array.from(text.replace(isNotJapaneseRegex, "")).length;
@@ -120,7 +106,6 @@ export function MiningTab() {
     const m = String(d.minutes ?? 0).padStart(2, "0");
     const s = String(d.seconds ?? 0).padStart(2, "0");
     const h = String(totalHours).padStart(2, "0");
-
     return `${h}:${m}:${s}`;
   };
 
@@ -138,19 +123,17 @@ export function MiningTab() {
   });
 
   onMount(async () => {
-    const replayBufferStartTime = await ipcRenderer.invoke(
-      "mining:getReplayBufferStartTime",
-    );
-    setReplayBufferStartTime(replayBufferStartTime.time);
     ipcRenderer.on("mining:sendReplayBufferStartTime", ({ time }) => {
-      setReplayBufferStartTime(time);
+      queryClient.setQueryData(
+        keyStore["mining:obs"].replayBufferStartTime.queryKey,
+        { time },
+      );
     });
-    const replayBufferDuration = await ipcRenderer.invoke(
-      "mining:getReplayBufferDuration",
-    );
-    setReplayBufferDuration(replayBufferDuration.duration);
     ipcRenderer.on("mining:sendReplayBufferDuration", ({ duration }) => {
-      setReplayBufferDuration(duration);
+      queryClient.setQueryData(
+        keyStore["mining:obs"].replayBufferDuration.queryKey,
+        { duration },
+      );
     });
 
     ipcRenderer.on("vnOverlay:sendText", (payload) => {
@@ -170,13 +153,10 @@ export function MiningTab() {
         uuid: payload.uuid,
       });
 
-      ipcRenderer.invoke("mining:getTextHistory").then((history) => {
-        setTextHistory(history);
+      queryClient.invalidateQueries({
+        queryKey: keyStore["mining:session"].textHistory.queryKey,
       });
     });
-
-    const textHistory = await ipcRenderer.invoke("mining:getTextHistory");
-    setTextHistory(textHistory);
   });
 
   let hoverTimeout: number | undefined;

@@ -19,15 +19,54 @@ class NoteMediaQuery {
   };
 }
 
-class SourceScreenshotQuery {
+class ObsQuery {
   //biome-ignore format: this looks nicer
-  static data = {
+  static sourceScreenshot = {
     options: () =>
-      queryOptions({ ...keyStore["mining:sourceScreenshot"].data,
+      queryOptions({ ...keyStore["mining:obs"].sourceScreenshot,
         placeholderData: { image: null },
         refetchInterval: 4000,
       }),
-    use: () => useQuery(() => ({ ...SourceScreenshotQuery.data.options() })),
+    use: () => useQuery(() => ({ ...ObsQuery.sourceScreenshot.options() })),
+  };
+
+  static replayBufferStartTime = {
+    options: () =>
+      queryOptions({
+        ...keyStore["mining:obs"].replayBufferStartTime,
+        placeholderData: { time: undefined },
+      }),
+    use: () =>
+      useQuery(() => ({ ...ObsQuery.replayBufferStartTime.options() })),
+  };
+
+  static replayBufferDuration = {
+    options: () =>
+      queryOptions({
+        ...keyStore["mining:obs"].replayBufferDuration,
+        placeholderData: { duration: 0 },
+      }),
+    use: () => {
+      const query = useQuery(() => ({
+        ...ObsQuery.replayBufferDuration.options(),
+      }));
+      return queryWithPlaceholderData(query, { duration: 0 });
+    },
+  };
+}
+
+class SessionQuery {
+  static textHistory = {
+    options: () =>
+      queryOptions({
+        ...keyStore["mining:session"].textHistory,
+        placeholderData: [],
+        reconcile: (old, data) => reconcile(data)(old),
+      }),
+    use: () => {
+      const query = useQuery(() => ({ ...SessionQuery.textHistory.options() }));
+      return queryWithPlaceholderData(query, []);
+    },
   };
 }
 
@@ -58,6 +97,7 @@ class AnkiHistoryQuery {
 //biome-ignore format: this looks nicer
 export const MiningQuery = {
   NoteMediaQuery: NoteMediaQuery as RemovePrototype<typeof NoteMediaQuery>,
-  SourceScreenshotQuery: SourceScreenshotQuery as RemovePrototype<typeof SourceScreenshotQuery>,
+  ObsQuery: ObsQuery as RemovePrototype<typeof ObsQuery>,
+  SessionQuery: SessionQuery as RemovePrototype<typeof SessionQuery>,
   AnkiHistoryQuery: AnkiHistoryQuery as RemovePrototype<typeof AnkiHistoryQuery>,
 };

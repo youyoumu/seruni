@@ -20,9 +20,8 @@ function capitalize(str: string) {
 
 export function HomeTab() {
   const { ClientStatusQuery } = GeneralQuery;
-  const { SourceScreenshotQuery } = MiningQuery;
   const clientStatusQuery = ClientStatusQuery.detail.use();
-  const sourceScreenshotQuery = SourceScreenshotQuery.data.use();
+  const sourceScreenshotQuery = MiningQuery.ObsQuery.sourceScreenshot.use();
 
   onMount(() => {});
   createEffect(() => {});

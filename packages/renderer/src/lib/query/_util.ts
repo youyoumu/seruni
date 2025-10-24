@@ -28,10 +28,24 @@ const mining = [
       queryFn: () => ipcRenderer.invoke("mining:getNoteMedia", { noteId }),
     }),
   }),
-  createQueryKeys("mining:sourceScreenshot", {
-    data: {
+  createQueryKeys("mining:obs", {
+    sourceScreenshot: {
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("mining:getSourceScreenshot"),
+    },
+    replayBufferStartTime: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("mining:getReplayBufferStartTime"),
+    },
+    replayBufferDuration: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("mining:getReplayBufferDuration"),
+    },
+  }),
+  createQueryKeys("mining:session", {
+    textHistory: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("mining:getTextHistory"),
     },
   }),
   createQueryKeys("mining:ankiHistory", {

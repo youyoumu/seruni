@@ -6,7 +6,7 @@ import "./lib/hmr";
 import "./lib/log";
 import "./index.css";
 
-export const queryClient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: Infinity,
