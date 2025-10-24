@@ -5,46 +5,37 @@ import {
 import { queryOptions, useQuery } from "@tanstack/solid-query";
 import { reconcile } from "solid-js/store";
 import {
-  queryKey,
+  keyStore,
   queryWithPlaceholderData,
   type RemovePrototype,
 } from "./_util";
 
 class HttpServerUrlQuery {
+  //biome-ignore format: this looks nicer
   static value = {
-    options: () =>
-      queryOptions({
-        ...queryKey["general:httpServerUrl"].value,
-        placeholderData: {
-          url: window.location.origin,
-        },
-      }),
+    options: () => queryOptions({ ...keyStore["general:httpServerUrl"].value, placeholderData: { url: window.location.origin, }, }),
     use: () => useQuery(() => ({ ...HttpServerUrlQuery.value.options() })),
   };
 
+  //biome-ignore format: this looks nicer
   static mediaUrl = {
     options: (fileName: string, source: "anki" | "storage") => {
-      return queryOptions({
-        ...queryKey["general:httpServerUrl"].value,
+      return queryOptions({ ...keyStore["general:httpServerUrl"].value,
         select: ({ url }) => {
           switch (source) {
-            case "anki":
-              return `${url}${zAnkiCollectionMediaUrlPath.value}${fileName}`;
-            case "storage":
-              return `${url}${zStorageUrlPath.value}${fileName}`;
-          }
+            case "anki": return `${url}${zAnkiCollectionMediaUrlPath.value}${fileName}`;
+            case "storage": return `${url}${zStorageUrlPath.value}${fileName}`; }
         },
       });
     },
     use: (fileName: () => string, source: () => "anki" | "storage") => {
-      return useQuery(() => ({
-        ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()),
-      }));
+      return useQuery(() => ({ ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()), }));
     },
   };
 }
 
 class ClientStatusQuery {
+  //biome-ignore format: this looks nicer
   static detail = {
     placeholderData: {
       anki: "disconnected" as const,
@@ -53,17 +44,14 @@ class ClientStatusQuery {
     },
     options: () =>
       queryOptions({
-        ...queryKey["general:clientStatus"].detail,
+        ...keyStore["general:clientStatus"].detail,
         placeholderData: ClientStatusQuery.detail.placeholderData,
         refetchInterval: 1000,
         reconcile: (old, data) => reconcile(data)(old),
       }),
     use: () => {
       const query = useQuery(() => ({ ...ClientStatusQuery.detail.options() }));
-      return queryWithPlaceholderData(
-        query,
-        ClientStatusQuery.detail.placeholderData,
-      );
+      return queryWithPlaceholderData( query, ClientStatusQuery.detail.placeholderData,);
     },
   };
 }

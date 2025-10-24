@@ -1,4 +1,7 @@
-import { createQueryKeyStore } from "@lukemorales/query-key-factory";
+import {
+  createQueryKeys,
+  mergeQueryKeys,
+} from "@lukemorales/query-key-factory";
 import type { UseQueryResult } from "@tanstack/solid-query";
 
 export type RemovePrototype<T> = Omit<T, "prototype">;
@@ -18,20 +21,23 @@ export const queryWithPlaceholderData = <T>(
   return proxy as typeof proxy & { data: T };
 };
 
-export const queryKey = createQueryKeyStore({
-  "mining:noteMedia": {
+const mining = [
+  createQueryKeys("mining:noteMedia", {
     one: (noteId) => ({
       queryKey: [noteId],
       queryFn: () => ipcRenderer.invoke("mining:getNoteMedia", { noteId }),
     }),
-  },
-  "settings:env": {
+  }),
+] as const;
+
+const settings = [
+  createQueryKeys("settings:env", {
     detail: {
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("settings:getEnv"),
     },
-  },
-  "settings:python": {
+  }),
+  createQueryKeys("settings:python", {
     isInstalled: {
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("settings:isPythonInstalled"),
@@ -52,17 +58,22 @@ export const queryKey = createQueryKeyStore({
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("settings:pythonVenvHealthcheck"),
     },
-  },
-  "general:httpServerUrl": {
+  }),
+] as const;
+
+const general = [
+  createQueryKeys("general:httpServerUrl", {
     value: {
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("general:httpServerUrl"),
     },
-  },
-  "general:clientStatus": {
+  }),
+  createQueryKeys("general:clientStatus", {
     detail: {
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("general:getClientStatus"),
     },
-  },
-});
+  }),
+] as const;
+
+export const keyStore = mergeQueryKeys(...general, ...mining, ...settings);

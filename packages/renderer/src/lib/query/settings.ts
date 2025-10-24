@@ -5,18 +5,18 @@ import {
   useQueryClient,
 } from "@tanstack/solid-query";
 import { untrack } from "solid-js";
-import { queryKey, type RemovePrototype } from "./_util";
+import { keyStore, type RemovePrototype } from "./_util";
 
 class PythonQuery {
   //biome-ignore format: this looks nicer
   static isInstalled = {
-    options: () => queryOptions({ ...queryKey["settings:python"].isInstalled, placeholderData: false, }),
+    options: () => queryOptions({ ...keyStore["settings:python"].isInstalled, placeholderData: false, }),
     use: () => useQuery(() => ({ ...PythonQuery.isInstalled.options(), })),
   };
 
   //biome-ignore format: this looks nicer
   static healthcheck = {
-    options: () => queryOptions({ ...queryKey["settings:python"].healthcheck, placeholderData: {}, }),
+    options: () => queryOptions({ ...keyStore["settings:python"].healthcheck, placeholderData: {}, }),
     use: () =>
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
@@ -27,7 +27,7 @@ class PythonQuery {
 
   //biome-ignore format: this looks nicer
   static pipList = {
-    options: () => queryOptions({ ...queryKey["settings:python"].pipList, placeholderData: [], }),
+    options: () => queryOptions({ ...keyStore["settings:python"].pipList, placeholderData: [], }),
     use: () =>
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
@@ -52,7 +52,7 @@ class PythonQuery {
 
   //biome-ignore format: this looks nicer
   static venvPipList = {
-    options: () => queryOptions({ ...queryKey["settings:python"].venvPipList, placeholderData: [], }),
+    options: () => queryOptions({ ...keyStore["settings:python"].venvPipList, placeholderData: [], }),
     use: () =>
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
@@ -63,7 +63,7 @@ class PythonQuery {
 
   //biome-ignore format: this looks nicer
   static venvHealthcheck = {
-    options: () => queryOptions({ ...queryKey["settings:python"].venvHealthcheck, placeholderData: {}, }),
+    options: () => queryOptions({ ...keyStore["settings:python"].venvHealthcheck, placeholderData: {}, }),
     use: () =>
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
@@ -95,9 +95,9 @@ class PythonMutation {
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPython"),
         onSuccess: () => Promise.all([
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].isInstalled.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].healthcheck.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].pipList.queryKey, }), ]),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].isInstalled.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].healthcheck.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].pipList.queryKey, }), ]),
       };
     });
 
@@ -108,10 +108,10 @@ class PythonMutation {
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPythonUv"),
         onSuccess: () => Promise.all([
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].healthcheck.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].pipList.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].venvHealthcheck.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].venvPipList.queryKey, }), ]),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].healthcheck.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].pipList.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvHealthcheck.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvPipList.queryKey, }), ]),
       };
     });
 
@@ -122,16 +122,16 @@ class PythonMutation {
       return {
         mutationFn: () => ipcRenderer.invoke("settings:installPythonDependencies"),
         onSuccess: () => Promise.all([
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].venvHealthcheck.queryKey, }),
-            qc.invalidateQueries({ queryKey: queryKey["settings:python"].venvPipList.queryKey, }), ]),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvHealthcheck.queryKey, }),
+            qc.invalidateQueries({ queryKey: keyStore["settings:python"].venvPipList.queryKey, }), ]),
       };
     });
 }
 
 class EnvQuery {
+  //biome-ignore format: this looks nicer
   static detail = {
-    options: () =>
-      queryOptions({ ...queryKey["settings:env"].detail, placeholderData: {} }),
+    options: () => queryOptions({ ...keyStore["settings:env"].detail, placeholderData: {} }),
     query: () => useQuery(() => ({ ...EnvQuery.detail.options() })),
   };
 }

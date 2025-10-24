@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/solid-query";
 import { reconcile } from "solid-js/store";
 import {
-  queryKey,
+  keyStore,
   queryWithPlaceholderData,
   type RemovePrototype,
 } from "./_util";
@@ -9,7 +9,7 @@ import {
 class NoteMediaQuery {
   //biome-ignore format: this looks nicer
   static one = {
-    options: ({ noteId }: { noteId: number }) => queryOptions({ ...queryKey["mining:noteMedia"].one(noteId), placeholderData: [], }),
+    options: ({ noteId }: { noteId: number }) => queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], }),
     use: ({ noteId }: { noteId: number }) => {
       const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old), }));
       return queryWithPlaceholderData(query, []);
