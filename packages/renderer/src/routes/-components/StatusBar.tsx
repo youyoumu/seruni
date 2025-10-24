@@ -54,15 +54,15 @@ export function StatusBar() {
       >
         <HStack w="full" maxW="8xl" justifyContent="end" p="1" gap="4" px="4">
           <HStack gap="1.5" cursor="default">
-            <StatusIcon status={clientStatusQuery().data.anki} />
+            <StatusIcon status={clientStatusQuery.data.anki} />
             <Text size="xs">Anki</Text>
           </HStack>
           <HStack gap="1.5" cursor="default">
-            <StatusIcon status={clientStatusQuery().data.obs} />
+            <StatusIcon status={clientStatusQuery.data.obs} />
             <Text size="xs">OBS</Text>
           </HStack>
           <HStack gap="1.5" cursor="default">
-            <StatusIcon status={clientStatusQuery().data.textractor} />
+            <StatusIcon status={clientStatusQuery.data.textractor} />
             <Text size="xs">Textractor</Text>
           </HStack>
           <NotificationHistory

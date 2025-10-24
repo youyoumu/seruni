@@ -23,7 +23,7 @@ export function EditButton() {
   const note = useNoteContext();
   const noteMediaQuery = useNoteMediaQuery({ noteId: note.id });
   const availablePictures = () =>
-    noteMediaQuery().data.filter((m) => m.type === "picture");
+    noteMediaQuery.data.filter((m) => m.type === "picture");
 
   const [selectedMedisSrc, setSelectedMediaSrc] = createSignal<NoteMediaSrc>({
     fileName: note.picture,
@@ -170,7 +170,7 @@ function SelectedImage() {
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );
-  const src = () => mediaUrlQuery().data ?? "";
+  const src = () => mediaUrlQuery.data ?? "";
   createEffect(() => {});
 
   return (
@@ -214,7 +214,7 @@ function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );
-  const src = () => mediaUrlQuery().data ?? "";
+  const src = () => mediaUrlQuery.data ?? "";
 
   createEffect(() => {});
 
@@ -276,7 +276,7 @@ function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
     () => mediaSrc().fileName,
     () => mediaSrc().source,
   );
-  const src = () => mediaUrlQuery().data ?? "";
+  const src = () => mediaUrlQuery.data ?? "";
 
   return (
     <PictureWithZoom

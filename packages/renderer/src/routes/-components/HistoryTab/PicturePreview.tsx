@@ -18,7 +18,7 @@ export function PicturePreview() {
     () => note.picture,
     () => "anki",
   );
-  const pictureSrc = () => mediaUrlQuery().data ?? "";
+  const pictureSrc = () => mediaUrlQuery.data ?? "";
 
   return (
     <Suspense>

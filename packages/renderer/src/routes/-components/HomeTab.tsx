@@ -79,31 +79,31 @@ export function HomeTab() {
           gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
         >
           <Alert.Root>
-            <StatusIcon status={clientStatusQuery().data.anki} />
+            <StatusIcon status={clientStatusQuery.data.anki} />
             <Alert.Content>
               <Alert.Title>Anki</Alert.Title>
               <Alert.Description>
-                Status: {capitalize(clientStatusQuery().data.anki)}
+                Status: {capitalize(clientStatusQuery.data.anki)}
               </Alert.Description>
             </Alert.Content>
           </Alert.Root>
 
           <Alert.Root>
-            <StatusIcon status={clientStatusQuery().data.obs} />
+            <StatusIcon status={clientStatusQuery.data.obs} />
             <Alert.Content>
               <Alert.Title>OBS</Alert.Title>
               <Alert.Description>
-                Status: {capitalize(clientStatusQuery().data.obs)}
+                Status: {capitalize(clientStatusQuery.data.obs)}
               </Alert.Description>
             </Alert.Content>
           </Alert.Root>
 
           <Alert.Root>
-            <StatusIcon status={clientStatusQuery().data.textractor} />
+            <StatusIcon status={clientStatusQuery.data.textractor} />
             <Alert.Content>
               <Alert.Title>Textractor</Alert.Title>
               <Alert.Description>
-                Status: {capitalize(clientStatusQuery().data.textractor)}
+                Status: {capitalize(clientStatusQuery.data.textractor)}
               </Alert.Description>
             </Alert.Content>
           </Alert.Root>

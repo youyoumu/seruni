@@ -26,22 +26,22 @@ import { appToaster } from "../AppToaster";
 
 export function Debug() {
   const envQuery = useEnvQuery();
-  const envString = () => stringify(envQuery().data, { indent: 2 }) ?? "";
+  const envString = () => stringify(envQuery.data, { indent: 2 }) ?? "";
 
   const isPythonInstalledQuery = useIsPythonInstalledQuery();
-  const isPythonInstalled = () => isPythonInstalledQuery().data === true;
+  const isPythonInstalled = () => isPythonInstalledQuery.data === true;
 
   const isUvInstalledQuery = useIsUvInstalledQuery();
-  const isUvInstalled = () => isUvInstalledQuery().data === true;
+  const isUvInstalled = () => isUvInstalledQuery.data === true;
 
   const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
   const isVenvDependenciesInstalled = () =>
-    isVenvDependenciesInstalledQuery().data === true;
+    isVenvDependenciesInstalledQuery.data === true;
 
   const pythonPipListQuery = usePythonPipListQuery();
   const pythonPipListString = () =>
     isPythonInstalled()
-      ? (stringify(pythonPipListQuery().data, {
+      ? (stringify(pythonPipListQuery.data, {
           indent: 2,
         }) ?? "")
       : "Python is not installed";
@@ -49,19 +49,19 @@ export function Debug() {
   const pythonVenvPipListQuery = usePythonVenvPipListQuery();
   const pythonVenvPipListString = () =>
     isUvInstalled()
-      ? (stringify(pythonVenvPipListQuery().data, { indent: 2 }) ?? "")
+      ? (stringify(pythonVenvPipListQuery.data, { indent: 2 }) ?? "")
       : "uv is not installed";
 
   const pythonHealthcheckQuery = usePythonHealthcheckQuery();
   const pythonHealthcheckString = () =>
     isPythonInstalled()
-      ? (stringify(pythonHealthcheckQuery().data, { indent: 2 }) ?? "")
+      ? (stringify(pythonHealthcheckQuery.data, { indent: 2 }) ?? "")
       : "Python is not installed";
 
   const pythonVenvHealthcheckQuery = usePythonVenvHealthcheckQuery();
   const pythonVenvHealthcheckString = () =>
     isUvInstalled()
-      ? (stringify(pythonVenvHealthcheckQuery().data, { indent: 2 }) ?? "")
+      ? (stringify(pythonVenvHealthcheckQuery.data, { indent: 2 }) ?? "")
       : "uv is not installed";
 
   let ready = false;

@@ -63,7 +63,7 @@ export function HistoryTab() {
   });
 
   createEffect(async () => {
-    if (clientStatusQuery().data.anki === "connected") {
+    if (clientStatusQuery.data.anki === "connected") {
       const { success, data } = await ipcRenderer.invoke(
         "mining:getAnkiHistory",
       );

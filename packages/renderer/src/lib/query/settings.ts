@@ -43,10 +43,10 @@ export const usePythonHealthcheckQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     return useQuery(() => {
-      isPythonInstalledQuery().isStale;
+      isPythonInstalledQuery.isStale;
       return {
         ...pythonHealthcheckQueryOptions(),
-        enabled: untrack(() => isPythonInstalledQuery().data === true),
+        enabled: untrack(() => isPythonInstalledQuery.data === true),
       };
     });
   });
@@ -60,10 +60,10 @@ export const usePythonPipListQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     return useQuery(() => {
-      isPythonInstalledQuery().isStale;
+      isPythonInstalledQuery.isStale;
       return {
         ...pythonPipListQueryOptions(),
-        enabled: untrack(() => isPythonInstalledQuery().data === true),
+        enabled: untrack(() => isPythonInstalledQuery.data === true),
       };
     });
   });
@@ -73,13 +73,13 @@ export const useIsUvInstalledQuery = () =>
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
     return useQuery(() => {
-      isPythonInstalledQuery().isStale;
+      isPythonInstalledQuery.isStale;
       return {
         queryKey,
         queryFn,
         initialData,
         select: (data) => data?.some(({ name }) => name === "uv"),
-        enabled: untrack(() => isPythonInstalledQuery().data === true),
+        enabled: untrack(() => isPythonInstalledQuery.data === true),
       };
     });
   });
@@ -92,11 +92,11 @@ export const pythonVenvPipListQueryOptions = () =>
 export const usePythonVenvPipListQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    isUvInstalledQuery().isStale;
+    isUvInstalledQuery.isStale;
     return useQuery(() => {
       return {
         ...pythonVenvPipListQueryOptions(),
-        enabled: untrack(() => isUvInstalledQuery().data === true),
+        enabled: untrack(() => isUvInstalledQuery.data === true),
       };
     });
   });
@@ -110,10 +110,10 @@ export const usePythonVenvHealthcheckQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
     return useQuery(() => {
-      isUvInstalledQuery().isStale;
+      isUvInstalledQuery.isStale;
       return {
         ...pythonVenvHealthcheckQueryOptions(),
-        enabled: untrack(() => isUvInstalledQuery().data === true),
+        enabled: untrack(() => isUvInstalledQuery.data === true),
       };
     });
   });
@@ -124,13 +124,13 @@ export const useIsVenvDependeciesInstalledQuery = () =>
     const { queryKey, queryFn, initialData } =
       pythonVenvHealthcheckQueryOptions();
     return useQuery(() => {
-      isUvInstalledQuery().isStale;
+      isUvInstalledQuery.isStale;
       return {
         queryKey,
         queryFn,
         initialData,
         select: (data) => data?.ok === true,
-        enabled: untrack(() => isUvInstalledQuery().data === true),
+        enabled: untrack(() => isUvInstalledQuery.data === true),
       };
     });
   });

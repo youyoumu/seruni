@@ -19,12 +19,12 @@ export function Python() {
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
   const isPythonInstalledQuery = useIsPythonInstalledQuery();
-  const isPythonInstalled = () => isPythonInstalledQuery().data === true;
+  const isPythonInstalled = () => isPythonInstalledQuery.data === true;
   const isUvInstalledQuery = useIsUvInstalledQuery();
-  const isUvInstalled = () => isUvInstalledQuery().data === true;
+  const isUvInstalled = () => isUvInstalledQuery.data === true;
   const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
   const isVenvDependenciesInstalled = () =>
-    isVenvDependenciesInstalledQuery().data === true;
+    isVenvDependenciesInstalledQuery.data === true;
 
   function getAlertDescription() {
     if (!isPythonInstalled()) return "Python is not installed";

@@ -54,7 +54,7 @@ export function AnkiCard() {
     () => note.sentenceAudio,
     () => "anki",
   );
-  const sentenceAudioSrc = () => mediaUrlQuery().data ?? "";
+  const sentenceAudioSrc = () => mediaUrlQuery.data ?? "";
 
   return (
     <Stack
