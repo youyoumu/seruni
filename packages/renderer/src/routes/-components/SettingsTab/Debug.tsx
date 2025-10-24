@@ -12,61 +12,52 @@ import { cva } from "styled-system/css";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import {
-  useEnvQuery,
-  useIsPythonInstalledQuery,
-  useIsUvInstalledQuery,
-  useIsVenvDependeciesInstalledQuery,
-  usePythonHealthcheckQuery,
-  usePythonPipListQuery,
-  usePythonVenvHealthcheckQuery,
-  usePythonVenvPipListQuery,
-} from "#/lib/query/settings";
+import { SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {
-  const envQuery = useEnvQuery();
-  const envString = () => stringify(envQuery.data, { indent: 2 }) ?? "";
+  const envString = () =>
+    stringify(SettingsQuery.env.query().data, { indent: 2 }) ?? "";
 
-  const isPythonInstalledQuery = useIsPythonInstalledQuery();
-  const isPythonInstalled = () => isPythonInstalledQuery.data === true;
+  const isPythonInstalled = () =>
+    SettingsQuery.python.isInstalled.query().data === true;
 
-  const isUvInstalledQuery = useIsUvInstalledQuery();
-  const isUvInstalled = () => isUvInstalledQuery.data === true;
+  const isUvInstalled = () =>
+    SettingsQuery.python.isUvInstalled.query().data === true;
 
-  const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
   const isVenvDependenciesInstalled = () =>
-    isVenvDependenciesInstalledQuery.data === true;
+    SettingsQuery.python.venvDependenciesInstalled.query().data === true;
 
-  const pythonPipListQuery = usePythonPipListQuery();
   const pythonPipListString = () =>
     isPythonInstalled()
-      ? (stringify(pythonPipListQuery.data, {
+      ? (stringify(SettingsQuery.python.pipList.query().data, {
           indent: 2,
         }) ?? "")
       : "Python is not installed";
 
-  const pythonVenvPipListQuery = usePythonVenvPipListQuery();
   const pythonVenvPipListString = () =>
     isUvInstalled()
-      ? (stringify(pythonVenvPipListQuery.data, { indent: 2 }) ?? "")
+      ? (stringify(SettingsQuery.python.venvPipList.query().data, {
+          indent: 2,
+        }) ?? "")
       : "uv is not installed";
 
-  const pythonHealthcheckQuery = usePythonHealthcheckQuery();
   const pythonHealthcheckString = () =>
     isPythonInstalled()
-      ? (stringify(pythonHealthcheckQuery.data, { indent: 2 }) ?? "")
+      ? (stringify(SettingsQuery.python.healthcheck.query().data, {
+          indent: 2,
+        }) ?? "")
       : "Python is not installed";
 
-  const pythonVenvHealthcheckQuery = usePythonVenvHealthcheckQuery();
   const pythonVenvHealthcheckString = () =>
     isUvInstalled()
-      ? (stringify(pythonVenvHealthcheckQuery.data, { indent: 2 }) ?? "")
+      ? (stringify(SettingsQuery.python.venvHealthcheck.query().data, {
+          indent: 2,
+        }) ?? "")
       : "uv is not installed";
 
   let ready = false;
   createEffect(() => {
-    console.log(isPythonInstalledQuery.data, isPythonInstalledQuery.isStale);
     if (!ready) return;
   });
 

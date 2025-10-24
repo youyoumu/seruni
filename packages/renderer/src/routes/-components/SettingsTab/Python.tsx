@@ -5,26 +5,18 @@ import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
-import {
-  useInstallPythonDependenciesMutation,
-  useInstallPythonMutation,
-  useInstallPythonUvMutation,
-  useIsPythonInstalledQuery,
-  useIsUvInstalledQuery,
-  useIsVenvDependeciesInstalledQuery,
-} from "#/lib/query/settings";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Python() {
   const [pythonCommand, setPythonCommand] = createSignal("--version");
 
-  const isPythonInstalledQuery = useIsPythonInstalledQuery();
-  const isPythonInstalled = () => isPythonInstalledQuery.data === true;
-  const isUvInstalledQuery = useIsUvInstalledQuery();
-  const isUvInstalled = () => isUvInstalledQuery.data === true;
-  const isVenvDependenciesInstalledQuery = useIsVenvDependeciesInstalledQuery();
+  const isPythonInstalled = () =>
+    SettingsQuery.python.isInstalled.query().data === true;
+  const isUvInstalled = () =>
+    SettingsQuery.python.isUvInstalled.query().data === true;
   const isVenvDependenciesInstalled = () =>
-    isVenvDependenciesInstalledQuery.data === true;
+    SettingsQuery.python.venvDependenciesInstalled.query().data === true;
 
   function getAlertDescription() {
     if (!isPythonInstalled()) return "Python is not installed";
@@ -39,10 +31,10 @@ export function Python() {
     );
   }
 
-  const installPythonMutation = useInstallPythonMutation();
-  const installPythonUvMutation = useInstallPythonUvMutation();
+  const installPythonMutation = SettingsMutation.python.installPython();
+  const installPythonUvMutation = SettingsMutation.python.installUv();
   const installPythonDependenciesMutation =
-    useInstallPythonDependenciesMutation();
+    SettingsMutation.python.installDependencies();
 
   const isInstalling = () =>
     installPythonMutation.isPending ||

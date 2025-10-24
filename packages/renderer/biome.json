@@ -11,6 +11,9 @@
     "rules": {
       "a11y": {
         "useKeyWithClickEvents": "off"
+      },
+      "complexity": {
+        "noStaticOnlyClass": "off"
       }
     }
   }
