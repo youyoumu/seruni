@@ -4,7 +4,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
-import { untrack } from "solid-js";
 import { keyStore, type RemovePrototype } from "./_util";
 
 class PythonQuery {
@@ -21,7 +20,7 @@ class PythonQuery {
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQuery.healthcheck.options(), enabled: untrack(() => installed.data === true), };
+        return { ...PythonQuery.healthcheck.options(), enabled: () => installed.data === true, };
       }),
   };
 
@@ -32,7 +31,7 @@ class PythonQuery {
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQuery.pipList.options(), enabled: untrack(() => installed.data === true), };
+        return { ...PythonQuery.pipList.options(), enabled: () => installed.data === true, };
       }),
   };
 
@@ -45,7 +44,7 @@ class PythonQuery {
         const { queryKey, queryFn, placeholderData } = PythonQuery.pipList.options();
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.some((p) => p.name === "uv"),
-          enabled: untrack(() => installed.data === true),
+          enabled: () => installed.data === true,
         };
       }),
   };
@@ -57,7 +56,7 @@ class PythonQuery {
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQuery.venvPipList.options(), enabled: untrack(() => uv.data === true), };
+        return { ...PythonQuery.venvPipList.options(), enabled: () => uv.data === true, };
       }),
   };
 
@@ -68,7 +67,7 @@ class PythonQuery {
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQuery.venvHealthcheck.options(), enabled: untrack(() => uv.data === true), };
+        return { ...PythonQuery.venvHealthcheck.options(), enabled: () => uv.data === true, };
       }),
   };
 
@@ -81,7 +80,7 @@ class PythonQuery {
         uv.isStale;
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.ok === true,
-          enabled: untrack(() => uv.data === true),
+          enabled: () => uv.data === true,
         };
       }),
   };
