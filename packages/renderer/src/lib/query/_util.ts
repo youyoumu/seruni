@@ -48,6 +48,10 @@ const settings = [
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("settings:getConfig"),
     },
+    isYomitanInstalled: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:isYomitanInstalled"),
+    },
   }),
   createQueryKeys("settings:python", {
     isInstalled: {

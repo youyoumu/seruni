@@ -21,13 +21,8 @@ class YomitanIPC extends IPC()<"yomitan"> {
     });
 
     this.handle("yomitan:reinstall", async () => {
-      try {
-        yomitanWindow().win?.close();
-        await yomitanExtension.reinstall();
-        return true;
-      } catch {
-        return false;
-      }
+      yomitanWindow().win?.close();
+      await yomitanExtension.reinstall();
     });
   }
 }

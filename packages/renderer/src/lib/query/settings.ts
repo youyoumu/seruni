@@ -143,19 +143,37 @@ class ConfigQuery {
     options: () => queryOptions({ ...keyStore["settings:config"].detail, placeholderData: defaultConfig, reconcile: (old, data) => reconcile(data)(old) }),
     use: () => useQuery(() => ({ ...ConfigQuery.detail.options() })),
   };
+
+  //biome-ignore format: this looks nicer
+  static isYomitanInstalled = {
+    options: () => queryOptions({ ...keyStore["settings:config"].isYomitanInstalled, placeholderData: false, }),
+    use: () => useQuery(() => ({ ...ConfigQuery.isYomitanInstalled.options() })),
+  };
 }
 
 class ConfigMutation {
+  //biome-ignore format: this looks nicer
   static setConfig = () =>
     useMutation(() => {
       const qc = useQueryClient();
       return {
-        mutationFn: (config: Partial<Config>) =>
-          ipcRenderer.invoke("settings:setSettings", config),
+        mutationFn: (config: Partial<Config>) => ipcRenderer.invoke("settings:setSettings", config),
+        onSuccess: () =>
+          Promise.all([
+            qc.invalidateQueries({ queryKey: keyStore["settings:config"].detail.queryKey, }), ]),
+      };
+    });
+
+  //biome-ignore format: this looks nicer
+  static installYomitan = () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: () => ipcRenderer.invoke("yomitan:reinstall"),
         onSuccess: () =>
           Promise.all([
             qc.invalidateQueries({
-              queryKey: keyStore["settings:config"].detail.queryKey,
+              queryKey: keyStore["settings:config"].isYomitanInstalled.queryKey,
             }),
           ]),
       };

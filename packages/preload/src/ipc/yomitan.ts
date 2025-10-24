@@ -7,7 +7,7 @@ export const zYomitanIPC = {
     "yomitan:minimize": zSimple,
     "yomitan:reinstall": z.object({
       input: z.tuple([]),
-      output: z.boolean(),
+      output: z.void(),
     }),
   }),
 };

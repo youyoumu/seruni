@@ -1,18 +1,42 @@
 import { ShieldAlertIcon } from "lucide-solid";
-import { createSignal, onMount, Show } from "solid-js";
+import { Show } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
 export function Yomitan() {
-  const [isInstalled, setIsInstalled] = createSignal(false);
-  const [isInstalling, setIsInstalling] = createSignal(false);
-  onMount(async () => {
-    const isInstalled = await ipcRenderer.invoke("settings:isYomitanInstalled");
-    return setIsInstalled(isInstalled);
-  });
+  const isYomitanInstalledQuery =
+    SettingsQuery.ConfigQuery.isYomitanInstalled.use();
+  const installYomitanMutation =
+    SettingsMutation.ConfigMutation.installYomitan();
+
+  const isInstalling = () => installYomitanMutation.isPending;
+  const isInstalled = () => isYomitanInstalledQuery.data === true;
+  const installYomitan = () => {
+    const installed = isInstalled();
+    appToaster.promise(installYomitanMutation.mutateAsync(), {
+      loading: {
+        title: installed ? "Updating Yomitan..." : "Installing Yomitan...",
+      },
+      error: { title: "Failed to install Yomitan" },
+      success: {
+        title: installed
+          ? "Yomitan has been updated"
+          : "Yomitan has been installed",
+        description: "Reload to apply changes",
+        duration: Infinity,
+        action: {
+          label: "Reload",
+          onClick: () => {
+            ipcRenderer.send("general:reloadMainWindow");
+          },
+        },
+      },
+    });
+  };
 
   return (
     <Stack gap="4" w="full">
@@ -50,48 +74,7 @@ export function Yomitan() {
         <Button
           loading={isInstalling()}
           onClick={() => {
-            setIsInstalling(true);
-            appToaster.promise(
-              ipcRenderer
-                .invoke("yomitan:reinstall")
-                .then((success) => {
-                  if (success) {
-                    ipcRenderer
-                      .invoke("settings:isYomitanInstalled")
-                      .then((isInstalled) => {
-                        setIsInstalled(isInstalled);
-                      });
-                  } else {
-                    throw new Error("Failed to reinstall Yomitan");
-                  }
-                })
-                .finally(() => {
-                  setIsInstalling(false);
-                }),
-              {
-                loading: {
-                  title: isInstalled()
-                    ? "Updating Yomitan..."
-                    : "Installing Yomitan...",
-                },
-                error: {
-                  title: "Failed to install Yomitan",
-                },
-                success: {
-                  title: isInstalled()
-                    ? "Yomitan has been updated"
-                    : "Yomitan has been installed",
-                  description: "Reload to apply changes",
-                  duration: Infinity,
-                  action: {
-                    label: "Reload",
-                    onClick: () => {
-                      ipcRenderer.send("general:reloadMainWindow");
-                    },
-                  },
-                },
-              },
-            );
+            installYomitan();
           }}
         >
           {isInstalled() ? "Update" : "Install"} Yomitan
