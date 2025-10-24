@@ -24,24 +24,20 @@ export function DebugTab() {
   const owner = getOwner();
   if (!owner) throw new Error("owner not found");
 
-  const query = useOwner(() => {
-    const query2 = useOwner(() => {
-      return useQuery(() => ({
-        queryKey: ["test2"],
-        queryFn: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          return format(new Date(), "ss");
-        },
-      }));
-    });
-    return useQuery(() => {
-      query2.isStale;
-      return {
-        queryKey: ["test"],
-        queryFn: () => format(new Date(), "hh mm ss"),
-        select: (data) => `${data}_${query2.data}`,
-      };
-    });
+  const query = useQuery(() => {
+    const query2 = useQuery(() => ({
+      queryKey: ["test2"],
+      queryFn: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return format(new Date(), "ss");
+      },
+    }));
+    query2.isStale;
+    return {
+      queryKey: ["test"],
+      queryFn: () => format(new Date(), "hh mm ss"),
+      select: (data) => `${data}_${query2.data}`,
+    };
   });
 
   onMount(() => {});
@@ -57,9 +53,9 @@ export function DebugTab() {
         >
           <Button
             onClick={() => {
-              // queryClient.invalidateQueries({
-              //   queryKey: ["test"],
-              // });
+              queryClient.invalidateQueries({
+                queryKey: ["test"],
+              });
               queryClient.invalidateQueries({
                 queryKey: ["test2"],
               });

@@ -4,7 +4,6 @@ import {
 } from "@repo/preload/ipc";
 import { queryOptions, useQuery } from "@tanstack/solid-query";
 import { reconcile } from "solid-js/store";
-import { useOwner } from "../util";
 import { queryKey } from "./_util";
 
 export const httpServerUrlQueryOptions = () =>
@@ -38,10 +37,8 @@ export const useMediaUrlQuery = (
   fileName: () => string,
   source: () => "anki" | "storage",
 ) => {
-  return useOwner(() => {
-    return useQuery(() => {
-      return mediaUrlQueryOptions(fileName(), source());
-    });
+  return useQuery(() => {
+    return mediaUrlQueryOptions(fileName(), source());
   });
 };
 
@@ -57,9 +54,8 @@ export const clientStatusQueryOptions = () =>
     reconcile: (old, data) => reconcile(data)(old),
   });
 
-export const useClientStatusQuery = () =>
-  useOwner(() => {
-    return useQuery(() => ({
-      ...clientStatusQueryOptions(),
-    }));
-  });
+export const useClientStatusQuery = () => {
+  return useQuery(() => ({
+    ...clientStatusQueryOptions(),
+  }));
+};

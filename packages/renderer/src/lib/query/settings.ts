@@ -5,7 +5,6 @@ import {
   useQueryClient,
 } from "@tanstack/solid-query";
 import { untrack } from "solid-js";
-import { useOwner } from "../util";
 import { queryKey } from "./_util";
 
 export const envQueryOptions = () =>
@@ -16,11 +15,9 @@ export const envQueryOptions = () =>
     },
   });
 export const useEnvQuery = () =>
-  useOwner(() => {
-    return useQuery(() => ({
-      ...envQueryOptions(),
-    }));
-  });
+  useQuery(() => ({
+    ...envQueryOptions(),
+  }));
 
 export const isPythonInstalledQueryOptions = () =>
   queryOptions({
@@ -28,112 +25,104 @@ export const isPythonInstalledQueryOptions = () =>
     initialData: false,
   });
 export const useIsPythonInstalledQuery = () =>
-  useOwner(() => {
-    return useQuery(() => ({
-      ...isPythonInstalledQueryOptions(),
-    }));
-  });
+  useQuery(() => ({
+    ...isPythonInstalledQueryOptions(),
+  }));
 
 export const pythonHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].healthcheck,
     initialData: {},
   });
-export const usePythonHealthcheckQuery = () =>
-  useOwner(() => {
+export const usePythonHealthcheckQuery = () => {
+  return useQuery(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    return useQuery(() => {
-      isPythonInstalledQuery.isStale;
-      return {
-        ...pythonHealthcheckQueryOptions(),
-        enabled: untrack(() => isPythonInstalledQuery.data === true),
-      };
-    });
+    isPythonInstalledQuery.isStale;
+    return {
+      ...pythonHealthcheckQueryOptions(),
+      enabled: untrack(() => isPythonInstalledQuery.data === true),
+    };
   });
+};
 
 export const pythonPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].pipList,
     initialData: [],
   });
-export const usePythonPipListQuery = () =>
-  useOwner(() => {
+export const usePythonPipListQuery = () => {
+  return useQuery(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    return useQuery(() => {
-      isPythonInstalledQuery.isStale;
-      return {
-        ...pythonPipListQueryOptions(),
-        enabled: untrack(() => isPythonInstalledQuery.data === true),
-      };
-    });
+    isPythonInstalledQuery.isStale;
+    return {
+      ...pythonPipListQueryOptions(),
+      enabled: untrack(() => isPythonInstalledQuery.data === true),
+    };
   });
+};
 
-export const useIsUvInstalledQuery = () =>
-  useOwner(() => {
+export const useIsUvInstalledQuery = () => {
+  const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
+  return useQuery(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
-    return useQuery(() => {
-      isPythonInstalledQuery.isStale;
-      return {
-        queryKey,
-        queryFn,
-        initialData,
-        select: (data) => data?.some(({ name }) => name === "uv"),
-        enabled: untrack(() => isPythonInstalledQuery.data === true),
-      };
-    });
+    isPythonInstalledQuery.isStale;
+    return {
+      queryKey,
+      queryFn,
+      initialData,
+      select: (data) => data?.some(({ name }) => name === "uv"),
+      enabled: untrack(() => isPythonInstalledQuery.data === true),
+    };
   });
+};
 
 export const pythonVenvPipListQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvPipList,
     initialData: [],
   });
-export const usePythonVenvPipListQuery = () =>
-  useOwner(() => {
+export const usePythonVenvPipListQuery = () => {
+  return useQuery(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
     isUvInstalledQuery.isStale;
-    return useQuery(() => {
-      return {
-        ...pythonVenvPipListQueryOptions(),
-        enabled: untrack(() => isUvInstalledQuery.data === true),
-      };
-    });
+    return {
+      ...pythonVenvPipListQueryOptions(),
+      enabled: untrack(() => isUvInstalledQuery.data === true),
+    };
   });
+};
 
 export const pythonVenvHealthcheckQueryOptions = () =>
   queryOptions({
     ...queryKey["settings:python"].venvHealthcheck,
     initialData: {},
   });
-export const usePythonVenvHealthcheckQuery = () =>
-  useOwner(() => {
+export const usePythonVenvHealthcheckQuery = () => {
+  return useQuery(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    return useQuery(() => {
-      isUvInstalledQuery.isStale;
-      return {
-        ...pythonVenvHealthcheckQueryOptions(),
-        enabled: untrack(() => isUvInstalledQuery.data === true),
-      };
-    });
+    isUvInstalledQuery.isStale;
+    return {
+      ...pythonVenvHealthcheckQueryOptions(),
+      enabled: untrack(() => isUvInstalledQuery.data === true),
+    };
   });
+};
 
-export const useIsVenvDependeciesInstalledQuery = () =>
-  useOwner(() => {
+export const useIsVenvDependeciesInstalledQuery = () => {
+  const { queryKey, queryFn, initialData } =
+    pythonVenvHealthcheckQueryOptions();
+  return useQuery(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    const { queryKey, queryFn, initialData } =
-      pythonVenvHealthcheckQueryOptions();
-    return useQuery(() => {
-      isUvInstalledQuery.isStale;
-      return {
-        queryKey,
-        queryFn,
-        initialData,
-        select: (data) => data?.ok === true,
-        enabled: untrack(() => isUvInstalledQuery.data === true),
-      };
-    });
+    isUvInstalledQuery.isStale;
+    return {
+      queryKey,
+      queryFn,
+      initialData,
+      select: (data) => data?.ok === true,
+      enabled: untrack(() => isUvInstalledQuery.data === true),
+    };
   });
+};
 
 export const useInstallPythonMutation = () =>
   useMutation(() => {

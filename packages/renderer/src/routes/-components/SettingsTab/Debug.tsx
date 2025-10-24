@@ -66,6 +66,7 @@ export function Debug() {
 
   let ready = false;
   createEffect(() => {
+    console.log(isPythonInstalledQuery.data, isPythonInstalledQuery.isStale);
     if (!ready) return;
   });
 
