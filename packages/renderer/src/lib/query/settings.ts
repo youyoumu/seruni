@@ -42,12 +42,13 @@ export const pythonHealthcheckQueryOptions = () =>
 export const usePythonHealthcheckQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    return useQuery(() => ({
-      ...pythonHealthcheckQueryOptions(),
-      enabled:
-        isPythonInstalledQuery().status &&
-        untrack(() => isPythonInstalledQuery().data === true),
-    }));
+    return useQuery(() => {
+      isPythonInstalledQuery().isStale;
+      return {
+        ...pythonHealthcheckQueryOptions(),
+        enabled: untrack(() => isPythonInstalledQuery().data === true),
+      };
+    });
   });
 
 export const pythonPipListQueryOptions = () =>
@@ -58,27 +59,29 @@ export const pythonPipListQueryOptions = () =>
 export const usePythonPipListQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
-    return useQuery(() => ({
-      ...pythonPipListQueryOptions(),
-      enabled:
-        isPythonInstalledQuery().status &&
-        untrack(() => isPythonInstalledQuery().data === true),
-    }));
+    return useQuery(() => {
+      isPythonInstalledQuery().isStale;
+      return {
+        ...pythonPipListQueryOptions(),
+        enabled: untrack(() => isPythonInstalledQuery().data === true),
+      };
+    });
   });
 
 export const useIsUvInstalledQuery = () =>
   useOwner(() => {
     const isPythonInstalledQuery = useIsPythonInstalledQuery();
     const { queryKey, queryFn, initialData } = pythonPipListQueryOptions();
-    return useQuery(() => ({
-      queryKey,
-      queryFn,
-      initialData,
-      select: (data) => data?.some(({ name }) => name === "uv"),
-      enabled:
-        isPythonInstalledQuery().status &&
-        untrack(() => isPythonInstalledQuery().data === true),
-    }));
+    return useQuery(() => {
+      isPythonInstalledQuery().isStale;
+      return {
+        queryKey,
+        queryFn,
+        initialData,
+        select: (data) => data?.some(({ name }) => name === "uv"),
+        enabled: untrack(() => isPythonInstalledQuery().data === true),
+      };
+    });
   });
 
 export const pythonVenvPipListQueryOptions = () =>
@@ -89,12 +92,13 @@ export const pythonVenvPipListQueryOptions = () =>
 export const usePythonVenvPipListQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    return useQuery(() => ({
-      ...pythonVenvPipListQueryOptions(),
-      enabled:
-        isUvInstalledQuery().status &&
-        untrack(() => isUvInstalledQuery().data === true),
-    }));
+    isUvInstalledQuery().isStale;
+    return useQuery(() => {
+      return {
+        ...pythonVenvPipListQueryOptions(),
+        enabled: untrack(() => isUvInstalledQuery().data === true),
+      };
+    });
   });
 
 export const pythonVenvHealthcheckQueryOptions = () =>
@@ -105,12 +109,13 @@ export const pythonVenvHealthcheckQueryOptions = () =>
 export const usePythonVenvHealthcheckQuery = () =>
   useOwner(() => {
     const isUvInstalledQuery = useIsUvInstalledQuery();
-    return useQuery(() => ({
-      ...pythonVenvHealthcheckQueryOptions(),
-      enabled:
-        isUvInstalledQuery().status &&
-        untrack(() => isUvInstalledQuery().data === true),
-    }));
+    return useQuery(() => {
+      isUvInstalledQuery().isStale;
+      return {
+        ...pythonVenvHealthcheckQueryOptions(),
+        enabled: untrack(() => isUvInstalledQuery().data === true),
+      };
+    });
   });
 
 export const useIsVenvDependeciesInstalledQuery = () =>
@@ -118,15 +123,16 @@ export const useIsVenvDependeciesInstalledQuery = () =>
     const isUvInstalledQuery = useIsUvInstalledQuery();
     const { queryKey, queryFn, initialData } =
       pythonVenvHealthcheckQueryOptions();
-    return useQuery(() => ({
-      queryKey,
-      queryFn,
-      initialData,
-      select: (data) => data?.ok === true,
-      enabled:
-        isUvInstalledQuery().status &&
-        untrack(() => isUvInstalledQuery().data === true),
-    }));
+    return useQuery(() => {
+      isUvInstalledQuery().isStale;
+      return {
+        queryKey,
+        queryFn,
+        initialData,
+        select: (data) => data?.ok === true,
+        enabled: untrack(() => isUvInstalledQuery().data === true),
+      };
+    });
   });
 
 export const useInstallPythonMutation = () =>
