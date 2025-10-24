@@ -1,4 +1,4 @@
-import { makePersisted } from "@solid-primitives/storage";
+import { createTimer } from "@solid-primitives/timer";
 import { useQueryClient } from "@tanstack/solid-query";
 import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
@@ -10,15 +10,8 @@ import {
   TrashIcon,
   XIcon,
 } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  For,
-  type JSX,
-  onCleanup,
-  onMount,
-  Show,
-} from "solid-js";
+import { createSignal, For, type JSX, onMount, Show } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
@@ -29,6 +22,7 @@ import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
 import { MiningQuery } from "#/lib/query/mining";
+import { localStore, setLocalStore } from "#/lib/store";
 import { appToaster } from "./AppToaster";
 
 const isNotJapaneseRegex =
@@ -38,21 +32,32 @@ export function MiningTab() {
   const queryClient = useQueryClient();
   let textContainerRef: HTMLDivElement | undefined;
   const [now, setNow] = createSignal(new Date());
-  createEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    onCleanup(() => clearInterval(interval));
-  });
+  createTimer(
+    () => {
+      setNow(new Date());
+    },
+    1000,
+    setInterval,
+  );
 
-  const [timer, setTimer] = makePersisted(createSignal(0), {
-    name: "texthookerTimer",
-  });
+  const timer = () => localStore.texthookerTimer;
   const [timerRunning, setTimerRunning] = createSignal(false);
-  const [texts, setTexts] = createSignal<{ text: string; uuid: string }[]>([]);
+  createTimer(
+    () => {
+      setLocalStore("texthookerTimer", (value) => value + 1);
+    },
+    () => (timerRunning() ? 1000 : false),
+    setInterval,
+  );
+
+  const [texts, setTexts] = createStore<{
+    value: Array<{ text: string; uuid: string }>;
+  }>({ value: [] });
   const [textUuid, setTextUuid] = createSignal("");
   const textObservable = liveQuery(() => texthoookerDB.text.toArray());
   textObservable.subscribe({
     next: (result) => {
-      setTexts(result);
+      setTexts("value", reconcile(result));
     },
   });
 
@@ -66,7 +71,7 @@ export function MiningTab() {
   const textHistory = () => textHistoryQuery.data;
 
   const notInHistoryTexts = () =>
-    texts().filter((item) => {
+    texts.value.filter((item) => {
       return !textHistory().some((item_) => item_.uuid === item.uuid);
     });
 
@@ -93,7 +98,7 @@ export function MiningTab() {
   }
 
   const characterCount = () =>
-    texts()
+    texts.value
       .map((item) => getCharacterCount(item.text))
       .reduce((a, b) => a + b, 0);
 
@@ -113,14 +118,6 @@ export function MiningTab() {
     if (timer() === 0) return 0; // prevent division by zero
     return Math.round((characterCount() / timer()) * 60 * 60);
   };
-
-  createEffect(() => {
-    if (!timerRunning()) return; // if paused, do nothing
-    const interval = setInterval(() => {
-      setTimer((prev) => prev + 1);
-    }, 1000);
-    onCleanup(() => clearInterval(interval)); // auto-clears when paused or unmounted
-  });
 
   onMount(async () => {
     ipcRenderer.on("mining:sendReplayBufferStartTime", ({ time }) => {
@@ -209,7 +206,7 @@ export function MiningTab() {
             </IconButton>
           )}
           onConfirm={() => {
-            setTimer(0);
+            setLocalStore("texthookerTimer", 0);
             texthoookerDB.text.clear();
             appToaster.create({
               description: "Stats have been reset.",
@@ -228,7 +225,7 @@ export function MiningTab() {
         ref={textContainerRef}
         class="custom-scrollbar"
       >
-        <For each={texts()}>
+        <For each={texts.value}>
           {(item) => {
             return (
               <HStack
