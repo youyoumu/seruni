@@ -11,12 +11,14 @@ import { NumberInput } from "#/components/ui/number-input";
 import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
 import { appToaster } from "../AppToaster";
 
-const defaultAnkiConfig = { ...defaultConfig.anki };
+const defaultAnkiConfig = defaultConfig.anki;
 
 export function Anki() {
   const configQuery = SettingsQuery.ConfigQuery.detail.use();
   const configMutation = SettingsMutation.ConfigMutation.setConfig();
-  const [ankiConfig, setAnkiConfig] = createStore({ ...defaultAnkiConfig });
+  const [ankiConfig, setAnkiConfig] = createStore(
+    structuredClone(defaultAnkiConfig),
+  );
 
   const mutateConfigDebounce = debounce((payload: typeof ankiConfig) => {
     configMutation.mutate(

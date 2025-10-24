@@ -1,34 +1,52 @@
-import { zConfig } from "@repo/preload/ipc";
+import { defaultConfig } from "@repo/preload/ipc";
+import { debounce } from "es-toolkit";
 import { UndoIcon } from "lucide-solid";
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect } from "solid-js";
+import { createStore } from "solid-js/store";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { appToaster } from "../AppToaster";
 
-const defaultObsConfig = zConfig.shape.obs.parse({});
+const defaultObsConfig = defaultConfig.obs;
 
 export function OBS() {
-  const [obsWebSocketPort, setObsWebSocketPort] = createSignal(
-    defaultObsConfig.obsWebSocketPort,
+  const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const configMutation = SettingsMutation.ConfigMutation.setConfig();
+  const [obsConfig, setObsConfig] = createStore(
+    structuredClone(defaultObsConfig),
   );
+
+  const mutateConfigDebounce = debounce((payload: typeof obsConfig) => {
+    configMutation.mutate(
+      { obs: payload },
+      {
+        onSuccess: () => {
+          appToaster.success({ title: "OBS Settings Saved" });
+        },
+        onError: () => {
+          appToaster.error({ title: "Failed to save OBS Settings" });
+        },
+      },
+    );
+  }, 1000);
 
   let ready = false;
   createEffect(() => {
-    const payload = {
-      obsWebSocketPort: obsWebSocketPort(),
-    };
-    if (!ready) return;
-    ipcRenderer.send("settings:setSettings", {
-      obs: payload,
-    });
-  });
-
-  onMount(async () => {
-    const settings = (await ipcRenderer.invoke("settings:getConfig")).obs;
-    setObsWebSocketPort(settings.obsWebSocketPort);
-
-    ready = true;
+    const newConfig = configQuery.data?.obs;
+    if (!configQuery.isPlaceholderData && newConfig) {
+      setObsConfig(newConfig);
+      createEffect(() => {
+        const payload = { ...obsConfig };
+        if (!ready) {
+          ready = true;
+          return;
+        }
+        mutateConfigDebounce(payload);
+      });
+    }
   });
 
   return (
@@ -46,10 +64,10 @@ export function OBS() {
       <Grid gap="4" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
         <HStack alignItems="end">
           <NumberInput
-            value={obsWebSocketPort().toString()}
+            value={obsConfig.obsWebSocketPort.toString()}
             clampValueOnBlur
             onValueChange={(e) => {
-              setObsWebSocketPort(e.valueAsNumber);
+              setObsConfig("obsWebSocketPort", e.valueAsNumber);
             }}
             min={1023}
             max={65535}
@@ -59,12 +77,15 @@ export function OBS() {
           </NumberInput>
           <IconButton
             variant={
-              obsWebSocketPort() === defaultObsConfig.obsWebSocketPort
+              obsConfig.obsWebSocketPort === defaultObsConfig.obsWebSocketPort
                 ? "subtle"
                 : "solid"
             }
             onClick={() => {
-              setObsWebSocketPort(defaultObsConfig.obsWebSocketPort);
+              setObsConfig(
+                "obsWebSocketPort",
+                defaultObsConfig.obsWebSocketPort,
+              );
             }}
           >
             <UndoIcon />
