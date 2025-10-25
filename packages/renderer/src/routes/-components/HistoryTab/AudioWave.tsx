@@ -3,6 +3,7 @@ import {
   AudioLinesIcon,
   PauseIcon,
   PlayIcon,
+  RatIcon,
 } from "lucide-solid";
 import {
   createEffect,
@@ -18,8 +19,10 @@ import { Box, HStack, Stack } from "styled-system/jsx";
 import { token } from "styled-system/tokens";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
+import { Flip } from "#/components/Flip";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
+import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
@@ -117,55 +120,81 @@ export function AudioWaveMenu(props: {
   const [playing, setPlaying] = createSignal(false);
 
   return (
-    <Stack alignItems="start" gap="2">
-      <HStack>
-        <Show when={props.hidePlayButton !== true}>
-          <IconButton
-            size="xs"
-            onClick={() => {
-              setPlaying(!playing());
-            }}
-          >
-            <Switch>
-              <Match when={!playing()}>
-                <PlayIcon></PlayIcon>
-              </Match>
+    <Switch>
+      <Match when={!!noteMediaSrc.fileName()}>
+        <Stack alignItems="start" gap="2">
+          <HStack>
+            <Show when={props.hidePlayButton !== true}>
+              <IconButton
+                size="xs"
+                onClick={() => {
+                  setPlaying(!playing());
+                }}
+              >
+                <Switch>
+                  <Match when={!playing()}>
+                    <PlayIcon></PlayIcon>
+                  </Match>
 
-              <Match when={playing()}>
-                <PauseIcon></PauseIcon>
-              </Match>
-            </Switch>
-          </IconButton>
-        </Show>
-        <Show when={props.hideEditButton !== true}>
-          <EditAudioButton />
-        </Show>
-        <Show when={props.hideSelectButton !== true}>
-          <IconButton
-            size="xs"
-            onClick={() => {
-              props.onSelectClick();
-            }}
-          >
-            <ArrowRightIcon />
-          </IconButton>
-        </Show>
-      </HStack>
+                  <Match when={playing()}>
+                    <PauseIcon></PauseIcon>
+                  </Match>
+                </Switch>
+              </IconButton>
+            </Show>
+            <Show when={props.hideEditButton !== true}>
+              <EditAudioButton />
+            </Show>
+            <Show when={props.hideSelectButton !== true}>
+              <IconButton
+                size="xs"
+                onClick={() => {
+                  props.onSelectClick();
+                }}
+              >
+                <ArrowRightIcon />
+              </IconButton>
+            </Show>
+          </HStack>
 
-      <Text size="sm" color="fg.muted">
-        {noteMediaSrc.fileName()}
-      </Text>
-      <Box
-        w="full"
-        p="2"
-        rounded="sm"
-        outlineColor={props.isSelected ? "colorPalette.default" : "transparent"}
-        outlineWidth="medium"
-        outlineStyle="solid"
-      >
-        <AudioWave playing={playing()} />
-      </Box>
-    </Stack>
+          <Text size="sm" color="fg.muted">
+            {noteMediaSrc.fileName()}
+          </Text>
+          <Box
+            w="full"
+            py="2"
+            rounded="sm"
+            outlineColor={
+              props.isSelected ? "colorPalette.default" : "transparent"
+            }
+            outlineWidth="medium"
+            outlineStyle="solid"
+          >
+            <AudioWave playing={playing()} />
+          </Box>
+        </Stack>
+      </Match>
+      <Match when={!noteMediaSrc.fileName()}>
+        <Stack
+          bg="bg.subtle"
+          w="full"
+          h="20"
+          rounded="sm"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <Flip>
+            <Icon
+              color="fg.muted"
+              width="12"
+              height="12"
+              strokeWidth="1"
+              asChild={(iconProps) => <RatIcon {...iconProps()} />}
+            />
+          </Flip>
+        </Stack>
+      </Match>
+    </Switch>
   );
 }
 
