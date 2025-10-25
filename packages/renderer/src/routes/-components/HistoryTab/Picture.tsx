@@ -4,8 +4,10 @@ import {
   createEffect,
   createSignal,
   type JSX,
+  Match,
   type ParentProps,
   Show,
+  Switch,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
@@ -66,7 +68,8 @@ export function PictureMenu(props: {
     () => noteMediaSrc.fileName(),
     () => noteMediaSrc.source(),
   );
-  const src = () => mediaUrlQuery.data ?? "";
+  const src = () =>
+    noteMediaSrc.fileName() ? (mediaUrlQuery.data ?? "") : undefined;
   const [error, setError] = createSignal(false);
 
   return (
@@ -123,7 +126,7 @@ export function PictureMenu(props: {
 }
 
 export function ImageWithFallback(props: {
-  src: string;
+  src: string | undefined;
   image: (
     props: () => ParentProps<JSX.ImgHTMLAttributes<HTMLImageElement>>,
   ) => JSX.Element;
@@ -132,15 +135,19 @@ export function ImageWithFallback(props: {
   const [loaded, setLoaded] = createSignal(srcSet.has(props.src));
   const [error, setError] = createSignal(false);
   createEffect(() => {
-    props.src;
-    setError(false);
+    if (props.src) {
+      setError(false);
+    } else {
+      setError(true);
+    }
   });
   createEffect(() => {
     props.onErrorChange?.(error());
   });
+
   return (
-    <>
-      <Show when={!error() || !props.src}>
+    <Switch>
+      <Match when={!error() && !!props.src}>
         {props.image(() => ({
           style: {
             display: loaded() ? "block" : "none",
@@ -153,8 +160,8 @@ export function ImageWithFallback(props: {
             setError(true);
           },
         }))}
-      </Show>
-      <Show when={!loaded() && !error()}>
+      </Match>
+      <Match when={!loaded() && !error() && !!props.src}>
         <Stack
           class={css({
             rounded: "sm",
@@ -168,8 +175,8 @@ export function ImageWithFallback(props: {
         >
           <Spinner size="lg" />
         </Stack>
-      </Show>
-      <Show when={error()}>
+      </Match>
+      <Match when={error() || !props.src}>
         <Stack
           class={css({
             rounded: "sm",
@@ -192,8 +199,8 @@ export function ImageWithFallback(props: {
             />
           </Flip>
         </Stack>
-      </Show>
-    </>
+      </Match>
+    </Switch>
   );
 }
 
