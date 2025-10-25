@@ -19,6 +19,7 @@
     "@solid-primitives/destructure": "^0.2.2",
     "@solid-primitives/event-listener": "^2.4.3",
     "@solid-primitives/idle": "^0.2.2",
+    "@solid-primitives/intersection-observer": "^2.2.2",
     "@solid-primitives/lifecycle": "^0.1.2",
     "@solid-primitives/media": "^2.3.3",
     "@solid-primitives/resize-observer": "^2.1.3",

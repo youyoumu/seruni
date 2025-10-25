@@ -184,6 +184,8 @@ export function AudioWaveMenu(props: {
       </Match>
       <Match when={!noteMediaSrc.fileName()}>
         <Stack
+          borderColor="border.default"
+          borderWidth="thin"
           bg="bg.subtle"
           w="full"
           h="20"
@@ -221,8 +223,6 @@ function EditAudioButton() {
     start: 0,
     end: 3000,
   });
-
-  inspect(trimData);
 
   const trimAudioMutation = MiningMutation.AnkiMutation.trimAudio();
   function trimAudio() {

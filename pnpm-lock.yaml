@@ -219,6 +219,9 @@ importers:
       '@solid-primitives/idle':
         specifier: ^0.2.2
         version: 0.2.2(solid-js@1.9.9)
+      '@solid-primitives/intersection-observer':
+        specifier: ^2.2.2
+        version: 2.2.2(solid-js@1.9.9)
       '@solid-primitives/lifecycle':
         specifier: ^0.1.2
         version: 0.1.2(solid-js@1.9.9)
@@ -1491,6 +1494,11 @@ packages:
 
   '@solid-primitives/idle@0.2.2':
     resolution: {integrity: sha512-1JJ4D91r7uE4aTrv/uO6XYgBlmddwrKGMElmJH0f72cNxtDHoHaGnhDgRIsQ/Tn7lg05JIGzfejGUT2MZlPuKw==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/intersection-observer@2.2.2':
+    resolution: {integrity: sha512-5Vak/eRuCKAQis+YaPsP4KysPc+sQGL2ew8kvTOMxKVOTJcICkxznRrlFEBbBk0UsiUQlm9CcVQtJwocKWNXcw==}
     peerDependencies:
       solid-js: ^1.6.12
 
@@ -5836,6 +5844,11 @@ snapshots:
 
   '@solid-primitives/idle@0.2.2(solid-js@1.9.9)':
     dependencies:
+      solid-js: 1.9.9
+
+  '@solid-primitives/intersection-observer@2.2.2(solid-js@1.9.9)':
+    dependencies:
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.9)
       solid-js: 1.9.9
 
   '@solid-primitives/keyboard@1.3.3(solid-js@1.9.9)':

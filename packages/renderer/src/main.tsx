@@ -5,6 +5,7 @@ import { routeTree } from "./routeTree.gen";
 import "./lib/hmr";
 import "./lib/log";
 import "./index.css";
+import { keyStore } from "./lib/query/_util";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +40,13 @@ function App() {
   );
 }
 
-const rootElement = document.getElementById("app");
-if (rootElement) {
-  render(() => <App />, rootElement);
-}
+queryClient
+  .fetchQuery({
+    ...keyStore["general:httpServerUrl"].value,
+  })
+  .then(() => {
+    const rootElement = document.getElementById("app");
+    if (rootElement) {
+      render(() => <App />, rootElement);
+    }
+  });

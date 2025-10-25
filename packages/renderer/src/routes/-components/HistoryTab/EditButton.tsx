@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from "lucide-solid";
-import { createSelector, For } from "solid-js";
+import { createSelector, createSignal, For } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
@@ -18,6 +18,7 @@ import {
 import { PictureMenu } from "./Picture";
 
 export function EditButton() {
+  const [open, setOpen] = createSignal(false);
   const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
   const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
@@ -47,8 +48,15 @@ export function EditButton() {
   return (
     <NoteFormContextProvider value={[noteForm, setNoteForm]}>
       <Dialog.Root
-        lazyMount
-        // open={availablePictures().length > 0}
+        lazyMount={false}
+        open={open()}
+        onOpenChange={(e) => {
+          setOpen(e.open);
+          if (!e.open) {
+            setNoteForm("picture", undefined);
+            setNoteForm("sentenceAudio", undefined);
+          }
+        }}
       >
         <Dialog.Trigger
           asChild={(triggerProps) => {
@@ -218,11 +226,13 @@ export function EditButton() {
                 borderTopWidth="thin"
                 borderColor="border.default"
               >
-                <Dialog.Trigger
-                  asChild={(triggerProps) => {
-                    return <Button {...triggerProps()}>Cancel</Button>;
+                <Button
+                  onClick={() => {
+                    setOpen(false);
                   }}
-                />
+                >
+                  Cancel
+                </Button>
                 <Button
                   disabled={
                     noteForm.picture === undefined &&

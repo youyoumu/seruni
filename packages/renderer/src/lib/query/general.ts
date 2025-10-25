@@ -18,6 +18,7 @@ const HttpServerUrlQuery = {
     options: (fileName: string | undefined, source: "anki" | "storage") => {
       return queryOptions({
         ...keyStore["general:httpServerUrl"].value,
+        placeholderData: { url: window.location.origin },
         select: ({ url }) => {
           if (fileName === undefined) return undefined;
           switch (source) {
