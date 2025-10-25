@@ -46,7 +46,10 @@ export function EditButton() {
 
   return (
     <NoteFormContextProvider value={[noteForm, setNoteForm]}>
-      <Dialog.Root lazyMount open={availablePictures().length > 0}>
+      <Dialog.Root
+        lazyMount
+        // open={availablePictures().length > 0}
+      >
         <Dialog.Trigger
           asChild={(triggerProps) => {
             return (
@@ -66,7 +69,7 @@ export function EditButton() {
                 overflow="auto"
                 class="custom-scrollbar"
                 style={{
-                  "max-height": "calc(100vh - 110px)",
+                  "max-height": "calc(90vh - 110px)",
                 }}
               >
                 <HStack>
