@@ -8,11 +8,14 @@ import {
   Show,
   Suspense,
 } from "solid-js";
+import { createStore } from "solid-js/store";
 import { Portal } from "solid-js/web";
 import { css, cva } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
+import { Heading } from "#/components/ui/heading";
+import { Switch as Toggle } from "#/components/ui/switch";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningQuery } from "#/lib/query/mining";
 import { AudioWave } from "./AudioWave";
@@ -44,7 +47,25 @@ export function EditButton() {
     return a.fileName === b.fileName && a.source === b.source;
   });
 
-  createEffect(() => {});
+  const [updateNoteForm, setUpdateNoteForm] = createStore({
+    updatePicture: false,
+    updatePictureData: {
+      fileName: "",
+    },
+    updateSentenceAudio: false,
+    updateSentenceAudioData: {
+      fileName: "",
+    },
+  });
+
+  createEffect(() => {
+    if (!updateNoteForm.updatePicture) {
+      setSelectedMediaSrc({
+        fileName: note.picture,
+        source: "anki",
+      });
+    }
+  });
 
   return (
     <Suspense>
@@ -61,7 +82,7 @@ export function EditButton() {
         <Dialog.Backdrop />
         <Portal mount={document.querySelector("#app") ?? document.body}>
           <Dialog.Positioner p="4">
-            <Dialog.Content w="full" maxW="5xl">
+            <Dialog.Content w="full" maxW="5xl" bg="bg.canvas">
               <Stack
                 p="8"
                 gap="8"
@@ -71,6 +92,15 @@ export function EditButton() {
                   "max-height": "calc(100vh - 110px)",
                 }}
               >
+                <HStack>
+                  <Heading size="2xl">Update Picture</Heading>
+                  <Toggle
+                    checked={updateNoteForm.updatePicture}
+                    onCheckedChange={(e) => {
+                      setUpdateNoteForm("updatePicture", e.checked);
+                    }}
+                  ></Toggle>
+                </HStack>
                 <HStack justifyContent="center" maxH="64">
                   <MediaSrcContextProvider
                     value={createSignal<NoteMediaSrc>({
@@ -136,6 +166,7 @@ export function EditButton() {
                                   fileName: item.fileName,
                                   source: "storage",
                                 });
+                                setUpdateNoteForm("updatePicture", true);
                               }}
                             />
                           </Box>
@@ -144,6 +175,16 @@ export function EditButton() {
                     }}
                   </For>
                 </Grid>
+
+                <HStack>
+                  <Heading size="2xl">Update Sentence Audio</Heading>
+                  <Toggle
+                    checked={updateNoteForm.updateSentenceAudio}
+                    onCheckedChange={(e) => {
+                      setUpdateNoteForm("updateSentenceAudio", e.checked);
+                    }}
+                  ></Toggle>
+                </HStack>
                 <AudioWave url={sentenceAudioMediaUrlQuery.data} />
               </Stack>
               <HStack
