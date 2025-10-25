@@ -1,4 +1,4 @@
-import type { NoteMediaSrc, SelectionData } from "@repo/preload/ipc";
+import type { NoteMediaSrc, SelectionData, TrimData } from "@repo/preload/ipc";
 import {
   queryOptions,
   useMutation,
@@ -75,7 +75,8 @@ const AnkiHistoryQuery = {
     use: () => {
       const query = useQuery(() => {
         const clientStatus = GeneralQuery.ClientStatusQuery.detail.use();
-        return { ...AnkiHistoryQuery.data.options(), enabled: () => untrack(() => clientStatus.data.anki === "connected"), };
+        clientStatus.dataUpdatedAt
+        return { ...AnkiHistoryQuery.data.options(), enabled: untrack(() => clientStatus.data.anki === "connected"), };
       });
       return queryWithPlaceholderData(query, []);
     },
@@ -88,17 +89,25 @@ const AnkiMutation = {
     useMutation(() => {
       const qc = useQueryClient();
       return {
-        mutationFn: async (payload: {
-          noteId: number;
-          mediaSrc: NoteMediaSrc;
-          selectionData: SelectionData;
-        }) => {
-          await ipcRenderer.invoke(
-            "mining:cropPicture",
-            payload.noteId,
-            payload.mediaSrc,
-            payload.selectionData,
-          );
+        mutationFn: async (payload: { noteId: number; mediaSrc: NoteMediaSrc; selectionData: SelectionData; }) => {
+          await ipcRenderer.invoke( "mining:cropPicture", payload.noteId, payload.mediaSrc, payload.selectionData,);
+          return { noteId: payload.noteId };
+        },
+        onSuccess: async (data) => {
+          await Promise.all([
+            qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey, }),
+          ]);
+        },
+      };
+    }),
+
+  // biome-ignore format: this looks nicer
+  trimAudio: () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: async (payload: { noteId: number; mediaSrc: NoteMediaSrc; trimData: TrimData; }) => {
+          await ipcRenderer.invoke( "mining:trimAudio", payload.noteId, payload.mediaSrc, payload.trimData,);
           return { noteId: payload.noteId };
         },
         onSuccess: async (data) => {

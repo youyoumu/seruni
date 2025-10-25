@@ -26,10 +26,14 @@ import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
-import { useNoteMediaSrcContext } from "./Context";
+import { MiningMutation } from "#/lib/query/mining";
+import { inspect } from "#/lib/util";
+import { appToaster } from "../AppToaster";
+import { useNoteContext, useNoteMediaSrcContext } from "./Context";
 
 function AudioWave(props: {
   playing: boolean;
+  onPause: () => void;
   height?: number;
   trim?: boolean;
   trimDataSignal?: Signal<{ start: number; end: number }>;
@@ -44,7 +48,7 @@ function AudioWave(props: {
     props.trimDataSignal ??
     createSignal({
       start: 0,
-      end: 3,
+      end: 3000,
     });
   let containerEl: HTMLDivElement | undefined;
 
@@ -75,8 +79,8 @@ function AudioWave(props: {
     wavesurfer.on("decode", () => {
       if (!props.trim) return;
       regions.addRegion({
-        start: trimData().start,
-        end: trimData().end,
+        start: trimData().start / 1000,
+        end: trimData().end / 1000,
         minLength: 1.5,
         content: content,
         color: token("colors.gray.dark.a5"),
@@ -85,10 +89,14 @@ function AudioWave(props: {
       });
       regions.on("region-updated", (region) => {
         setTrimData({
-          start: region.start,
-          end: region.end,
+          start: region.start * 1000,
+          end: region.end * 1000,
         });
       });
+    });
+
+    wavesurfer.on("pause", () => {
+      props.onPause();
     });
 
     onCleanup(() => wavesurfer?.destroy());
@@ -170,7 +178,7 @@ export function AudioWaveMenu(props: {
             outlineWidth="medium"
             outlineStyle="solid"
           >
-            <AudioWave playing={playing()} />
+            <AudioWave playing={playing()} onPause={() => setPlaying(false)} />
           </Box>
         </Stack>
       </Match>
@@ -199,6 +207,8 @@ export function AudioWaveMenu(props: {
 }
 
 function EditAudioButton() {
+  const [open, setOpen] = createSignal(false);
+  const note = useNoteContext();
   const noteMediaSrc = useNoteMediaSrcContext();
   const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
     () => noteMediaSrc.fileName(),
@@ -209,11 +219,48 @@ function EditAudioButton() {
 
   const [trimData, setTrimData] = createSignal<{ start: number; end: number }>({
     start: 0,
-    end: 3,
+    end: 3000,
   });
 
+  inspect(trimData);
+
+  const trimAudioMutation = MiningMutation.AnkiMutation.trimAudio();
+  function trimAudio() {
+    const fileName = noteMediaSrc.fileName();
+    const source = noteMediaSrc.source();
+    if (!fileName || !source) return;
+    appToaster.promise(
+      trimAudioMutation.mutateAsync(
+        {
+          noteId: note.id,
+          mediaSrc: { fileName, source },
+          trimData: trimData(),
+        },
+        {
+          onSuccess: () => {
+            setOpen(false);
+          },
+        },
+      ),
+      {
+        loading: {
+          title: "Trimming audio...",
+          description: `${fileName}`,
+        },
+        error: {
+          title: "Failed to trim audio",
+          description: `${fileName}`,
+        },
+        success: {
+          title: "Audio trimmed",
+          description: `${fileName}`,
+        },
+      },
+    );
+  }
+
   return (
-    <Dialog.Root lazyMount>
+    <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger
         asChild={(triggerProps) => {
           return (
@@ -230,6 +277,7 @@ function EditAudioButton() {
             <Stack alignItems="start" gap="4">
               <Box p="8" w="full">
                 <AudioWave
+                  onPause={() => setPlaying(false)}
                   playing={playing()}
                   height={128}
                   trim
@@ -262,7 +310,14 @@ function EditAudioButton() {
                     </Match>
                   </Switch>
                 </IconButton>
-                <Button>Copy and Save</Button>
+                <Button
+                  loading={trimAudioMutation.isPending}
+                  onClick={() => {
+                    trimAudio();
+                  }}
+                >
+                  Copy and Save
+                </Button>
               </HStack>
             </Stack>
           </Dialog.Content>

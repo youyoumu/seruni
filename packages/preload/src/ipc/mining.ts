@@ -41,10 +41,16 @@ export const zSelectionData = z.object({
   height: z.number(),
 });
 
+export const zTrimData = z.object({
+  start: z.number(),
+  end: z.number(),
+});
+
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 export type NoteMedia = z.infer<typeof zNoteMedia>;
 export type NoteMediaSrc = z.infer<typeof zNoteMediaSrc>;
 export type SelectionData = z.infer<typeof zSelectionData>;
+export type TrimData = z.infer<typeof zTrimData>;
 
 export const zMiningIPC = {
   main: z.object({
@@ -127,6 +133,10 @@ export const zMiningIPC = {
     }),
     "mining:cropPicture": z.object({
       input: z.tuple([z.number(), zNoteMediaSrc, zSelectionData]),
+      output: z.void(),
+    }),
+    "mining:trimAudio": z.object({
+      input: z.tuple([z.number(), zNoteMediaSrc, zTrimData]),
       output: z.void(),
     }),
   }),

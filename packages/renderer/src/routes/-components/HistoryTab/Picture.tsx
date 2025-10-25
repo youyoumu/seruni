@@ -247,15 +247,15 @@ export function PictureWithZoom(props: {
       {
         loading: {
           title: "Cropping picture...",
-          description: `${noteMediaSrc.fileName}`,
+          description: `${fileName}`,
         },
         error: {
           title: "Failed to crop picture",
-          description: `${noteMediaSrc.fileName}`,
+          description: `${fileName}`,
         },
         success: {
           title: "Picture cropped",
-          description: `${noteMediaSrc.fileName}`,
+          description: `${fileName}`,
         },
       },
     );

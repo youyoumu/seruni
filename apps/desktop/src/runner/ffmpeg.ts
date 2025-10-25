@@ -87,6 +87,8 @@ class FFmpeg {
     y = Math.floor(y);
     width = Math.floor(width);
     height = Math.floor(height);
+    seek = Math.floor(seek);
+    duration = duration === undefined ? undefined : Math.floor(duration);
 
     const params = {
       wav: [

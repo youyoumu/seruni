@@ -13,9 +13,7 @@ import { IPC } from "./base";
 class MiningIPC extends IPC()<"mining"> {
   stopScopes = new Set<() => void>();
   constructor() {
-    super({
-      prefix: "mining",
-    });
+    super({ prefix: "mining" });
   }
 
   override register() {
@@ -75,6 +73,7 @@ class MiningIPC extends IPC()<"mining"> {
     });
 
     this.handle("mining:getAnkiHistory", async () => {
+      if (!ankiClient().client) throw new Error("Anki client not connected");
       const noteIds = await ankiClient().client?.note.findNotes({
         query: `tag:${env.APP_NAME}`,
       });
@@ -123,15 +122,9 @@ class MiningIPC extends IPC()<"mining"> {
           return false;
         }
         if (checked) {
-          await client.note.addTags({
-            notes: [noteId],
-            tags: "NSFW",
-          });
+          await client.note.addTags({ notes: [noteId], tags: "NSFW" });
         } else {
-          await client.note.removeTags({
-            notes: [noteId],
-            tags: "NSFW",
-          });
+          await client.note.removeTags({ notes: [noteId], tags: "NSFW" });
         }
         log.debug({ noteId, checked }, "Note NSFW tag updated");
         return true;
@@ -171,12 +164,36 @@ class MiningIPC extends IPC()<"mining"> {
         });
         await mainDB().insertNoteAndMedia({
           noteId,
-          media: [
-            {
-              filePath,
-              type: "picture",
-            },
-          ],
+          media: [{ filePath, type: "picture" }],
+        });
+      },
+    );
+
+    this.handle(
+      "mining:trimAudio",
+      async (_, noteId, { fileName, source }, trimData) => {
+        const inputPath = () => {
+          if (source === "anki") {
+            const ankiMediaDir = ankiClient().mediaDir;
+            if (!ankiMediaDir)
+              throw new Error(
+                "Anki media dir not found, is AnkiConnect running?",
+              );
+            return join(ankiMediaDir, fileName);
+          } else {
+            return join(env.STORAGE_PATH, fileName);
+          }
+        };
+        log.debug({ inputPath: inputPath(), trimData }, "Trimming audio");
+        const filePath = await ffmpeg().process({
+          inputPath: inputPath(),
+          format: "opus",
+          seek: trimData.start,
+          duration: trimData.end - trimData.start,
+        });
+        await mainDB().insertNoteAndMedia({
+          noteId,
+          media: [{ filePath, type: "sentenceAudio" }],
         });
       },
     );
