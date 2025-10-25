@@ -1,32 +1,64 @@
-import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { css } from "styled-system/css";
-import { Box, Stack } from "styled-system/jsx";
+import {
+  ArrowRightIcon,
+  AudioLinesIcon,
+  PauseIcon,
+  PlayIcon,
+} from "lucide-solid";
+import {
+  createEffect,
+  createSignal,
+  Match,
+  onCleanup,
+  Show,
+  type Signal,
+  Switch,
+} from "solid-js";
+import { Portal } from "solid-js/web";
+import { Box, HStack, Stack } from "styled-system/jsx";
 import { token } from "styled-system/tokens";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
 import { Button } from "#/components/ui/button";
+import { Dialog } from "#/components/ui/dialog";
+import { IconButton } from "#/components/ui/icon-button";
+import { Switch as Toggle } from "#/components/ui/switch";
+import { Text } from "#/components/ui/text";
+import { GeneralQuery } from "#/lib/query/general";
+import { useMediaSrcContext } from "./MediaSrcContext";
 
-const regions = RegionsPlugin.create();
-
-export function AudioWave(props: { url: string | undefined }) {
-  const [trimData, setTrimData] = createSignal<{ start: number; end: number }>({
-    start: 0,
-    end: 3,
-  });
+function AudioWave(props: {
+  url: string | undefined;
+  playing: boolean;
+  height?: number;
+  trim?: boolean;
+  trimDataSignal?: Signal<{ start: number; end: number }>;
+}) {
+  const [trimData, setTrimData] =
+    props.trimDataSignal ??
+    createSignal({
+      start: 0,
+      end: 3,
+    });
   let containerEl: HTMLDivElement | undefined;
-  const [playing, setPlaying] = createSignal(false);
 
   let wavesurfer: WaveSurfer | undefined;
+  const regions = RegionsPlugin.create();
 
-  onMount(() => {
+  function setupWaveSurfer() {
+    const url = props.url;
     if (!containerEl) return;
     wavesurfer = WaveSurfer.create({
       container: containerEl,
-      waveColor: token("colors.amber.dark.a10"),
+      waveColor: token("colors.amber.dark.a9"),
       progressColor: token("colors.gray.dark.a8"),
-      url: props.url,
+      url,
       plugins: [regions],
       dragToSeek: true,
+      height: props.height ?? 64,
+      normalize: true,
+      barWidth: 4,
+      barGap: 1,
+      barRadius: 10,
     });
 
     const content = document.createElement("div");
@@ -35,6 +67,7 @@ export function AudioWave(props: { url: string | undefined }) {
     content.innerText = "Trim";
 
     wavesurfer.on("decode", () => {
+      if (!props.trim) return;
       regions.addRegion({
         start: trimData().start,
         end: trimData().end,
@@ -53,27 +86,163 @@ export function AudioWave(props: { url: string | undefined }) {
     });
 
     onCleanup(() => wavesurfer?.destroy());
+  }
+
+  createEffect(() => {
+    setupWaveSurfer();
   });
 
   createEffect(() => {
-    if (playing()) wavesurfer?.play();
-    if (!playing()) wavesurfer?.pause();
+    if (props.playing) wavesurfer?.play();
+    if (!props.playing) wavesurfer?.pause();
   });
 
   createEffect(() => {
     console.log(trimData());
   });
 
+  return <Box ref={containerEl} w="full" />;
+}
+
+export function AudioWaveMenu(props: {
+  isSelected: boolean;
+  onSelectClick: () => void;
+  hidePlayButton?: boolean;
+  hideEditButton?: boolean;
+  hideSelectButton?: boolean;
+}) {
+  const [mediaSrc] = useMediaSrcContext();
+  const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
+    () => mediaSrc().fileName,
+    () => mediaSrc().source,
+  );
+  const src = () => mediaUrlQuery.data ?? "";
+  const [playing, setPlaying] = createSignal(false);
+
   return (
-    <Stack>
-      <Box ref={containerEl} />
-      <Button
-        onClick={() => {
-          setPlaying(!playing());
-        }}
+    <Stack alignItems="start" gap="2">
+      <HStack>
+        <Show when={props.hidePlayButton !== true}>
+          <IconButton
+            size="xs"
+            onClick={() => {
+              setPlaying(!playing());
+            }}
+          >
+            <Switch>
+              <Match when={!playing()}>
+                <PlayIcon></PlayIcon>
+              </Match>
+
+              <Match when={playing()}>
+                <PauseIcon></PauseIcon>
+              </Match>
+            </Switch>
+          </IconButton>
+        </Show>
+        <Show when={props.hideEditButton !== true}>
+          <EditAudioButton />
+        </Show>
+        <Show when={props.hideSelectButton !== true}>
+          <IconButton
+            size="xs"
+            onClick={() => {
+              props.onSelectClick();
+            }}
+          >
+            <ArrowRightIcon />
+          </IconButton>
+        </Show>
+      </HStack>
+
+      <Text size="sm" color="fg.muted">
+        {mediaSrc().fileName}
+      </Text>
+      <Box
+        w="full"
+        p="2"
+        rounded="sm"
+        outlineColor={props.isSelected ? "colorPalette.default" : "transparent"}
+        outlineWidth="medium"
+        outlineStyle="solid"
       >
-        {playing() ? "Pause" : "Play"}
-      </Button>
+        <AudioWave url={src()} playing={playing()} />
+      </Box>
     </Stack>
+  );
+}
+
+function EditAudioButton() {
+  const [mediaSrc] = useMediaSrcContext();
+  const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
+    () => mediaSrc().fileName,
+    () => mediaSrc().source,
+  );
+  const src = () => mediaUrlQuery.data ?? "";
+  const [playing, setPlaying] = createSignal(false);
+
+  const [trimData, setTrimData] = createSignal<{ start: number; end: number }>({
+    start: 0,
+    end: 3,
+  });
+
+  return (
+    <Dialog.Root lazyMount>
+      <Dialog.Trigger
+        asChild={(triggerProps) => {
+          return (
+            <IconButton size="xs" {...triggerProps()}>
+              <AudioLinesIcon />
+            </IconButton>
+          );
+        }}
+      />
+      <Dialog.Backdrop />
+      <Portal mount={document.querySelector("#app") ?? document.body}>
+        <Dialog.Positioner p="4">
+          <Dialog.Content w="full" maxW="5xl" bg="bg.canvas">
+            <Stack alignItems="start" gap="4">
+              <Box p="8" w="full">
+                <AudioWave
+                  url={src()}
+                  playing={playing()}
+                  height={128}
+                  trim
+                  trimDataSignal={[trimData, setTrimData]}
+                />
+              </Box>
+              <HStack
+                alignItems="end"
+                justifyContent="end"
+                w="full"
+                p="4"
+                borderTopWidth="thin"
+                borderColor="border.default"
+              >
+                <Text size="sm" color="fg.muted">
+                  {src()}
+                </Text>
+                <IconButton
+                  onClick={() => {
+                    setPlaying(!playing());
+                  }}
+                >
+                  <Switch>
+                    <Match when={!playing()}>
+                      <PlayIcon></PlayIcon>
+                    </Match>
+
+                    <Match when={playing()}>
+                      <PauseIcon></PauseIcon>
+                    </Match>
+                  </Switch>
+                </IconButton>
+                <Button>Copy and Save</Button>
+              </HStack>
+            </Stack>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
   );
 }

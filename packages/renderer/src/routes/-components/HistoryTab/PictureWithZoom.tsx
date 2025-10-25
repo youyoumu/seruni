@@ -16,6 +16,7 @@ import { PictureCropper } from "./PictureCropper";
 export function PictureWithZoom(props: {
   src: string;
   trigger: (props: () => ParentProps) => JSX.Element;
+  hideButtons?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = createSignal(false);
@@ -127,43 +128,45 @@ export function PictureWithZoom(props: {
                     </Box>
                   </Box>
 
-                  <HStack justifyContent="end">
-                    <Button
-                      {...closeTriggerProps()}
-                      opacity="0"
-                      flex="1"
-                      cursor="default"
-                    >
-                      ""
-                    </Button>
-                    <Show when={editing()}>
+                  <Show when={props.hideButtons !== true}>
+                    <HStack justifyContent="end">
                       <Button
-                        onClick={() => {
-                          setEditing(false);
-                        }}
+                        {...closeTriggerProps()}
+                        opacity="0"
+                        flex="1"
+                        cursor="default"
                       >
-                        Cancel
+                        ""
                       </Button>
-                      <Button
-                        loading={cropPictureMutation.isPending}
-                        onClick={() => {
-                          cropPicture();
-                        }}
-                      >
-                        Copy and Save
-                      </Button>
-                    </Show>
-                    <Show when={!editing()}>
-                      <Button
-                        onClick={() => {
-                          setEditing(true);
-                        }}
-                      >
-                        Crop
-                        <CropIcon />
-                      </Button>
-                    </Show>
-                  </HStack>
+                      <Show when={editing()}>
+                        <Button
+                          onClick={() => {
+                            setEditing(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          loading={cropPictureMutation.isPending}
+                          onClick={() => {
+                            cropPicture();
+                          }}
+                        >
+                          Copy and Save
+                        </Button>
+                      </Show>
+                      <Show when={!editing()}>
+                        <Button
+                          onClick={() => {
+                            setEditing(true);
+                          }}
+                        >
+                          Crop
+                          <CropIcon />
+                        </Button>
+                      </Show>
+                    </HStack>
+                  </Show>
                 </Stack>
               )}
             />

@@ -18,7 +18,7 @@ import { Heading } from "#/components/ui/heading";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningQuery } from "#/lib/query/mining";
-import { AudioWave } from "./AudioWave";
+import { AudioWaveMenu } from "./AudioWave";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
@@ -30,22 +30,29 @@ export function EditButton() {
   const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
   const availablePictures = () =>
     noteMediaQuery.data.filter((m) => m.type === "picture");
-  const sentenceAudio = () =>
-    noteMediaQuery.data.find((m) => m.type === "sentenceAudio");
+  const availableSentenceAudios = () =>
+    noteMediaQuery.data.filter((m) => m.type === "sentenceAudio");
 
-  const sentenceAudioMediaUrlQuery =
-    GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
-      () => sentenceAudio()?.fileName,
-      () => "storage",
-    );
+  const [selectedPictureMedisSrc, setSelectedPictureMediaSrc] =
+    createSignal<NoteMediaSrc>({
+      fileName: note.picture,
+      source: "anki",
+    });
+  const [selectedSentenceAudioMedisSrc, setSelectedSentenceAudioMediaSrc] =
+    createSignal<NoteMediaSrc>({
+      fileName: note.sentenceAudio,
+      source: "anki",
+    });
 
-  const [selectedMedisSrc, setSelectedMediaSrc] = createSignal<NoteMediaSrc>({
-    fileName: note.picture,
-    source: "anki",
-  });
-  const isSelected = createSelector(selectedMedisSrc, (a, b) => {
+  const isPictureSelected = createSelector(selectedPictureMedisSrc, (a, b) => {
     return a.fileName === b.fileName && a.source === b.source;
   });
+  const isSentenceAudioSelected = createSelector(
+    selectedSentenceAudioMedisSrc,
+    (a, b) => {
+      return a.fileName === b.fileName && a.source === b.source;
+    },
+  );
 
   const [updateNoteForm, setUpdateNoteForm] = createStore({
     updatePicture: false,
@@ -60,7 +67,7 @@ export function EditButton() {
 
   createEffect(() => {
     if (!updateNoteForm.updatePicture) {
-      setSelectedMediaSrc({
+      setSelectedPictureMediaSrc({
         fileName: note.picture,
         source: "anki",
       });
@@ -98,6 +105,21 @@ export function EditButton() {
                     checked={updateNoteForm.updatePicture}
                     onCheckedChange={(e) => {
                       setUpdateNoteForm("updatePicture", e.checked);
+                      if (
+                        e.checked &&
+                        selectedPictureMedisSrc().fileName === note.picture &&
+                        selectedPictureMedisSrc().source === "anki"
+                      ) {
+                        const fileName = availablePictures()[0]?.fileName;
+                        if (fileName) {
+                          setSelectedPictureMediaSrc({
+                            fileName,
+                            source: "storage",
+                          });
+                        } else {
+                          setUpdateNoteForm("updatePicture", false);
+                        }
+                      }
                     }}
                   ></Toggle>
                 </HStack>
@@ -111,11 +133,11 @@ export function EditButton() {
                     <Box flex="1" bg="bg.subtle" rounded="sm">
                       <CurrentImage
                         isSelected={
-                          selectedMedisSrc().fileName === note.picture &&
-                          selectedMedisSrc().source === "anki"
+                          selectedPictureMedisSrc().fileName === note.picture &&
+                          selectedPictureMedisSrc().source === "anki"
                         }
                         onClick={() => {
-                          setSelectedMediaSrc({
+                          setSelectedPictureMediaSrc({
                             fileName: note.picture,
                             source: "anki",
                           });
@@ -135,7 +157,10 @@ export function EditButton() {
                     />
                   </Box>
                   <MediaSrcContextProvider
-                    value={[selectedMedisSrc, setSelectedMediaSrc]}
+                    value={[
+                      selectedPictureMedisSrc,
+                      setSelectedPictureMediaSrc,
+                    ]}
                   >
                     <Box flex="1" bg="bg.subtle" rounded="sm">
                       <SelectedImage />
@@ -157,12 +182,12 @@ export function EditButton() {
                         >
                           <Box bg="bg.subtle" rounded="sm">
                             <AvailableImage
-                              isSelected={isSelected({
+                              isSelected={isPictureSelected({
                                 fileName: item.fileName,
                                 source: "storage",
                               })}
                               onClick={() => {
-                                setSelectedMediaSrc({
+                                setSelectedPictureMediaSrc({
                                   fileName: item.fileName,
                                   source: "storage",
                                 });
@@ -175,6 +200,10 @@ export function EditButton() {
                     }}
                   </For>
                 </Grid>
+                <Box
+                  borderBottomWidth="thin"
+                  borderColor="border.default"
+                ></Box>
 
                 <HStack>
                   <Heading size="2xl">Update Sentence Audio</Heading>
@@ -185,7 +214,85 @@ export function EditButton() {
                     }}
                   ></Toggle>
                 </HStack>
-                <AudioWave url={sentenceAudioMediaUrlQuery.data} />
+                <HStack justifyContent="center" maxH="64" alignItems="end">
+                  <MediaSrcContextProvider
+                    value={createSignal<NoteMediaSrc>({
+                      fileName: note.sentenceAudio,
+                      source: "anki",
+                    })}
+                  >
+                    <Box flex="1">
+                      <AudioWaveMenu
+                        isSelected={isSentenceAudioSelected({
+                          fileName: note.sentenceAudio,
+                          source: "anki",
+                        })}
+                        onSelectClick={() => {
+                          setSelectedSentenceAudioMediaSrc({
+                            fileName: note.sentenceAudio,
+                            source: "anki",
+                          });
+                        }}
+                      />
+                    </Box>
+                  </MediaSrcContextProvider>
+
+                  <Box flexBasis="20">
+                    <ArrowRightIcon
+                      class={css({
+                        h: "full",
+                        w: "full",
+                        maxW: "20",
+                        color: "fg.subtle",
+                      })}
+                      strokeWidth="1"
+                    />
+                  </Box>
+                  <MediaSrcContextProvider
+                    value={[
+                      selectedSentenceAudioMedisSrc,
+                      setSelectedSentenceAudioMediaSrc,
+                    ]}
+                  >
+                    <Box flex="1">
+                      <AudioWaveMenu
+                        hideEditButton={
+                          selectedSentenceAudioMedisSrc().fileName ===
+                            note.sentenceAudio &&
+                          selectedSentenceAudioMedisSrc().source === "anki"
+                        }
+                        hideSelectButton={true}
+                        isSelected={false}
+                        onSelectClick={() => {}}
+                      />
+                    </Box>
+                  </MediaSrcContextProvider>
+                </HStack>
+                <For each={availableSentenceAudios()}>
+                  {(item) => {
+                    return (
+                      <MediaSrcContextProvider
+                        value={createSignal<NoteMediaSrc>({
+                          fileName: item.fileName,
+                          source: "storage",
+                        })}
+                      >
+                        <AudioWaveMenu
+                          isSelected={isSentenceAudioSelected({
+                            fileName: item.fileName,
+                            source: "storage",
+                          })}
+                          onSelectClick={() => {
+                            setSelectedSentenceAudioMediaSrc({
+                              fileName: item.fileName,
+                              source: "storage",
+                            });
+                          }}
+                        />
+                      </MediaSrcContextProvider>
+                    );
+                  }}
+                </For>
               </Stack>
               <HStack
                 justifyContent="end"
@@ -199,7 +306,14 @@ export function EditButton() {
                     return <Button {...triggerProps()}>Cancel</Button>;
                   }}
                 />
-                <Button>Update Note</Button>
+                <Button
+                  disabled={
+                    updateNoteForm.updatePicture === false &&
+                    updateNoteForm.updateSentenceAudio === false
+                  }
+                >
+                  Update Note
+                </Button>
               </HStack>
             </Dialog.Content>
           </Dialog.Positioner>
