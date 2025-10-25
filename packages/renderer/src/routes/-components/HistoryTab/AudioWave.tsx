@@ -21,18 +21,22 @@ import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
-import { Switch as Toggle } from "#/components/ui/switch";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
-import { useMediaSrcContext } from "./MediaSrcContext";
+import { useNoteMediaSrcContext } from "./Context";
 
 function AudioWave(props: {
-  url: string | undefined;
   playing: boolean;
   height?: number;
   trim?: boolean;
   trimDataSignal?: Signal<{ start: number; end: number }>;
 }) {
+  const noteMediaSrc = useNoteMediaSrcContext();
+  const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
+    () => noteMediaSrc.fileName(),
+    () => noteMediaSrc.source(),
+  );
+  const src = () => mediaUrlQuery.data ?? "";
   const [trimData, setTrimData] =
     props.trimDataSignal ??
     createSignal({
@@ -45,13 +49,12 @@ function AudioWave(props: {
   const regions = RegionsPlugin.create();
 
   function setupWaveSurfer() {
-    const url = props.url;
-    if (!containerEl) return;
+    if (!containerEl || !src()) return;
     wavesurfer = WaveSurfer.create({
       container: containerEl,
       waveColor: token("colors.amber.dark.a9"),
       progressColor: token("colors.gray.dark.a8"),
-      url,
+      url: src(),
       plugins: [regions],
       dragToSeek: true,
       height: props.height ?? 64,
@@ -89,6 +92,7 @@ function AudioWave(props: {
   }
 
   createEffect(() => {
+    src();
     setupWaveSurfer();
   });
 
@@ -97,9 +101,7 @@ function AudioWave(props: {
     if (!props.playing) wavesurfer?.pause();
   });
 
-  createEffect(() => {
-    console.log(trimData());
-  });
+  createEffect(() => {});
 
   return <Box ref={containerEl} w="full" />;
 }
@@ -111,12 +113,7 @@ export function AudioWaveMenu(props: {
   hideEditButton?: boolean;
   hideSelectButton?: boolean;
 }) {
-  const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
-    () => mediaSrc().fileName,
-    () => mediaSrc().source,
-  );
-  const src = () => mediaUrlQuery.data ?? "";
+  const noteMediaSrc = useNoteMediaSrcContext();
   const [playing, setPlaying] = createSignal(false);
 
   return (
@@ -156,7 +153,7 @@ export function AudioWaveMenu(props: {
       </HStack>
 
       <Text size="sm" color="fg.muted">
-        {mediaSrc().fileName}
+        {noteMediaSrc.fileName()}
       </Text>
       <Box
         w="full"
@@ -166,17 +163,17 @@ export function AudioWaveMenu(props: {
         outlineWidth="medium"
         outlineStyle="solid"
       >
-        <AudioWave url={src()} playing={playing()} />
+        <AudioWave playing={playing()} />
       </Box>
     </Stack>
   );
 }
 
 function EditAudioButton() {
-  const [mediaSrc] = useMediaSrcContext();
+  const noteMediaSrc = useNoteMediaSrcContext();
   const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
-    () => mediaSrc().fileName,
-    () => mediaSrc().source,
+    () => noteMediaSrc.fileName(),
+    () => noteMediaSrc.source(),
   );
   const src = () => mediaUrlQuery.data ?? "";
   const [playing, setPlaying] = createSignal(false);
@@ -204,7 +201,6 @@ function EditAudioButton() {
             <Stack alignItems="start" gap="4">
               <Box p="8" w="full">
                 <AudioWave
-                  url={src()}
                   playing={playing()}
                   height={128}
                   trim

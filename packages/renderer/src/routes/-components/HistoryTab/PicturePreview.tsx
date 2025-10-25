@@ -8,7 +8,7 @@ import { Switch as Toggle } from "#/components/ui/switch";
 import { GeneralQuery } from "#/lib/query/general";
 import { appToaster } from "../AppToaster";
 import { nsfwUpdateLock, srcSet } from "./_util";
-import { useNoteContext } from "./NoteContext";
+import { useNoteContext } from "./Context";
 
 export function PicturePreview() {
   const { HttpServerUrlQuery } = GeneralQuery;

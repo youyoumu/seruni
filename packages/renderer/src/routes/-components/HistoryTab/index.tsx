@@ -21,7 +21,7 @@ import { keyStore } from "#/lib/query/_util";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningQuery } from "#/lib/query/mining";
 import { AnkiCard } from "./AnkiCard";
-import { NoteContextProvider } from "./NoteContext";
+import { NoteContextProvider } from "./Context";
 
 export function HistoryTab() {
   const queryClient = useQueryClient();

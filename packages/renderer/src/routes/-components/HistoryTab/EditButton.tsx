@@ -1,28 +1,21 @@
-import type { NoteMediaSrc } from "@repo/preload/ipc";
-import { ArrowRightIcon, ZoomInIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSelector,
-  createSignal,
-  For,
-  Show,
-  Suspense,
-} from "solid-js";
+import { ArrowRightIcon } from "lucide-solid";
+import { createSelector, For } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Portal } from "solid-js/web";
-import { css, cva } from "styled-system/css";
+import { css } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { Heading } from "#/components/ui/heading";
-import { Switch as Toggle } from "#/components/ui/switch";
-import { GeneralQuery } from "#/lib/query/general";
 import { MiningQuery } from "#/lib/query/mining";
 import { AudioWaveMenu } from "./AudioWave";
-import { ImageWithFallback } from "./ImageWithFallback";
-import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
-import { useNoteContext } from "./NoteContext";
-import { PictureWithZoom } from "./PictureWithZoom";
+import {
+  type NoteForm,
+  NoteFormContextProvider,
+  NoteMediaSrcContextProvider,
+  useNoteContext,
+} from "./Context";
+import { PictureMenu } from "./Picture";
 
 export function EditButton() {
   const { NoteMediaQuery } = MiningQuery;
@@ -33,49 +26,26 @@ export function EditButton() {
   const availableSentenceAudios = () =>
     noteMediaQuery.data.filter((m) => m.type === "sentenceAudio");
 
-  const [selectedPictureMedisSrc, setSelectedPictureMediaSrc] =
-    createSignal<NoteMediaSrc>({
-      fileName: note.picture,
-      source: "anki",
-    });
-  const [selectedSentenceAudioMedisSrc, setSelectedSentenceAudioMediaSrc] =
-    createSignal<NoteMediaSrc>({
-      fileName: note.sentenceAudio,
-      source: "anki",
-    });
-
-  const isPictureSelected = createSelector(selectedPictureMedisSrc, (a, b) => {
-    return a.fileName === b.fileName && a.source === b.source;
+  const [noteForm, setNoteForm] = createStore<NoteForm>({
+    picture: undefined,
+    sentenceAudio: undefined,
   });
-  const isSentenceAudioSelected = createSelector(
-    selectedSentenceAudioMedisSrc,
+
+  const isPictureSelected = createSelector(
+    () => noteForm.picture,
     (a, b) => {
-      return a.fileName === b.fileName && a.source === b.source;
+      return a === b;
+    },
+  );
+  const isSentenceAudioSelected = createSelector(
+    () => noteForm.sentenceAudio,
+    (a, b) => {
+      return a === b;
     },
   );
 
-  const [updateNoteForm, setUpdateNoteForm] = createStore({
-    updatePicture: false,
-    updatePictureData: {
-      fileName: "",
-    },
-    updateSentenceAudio: false,
-    updateSentenceAudioData: {
-      fileName: "",
-    },
-  });
-
-  createEffect(() => {
-    if (!updateNoteForm.updatePicture) {
-      setSelectedPictureMediaSrc({
-        fileName: note.picture,
-        source: "anki",
-      });
-    }
-  });
-
   return (
-    <Suspense>
+    <NoteFormContextProvider value={[noteForm, setNoteForm]}>
       <Dialog.Root lazyMount open={availablePictures().length > 0}>
         <Dialog.Trigger
           asChild={(triggerProps) => {
@@ -101,50 +71,23 @@ export function EditButton() {
               >
                 <HStack>
                   <Heading size="2xl">Update Picture</Heading>
-                  <Toggle
-                    checked={updateNoteForm.updatePicture}
-                    onCheckedChange={(e) => {
-                      setUpdateNoteForm("updatePicture", e.checked);
-                      if (
-                        e.checked &&
-                        selectedPictureMedisSrc().fileName === note.picture &&
-                        selectedPictureMedisSrc().source === "anki"
-                      ) {
-                        const fileName = availablePictures()[0]?.fileName;
-                        if (fileName) {
-                          setSelectedPictureMediaSrc({
-                            fileName,
-                            source: "storage",
-                          });
-                        } else {
-                          setUpdateNoteForm("updatePicture", false);
-                        }
-                      }
-                    }}
-                  ></Toggle>
                 </HStack>
                 <HStack justifyContent="center" maxH="64">
-                  <MediaSrcContextProvider
-                    value={createSignal<NoteMediaSrc>({
-                      fileName: note.picture,
-                      source: "anki" as const,
-                    })}
-                  >
-                    <Box flex="1" bg="bg.subtle" rounded="sm">
-                      <CurrentImage
-                        isSelected={
-                          selectedPictureMedisSrc().fileName === note.picture &&
-                          selectedPictureMedisSrc().source === "anki"
-                        }
+                  <Box flex="1" bg="bg.subtle" rounded="sm">
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => note.picture,
+                        source: () => "anki",
+                      }}
+                    >
+                      <PictureMenu
+                        isSelected={false}
                         onClick={() => {
-                          setSelectedPictureMediaSrc({
-                            fileName: note.picture,
-                            source: "anki",
-                          });
+                          setNoteForm("picture", undefined);
                         }}
                       />
-                    </Box>
-                  </MediaSrcContextProvider>
+                    </NoteMediaSrcContextProvider>
+                  </Box>
                   <Box flexBasis="24">
                     <ArrowRightIcon
                       class={css({
@@ -156,16 +99,16 @@ export function EditButton() {
                       strokeWidth="1"
                     />
                   </Box>
-                  <MediaSrcContextProvider
-                    value={[
-                      selectedPictureMedisSrc,
-                      setSelectedPictureMediaSrc,
-                    ]}
-                  >
-                    <Box flex="1" bg="bg.subtle" rounded="sm">
-                      <SelectedImage />
-                    </Box>
-                  </MediaSrcContextProvider>
+                  <Box flex="1" bg="bg.subtle" rounded="sm">
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => noteForm.picture,
+                        source: () => "storage",
+                      }}
+                    >
+                      <PictureMenu isSelected={false} onClick={() => {}} />
+                    </NoteMediaSrcContextProvider>
+                  </Box>
                 </HStack>
                 <Grid
                   gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -174,28 +117,21 @@ export function EditButton() {
                   <For each={availablePictures()}>
                     {(item) => {
                       return (
-                        <MediaSrcContextProvider
-                          value={createSignal<NoteMediaSrc>({
-                            fileName: item.fileName,
-                            source: "storage",
-                          })}
-                        >
-                          <Box bg="bg.subtle" rounded="sm">
-                            <AvailableImage
-                              isSelected={isPictureSelected({
-                                fileName: item.fileName,
-                                source: "storage",
-                              })}
+                        <Box bg="bg.subtle" rounded="sm">
+                          <NoteMediaSrcContextProvider
+                            value={{
+                              fileName: () => item.fileName,
+                              source: () => "storage",
+                            }}
+                          >
+                            <PictureMenu
+                              isSelected={isPictureSelected(item.fileName)}
                               onClick={() => {
-                                setSelectedPictureMediaSrc({
-                                  fileName: item.fileName,
-                                  source: "storage",
-                                });
-                                setUpdateNoteForm("updatePicture", true);
+                                setNoteForm("picture", item.fileName);
                               }}
                             />
-                          </Box>
-                        </MediaSrcContextProvider>
+                          </NoteMediaSrcContextProvider>
+                        </Box>
                       );
                     }}
                   </For>
@@ -207,35 +143,23 @@ export function EditButton() {
 
                 <HStack>
                   <Heading size="2xl">Update Sentence Audio</Heading>
-                  <Toggle
-                    checked={updateNoteForm.updateSentenceAudio}
-                    onCheckedChange={(e) => {
-                      setUpdateNoteForm("updateSentenceAudio", e.checked);
-                    }}
-                  ></Toggle>
                 </HStack>
                 <HStack justifyContent="center" maxH="64" alignItems="end">
-                  <MediaSrcContextProvider
-                    value={createSignal<NoteMediaSrc>({
-                      fileName: note.sentenceAudio,
-                      source: "anki",
-                    })}
-                  >
-                    <Box flex="1">
+                  <Box flex="1">
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => note.sentenceAudio,
+                        source: () => "anki",
+                      }}
+                    >
                       <AudioWaveMenu
-                        isSelected={isSentenceAudioSelected({
-                          fileName: note.sentenceAudio,
-                          source: "anki",
-                        })}
+                        isSelected={false}
                         onSelectClick={() => {
-                          setSelectedSentenceAudioMediaSrc({
-                            fileName: note.sentenceAudio,
-                            source: "anki",
-                          });
+                          setNoteForm("sentenceAudio", undefined);
                         }}
                       />
-                    </Box>
-                  </MediaSrcContextProvider>
+                    </NoteMediaSrcContextProvider>
+                  </Box>
 
                   <Box flexBasis="20">
                     <ArrowRightIcon
@@ -248,48 +172,38 @@ export function EditButton() {
                       strokeWidth="1"
                     />
                   </Box>
-                  <MediaSrcContextProvider
-                    value={[
-                      selectedSentenceAudioMedisSrc,
-                      setSelectedSentenceAudioMediaSrc,
-                    ]}
-                  >
-                    <Box flex="1">
+                  <Box flex="1">
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => noteForm.sentenceAudio,
+                        source: () => "storage",
+                      }}
+                    >
                       <AudioWaveMenu
-                        hideEditButton={
-                          selectedSentenceAudioMedisSrc().fileName ===
-                            note.sentenceAudio &&
-                          selectedSentenceAudioMedisSrc().source === "anki"
-                        }
+                        hideEditButton={true}
                         hideSelectButton={true}
                         isSelected={false}
                         onSelectClick={() => {}}
                       />
-                    </Box>
-                  </MediaSrcContextProvider>
+                    </NoteMediaSrcContextProvider>
+                  </Box>
                 </HStack>
                 <For each={availableSentenceAudios()}>
                   {(item) => {
                     return (
-                      <MediaSrcContextProvider
-                        value={createSignal<NoteMediaSrc>({
-                          fileName: item.fileName,
-                          source: "storage",
-                        })}
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => item.fileName,
+                          source: () => "storage",
+                        }}
                       >
                         <AudioWaveMenu
-                          isSelected={isSentenceAudioSelected({
-                            fileName: item.fileName,
-                            source: "storage",
-                          })}
+                          isSelected={isSentenceAudioSelected(item.fileName)}
                           onSelectClick={() => {
-                            setSelectedSentenceAudioMediaSrc({
-                              fileName: item.fileName,
-                              source: "storage",
-                            });
+                            setNoteForm("sentenceAudio", item.fileName);
                           }}
                         />
-                      </MediaSrcContextProvider>
+                      </NoteMediaSrcContextProvider>
                     );
                   }}
                 </For>
@@ -308,8 +222,8 @@ export function EditButton() {
                 />
                 <Button
                   disabled={
-                    updateNoteForm.updatePicture === false &&
-                    updateNoteForm.updateSentenceAudio === false
+                    noteForm.picture === undefined &&
+                    noteForm.sentenceAudio === undefined
                   }
                 >
                   Update Note
@@ -319,218 +233,6 @@ export function EditButton() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
-    </Suspense>
-  );
-}
-
-const zoomIconCva = cva({
-  base: {
-    opacity: 0,
-    transition: "opacity",
-    cursor: "pointer",
-    rounded: "sm",
-    bg: "bg.default",
-    w: "6",
-    h: "6",
-    p: "1",
-    position: "absolute",
-    top: "2",
-    right: "2",
-    strokeWidth: "1.5",
-    borderColor: "border.default",
-    borderWidth: "thin",
-    color: "fg.muted",
-  },
-  variants: {
-    size: {
-      default: {
-        w: "8",
-        h: "8",
-      },
-      sm: {
-        p: "0.5",
-        top: "1",
-        right: "1",
-        w: "6",
-        h: "6",
-      },
-    },
-  },
-});
-
-function SelectedImage() {
-  const { HttpServerUrlQuery } = GeneralQuery;
-  const note = useNoteContext();
-  const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
-    () => mediaSrc().fileName,
-    () => mediaSrc().source,
-  );
-  const src = () => mediaUrlQuery.data ?? "";
-  createEffect(() => {});
-
-  return (
-    <PictureWithZoom
-      src={src()}
-      trigger={(triggerProps) => {
-        return (
-          <Box position="relative">
-            <ImageWithFallback
-              src={src()}
-              image={(imageProps) => {
-                return (
-                  <img
-                    {...triggerProps()}
-                    {...imageProps()}
-                    class={css({
-                      aspectRatio: "16 / 9",
-                      width: "full",
-                      height: "full",
-                      objectFit: "contain",
-                      rounded: "sm",
-                      cursor: "pointer",
-                    })}
-                    src={src()}
-                    alt="PictureField"
-                  />
-                );
-              }}
-            />
-          </Box>
-        );
-      }}
-    />
-  );
-}
-
-function CurrentImage(props: { onClick: () => void; isSelected: boolean }) {
-  const { HttpServerUrlQuery } = GeneralQuery;
-  const note = useNoteContext();
-  const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
-    () => mediaSrc().fileName,
-    () => mediaSrc().source,
-  );
-  const src = () => mediaUrlQuery.data ?? "";
-  const [error, setError] = createSignal(false);
-
-  createEffect(() => {});
-
-  return (
-    <PictureWithZoom
-      src={src()}
-      trigger={(triggerProps) => {
-        return (
-          <Box
-            class={css({
-              position: "relative",
-              "&:hover > svg": {
-                opacity: 1,
-              },
-            })}
-          >
-            <Show when={!error()}>
-              <ZoomInIcon
-                {...triggerProps()}
-                class={zoomIconCva({ size: "default" })}
-              />
-            </Show>
-            <ImageWithFallback
-              onErrorChange={setError}
-              src={src()}
-              image={(imageProps) => {
-                return (
-                  <img
-                    {...imageProps()}
-                    onClick={props.onClick}
-                    class={css({
-                      outlineColor: props.isSelected
-                        ? "colorPalette.default"
-                        : "transparent",
-                      outlineWidth: "medium",
-                      outlineStyle: "solid",
-                      transition: "[outline-color 0.1s]",
-                      height: "full",
-                      width: "full",
-                      aspectRatio: "16 / 9",
-                      objectFit: "contain",
-                      rounded: "sm",
-                      cursor: "pointer",
-                    })}
-                    src={src()}
-                    alt="PictureField"
-                  />
-                );
-              }}
-            />
-          </Box>
-        );
-      }}
-    />
-  );
-}
-
-function AvailableImage(props: { onClick: () => void; isSelected: boolean }) {
-  const { HttpServerUrlQuery } = GeneralQuery;
-  const note = useNoteContext();
-  const [mediaSrc] = useMediaSrcContext();
-  const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
-    () => mediaSrc().fileName,
-    () => mediaSrc().source,
-  );
-  const src = () => mediaUrlQuery.data ?? "";
-  const [error, setError] = createSignal(false);
-
-  return (
-    <PictureWithZoom
-      src={src()}
-      trigger={(triggerProps) => {
-        return (
-          <Box
-            class={css({
-              position: "relative",
-              "&:hover > svg": {
-                opacity: 1,
-              },
-            })}
-          >
-            <Show when={!error()}>
-              <ZoomInIcon
-                {...triggerProps()}
-                class={zoomIconCva({ size: "sm" })}
-              />
-            </Show>
-            <ImageWithFallback
-              onErrorChange={setError}
-              src={src()}
-              image={(imageProps) => {
-                return (
-                  <img
-                    {...imageProps()}
-                    onClick={props.onClick}
-                    class={css({
-                      outlineColor: props.isSelected
-                        ? "colorPalette.default"
-                        : "transparent",
-                      outlineWidth: "medium",
-                      outlineStyle: "solid",
-                      transition: "[outline-color 0.1s]",
-                      aspectRatio: "16 / 9",
-                      height: "full",
-                      width: "full",
-                      objectFit: "contain",
-                      rounded: "sm",
-                      cursor: "pointer",
-                    })}
-                    src={src()}
-                    alt="PictureField"
-                  />
-                );
-              }}
-            />
-          </Box>
-        );
-      }}
-    />
+    </NoteFormContextProvider>
   );
 }

@@ -19,6 +19,7 @@ const HttpServerUrlQuery = {
       return queryOptions({
         ...keyStore["general:httpServerUrl"].value,
         select: ({ url }) => {
+          if (fileName === undefined) return undefined;
           switch (source) {
             case "anki": return `${url}${zAnkiCollectionMediaUrlPath.value}${fileName}`;
             case "storage": return `${url}${zStorageUrlPath.value}${fileName}`;

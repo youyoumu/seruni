@@ -7,8 +7,8 @@ import { Button } from "#/components/ui/button";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
 import { AudioButton } from "./AudioButton";
+import { useNoteContext } from "./Context";
 import { EditButton } from "./EditButton";
-import { useNoteContext } from "./NoteContext";
 import { PicturePreview } from "./PicturePreview";
 
 const expressionVariant = cva({
