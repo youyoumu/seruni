@@ -20,7 +20,7 @@ const HttpServerUrlQuery = {
         ...keyStore["general:httpServerUrl"].value,
         placeholderData: { url: window.location.origin },
         select: ({ url }) => {
-          if (fileName === undefined) return undefined;
+          if (!fileName) return undefined;
           switch (source) {
             case "anki": return `${url}${zAnkiCollectionMediaUrlPath.value}${fileName}`;
             case "storage": return `${url}${zStorageUrlPath.value}${fileName}`;
@@ -29,7 +29,7 @@ const HttpServerUrlQuery = {
       });
     },
     use: (fileName: () => string | undefined, source: () => "anki" | "storage") => {
-      return useQuery(() => ({ ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()), enabled: !!fileName() }));
+      return useQuery(() => ({ ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()) }));
     },
   },
 } satisfies Query;

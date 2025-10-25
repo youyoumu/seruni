@@ -1,5 +1,6 @@
+import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
 import { ArrowRightIcon } from "lucide-solid";
-import { createSelector, createSignal, For } from "solid-js";
+import { createSelector, createSignal, For, Suspense } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
@@ -16,9 +17,9 @@ import {
   useNoteContext,
 } from "./Context";
 import { PictureMenu } from "./Picture";
-
 export function EditButton() {
   const [open, setOpen] = createSignal(false);
+  const [lazy, setLazy] = createSignal(true);
   const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
   const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
@@ -45,10 +46,21 @@ export function EditButton() {
     },
   );
 
+  let triggerRef!: HTMLDivElement;
+
+  createIntersectionObserver(
+    () => [triggerRef],
+    (entries) => {
+      if (entries[0]?.isIntersecting && lazy()) {
+        setLazy(false);
+      }
+    },
+  );
+
   return (
     <NoteFormContextProvider value={[noteForm, setNoteForm]}>
       <Dialog.Root
-        lazyMount={false}
+        lazyMount={lazy()}
         open={open()}
         onOpenChange={(e) => {
           setOpen(e.open);
@@ -61,190 +73,192 @@ export function EditButton() {
         <Dialog.Trigger
           asChild={(triggerProps) => {
             return (
-              <Button size="sm" {...triggerProps()}>
+              <Button ref={triggerRef} size="sm" {...triggerProps()}>
                 Edit
               </Button>
             );
           }}
         />
         <Dialog.Backdrop />
-        <Portal mount={document.querySelector("#app") ?? document.body}>
-          <Dialog.Positioner p="4">
-            <Dialog.Content w="full" maxW="5xl" bg="bg.canvas">
-              <Stack
-                p="8"
-                gap="8"
-                overflow="auto"
-                class="custom-scrollbar"
-                style={{
-                  "max-height": "calc(90vh - 110px)",
-                }}
-              >
-                <HStack>
-                  <Heading size="2xl">Update Picture</Heading>
-                </HStack>
-                <HStack justifyContent="center" maxH="64">
-                  <Box flex="1" bg="bg.subtle" rounded="sm">
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => note.picture,
-                        source: () => "anki",
-                      }}
-                    >
-                      <PictureMenu
-                        isSelected={false}
-                        onClick={() => {
-                          setNoteForm("picture", undefined);
-                        }}
-                      />
-                    </NoteMediaSrcContextProvider>
-                  </Box>
-                  <Box flexBasis="24">
-                    <ArrowRightIcon
-                      class={css({
-                        h: "full",
-                        w: "full",
-                        maxW: "24",
-                        color: "fg.subtle",
-                      })}
-                      strokeWidth="1"
-                    />
-                  </Box>
-                  <Box flex="1" bg="bg.subtle" rounded="sm">
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => noteForm.picture,
-                        source: () => "storage",
-                      }}
-                    >
-                      <PictureMenu isSelected={false} onClick={() => {}} />
-                    </NoteMediaSrcContextProvider>
-                  </Box>
-                </HStack>
-                <Grid
-                  gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-                  gap="4"
+        <Suspense>
+          <Portal mount={document.querySelector("#app") ?? document.body}>
+            <Dialog.Positioner p="4">
+              <Dialog.Content w="full" maxW="5xl" bg="bg.canvas">
+                <Stack
+                  p="8"
+                  gap="8"
+                  overflow="auto"
+                  class="custom-scrollbar"
+                  style={{
+                    "max-height": "calc(90vh - 110px)",
+                  }}
                 >
-                  <For each={availablePictures()}>
-                    {(item) => {
-                      return (
-                        <Box bg="bg.subtle" rounded="sm">
-                          <NoteMediaSrcContextProvider
-                            value={{
-                              fileName: () => item.fileName,
-                              source: () => "storage",
-                            }}
-                          >
-                            <PictureMenu
-                              isSelected={isPictureSelected(item.fileName)}
-                              onClick={() => {
-                                setNoteForm("picture", item.fileName);
-                              }}
-                            />
-                          </NoteMediaSrcContextProvider>
-                        </Box>
-                      );
-                    }}
-                  </For>
-                </Grid>
-                <Box
-                  borderBottomWidth="thin"
-                  borderColor="border.default"
-                ></Box>
-
-                <HStack>
-                  <Heading size="2xl">Update Sentence Audio</Heading>
-                </HStack>
-                <HStack justifyContent="center" maxH="64" alignItems="end">
-                  <Box flex="1">
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => note.sentenceAudio,
-                        source: () => "anki",
-                      }}
-                    >
-                      <AudioWaveMenu
-                        isSelected={false}
-                        onSelectClick={() => {
-                          setNoteForm("sentenceAudio", undefined);
-                        }}
-                      />
-                    </NoteMediaSrcContextProvider>
-                  </Box>
-
-                  <Box flexBasis="20">
-                    <ArrowRightIcon
-                      class={css({
-                        h: "full",
-                        w: "full",
-                        maxW: "20",
-                        color: "fg.subtle",
-                      })}
-                      strokeWidth="1"
-                    />
-                  </Box>
-                  <Box flex="1">
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => noteForm.sentenceAudio,
-                        source: () => "storage",
-                      }}
-                    >
-                      <AudioWaveMenu
-                        hideEditButton={true}
-                        hideSelectButton={true}
-                        isSelected={false}
-                        onSelectClick={() => {}}
-                      />
-                    </NoteMediaSrcContextProvider>
-                  </Box>
-                </HStack>
-                <For each={availableSentenceAudios()}>
-                  {(item) => {
-                    return (
+                  <HStack>
+                    <Heading size="2xl">Update Picture</Heading>
+                  </HStack>
+                  <HStack justifyContent="center" maxH="64">
+                    <Box flex="1" bg="bg.subtle" rounded="sm">
                       <NoteMediaSrcContextProvider
                         value={{
-                          fileName: () => item.fileName,
+                          fileName: () => note.picture,
+                          source: () => "anki",
+                        }}
+                      >
+                        <PictureMenu
+                          isSelected={false}
+                          onClick={() => {
+                            setNoteForm("picture", undefined);
+                          }}
+                        />
+                      </NoteMediaSrcContextProvider>
+                    </Box>
+                    <Box flexBasis="24">
+                      <ArrowRightIcon
+                        class={css({
+                          h: "full",
+                          w: "full",
+                          maxW: "24",
+                          color: "fg.subtle",
+                        })}
+                        strokeWidth="1"
+                      />
+                    </Box>
+                    <Box flex="1" bg="bg.subtle" rounded="sm">
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => noteForm.picture,
+                          source: () => "storage",
+                        }}
+                      >
+                        <PictureMenu isSelected={false} onClick={() => {}} />
+                      </NoteMediaSrcContextProvider>
+                    </Box>
+                  </HStack>
+                  <Grid
+                    gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+                    gap="4"
+                  >
+                    <For each={availablePictures()}>
+                      {(item) => {
+                        return (
+                          <Box bg="bg.subtle" rounded="sm">
+                            <NoteMediaSrcContextProvider
+                              value={{
+                                fileName: () => item.fileName,
+                                source: () => "storage",
+                              }}
+                            >
+                              <PictureMenu
+                                isSelected={isPictureSelected(item.fileName)}
+                                onClick={() => {
+                                  setNoteForm("picture", item.fileName);
+                                }}
+                              />
+                            </NoteMediaSrcContextProvider>
+                          </Box>
+                        );
+                      }}
+                    </For>
+                  </Grid>
+                  <Box
+                    borderBottomWidth="thin"
+                    borderColor="border.default"
+                  ></Box>
+
+                  <HStack>
+                    <Heading size="2xl">Update Sentence Audio</Heading>
+                  </HStack>
+                  <HStack justifyContent="center" maxH="64" alignItems="end">
+                    <Box flex="1">
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => note.sentenceAudio,
+                          source: () => "anki",
+                        }}
+                      >
+                        <AudioWaveMenu
+                          isSelected={false}
+                          onSelectClick={() => {
+                            setNoteForm("sentenceAudio", undefined);
+                          }}
+                        />
+                      </NoteMediaSrcContextProvider>
+                    </Box>
+
+                    <Box flexBasis="20">
+                      <ArrowRightIcon
+                        class={css({
+                          h: "full",
+                          w: "full",
+                          maxW: "20",
+                          color: "fg.subtle",
+                        })}
+                        strokeWidth="1"
+                      />
+                    </Box>
+                    <Box flex="1">
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => noteForm.sentenceAudio,
                           source: () => "storage",
                         }}
                       >
                         <AudioWaveMenu
-                          isSelected={isSentenceAudioSelected(item.fileName)}
-                          onSelectClick={() => {
-                            setNoteForm("sentenceAudio", item.fileName);
-                          }}
+                          hideEditButton={true}
+                          hideSelectButton={true}
+                          isSelected={false}
+                          onSelectClick={() => {}}
                         />
                       </NoteMediaSrcContextProvider>
-                    );
-                  }}
-                </For>
-              </Stack>
-              <HStack
-                justifyContent="end"
-                gap="4"
-                p="4"
-                borderTopWidth="thin"
-                borderColor="border.default"
-              >
-                <Button
-                  onClick={() => {
-                    setOpen(false);
-                  }}
+                    </Box>
+                  </HStack>
+                  <For each={availableSentenceAudios()}>
+                    {(item) => {
+                      return (
+                        <NoteMediaSrcContextProvider
+                          value={{
+                            fileName: () => item.fileName,
+                            source: () => "storage",
+                          }}
+                        >
+                          <AudioWaveMenu
+                            isSelected={isSentenceAudioSelected(item.fileName)}
+                            onSelectClick={() => {
+                              setNoteForm("sentenceAudio", item.fileName);
+                            }}
+                          />
+                        </NoteMediaSrcContextProvider>
+                      );
+                    }}
+                  </For>
+                </Stack>
+                <HStack
+                  justifyContent="end"
+                  gap="4"
+                  p="4"
+                  borderTopWidth="thin"
+                  borderColor="border.default"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={
-                    noteForm.picture === undefined &&
-                    noteForm.sentenceAudio === undefined
-                  }
-                >
-                  Update Note
-                </Button>
-              </HStack>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
+                  <Button
+                    onClick={() => {
+                      setOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={
+                      noteForm.picture === undefined &&
+                      noteForm.sentenceAudio === undefined
+                    }
+                  >
+                    Update Note
+                  </Button>
+                </HStack>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Suspense>
       </Dialog.Root>
     </NoteFormContextProvider>
   );
