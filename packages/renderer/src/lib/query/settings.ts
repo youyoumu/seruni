@@ -22,7 +22,7 @@ const PythonQuery = {
     use: () =>
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
-        installed.isStale;
+        installed.dataUpdatedAt;
         return { ...PythonQuery.healthcheck.options(), enabled: untrack(() => installed.data === true), };
       }),
   },
@@ -33,7 +33,7 @@ const PythonQuery = {
     use: () =>
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
-        installed.isStale;
+        installed.dataUpdatedAt;
         return { ...PythonQuery.pipList.options(), enabled: untrack(() => installed.data === true), };
       }),
   },
@@ -43,7 +43,7 @@ const PythonQuery = {
     use: () =>
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
-        installed.isStale;
+        installed.dataUpdatedAt;
         const { queryKey, queryFn, placeholderData } = PythonQuery.pipList.options();
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.some((p) => p.name === "uv"),
@@ -58,7 +58,7 @@ const PythonQuery = {
     use: () =>
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
-        uv.isStale;
+        uv.dataUpdatedAt;
         return { ...PythonQuery.venvPipList.options(), enabled: untrack(() => uv.data === true), };
       }),
   },
@@ -69,7 +69,7 @@ const PythonQuery = {
     use: () =>
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
-        uv.isStale;
+        uv.dataUpdatedAt;
         return { ...PythonQuery.venvHealthcheck.options(), enabled: untrack(() => uv.data === true), };
       }),
   },
@@ -80,7 +80,7 @@ const PythonQuery = {
       useQuery(() => {
         const { queryKey, queryFn, placeholderData } = PythonQuery.venvHealthcheck.options();
         const uv = PythonQuery.isUvInstalled.use();
-        uv.isStale;
+        uv.dataUpdatedAt;
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.ok === true,
           enabled: untrack(() => uv.data === true),

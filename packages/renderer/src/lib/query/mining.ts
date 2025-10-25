@@ -75,7 +75,7 @@ const AnkiHistoryQuery = {
     use: () => {
       const query = useQuery(() => {
         const clientStatus = GeneralQuery.ClientStatusQuery.detail.use();
-        clientStatus.isStale;
+        clientStatus.dataUpdatedAt
         return { ...AnkiHistoryQuery.data.options(), enabled: () => untrack(() => clientStatus.data.anki === "connected"), };
       });
       return queryWithPlaceholderData(query, []);
