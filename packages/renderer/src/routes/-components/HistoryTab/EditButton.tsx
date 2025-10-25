@@ -15,6 +15,7 @@ import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningQuery } from "#/lib/query/mining";
+import { AudioWave } from "./AudioWave";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { MediaSrcContextProvider, useMediaSrcContext } from "./MediaSrcContext";
 import { useNoteContext } from "./NoteContext";
@@ -26,6 +27,14 @@ export function EditButton() {
   const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
   const availablePictures = () =>
     noteMediaQuery.data.filter((m) => m.type === "picture");
+  const sentenceAudio = () =>
+    noteMediaQuery.data.find((m) => m.type === "sentenceAudio");
+
+  const sentenceAudioMediaUrlQuery =
+    GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
+      () => sentenceAudio()?.fileName,
+      () => "storage",
+    );
 
   const [selectedMedisSrc, setSelectedMediaSrc] = createSignal<NoteMediaSrc>({
     fileName: note.picture,
@@ -39,7 +48,7 @@ export function EditButton() {
 
   return (
     <Suspense>
-      <Dialog.Root lazyMount>
+      <Dialog.Root lazyMount open={availablePictures().length > 0}>
         <Dialog.Trigger
           asChild={(triggerProps) => {
             return (
@@ -135,6 +144,7 @@ export function EditButton() {
                     }}
                   </For>
                 </Grid>
+                <AudioWave url={sentenceAudioMediaUrlQuery.data} />
               </Stack>
               <HStack
                 justifyContent="end"

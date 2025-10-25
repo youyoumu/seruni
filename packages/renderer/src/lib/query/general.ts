@@ -15,7 +15,7 @@ const HttpServerUrlQuery = {
 
   // biome-ignore format: this looks nicer
   mediaUrl: {
-    options: (fileName: string, source: "anki" | "storage") => {
+    options: (fileName: string | undefined, source: "anki" | "storage") => {
       return queryOptions({
         ...keyStore["general:httpServerUrl"].value,
         select: ({ url }) => {
@@ -26,8 +26,8 @@ const HttpServerUrlQuery = {
         },
       });
     },
-    use: (fileName: () => string, source: () => "anki" | "storage") => {
-      return useQuery(() => ({ ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()), }));
+    use: (fileName: () => string | undefined, source: () => "anki" | "storage") => {
+      return useQuery(() => ({ ...HttpServerUrlQuery.mediaUrl.options(fileName(), source()), enabled: !!fileName() }));
     },
   },
 } satisfies Query;
