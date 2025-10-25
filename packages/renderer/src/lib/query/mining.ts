@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/solid-query";
 import { sort } from "fast-sort";
+import { untrack } from "solid-js";
 import { reconcile } from "solid-js/store";
 import {
   keyStore,
@@ -75,7 +76,7 @@ const AnkiHistoryQuery = {
       const query = useQuery(() => {
         const clientStatus = GeneralQuery.ClientStatusQuery.detail.use();
         clientStatus.isStale;
-        return { ...AnkiHistoryQuery.data.options(), enabled: () => clientStatus.data.anki === "connected", };
+        return { ...AnkiHistoryQuery.data.options(), enabled: () => untrack(() => clientStatus.data.anki === "connected"), };
       });
       return queryWithPlaceholderData(query, []);
     },

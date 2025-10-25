@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
+import { untrack } from "solid-js";
 import { reconcile } from "solid-js/store";
 import { keyStore, type Mutation, type Query } from "./_util";
 
@@ -22,7 +23,7 @@ const PythonQuery = {
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQuery.healthcheck.options(), enabled: () => installed.data === true, };
+        return { ...PythonQuery.healthcheck.options(), enabled: untrack(() => installed.data === true), };
       }),
   },
 
@@ -33,7 +34,7 @@ const PythonQuery = {
       useQuery(() => {
         const installed = PythonQuery.isInstalled.use();
         installed.isStale;
-        return { ...PythonQuery.pipList.options(), enabled: () => installed.data === true, };
+        return { ...PythonQuery.pipList.options(), enabled: untrack(() => installed.data === true), };
       }),
   },
 
@@ -46,7 +47,7 @@ const PythonQuery = {
         const { queryKey, queryFn, placeholderData } = PythonQuery.pipList.options();
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.some((p) => p.name === "uv"),
-          enabled: () => installed.data === true,
+          enabled: untrack(() => installed.data === true),
         };
       }),
   },
@@ -58,7 +59,7 @@ const PythonQuery = {
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQuery.venvPipList.options(), enabled: () => uv.data === true, };
+        return { ...PythonQuery.venvPipList.options(), enabled: untrack(() => uv.data === true), };
       }),
   },
 
@@ -69,7 +70,7 @@ const PythonQuery = {
       useQuery(() => {
         const uv = PythonQuery.isUvInstalled.use();
         uv.isStale;
-        return { ...PythonQuery.venvHealthcheck.options(), enabled: () => uv.data === true, };
+        return { ...PythonQuery.venvHealthcheck.options(), enabled: untrack(() => uv.data === true), };
       }),
   },
 
@@ -82,7 +83,7 @@ const PythonQuery = {
         uv.isStale;
         return { queryKey, queryFn, placeholderData,
           select: (data) => data?.ok === true,
-          enabled: () => uv.data === true,
+          enabled: untrack(() => uv.data === true),
         };
       }),
   },

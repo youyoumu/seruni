@@ -53,6 +53,8 @@ export function HistoryTab() {
     }
   });
 
+  createEffect(() => {});
+
   const pageSizeItems = [5, 20, 40, 60].map((item) => ({
     label: item.toString(),
     value: item.toString(),
