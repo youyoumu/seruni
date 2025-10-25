@@ -4,7 +4,11 @@ import {
 } from "@lukemorales/query-key-factory";
 import type { UseQueryResult } from "@tanstack/solid-query";
 
-export type RemovePrototype<T> = Omit<T, "prototype">;
+export type Query = Record<
+  string,
+  Partial<Record<"options" | "use" | "placeholderData", unknown>>
+>;
+export type Mutation = Record<string, unknown>;
 
 export const queryWithPlaceholderData = <T>(
   query: UseQueryResult<T>,

@@ -9,75 +9,60 @@ import { sort } from "fast-sort";
 import { reconcile } from "solid-js/store";
 import {
   keyStore,
+  type Mutation,
+  type Query,
   queryWithPlaceholderData,
-  type RemovePrototype,
 } from "./_util";
 import { GeneralQuery } from "./general";
 
-class NoteMediaQuery {
-  //biome-ignore format: this looks nicer
-  static one = {
+const NoteMediaQuery = {
+  // biome-ignore format: this looks nicer
+  one: {
     options: ({ noteId }: { noteId: number }) => queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], }),
     use: ({ noteId }: { noteId: number }) => {
-      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old)}));
+      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old), }));
       return queryWithPlaceholderData(query, []);
     },
-  };
-}
+  },
+} satisfies Query;
 
-class ObsQuery {
-  //biome-ignore format: this looks nicer
-  static sourceScreenshot = {
-    options: () =>
-      queryOptions({ ...keyStore["mining:obs"].sourceScreenshot,
-        placeholderData: { image: null },
-        refetchInterval: 4000,
-      }),
+const ObsQuery = {
+  // biome-ignore format: this looks nicer
+  sourceScreenshot: {
+    options: () => queryOptions({ ...keyStore["mining:obs"].sourceScreenshot, placeholderData: { image: null }, refetchInterval: 4000, }),
     use: () => useQuery(() => ({ ...ObsQuery.sourceScreenshot.options() })),
-  };
+  },
 
-  static replayBufferStartTime = {
-    options: () =>
-      queryOptions({
-        ...keyStore["mining:obs"].replayBufferStartTime,
-        placeholderData: { time: undefined },
-      }),
-    use: () =>
-      useQuery(() => ({ ...ObsQuery.replayBufferStartTime.options() })),
-  };
+  // biome-ignore format: this looks nicer
+  replayBufferStartTime: {
+    options: () => queryOptions({ ...keyStore["mining:obs"].replayBufferStartTime, placeholderData: { time: undefined }, }),
+    use: () => useQuery(() => ({ ...ObsQuery.replayBufferStartTime.options() })),
+  },
 
-  static replayBufferDuration = {
-    options: () =>
-      queryOptions({
-        ...keyStore["mining:obs"].replayBufferDuration,
-        placeholderData: { duration: 0 },
-      }),
+  // biome-ignore format: this looks nicer
+  replayBufferDuration: {
+    options: () => queryOptions({ ...keyStore["mining:obs"].replayBufferDuration, placeholderData: { duration: 0 }, }),
     use: () => {
-      const query = useQuery(() => ({
-        ...ObsQuery.replayBufferDuration.options(),
-      }));
+      const query = useQuery(() => ({ ...ObsQuery.replayBufferDuration.options(), }));
       return queryWithPlaceholderData(query, { duration: 0 });
     },
-  };
-}
+  },
+} satisfies Query;
 
-class SessionQuery {
-  static textHistory = {
-    options: () =>
-      queryOptions({
-        ...keyStore["mining:session"].textHistory,
-        placeholderData: [],
-        reconcile: (old, data) => reconcile(data)(old),
-      }),
+const SessionQuery = {
+  // biome-ignore format: this looks nicer
+  textHistory: {
+    options: () => queryOptions({ ...keyStore["mining:session"].textHistory, placeholderData: [], reconcile: (old, data) => reconcile(data)(old), }),
     use: () => {
-      const query = useQuery(() => ({ ...SessionQuery.textHistory.options() }));
+      const query = useQuery(() => ({ ...SessionQuery.textHistory.options(), }));
       return queryWithPlaceholderData(query, []);
     },
-  };
-}
+  },
+} satisfies Query;
 
-class AnkiHistoryQuery {
-  static data = {
+const AnkiHistoryQuery = {
+  // biome-ignore format: this looks nicer
+  data: {
     options: () =>
       queryOptions({
         ...keyStore["mining:ankiHistory"].all,
@@ -90,18 +75,16 @@ class AnkiHistoryQuery {
       const query = useQuery(() => {
         const clientStatus = GeneralQuery.ClientStatusQuery.detail.use();
         clientStatus.isStale;
-        return {
-          ...AnkiHistoryQuery.data.options(),
-          enabled: () => clientStatus.data.anki === "connected",
-        };
+        return { ...AnkiHistoryQuery.data.options(), enabled: () => clientStatus.data.anki === "connected", };
       });
       return queryWithPlaceholderData(query, []);
     },
-  };
-}
+  },
+} satisfies Query;
 
-class AnkiMutation {
-  static cropPicture = () =>
+const AnkiMutation = {
+  // biome-ignore format: this looks nicer
+  cropPicture: () =>
     useMutation(() => {
       const qc = useQueryClient();
       return {
@@ -120,23 +103,20 @@ class AnkiMutation {
         },
         onSuccess: async (data) => {
           await Promise.all([
-            qc.invalidateQueries({
-              queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey,
-            }),
+            qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey, }),
           ]);
         },
       };
-    });
-}
+    }),
+} satisfies Mutation;
 
-//biome-ignore format: this looks nicer
 export const MiningQuery = {
-  NoteMediaQuery: NoteMediaQuery as RemovePrototype<typeof NoteMediaQuery>,
-  ObsQuery: ObsQuery as RemovePrototype<typeof ObsQuery>,
-  SessionQuery: SessionQuery as RemovePrototype<typeof SessionQuery>,
-  AnkiHistoryQuery: AnkiHistoryQuery as RemovePrototype<typeof AnkiHistoryQuery>,
+  NoteMediaQuery,
+  ObsQuery,
+  SessionQuery,
+  AnkiHistoryQuery,
 };
 
 export const MiningMutation = {
-  AnkiMutation: AnkiMutation as RemovePrototype<typeof AnkiMutation>,
+  AnkiMutation,
 };
