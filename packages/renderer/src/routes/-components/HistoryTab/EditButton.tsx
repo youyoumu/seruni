@@ -52,84 +52,104 @@ export function EditButton() {
         <Dialog.Backdrop />
         <Portal mount={document.querySelector("#app") ?? document.body}>
           <Dialog.Positioner p="4">
-            <Dialog.Content w="full" maxW="5xl" p="8" maxH="[80svh]">
-              <Suspense>
-                <Stack gap="8">
-                  <HStack justifyContent="center" maxH="64">
-                    <MediaSrcContextProvider
-                      value={createSignal<NoteMediaSrc>({
-                        fileName: note.picture,
-                        source: "anki" as const,
-                      })}
-                    >
-                      <Box flex="1" bg="bg.subtle" rounded="sm">
-                        <CurrentImage
-                          isSelected={
-                            selectedMedisSrc().fileName === note.picture &&
-                            selectedMedisSrc().source === "anki"
-                          }
-                          onClick={() => {
-                            setSelectedMediaSrc({
-                              fileName: note.picture,
-                              source: "anki",
-                            });
-                          }}
-                        />
-                      </Box>
-                    </MediaSrcContextProvider>
-                    <Box flexBasis="24">
-                      <ArrowRightIcon
-                        class={css({
-                          h: "full",
-                          w: "full",
-                          maxW: "24",
-                          color: "fg.subtle",
-                        })}
-                        strokeWidth="1"
+            <Dialog.Content w="full" maxW="5xl">
+              <Stack
+                p="8"
+                gap="8"
+                overflow="auto"
+                class="custom-scrollbar"
+                style={{
+                  "max-height": "calc(100vh - 110px)",
+                }}
+              >
+                <HStack justifyContent="center" maxH="64">
+                  <MediaSrcContextProvider
+                    value={createSignal<NoteMediaSrc>({
+                      fileName: note.picture,
+                      source: "anki" as const,
+                    })}
+                  >
+                    <Box flex="1" bg="bg.subtle" rounded="sm">
+                      <CurrentImage
+                        isSelected={
+                          selectedMedisSrc().fileName === note.picture &&
+                          selectedMedisSrc().source === "anki"
+                        }
+                        onClick={() => {
+                          setSelectedMediaSrc({
+                            fileName: note.picture,
+                            source: "anki",
+                          });
+                        }}
                       />
                     </Box>
-                    <MediaSrcContextProvider
-                      value={[selectedMedisSrc, setSelectedMediaSrc]}
-                    >
-                      <Box flex="1" bg="bg.subtle" rounded="sm">
-                        <SelectedImage />
-                      </Box>
-                    </MediaSrcContextProvider>
-                  </HStack>
-                  <Grid
-                    gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-                    gap="4"
+                  </MediaSrcContextProvider>
+                  <Box flexBasis="24">
+                    <ArrowRightIcon
+                      class={css({
+                        h: "full",
+                        w: "full",
+                        maxW: "24",
+                        color: "fg.subtle",
+                      })}
+                      strokeWidth="1"
+                    />
+                  </Box>
+                  <MediaSrcContextProvider
+                    value={[selectedMedisSrc, setSelectedMediaSrc]}
                   >
-                    <For each={availablePictures()}>
-                      {(item) => {
-                        return (
-                          <MediaSrcContextProvider
-                            value={createSignal<NoteMediaSrc>({
-                              fileName: item.fileName,
-                              source: "storage",
-                            })}
-                          >
-                            <Box bg="bg.subtle" rounded="sm">
-                              <AvailableImage
-                                isSelected={isSelected({
+                    <Box flex="1" bg="bg.subtle" rounded="sm">
+                      <SelectedImage />
+                    </Box>
+                  </MediaSrcContextProvider>
+                </HStack>
+                <Grid
+                  gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+                  gap="4"
+                >
+                  <For each={availablePictures()}>
+                    {(item) => {
+                      return (
+                        <MediaSrcContextProvider
+                          value={createSignal<NoteMediaSrc>({
+                            fileName: item.fileName,
+                            source: "storage",
+                          })}
+                        >
+                          <Box bg="bg.subtle" rounded="sm">
+                            <AvailableImage
+                              isSelected={isSelected({
+                                fileName: item.fileName,
+                                source: "storage",
+                              })}
+                              onClick={() => {
+                                setSelectedMediaSrc({
                                   fileName: item.fileName,
                                   source: "storage",
-                                })}
-                                onClick={() => {
-                                  setSelectedMediaSrc({
-                                    fileName: item.fileName,
-                                    source: "storage",
-                                  });
-                                }}
-                              />
-                            </Box>
-                          </MediaSrcContextProvider>
-                        );
-                      }}
-                    </For>
-                  </Grid>
-                </Stack>
-              </Suspense>
+                                });
+                              }}
+                            />
+                          </Box>
+                        </MediaSrcContextProvider>
+                      );
+                    }}
+                  </For>
+                </Grid>
+              </Stack>
+              <HStack
+                justifyContent="end"
+                gap="4"
+                p="4"
+                borderTopWidth="thin"
+                borderColor="border.default"
+              >
+                <Dialog.Trigger
+                  asChild={(triggerProps) => {
+                    return <Button {...triggerProps()}>Cancel</Button>;
+                  }}
+                />
+                <Button>Update Note</Button>
+              </HStack>
             </Dialog.Content>
           </Dialog.Positioner>
         </Portal>

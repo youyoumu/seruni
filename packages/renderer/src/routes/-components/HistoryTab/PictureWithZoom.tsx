@@ -7,8 +7,6 @@ import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { IconButton } from "#/components/ui/icon-button";
-import { keyStore } from "#/lib/query/_util";
 import { MiningMutation } from "#/lib/query/mining";
 import { appToaster } from "../AppToaster";
 import { useMediaSrcContext } from "./MediaSrcContext";
@@ -90,31 +88,46 @@ export function PictureWithZoom(props: {
               asChild={(closeTriggerProps) => (
                 <Stack>
                   <Show when={!editing()}>
-                    <img
-                      {...closeTriggerProps()}
-                      class={css({
-                        w: "full",
-                        maxW: "8xl",
-                        objectFit: "contain",
-                        rounded: "md",
-                        shadow: "md",
-                      })}
-                      src={props.src}
-                      alt="PictureField"
-                    />
+                    <Box
+                      borderWidth="thin"
+                      borderColor="border.default"
+                      bg="bg.subtle"
+                      rounded="sm"
+                      overflow="hidden"
+                    >
+                      <img
+                        {...closeTriggerProps()}
+                        class={css({
+                          w: "full",
+                          maxW: "8xl",
+                          objectFit: "contain",
+                          shadow: "md",
+                        })}
+                        src={props.src}
+                        alt="PictureField"
+                      />
+                    </Box>
                   </Show>
 
                   <Box maxW="8xl" hidden={!editing()}>
-                    <PictureCropper
-                      src={props.src}
-                      editing={editing()}
-                      onSelectionChange={(details) => {
-                        setSelectionData(details.selectionData);
-                      }}
-                    />
+                    <Box
+                      borderWidth="thin"
+                      borderColor="border.default"
+                      bg="bg.subtle"
+                      rounded="sm"
+                      overflow="hidden"
+                    >
+                      <PictureCropper
+                        src={props.src}
+                        editing={editing()}
+                        onSelectionChange={(details) => {
+                          setSelectionData(details.selectionData);
+                        }}
+                      />
+                    </Box>
                   </Box>
 
-                  <HStack justifyContent="end" px="8">
+                  <HStack justifyContent="end">
                     <Button
                       {...closeTriggerProps()}
                       opacity="0"
@@ -137,17 +150,18 @@ export function PictureWithZoom(props: {
                           cropPicture();
                         }}
                       >
-                        Save
+                        Copy and Save
                       </Button>
                     </Show>
                     <Show when={!editing()}>
-                      <IconButton
+                      <Button
                         onClick={() => {
                           setEditing(true);
                         }}
                       >
+                        Crop
                         <CropIcon />
-                      </IconButton>
+                      </Button>
                     </Show>
                   </HStack>
                 </Stack>
