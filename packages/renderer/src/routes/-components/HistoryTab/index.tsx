@@ -60,6 +60,8 @@ export function HistoryTab() {
     value: item.toString(),
   }));
 
+  let containerEl: HTMLDivElement | undefined;
+
   return (
     <Suspense>
       <Stack h="full" maxW="8xl" mx="auto" gap="4">
@@ -76,6 +78,7 @@ export function HistoryTab() {
           </Match>
           <Match when={ankiHistoryQuery.isSuccess}>
             <Stack
+              ref={containerEl}
               overflow="auto"
               class="custom-scrollbar"
               pe="4"
@@ -99,7 +102,12 @@ export function HistoryTab() {
                 pageSize={pageSize()}
                 siblingCount={3}
                 page={currentPage()}
-                onPageChange={(page) => setCurrentPage(page.page)}
+                onPageChange={(page) => {
+                  setCurrentPage(page.page);
+                  containerEl?.scrollTo({
+                    top: 0,
+                  });
+                }}
               />
               <Select_
                 value={[pageSize().toString() ?? ""]}
