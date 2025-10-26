@@ -23,8 +23,17 @@ export function EditButton() {
   const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
   const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
-  const availablePictures = () =>
-    noteMediaQuery.data.filter((m) => m.type === "picture");
+  const availablePictures = () => {
+    const pictures = noteMediaQuery.data.filter((m) => m.type === "picture");
+    if (pictures.length === 1) {
+      pictures.push({
+        fileName: "",
+        type: "picture",
+        vadData: null,
+      });
+    }
+    return pictures;
+  };
   const availableSentenceAudios = () =>
     noteMediaQuery.data.filter((m) => m.type === "sentenceAudio");
 
