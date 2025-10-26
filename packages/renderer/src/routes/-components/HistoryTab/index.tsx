@@ -1,7 +1,7 @@
 import { usePagination } from "@ark-ui/solid";
 import type { AnkiHistory } from "@repo/preload/ipc";
 import { useQueryClient } from "@tanstack/solid-query";
-import { BirdIcon } from "lucide-solid";
+import { BirdIcon, PickaxeIcon } from "lucide-solid";
 import {
   createEffect,
   createSignal,
@@ -11,6 +11,7 @@ import {
   Suspense,
   Switch,
 } from "solid-js";
+import { css } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Flip } from "#/components/Flip";
 import { Select_ } from "#/components/Form";
@@ -69,10 +70,32 @@ export function HistoryTab() {
           <Match when={ankiHistoryQuery.isError || !ankiHistoryQuery.isEnabled}>
             <Stack alignItems="center" justifyContent="center" h="full">
               <Flip>
-                <BirdIcon size={250} strokeWidth={1}></BirdIcon>
+                <BirdIcon
+                  size={250}
+                  strokeWidth={1}
+                  class={css({
+                    color: "fg.muted",
+                  })}
+                />
               </Flip>
               <Text size="2xl" color="fg.muted">
                 Can't connect to Anki
+              </Text>
+            </Stack>
+          </Match>
+          <Match when={ankiHistoryQuery.data.length === 0}>
+            <Stack alignItems="center" justifyContent="center" h="full">
+              <Flip>
+                <PickaxeIcon
+                  size={250}
+                  strokeWidth={1}
+                  class={css({
+                    color: "fg.muted",
+                  })}
+                />
+              </Flip>
+              <Text size="2xl" color="fg.muted">
+                History is empty
               </Text>
             </Stack>
           </Match>
