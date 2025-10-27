@@ -1,15 +1,6 @@
 import type { SelectionData } from "@repo/preload/ipc";
 import { CropIcon, RatIcon, ZoomInIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  type JSX,
-  Match,
-  type ParentProps,
-  Show,
-  Switch,
-} from "solid-js";
-import { Portal } from "solid-js/web";
+import type { JSX, ParentProps } from "solid-js";
 import { css, cva } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Flip } from "#/components/Flip";

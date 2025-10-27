@@ -1,4 +1,3 @@
-import { createEffect, createSignal, onMount } from "solid-js";
 import "./Page.css";
 
 import { FloatingPanel } from "@ark-ui/solid/floating-panel";

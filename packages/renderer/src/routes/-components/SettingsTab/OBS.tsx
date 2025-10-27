@@ -1,8 +1,6 @@
 import { defaultConfig } from "@repo/preload/ipc";
 import { debounce } from "es-toolkit";
 import { UndoIcon } from "lucide-solid";
-import { createEffect } from "solid-js";
-import { createStore } from "solid-js/store";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";

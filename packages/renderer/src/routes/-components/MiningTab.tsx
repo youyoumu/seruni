@@ -10,8 +10,7 @@ import {
   TrashIcon,
   XIcon,
 } from "lucide-solid";
-import { createSignal, For, type JSX, onMount, Show } from "solid-js";
-import { createStore, reconcile } from "solid-js/store";
+import type { JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";

@@ -1,7 +1,6 @@
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
 import { createRootRouteWithContext, Outlet } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
-import { Portal } from "solid-js/web";
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,

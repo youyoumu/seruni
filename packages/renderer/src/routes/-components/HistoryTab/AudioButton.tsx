@@ -1,6 +1,5 @@
 import { createAudio } from "@solid-primitives/audio";
 import { PauseIcon, PlayIcon } from "lucide-solid";
-import { createEffect, createSignal, Match, Show, Switch } from "solid-js";
 import { Stack } from "styled-system/jsx";
 import { IconButton } from "#/components/ui/icon-button";
 import { Slider } from "#/components/ui/slider";

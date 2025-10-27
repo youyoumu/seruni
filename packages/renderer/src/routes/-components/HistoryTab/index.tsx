@@ -1,14 +1,6 @@
 import { usePagination } from "@ark-ui/solid";
 import { useQueryClient } from "@tanstack/solid-query";
 import { BirdIcon, PickaxeIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  For,
-  Match,
-  Suspense,
-  Switch,
-} from "solid-js";
 import { css } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Flip } from "#/components/Flip";

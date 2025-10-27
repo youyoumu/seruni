@@ -7,16 +7,6 @@ import {
   ClipboardCopyIcon,
   SnailIcon,
 } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  For,
-  Match,
-  onCleanup,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
 import { cva } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { IconButton } from "#/components/ui/icon-button";

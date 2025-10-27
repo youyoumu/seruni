@@ -4,14 +4,6 @@ import type {
 } from "@repo/preload/ipc";
 import { createElementSize } from "@solid-primitives/resize-observer";
 import { ShellIcon, XIcon } from "lucide-solid";
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  onMount,
-  Suspense,
-} from "solid-js";
 import { css, cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";

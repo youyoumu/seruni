@@ -1,6 +1,5 @@
 import type { ClientStatus } from "@repo/preload/ipc";
 import { SquirrelIcon, TurtleIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
-import { createEffect, Match, onMount, Suspense, Switch } from "solid-js";
 import { css } from "styled-system/css";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Flip } from "#/components/Flip";

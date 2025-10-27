@@ -1,4 +1,4 @@
-import { createEffect, getOwner, onMount, Suspense } from "solid-js";
+import { getOwner } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
 import { SettingsQuery } from "#/lib/query/settings";

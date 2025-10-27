@@ -5,16 +5,7 @@ import {
   PlayIcon,
   RatIcon,
 } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  Match,
-  onCleanup,
-  Show,
-  type Signal,
-  Switch,
-} from "solid-js";
-import { Portal } from "solid-js/web";
+import type { Signal } from "solid-js";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { token } from "styled-system/tokens";
 import WaveSurfer from "wavesurfer.js";

@@ -1,9 +1,6 @@
 import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
 import { ArrowRightIcon, UndoIcon } from "lucide-solid";
 import type { JSX, ParentProps } from "solid-js";
-import { createSelector, createSignal, For, Show, Suspense } from "solid-js";
-import { createStore } from "solid-js/store";
-import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";

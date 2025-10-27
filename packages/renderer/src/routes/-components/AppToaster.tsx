@@ -4,7 +4,6 @@ import {
   OctagonXIcon,
   ShieldAlertIcon,
 } from "lucide-solid";
-import { Match, Switch } from "solid-js";
 import { css } from "styled-system/css";
 import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";

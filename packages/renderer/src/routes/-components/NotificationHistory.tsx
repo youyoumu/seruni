@@ -1,7 +1,6 @@
 import { createElementSize } from "@solid-primitives/resize-observer";
 import { XIcon } from "lucide-solid";
-import { type Component, For, Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import type { Component } from "solid-js";
 import { cva } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";

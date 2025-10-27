@@ -1,6 +1,5 @@
-import { type ListCollection, parseColor } from "@ark-ui/solid";
-import { CheckIcon, ChevronsUpDownIcon, PipetteIcon } from "lucide-solid";
-import { createEffect, createSignal, For, onMount } from "solid-js";
+import { parseColor } from "@ark-ui/solid";
+import { PipetteIcon } from "lucide-solid";
 import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Select_ } from "#/components/Form";
 import { ColorPicker } from "#/components/ui/color-picker";
@@ -8,7 +7,7 @@ import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { Input } from "#/components/ui/input";
 import { NumberInput } from "#/components/ui/number-input";
-import { createListCollection, Select } from "#/components/ui/select";
+import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 
 const fonts = [

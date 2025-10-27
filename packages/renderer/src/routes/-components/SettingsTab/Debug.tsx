@@ -1,13 +1,5 @@
 import stringify from "json-stringify-pretty-compact";
 import { ClipboardCopyIcon } from "lucide-solid";
-import {
-  createEffect,
-  createSignal,
-  onCleanup,
-  onMount,
-  Show,
-  Suspense,
-} from "solid-js";
 import { cva } from "styled-system/css";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";

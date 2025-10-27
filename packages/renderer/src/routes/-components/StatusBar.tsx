@@ -1,6 +1,5 @@
 import type { ClientStatus } from "@repo/preload/ipc";
 import { BellDotIcon, BellIcon, ZapIcon, ZapOffIcon } from "lucide-solid";
-import { Match, Suspense, Switch } from "solid-js";
 import { HStack } from "styled-system/jsx";
 import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";

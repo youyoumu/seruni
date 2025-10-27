@@ -1,4 +1,4 @@
-import { createContext, type JSX, useContext } from "solid-js";
+import type { JSX } from "solid-js";
 import type { SetStoreFunction, Store } from "solid-js/store";
 
 //  ────────────────────────────── NoteForm ───────────────────────────

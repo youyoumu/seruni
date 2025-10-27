@@ -1,6 +1,5 @@
 import { type SelectionData, zSelectionData } from "@repo/preload/ipc";
 import Cropper from "cropperjs";
-import { createEffect, createSignal, onCleanup } from "solid-js";
 import { css } from "styled-system/css";
 
 export function PictureCropper(props: {
