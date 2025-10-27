@@ -4,6 +4,7 @@ import {
   PauseIcon,
   PlayIcon,
   RatIcon,
+  Trash2Icon,
 } from "lucide-solid";
 import type { Signal } from "solid-js";
 import { Box, HStack, Stack } from "styled-system/jsx";
@@ -19,7 +20,11 @@ import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningMutation } from "#/lib/query/mining";
 import { appToaster } from "../AppToaster";
-import { useNoteContext, useNoteMediaSrcContext } from "./Context";
+import {
+  useNoteContext,
+  useNoteFormContext,
+  useNoteMediaSrcContext,
+} from "./Context";
 
 function AudioWave(props: {
   playing: boolean;
@@ -141,7 +146,7 @@ export function AudioWaveMenu(props: {
               </IconButton>
             </Show>
             <Show when={props.hideEditButton !== true}>
-              <EditAudioButton />
+              <EditAudioButton delete={noteMediaSrc.source() === "storage"} />
             </Show>
             <Show when={props.hideSelectButton !== true}>
               <IconButton
@@ -198,9 +203,10 @@ export function AudioWaveMenu(props: {
   );
 }
 
-function EditAudioButton() {
+function EditAudioButton(props: { delete?: boolean }) {
   const [open, setOpen] = createSignal(false);
   const note = useNoteContext();
+  const [noteForm, setNoteForm] = useNoteFormContext();
   const noteMediaSrc = useNoteMediaSrcContext();
   const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
     () => noteMediaSrc.fileName(),
@@ -249,6 +255,32 @@ function EditAudioButton() {
     );
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
+  const deleteNoteMediaMutation =
+    MiningMutation.NoteMediaMutation.deleteNoteMedia();
+
+  function deleteSentenceAudio() {
+    const fileName = noteMediaSrc.fileName();
+    if (!fileName) return;
+    if (fileName === noteForm.sentenceAudio) {
+      setNoteForm("sentenceAudio", undefined);
+    }
+    appToaster.promise(deleteNoteMediaMutation.mutateAsync({ fileName }), {
+      loading: {
+        title: "Deleting audio...",
+        description: `${fileName}`,
+      },
+      error: {
+        title: "Failed to delete audio",
+        description: `${fileName}`,
+      },
+      success: {
+        title: "Audio deleted",
+        description: `${fileName}`,
+      },
+    });
+  }
+
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger
@@ -285,6 +317,22 @@ function EditAudioButton() {
                 <Text size="sm" color="fg.muted">
                   {src()}
                 </Text>
+                <Show when={props.delete}>
+                  <Button
+                    loading={deleteNoteMediaMutation.isPending}
+                    colorPalette="red"
+                    onClick={() => {
+                      if (!showDeleteConfirm()) {
+                        setShowDeleteConfirm(true);
+                      } else {
+                        deleteSentenceAudio();
+                      }
+                    }}
+                  >
+                    <Show when={showDeleteConfirm()}>Confirm</Show>
+                    <Trash2Icon></Trash2Icon>
+                  </Button>
+                </Show>
                 <IconButton
                   onClick={() => {
                     setPlaying(!playing());
