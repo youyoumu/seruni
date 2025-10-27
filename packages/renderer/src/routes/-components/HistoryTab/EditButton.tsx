@@ -1,20 +1,24 @@
 import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
 import { ArrowRightIcon } from "lucide-solid";
-import { createSelector, createSignal, For, Suspense } from "solid-js";
+import type { JSX, ParentProps } from "solid-js";
+import { createSelector, createSignal, For, Show, Suspense } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { Box, Grid, HStack, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
+import { Code } from "#/components/ui/code";
 import { Dialog } from "#/components/ui/dialog";
 import { Heading } from "#/components/ui/heading";
 import { MiningQuery } from "#/lib/query/mining";
+import { SettingsQuery } from "#/lib/query/settings";
 import { AudioWaveMenu } from "./AudioWave";
 import {
   type NoteForm,
   NoteFormContextProvider,
   NoteMediaSrcContextProvider,
   useNoteContext,
+  useNoteFormContext,
 } from "./Context";
 import { PictureMenu } from "./Picture";
 export function EditButton() {
@@ -253,16 +257,23 @@ export function EditButton() {
                       setOpen(false);
                     }}
                   >
-                    Cancel
+                    Close
                   </Button>
-                  <Button
-                    disabled={
-                      noteForm.picture === undefined &&
-                      noteForm.sentenceAudio === undefined
-                    }
-                  >
-                    Update Note
-                  </Button>
+                  <UpdateNoteButton
+                    trigger={(triggerProps) => {
+                      return (
+                        <Button
+                          {...triggerProps()}
+                          disabled={
+                            noteForm.picture === undefined &&
+                            noteForm.sentenceAudio === undefined
+                          }
+                        >
+                          Update Note
+                        </Button>
+                      );
+                    }}
+                  />
                 </HStack>
               </Dialog.Content>
             </Dialog.Positioner>
@@ -270,5 +281,98 @@ export function EditButton() {
         </Suspense>
       </Dialog.Root>
     </NoteFormContextProvider>
+  );
+}
+
+function UpdateNoteButton(props: {
+  trigger: (triggerProps: () => ParentProps) => JSX.Element;
+}) {
+  const [open, setOpen] = createSignal(false);
+  const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const [noteForm, setNoteForm] = useNoteFormContext();
+
+  return (
+    <Dialog.Root
+      lazyMount
+      open={open()}
+      onOpenChange={(e) => {
+        setOpen(e.open);
+      }}
+    >
+      <Dialog.Trigger
+        asChild={(triggerProps) => {
+          return props.trigger(triggerProps);
+        }}
+      />
+      <Dialog.Backdrop />
+      <Suspense>
+        <Portal mount={document.querySelector("#app") ?? document.body}>
+          <Dialog.Positioner p="4">
+            <Dialog.Content w="fit" maxW="3xl" bg="bg.canvas">
+              <Stack p="4" gap="6">
+                <Heading size="2xl">Update Note?</Heading>
+                <HStack gap="4" justifyContent="center" alignItems="start">
+                  <Show when={!!noteForm.picture}>
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => noteForm.picture,
+                        source: () => "storage",
+                      }}
+                    >
+                      <Stack w="full" bg="bg.subtle" rounded="sm">
+                        <PictureMenu
+                          isSelected={false}
+                          onClick={() => {}}
+                          zoom={false}
+                        />
+                      </Stack>
+                    </NoteMediaSrcContextProvider>
+                  </Show>
+                  <Show when={!!noteForm.sentenceAudio}>
+                    <NoteMediaSrcContextProvider
+                      value={{
+                        fileName: () => noteForm.sentenceAudio,
+                        source: () => "storage",
+                      }}
+                    >
+                      <Stack w="full">
+                        <AudioWaveMenu
+                          hideEditButton={true}
+                          hideSelectButton={true}
+                          isSelected={false}
+                          onSelectClick={() => {}}
+                        />
+                      </Stack>
+                    </NoteMediaSrcContextProvider>
+                  </Show>
+                </HStack>
+              </Stack>
+              <Dialog.Description px="4">
+                <Show when={!!noteForm.picture}>
+                  Field <Code>{configQuery.data?.anki.pictureField}</Code> will
+                  be updated to <Code>{noteForm.picture}</Code>
+                  <br />
+                </Show>
+                <Show when={!!noteForm.sentenceAudio}>
+                  Field <Code>{configQuery.data?.anki.sentenceAudioField}</Code>{" "}
+                  will be updated to <Code>{noteForm.sentenceAudio}</Code>
+                  <br />
+                </Show>
+              </Dialog.Description>
+              <HStack justifyContent="end" gap="4" p="4">
+                <Button
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button>Confirm</Button>
+              </HStack>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Suspense>
+    </Dialog.Root>
   );
 }

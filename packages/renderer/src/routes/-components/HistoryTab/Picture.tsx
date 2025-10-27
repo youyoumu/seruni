@@ -62,6 +62,7 @@ const zoomIconCva = cva({
 export function PictureMenu(props: {
   onClick: () => void;
   isSelected: boolean;
+  zoom?: boolean;
 }) {
   const noteMediaSrc = useNoteMediaSrcContext();
   const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
@@ -84,7 +85,7 @@ export function PictureMenu(props: {
               },
             })}
           >
-            <Show when={!error()}>
+            <Show when={!error() && props.zoom !== false}>
               <ZoomInIcon
                 {...triggerProps()}
                 class={zoomIconCva({ size: "sm" })}
