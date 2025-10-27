@@ -19,12 +19,7 @@ export const zNoteMedia = z.array(
     fileName: z.string(),
     type: z.union([z.literal("picture"), z.literal("sentenceAudio")]),
     vadData: z
-      .array(
-        z.object({
-          start: z.number(),
-          end: z.number(),
-        }),
-      )
+      .array(z.object({ start: z.number(), end: z.number() }))
       .nullable(),
   }),
 );
@@ -63,72 +58,50 @@ export type UpdateNoteData = z.infer<typeof zUpdateNoteData>;
 export const zMiningIPC = {
   main: z.object({
     "mining:sendReplayBufferStartTime": z.object({
-      input: z.tuple([
-        z.object({
-          time: z.date().optional(),
-        }),
-      ]),
+      input: z.tuple([z.object({ time: z.date().optional() })]),
       output: z.void(),
     }),
     "mining:sendReplayBufferDuration": z.object({
-      input: z.tuple([
-        z.object({
-          duration: z.number(),
-        }),
-      ]),
+      input: z.tuple([z.object({ duration: z.number() })]),
       output: z.void(),
     }),
   }),
   renderer: z.object({
     "mining:setTextUuid": z.object({
-      input: z.tuple([
-        z.object({
-          uuid: z.string(),
-        }),
-      ]),
-      output: z.object({
-        uuid: z.string(),
-      }),
+      input: z.tuple([z.object({ uuid: z.string() })]),
+      output: z.object({ uuid: z.string() }),
     }),
     "mining:getTextHistory": z.object({
       input: z.tuple([]),
       output: z.array(
-        z.object({
-          uuid: z.string(),
-          text: z.string(),
-          time: z.date(),
-        }),
+        z.object({ uuid: z.string(), text: z.string(), time: z.date() }),
       ),
     }),
     "mining:getReplayBufferStartTime": z.object({
       input: z.tuple([]),
-      output: z.object({
-        time: z.date().optional(),
-      }),
+      output: z.object({ time: z.date().optional() }),
     }),
     "mining:getReplayBufferDuration": z.object({
       input: z.tuple([]),
-      output: z.object({
-        duration: z.number(),
-      }),
+      output: z.object({ duration: z.number() }),
     }),
     "mining:getSourceScreenshot": z.object({
       input: z.tuple([]),
-      output: z.object({
-        image: z.string().nullable(),
-      }),
+      output: z.object({ image: z.string().nullable() }),
     }),
     "mining:getAnkiHistory": z.object({
       input: z.tuple([]),
       output: zAnkiHistory,
     }),
     "mining:getNoteMedia": z.object({
-      input: z.tuple([
-        z.object({
-          noteId: z.number(),
-        }),
-      ]),
+      input: z.tuple([z.object({ noteId: z.number() })]),
       output: zNoteMedia,
+    }),
+    "mining:deleteNoteMedia": z.object({
+      input: z.tuple([z.object({ fileName: z.string() })]),
+      output: z.object({
+        noteIds: z.array(z.number()),
+      }),
     }),
     "mining:cropPicture": z.object({
       input: z.tuple([z.number(), zNoteMediaSrc, zSelectionData]),

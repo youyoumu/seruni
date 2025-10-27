@@ -1,22 +1,23 @@
-import { access, cp } from "node:fs/promises";
+import { access, cp, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { env } from "#/env";
-import { log } from "#/util/logger";
+import { logWithNamespace } from "#/util/logger";
 import type { VadData } from "#/util/schema";
 import { mediaTable, notesTable } from "./schema";
 
 export class DB {
+  static log = logWithNamespace("DB");
+  log = logWithNamespace("DB");
   db: ReturnType<typeof drizzle>;
   constructor() {
     this.db = drizzle(`file:${env.DB_FILE_PATH}`);
   }
 
   static async migrate(db: ReturnType<typeof drizzle>) {
-    //TODO: enum namespace
-    log.debug({ namespace: "DB" }, "Migrating database");
+    DB.log.debug("Migrating database");
     await migrate(db, {
       migrationsFolder: env.DRIZZLE_PATH,
     });
@@ -34,6 +35,7 @@ export class DB {
     }>;
   }) {
     media.forEach((m) => {
+      this.log.trace(`Copying ${m.filePath} to ${env.STORAGE_PATH}`);
       cp(m.filePath, join(env.STORAGE_PATH, basename(m.filePath)));
     });
 
@@ -53,7 +55,7 @@ export class DB {
       if (!noteRowId) throw new Error("Note ID not found");
     }
 
-    log.debug({ noteId, media }, "Saving note and media to database");
+    this.log.debug({ noteId, media }, "Saving note and media to database");
     await this.db.insert(mediaTable).values(
       media.map((m) => ({
         noteId: noteRowId,
@@ -71,7 +73,7 @@ export class DB {
       .where(eq(notesTable.noteId, noteId));
     const noteRowId = note[0]?.id;
     if (!noteRowId) {
-      log.trace(`noteId ${noteId} is not in the database`);
+      this.log.trace(`noteId ${noteId} is not in the database`);
       return [];
     }
     const result = await this.db
@@ -86,6 +88,22 @@ export class DB {
       } catch {}
     }
     return result.filter((r) => validMedia.includes(r.id));
+  }
+
+  async deleteNoteMedia(fileName: string) {
+    const deleted = await this.db
+      .delete(mediaTable)
+      .where(eq(mediaTable.fileName, fileName))
+      .returning();
+    this.log.debug({ deleted }, "Deleted note media from database");
+    await rm(join(env.STORAGE_PATH, fileName));
+    this.log.trace(`Deleted ${fileName} from ${env.STORAGE_PATH}`);
+    const noteRowIds = deleted.map((d) => d.noteId);
+    const notes = await this.db
+      .select()
+      .from(notesTable)
+      .where(inArray(notesTable.id, noteRowIds));
+    return notes;
   }
 }
 

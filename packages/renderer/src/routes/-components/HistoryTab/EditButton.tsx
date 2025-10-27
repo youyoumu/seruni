@@ -161,6 +161,7 @@ export function EditButton() {
                               }}
                             >
                               <PictureMenu
+                                delete
                                 isSelected={isPictureSelected(item.fileName)}
                                 onClick={() => {
                                   setNoteForm("picture", item.fileName);

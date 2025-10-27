@@ -144,6 +144,27 @@ const AnkiMutation = {
     }),
 } satisfies Mutation;
 
+const NoteMediaMutation = {
+  // biome-ignore format: this looks nicer
+  deleteNoteMedia: () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: async (payload: { fileName: string }) => {
+          const data = await ipcRenderer.invoke( "mining:deleteNoteMedia", payload,);
+          return { noteIds: data.noteIds };
+        },
+        onSuccess: async (data) => {
+          await Promise.all(
+            data.noteIds.map((noteId) =>
+              qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(noteId).queryKey, }),
+            ),
+          );
+        },
+      };
+    }),
+} satisfies Mutation;
+
 export const MiningQuery = {
   NoteMediaQuery,
   ObsQuery,
@@ -152,5 +173,6 @@ export const MiningQuery = {
 };
 
 export const MiningMutation = {
+  NoteMediaMutation,
   AnkiMutation,
 };

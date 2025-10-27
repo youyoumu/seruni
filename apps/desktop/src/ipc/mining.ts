@@ -113,6 +113,11 @@ class MiningIPC extends IPC()<"mining"> {
       return await mainDB().getNoteMedia(noteId);
     });
 
+    this.handle("mining:deleteNoteMedia", async (_, { fileName }) => {
+      const notes = await mainDB().deleteNoteMedia(fileName);
+      return { noteIds: notes.map((n) => n.noteId) };
+    });
+
     this.handle(
       "mining:cropPicture",
       async (_, noteId, { source, fileName }, selectionData) => {

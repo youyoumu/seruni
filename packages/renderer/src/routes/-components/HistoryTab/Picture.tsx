@@ -1,5 +1,5 @@
 import type { SelectionData } from "@repo/preload/ipc";
-import { CropIcon, RatIcon, ZoomInIcon } from "lucide-solid";
+import { CropIcon, RatIcon, Trash2Icon, ZoomInIcon } from "lucide-solid";
 import type { JSX, ParentProps } from "solid-js";
 import { css, cva } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
@@ -12,7 +12,11 @@ import { GeneralQuery } from "#/lib/query/general";
 import { MiningMutation } from "#/lib/query/mining";
 import { appToaster } from "../AppToaster";
 import { srcSet } from "./_util";
-import { useNoteContext, useNoteMediaSrcContext } from "./Context";
+import {
+  useNoteContext,
+  useNoteFormContext,
+  useNoteMediaSrcContext,
+} from "./Context";
 import { PictureCropper } from "./PictureCropper";
 
 const zoomIconCva = cva({
@@ -54,7 +58,9 @@ export function PictureMenu(props: {
   onClick: () => void;
   isSelected: boolean;
   zoom?: boolean;
+  delete?: boolean;
 }) {
+  const [noteForm, setNoteForm] = useNoteFormContext();
   const noteMediaSrc = useNoteMediaSrcContext();
   const mediaUrlQuery = GeneralQuery.HttpServerUrlQuery.mediaUrl.use(
     () => noteMediaSrc.fileName(),
@@ -64,8 +70,52 @@ export function PictureMenu(props: {
     noteMediaSrc.fileName() ? (mediaUrlQuery.data ?? "") : undefined;
   const [error, setError] = createSignal(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
+  const deleteNoteMediaMutation =
+    MiningMutation.NoteMediaMutation.deleteNoteMedia();
+
+  function deletePicture() {
+    const fileName = noteMediaSrc.fileName();
+    if (!fileName) return;
+    if (fileName === noteForm.picture) {
+      setNoteForm("picture", undefined);
+    }
+    appToaster.promise(deleteNoteMediaMutation.mutateAsync({ fileName }), {
+      loading: {
+        title: "Deleting picture...",
+        description: `${fileName}`,
+      },
+      error: {
+        title: "Failed to delete picture",
+        description: `${fileName}`,
+      },
+      success: {
+        title: "Picture deleted",
+        description: `${fileName}`,
+      },
+    });
+  }
+
   return (
     <PictureWithZoom
+      extraButtons={
+        props.delete ? (
+          <Button
+            loading={deleteNoteMediaMutation.isPending}
+            colorPalette="red"
+            onClick={() => {
+              if (!showDeleteConfirm()) {
+                setShowDeleteConfirm(true);
+              } else {
+                deletePicture();
+              }
+            }}
+          >
+            <Show when={showDeleteConfirm()}>Confirm</Show>
+            <Trash2Icon></Trash2Icon>
+          </Button>
+        ) : undefined
+      }
       trigger={(triggerProps) => {
         return (
           <Box
