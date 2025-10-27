@@ -26,7 +26,6 @@ async function preferPort(preferredPort: number) {
 }
 
 const HTTP_SERVER_PORT = await preferPort(42424);
-const ANKI_CONNECT_PROXY_PORT = await preferPort(48765);
 
 async function createEnv_() {
   const envJson = async () => {
@@ -150,7 +149,6 @@ async function createEnv_() {
     RENDERER_URL: `http://localhost:${validatedEnv.RENDERER_PORT}`,
     HTTP_SERVER_PORT,
     HTTP_SERVER_URL: `http://localhost:${HTTP_SERVER_PORT}`,
-    ANKI_CONNECT_PROXY_PORT,
   };
 
   return {

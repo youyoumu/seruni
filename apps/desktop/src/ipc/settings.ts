@@ -1,5 +1,6 @@
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
+import { ankiClient } from "#/client/anki";
 import { env } from "#/env";
 import { yomitanExtension } from "#/extension/yomitan";
 import { python } from "#/runner/python";
@@ -80,6 +81,10 @@ class SettingsIPC extends IPC()<"settings"> {
 
     this.handle("settings:pythonVenvHealthcheck", async () => {
       return python().runMainHealthcheck();
+    });
+
+    this.handle("settings:ankiCollectionMediaDir", async () => {
+      return ankiClient().mediaDir ?? "";
     });
   }
 }

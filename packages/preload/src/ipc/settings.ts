@@ -57,5 +57,9 @@ export const zSettingsIPC = {
       input: z.tuple([]),
       output: z.record(z.string(), z.unknown()),
     }),
+    "settings:ankiCollectionMediaDir": z.object({
+      input: z.tuple([]),
+      output: z.string(),
+    }),
   }),
 };

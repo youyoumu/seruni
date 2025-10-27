@@ -120,6 +120,7 @@ export function AudioWaveMenu(props: {
   hideSelectButton?: boolean;
 }) {
   const noteMediaSrc = useNoteMediaSrcContext();
+
   const [playing, setPlaying] = createSignal(false);
 
   return (

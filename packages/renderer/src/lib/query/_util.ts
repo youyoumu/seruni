@@ -66,6 +66,10 @@ const settings = [
       queryKey: [undefined],
       queryFn: () => ipcRenderer.invoke("settings:getEnv"),
     },
+    ankiCollectionMediaDir: {
+      queryKey: [undefined],
+      queryFn: () => ipcRenderer.invoke("settings:ankiCollectionMediaDir"),
+    },
   }),
   createQueryKeys("settings:config", {
     detail: {

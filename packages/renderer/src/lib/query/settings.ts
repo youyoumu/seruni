@@ -139,6 +139,11 @@ const EnvQuery = {
     options: () => queryOptions({ ...keyStore["settings:env"].detail, placeholderData: {}, }),
     use: () => useQuery(() => ({ ...EnvQuery.detail.options() })),
   },
+  // biome-ignore format: this looks nicer
+  ankiCollectionMediaDir: {
+    options: () => queryOptions({ ...keyStore["settings:env"].ankiCollectionMediaDir, placeholderData: "", }),
+    use: () => useQuery(() => ({ ...EnvQuery.ankiCollectionMediaDir.options() })),
+  },
 } satisfies Query;
 
 const ConfigQuery = {
