@@ -1,5 +1,5 @@
 import {
-  ArrowRightIcon,
+  ArrowUpRightIcon,
   AudioLinesIcon,
   PauseIcon,
   PlayIcon,
@@ -27,7 +27,6 @@ import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningMutation } from "#/lib/query/mining";
-import { inspect } from "#/lib/util";
 import { appToaster } from "../AppToaster";
 import { useNoteContext, useNoteMediaSrcContext } from "./Context";
 
@@ -160,7 +159,7 @@ export function AudioWaveMenu(props: {
                   props.onSelectClick();
                 }}
               >
-                <ArrowRightIcon />
+                <ArrowUpRightIcon />
               </IconButton>
             </Show>
           </HStack>

@@ -1,5 +1,5 @@
 import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
-import { ArrowRightIcon } from "lucide-solid";
+import { ArrowRightIcon, UndoIcon } from "lucide-solid";
 import type { JSX, ParentProps } from "solid-js";
 import { createSelector, createSignal, For, Show, Suspense } from "solid-js";
 import { createStore } from "solid-js/store";
@@ -10,6 +10,7 @@ import { Button } from "#/components/ui/button";
 import { Code } from "#/components/ui/code";
 import { Dialog } from "#/components/ui/dialog";
 import { Heading } from "#/components/ui/heading";
+import { IconButton } from "#/components/ui/icon-button";
 import { MiningQuery } from "#/lib/query/mining";
 import { SettingsQuery } from "#/lib/query/settings";
 import { AudioWaveMenu } from "./AudioWave";
@@ -190,6 +191,7 @@ export function EditButton() {
                         }}
                       >
                         <AudioWaveMenu
+                          hideSelectButton={true}
                           isSelected={false}
                           onSelectClick={() => {
                             setNoteForm("sentenceAudio", undefined);
@@ -252,6 +254,14 @@ export function EditButton() {
                   borderTopWidth="thin"
                   borderColor="border.default"
                 >
+                  <IconButton
+                    onClick={() => {
+                      setNoteForm("picture", undefined);
+                      setNoteForm("sentenceAudio", undefined);
+                    }}
+                  >
+                    <UndoIcon />
+                  </IconButton>
                   <Button
                     onClick={() => {
                       setOpen(false);
@@ -289,6 +299,7 @@ function UpdateNoteButton(props: {
 }) {
   const [open, setOpen] = createSignal(false);
   const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const note = useNoteContext();
   const [noteForm, setNoteForm] = useNoteFormContext();
 
   return (
@@ -310,7 +321,10 @@ function UpdateNoteButton(props: {
           <Dialog.Positioner p="4">
             <Dialog.Content w="fit" maxW="3xl" bg="bg.canvas">
               <Stack p="4" gap="6">
-                <Heading size="2xl">Update Note?</Heading>
+                <Stack gap="1">
+                  <Heading size="2xl">Update Note?</Heading>
+                  <Dialog.Description>{note.id}</Dialog.Description>
+                </Stack>
                 <HStack gap="4" justifyContent="center" alignItems="start">
                   <Show when={!!noteForm.picture}>
                     <NoteMediaSrcContextProvider
@@ -350,12 +364,14 @@ function UpdateNoteButton(props: {
               <Dialog.Description px="4">
                 <Show when={!!noteForm.picture}>
                   Field <Code>{configQuery.data?.anki.pictureField}</Code> will
-                  be updated to <Code>{noteForm.picture}</Code>
+                  be updated from <Code>{note.picture}</Code> to{" "}
+                  <Code>{noteForm.picture}</Code>
                   <br />
                 </Show>
                 <Show when={!!noteForm.sentenceAudio}>
                   Field <Code>{configQuery.data?.anki.sentenceAudioField}</Code>{" "}
-                  will be updated to <Code>{noteForm.sentenceAudio}</Code>
+                  will be updated from <Code>{note.sentenceAudio}</Code> to{" "}
+                  <Code>{noteForm.sentenceAudio}</Code>
                   <br />
                 </Show>
               </Dialog.Description>
