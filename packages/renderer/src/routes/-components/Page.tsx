@@ -19,7 +19,7 @@ import { IconButton } from "#/components/ui/icon-button";
 import { Tabs } from "#/components/ui/tabs";
 import { Text } from "#/components/ui/text";
 import { Toast } from "#/components/ui/toast";
-import { localStore, setLocalStore, setStore, store } from "#/lib/store";
+import { localStore, setLocalStore, store } from "#/lib/store";
 import { type AppToastType, appToaster, ToasterIcon } from "./AppToaster";
 import { ConsoleTab } from "./ConsoleTab";
 import { DebugTab } from "./DebugTab";
@@ -29,16 +29,18 @@ import { MiningTab } from "./MiningTab";
 import { SettingsTab } from "./SettingsTab";
 import { StatusBar } from "./StatusBar";
 
-export function Page() {
-  const options = [
-    { id: "home", label: "Home" },
-    { id: "mining", label: "Mining" },
-    { id: "history", label: "History" },
-    { id: "console", label: "Console" },
-    { id: "settings", label: "Settings" },
-    import.meta.env.DEV && { id: "debug", label: "Debug" },
-  ];
+const options = [
+  { id: "home", label: "Home" },
+  { id: "mining", label: "Mining" },
+  { id: "history", label: "History" },
+  { id: "console", label: "Console" },
+  { id: "settings", label: "Settings" },
+];
+if (import.meta.env.DEV) {
+  options.push({ id: "debug", label: "Debug" });
+}
 
+export function Page() {
   const [tabListEl, setTabListEl] = createSignal<HTMLDivElement>();
   const [statusBarEl] = store.element.statusBar;
   const tabListSize = createElementSize(tabListEl);
