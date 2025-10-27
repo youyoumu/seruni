@@ -17,21 +17,21 @@ const libConfig = defineConfig({
   dts: true,
 });
 
-export default [
-  defineConfig({
+export default defineConfig([
+  {
     ...preloadConfig,
     entry: ["src/_preload/ipc.ts"],
-  }),
-  defineConfig({
+  },
+  {
     ...preloadConfig,
     entry: ["src/_preload/chrome.ts"],
-  }),
-  defineConfig({
+  },
+  {
     ...libConfig,
     entry: {
       ipc: "src/ipc/index.ts",
       chrome: "src/chrome/index.ts",
       websocket: "src/websocket/index.ts",
     },
-  }),
-];
+  },
+]);

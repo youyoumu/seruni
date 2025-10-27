@@ -17,7 +17,7 @@
     "@repo/typescript-config": "workspace:*",
     "chokidar": "^4.0.3",
     "electron": "^38.2.0",
-    "tsdown": "^0.15.5",
+    "tsdown": "^0.15.10",
     "typescript": "^5.9.2"
   },
   "dependencies": {
