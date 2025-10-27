@@ -17,20 +17,22 @@ export function AudioButton(props: { src: string }) {
   });
 
   return (
-    <Show when={ready()}>
-      <Stack alignItems="center">
-        <IconButton size="xs" onClick={() => setPlaying((prev) => !prev)}>
-          <Switch>
-            <Match when={audioState.state === "playing"}>
-              <PauseIcon />
-            </Match>
-            <Match when={audioState.state !== "playing"}>
-              <PlayIcon />
-            </Match>
-          </Switch>
-        </IconButton>
-        <Slider value={[progress()]} defaultValue={[0]} w="32" />
-      </Stack>
-    </Show>
+    <Stack alignItems="center">
+      <IconButton
+        size="xs"
+        onClick={() => setPlaying((prev) => !prev)}
+        disabled={!ready()}
+      >
+        <Switch>
+          <Match when={audioState.state === "playing"}>
+            <PauseIcon />
+          </Match>
+          <Match when={audioState.state !== "playing"}>
+            <PlayIcon />
+          </Match>
+        </Switch>
+      </IconButton>
+      <Slider value={[progress()]} defaultValue={[0]} w="32" />
+    </Stack>
   );
 }

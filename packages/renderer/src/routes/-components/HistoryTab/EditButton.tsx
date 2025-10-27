@@ -109,7 +109,7 @@ export function EditButton() {
                   }}
                 >
                   <HStack>
-                    <Heading size="2xl">Update Picture</Heading>
+                    <Heading size="2xl">Picture</Heading>
                   </HStack>
                   <HStack justifyContent="center" maxH="64">
                     <Box flex="1" bg="bg.subtle" rounded="sm">
@@ -181,7 +181,7 @@ export function EditButton() {
                   ></Box>
 
                   <HStack>
-                    <Heading size="2xl">Update Sentence Audio</Heading>
+                    <Heading size="2xl">Sentence Audio</Heading>
                   </HStack>
                   <HStack justifyContent="center" maxH="64" alignItems="end">
                     <Box flex="1">
@@ -355,86 +355,90 @@ function UpdateNoteButton(props: {
       <Dialog.Backdrop />
       <Suspense>
         <Portal mount={document.querySelector("#app") ?? document.body}>
-          <Dialog.Positioner p="4">
-            <Dialog.Content w="fit" maxW="3xl" bg="bg.canvas">
-              <Stack p="4" gap="6">
-                <Stack gap="1">
-                  <Heading size="2xl">Update Note?</Heading>
-                  <Dialog.Description>{note.id}</Dialog.Description>
+          <Show when={!!noteForm.picture || !!noteForm.sentenceAudio}>
+            <Dialog.Positioner p="4">
+              <Dialog.Content w="fit" maxW="3xl" bg="bg.canvas">
+                <Stack p="4" gap="6">
+                  <Stack gap="1">
+                    <Heading size="2xl">Update Note?</Heading>
+                    <Dialog.Description>{note.id}</Dialog.Description>
+                  </Stack>
+                  <HStack gap="4" justifyContent="center" alignItems="start">
+                    <Show when={!!noteForm.picture}>
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => noteForm.picture,
+                          source: () => "storage",
+                        }}
+                      >
+                        <Stack w="full" bg="bg.subtle" rounded="sm">
+                          <PictureMenu
+                            isSelected={false}
+                            onClick={() => {}}
+                            zoom={false}
+                          />
+                        </Stack>
+                      </NoteMediaSrcContextProvider>
+                    </Show>
+                    <Show when={!!noteForm.sentenceAudio}>
+                      <NoteMediaSrcContextProvider
+                        value={{
+                          fileName: () => noteForm.sentenceAudio,
+                          source: () => "storage",
+                        }}
+                      >
+                        <Stack w="full">
+                          <AudioWaveMenu
+                            hideEditButton={true}
+                            hideSelectButton={true}
+                            isSelected={false}
+                            onSelectClick={() => {}}
+                          />
+                        </Stack>
+                      </NoteMediaSrcContextProvider>
+                    </Show>
+                  </HStack>
                 </Stack>
-                <HStack gap="4" justifyContent="center" alignItems="start">
+                <Dialog.Description px="4">
                   <Show when={!!noteForm.picture}>
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => noteForm.picture,
-                        source: () => "storage",
-                      }}
-                    >
-                      <Stack w="full" bg="bg.subtle" rounded="sm">
-                        <PictureMenu
-                          isSelected={false}
-                          onClick={() => {}}
-                          zoom={false}
-                        />
-                      </Stack>
-                    </NoteMediaSrcContextProvider>
+                    Field <Code>{configQuery.data?.anki.pictureField}</Code>{" "}
+                    will be updated to <Code>{noteForm.picture}</Code>
+                    <br />
                   </Show>
                   <Show when={!!noteForm.sentenceAudio}>
-                    <NoteMediaSrcContextProvider
-                      value={{
-                        fileName: () => noteForm.sentenceAudio,
-                        source: () => "storage",
-                      }}
-                    >
-                      <Stack w="full">
-                        <AudioWaveMenu
-                          hideEditButton={true}
-                          hideSelectButton={true}
-                          isSelected={false}
-                          onSelectClick={() => {}}
-                        />
-                      </Stack>
-                    </NoteMediaSrcContextProvider>
+                    Field{" "}
+                    <Code>{configQuery.data?.anki.sentenceAudioField}</Code>
+                    will be updated to <Code>{noteForm.sentenceAudio}</Code>
+                    <br />
                   </Show>
+                  <Show when={!!note.picture && noteForm.picture}>
+                    Previous <Code>{note.picture}</Code> will be backed up{" "}
+                    <br />
+                  </Show>
+                  <Show when={!!note.sentenceAudio && noteForm.sentenceAudio}>
+                    Previous <Code>{note.sentenceAudio}</Code> will be backed up{" "}
+                    <br />
+                  </Show>
+                </Dialog.Description>
+                <HStack justifyContent="end" gap="4" p="4">
+                  <Button
+                    disabled={updateNoteMutation.isPending}
+                    onClick={() => {
+                      setOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    loading={updateNoteMutation.isPending}
+                    onClick={updateNote}
+                  >
+                    Confirm
+                  </Button>
                 </HStack>
-              </Stack>
-              <Dialog.Description px="4">
-                <Show when={!!noteForm.picture}>
-                  Field <Code>{configQuery.data?.anki.pictureField}</Code> will
-                  be updated to <Code>{noteForm.picture}</Code>
-                  <br />
-                </Show>
-                <Show when={!!noteForm.sentenceAudio}>
-                  Field <Code>{configQuery.data?.anki.sentenceAudioField}</Code>
-                  will be updated to <Code>{noteForm.sentenceAudio}</Code>
-                  <br />
-                </Show>
-                <Show when={!!note.picture && noteForm.picture}>
-                  Previous <Code>{note.picture}</Code> will be backed up <br />
-                </Show>
-                <Show when={!!note.sentenceAudio && noteForm.sentenceAudio}>
-                  Previous <Code>{note.sentenceAudio}</Code> will be backed up{" "}
-                  <br />
-                </Show>
-              </Dialog.Description>
-              <HStack justifyContent="end" gap="4" p="4">
-                <Button
-                  disabled={updateNoteMutation.isPending}
-                  onClick={() => {
-                    setOpen(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  loading={updateNoteMutation.isPending}
-                  onClick={updateNote}
-                >
-                  Confirm
-                </Button>
-              </HStack>
-            </Dialog.Content>
-          </Dialog.Positioner>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Show>
         </Portal>
       </Suspense>
     </Dialog.Root>
