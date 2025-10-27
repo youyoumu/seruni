@@ -282,6 +282,14 @@ function EditAudioButton(props: { delete?: boolean }) {
     });
   }
 
+  const filePath = () => {
+    if (noteMediaSrc.source() === "anki") {
+      return note.picturePath ?? src();
+    } else if (noteMediaSrc.source() === "storage") {
+      return noteMediaSrc.noteMedia?.()?.filePath ?? src();
+    }
+  };
+
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger
@@ -308,7 +316,7 @@ function EditAudioButton(props: { delete?: boolean }) {
                 />
               </Box>
               <HStack
-                alignItems="end"
+                alignItems="start"
                 justifyContent="end"
                 w="full"
                 p="4"
@@ -316,23 +324,33 @@ function EditAudioButton(props: { delete?: boolean }) {
                 borderColor="border.default"
               >
                 <Text size="sm" color="fg.muted" wordBreak="break-all">
-                  {src()}
+                  {filePath()}
                 </Text>
                 <Show when={props.delete}>
-                  <Button
-                    loading={deleteNoteMediaMutation.isPending}
-                    colorPalette="red"
-                    onClick={() => {
-                      if (!showDeleteConfirm()) {
-                        setShowDeleteConfirm(true);
-                      } else {
-                        deleteSentenceAudio();
-                      }
-                    }}
-                  >
-                    <Show when={showDeleteConfirm()}>Confirm</Show>
-                    <Trash2Icon></Trash2Icon>
-                  </Button>
+                  <Switch>
+                    <Match when={showDeleteConfirm()}>
+                      <Button
+                        loading={deleteNoteMediaMutation.isPending}
+                        colorPalette="red"
+                        onClick={() => {
+                          deleteSentenceAudio();
+                        }}
+                      >
+                        <Show when={showDeleteConfirm()}>Confirm</Show>
+                        <Trash2Icon></Trash2Icon>
+                      </Button>
+                    </Match>
+                    <Match when={!showDeleteConfirm()}>
+                      <IconButton
+                        colorPalette="red"
+                        onClick={() => {
+                          setShowDeleteConfirm(true);
+                        }}
+                      >
+                        <Trash2Icon></Trash2Icon>
+                      </IconButton>
+                    </Match>
+                  </Switch>
                 </Show>
                 <IconButton
                   onClick={() => {

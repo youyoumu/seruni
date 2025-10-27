@@ -97,11 +97,19 @@ class MiningIPC extends IPC()<"mining"> {
         const pictureMedia = this.parseAnkiMediaPath(pictureFieldValue);
         const audioMedia = this.parseAnkiMediaPath(sentenceAudioFieldValue);
 
+        const mediaDir = ankiClient().mediaDir;
+        const picturePath =
+          pictureMedia && mediaDir ? join(mediaDir, pictureMedia) : undefined;
+        const sentenceAudioPath =
+          audioMedia && mediaDir ? join(mediaDir, audioMedia) : undefined;
+
         return {
           id: note.noteId,
           expression,
           picture: pictureMedia,
+          picturePath,
           sentenceAudio: audioMedia,
+          sentenceAudioPath,
           nsfw: AnkiClient().inNsfw(note),
         };
       });

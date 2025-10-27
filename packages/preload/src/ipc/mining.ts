@@ -9,7 +9,9 @@ export const zAnkiHistory = z.array(
     id: z.number(),
     expression: z.string(),
     picture: z.string(),
+    picturePath: z.string().optional(),
     sentenceAudio: z.string(),
+    sentenceAudioPath: z.string().optional(),
     nsfw: z.boolean(),
   }),
 );
@@ -17,6 +19,7 @@ export const zAnkiHistory = z.array(
 export const zNoteMedia = z.array(
   z.object({
     fileName: z.string(),
+    filePath: z.string(),
     type: z.union([z.literal("picture"), z.literal("sentenceAudio")]),
     vadData: z
       .array(z.object({ start: z.number(), end: z.number() }))

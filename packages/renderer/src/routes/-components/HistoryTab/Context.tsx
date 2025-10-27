@@ -27,7 +27,7 @@ export function useNoteFormContext() {
 
 //  ───────────────────────────── NoteContext ─────────────────────────────
 
-import type { AnkiHistory } from "@repo/preload/ipc";
+import type { AnkiHistory, NoteMedia } from "@repo/preload/ipc";
 
 export const NoteContext = createContext<AnkiHistory[number]>();
 
@@ -51,6 +51,7 @@ export function useNoteContext() {
 //  ─────────────────────────── MedisSrcContext ───────────────────────────
 
 type NoteMediaSrc = {
+  noteMedia?: () => NoteMedia[number] | undefined;
   fileName: () => string | undefined;
   source: () => "anki" | "storage";
 };

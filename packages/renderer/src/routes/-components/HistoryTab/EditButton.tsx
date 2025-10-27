@@ -31,6 +31,7 @@ export function EditButton() {
     if (pictures.length === 1) {
       pictures.push({
         fileName: "",
+        filePath: "",
         type: "picture",
         vadData: null,
       });
@@ -138,6 +139,10 @@ export function EditButton() {
                     <Box flex="1" bg="bg.subtle" rounded="sm">
                       <NoteMediaSrcContextProvider
                         value={{
+                          noteMedia: () =>
+                            noteMediaQuery.data.find(
+                              (m) => m.fileName === noteForm.picture,
+                            ),
                           fileName: () => noteForm.picture,
                           source: () => "storage",
                         }}
@@ -156,6 +161,7 @@ export function EditButton() {
                           <Box bg="bg.subtle" rounded="sm">
                             <NoteMediaSrcContextProvider
                               value={{
+                                noteMedia: () => item,
                                 fileName: () => item.fileName,
                                 source: () => "storage",
                               }}
@@ -213,6 +219,10 @@ export function EditButton() {
                     <Box flex="1">
                       <NoteMediaSrcContextProvider
                         value={{
+                          noteMedia: () =>
+                            noteMediaQuery.data.find(
+                              (m) => m.fileName === noteForm.sentenceAudio,
+                            ),
                           fileName: () => noteForm.sentenceAudio,
                           source: () => "storage",
                         }}
@@ -231,6 +241,7 @@ export function EditButton() {
                       return (
                         <NoteMediaSrcContextProvider
                           value={{
+                            noteMedia: () => item,
                             fileName: () => item.fileName,
                             source: () => "storage",
                           }}

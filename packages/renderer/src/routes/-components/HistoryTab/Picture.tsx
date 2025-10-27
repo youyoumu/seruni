@@ -7,7 +7,9 @@ import { Flip } from "#/components/Flip";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { Icon } from "#/components/ui/icon";
+import { IconButton } from "#/components/ui/icon-button";
 import { Spinner } from "#/components/ui/spinner";
+import { Text } from "#/components/ui/text";
 import { GeneralQuery } from "#/lib/query/general";
 import { MiningMutation } from "#/lib/query/mining";
 import { appToaster } from "../AppToaster";
@@ -100,20 +102,30 @@ export function PictureMenu(props: {
     <PictureWithZoom
       extraButtons={
         props.delete ? (
-          <Button
-            loading={deleteNoteMediaMutation.isPending}
-            colorPalette="red"
-            onClick={() => {
-              if (!showDeleteConfirm()) {
-                setShowDeleteConfirm(true);
-              } else {
-                deletePicture();
-              }
-            }}
-          >
-            <Show when={showDeleteConfirm()}>Confirm</Show>
-            <Trash2Icon></Trash2Icon>
-          </Button>
+          <Switch>
+            <Match when={showDeleteConfirm()}>
+              <Button
+                loading={deleteNoteMediaMutation.isPending}
+                colorPalette="red"
+                onClick={() => {
+                  deletePicture();
+                }}
+              >
+                <Show when={showDeleteConfirm()}>Confirm</Show>
+                <Trash2Icon></Trash2Icon>
+              </Button>
+            </Match>
+            <Match when={!showDeleteConfirm()}>
+              <IconButton
+                colorPalette="red"
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                }}
+              >
+                <Trash2Icon></Trash2Icon>
+              </IconButton>
+            </Match>
+          </Switch>
         ) : undefined
       }
       trigger={(triggerProps) => {
@@ -304,6 +316,14 @@ export function PictureWithZoom(props: {
     );
   }
 
+  const filePath = () => {
+    if (noteMediaSrc.source() === "anki") {
+      return note.picturePath ?? src();
+    } else if (noteMediaSrc.source() === "storage") {
+      return noteMediaSrc.noteMedia?.()?.filePath ?? src();
+    }
+  };
+
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Trigger
@@ -366,7 +386,7 @@ export function PictureWithZoom(props: {
                     </Box>
                   </Box>
 
-                  <HStack justifyContent="end">
+                  <HStack justifyContent="end" alignItems="start">
                     <Button
                       {...closeTriggerProps()}
                       opacity="0"
@@ -375,6 +395,9 @@ export function PictureWithZoom(props: {
                     >
                       ""
                     </Button>
+                    <Text size="sm" color="fg.muted" wordBreak="break-all">
+                      {filePath()}
+                    </Text>
                     {props.extraButtons}
 
                     <Show when={props.hideButtons !== true}>

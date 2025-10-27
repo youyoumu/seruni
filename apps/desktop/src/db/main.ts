@@ -87,7 +87,12 @@ export class DB {
         validMedia.push(r.id);
       } catch {}
     }
-    return result.filter((r) => validMedia.includes(r.id));
+    return result
+      .filter((r) => validMedia.includes(r.id))
+      .map((item) => ({
+        ...item,
+        filePath: join(env.STORAGE_PATH, item.fileName),
+      }));
   }
 
   async deleteNoteMedia(fileName: string) {
