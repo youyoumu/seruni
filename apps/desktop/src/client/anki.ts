@@ -153,7 +153,7 @@ const AnkiClient_ = class AnkiClient {
           if (!pictureField) throw new Error("Invalid Picture field");
           if (!sentenceAudioField)
             throw new Error("Invalid Sentence Audio field");
-          const result = await this.handleNewNote(noteId);
+          const result = await this.handleNewNote(noteInfo);
           return {
             success: {
               title: `Note Has Been Updated`,
@@ -180,7 +180,7 @@ const AnkiClient_ = class AnkiClient {
   }
 
   //TODO: move this out from anki client
-  async handleNewNote(noteId: number) {
+  async handleNewNote(note: AnkiNote) {
     //get history
     const now = new Date();
     const history = sort(textractorClient().history)
@@ -214,12 +214,12 @@ const AnkiClient_ = class AnkiClient {
         const result = await this.textUuidQueue[history.uuid];
         if (result) {
           this.log.debug({ ...result }, "Reusing media files");
-          await this.updateNoteMedia({
-            noteId,
+          await this.updateNote({
+            note,
             picturePath: result.picturePath,
             sentenceAudioPath: result.sentenceAudioPath,
           });
-          await this.client?.graphical.guiEditNote({ note: noteId });
+          await this.client?.graphical.guiEditNote({ note: note.noteId });
           return { reuseMedia: true };
         }
       }
@@ -383,7 +383,7 @@ const AnkiClient_ = class AnkiClient {
           if (mediaEntries.length > 0) {
             try {
               await mainDB().insertNoteAndMedia({
-                noteId,
+                noteId: note.noteId,
                 media: mediaEntries,
               });
             } catch (e) {
@@ -398,13 +398,13 @@ const AnkiClient_ = class AnkiClient {
         imagePathPromise,
       ]);
 
-      await this.updateNoteMedia({
-        noteId,
+      await this.updateNote({
+        note,
         picturePath: imagePath,
         sentenceAudioPath: audioStage2Path,
       });
 
-      await this.client?.graphical.guiEditNote({ note: noteId });
+      await this.client?.graphical.guiEditNote({ note: note.noteId });
       resolve({
         sentenceAudioPath: audioStage2Path,
         picturePath: imagePath,
@@ -418,24 +418,35 @@ const AnkiClient_ = class AnkiClient {
     }
   }
 
-  async updateNoteMedia({
-    noteId,
+  async updateNote({
+    note,
     picturePath,
     sentenceAudioPath,
     overwrite = false,
+    nsfw,
   }: {
-    noteId: number;
+    note: AnkiNote;
     picturePath: string | undefined | null;
     sentenceAudioPath: string | undefined | null;
     overwrite?: boolean;
+    nsfw?: boolean;
   }) {
+    nsfw = nsfw ?? AnkiClient.inNsfw(note);
+    let tags = [...note.tags];
+    if (!tags.includes(env.APP_NAME)) tags.push(env.APP_NAME);
+    if (!AnkiClient.inNsfw(note) && nsfw) tags.push("NSFW");
+    if (AnkiClient.inNsfw(note) && !nsfw) {
+      tags = tags.filter((tag) => tag.toLowerCase() !== "nsfw");
+    }
+
     this.log.debug(
-      { noteId, picturePath, sentenceAudioPath },
-      "Updating note media",
+      { noteId: note.noteId, picturePath, sentenceAudioPath, tags },
+      "Updating note",
     );
-    await this.client?.note.updateNoteFields({
+
+    await this.client?.note.updateNote({
       note: {
-        id: noteId,
+        id: note.noteId,
         fields: {
           ...(picturePath &&
             overwrite && { [config.store.anki.pictureField]: "" }),
@@ -462,12 +473,8 @@ const AnkiClient_ = class AnkiClient {
             },
           ],
         }),
+        tags,
       },
-    });
-    this.log.debug(`Adding tag ${env.APP_NAME} to note ${noteId}`);
-    await this.client?.note.addTags({
-      notes: [noteId],
-      tags: env.APP_NAME,
     });
   }
 

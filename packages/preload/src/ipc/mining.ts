@@ -50,6 +50,7 @@ export const zUpdateNoteData = z.object({
   noteId: z.number(),
   picture: z.string().optional(),
   sentenceAudio: z.string().optional(),
+  nsfw: z.boolean().optional(),
 });
 
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
@@ -120,15 +121,6 @@ export const zMiningIPC = {
     "mining:getAnkiHistory": z.object({
       input: z.tuple([]),
       output: zAnkiHistory,
-    }),
-    "mining:toggleNoteNsfw": z.object({
-      input: z.tuple([
-        z.object({
-          noteId: z.number(),
-          checked: z.boolean(),
-        }),
-      ]),
-      output: z.boolean(),
     }),
     "mining:getNoteMedia": z.object({
       input: z.tuple([

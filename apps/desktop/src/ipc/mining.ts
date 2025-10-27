@@ -109,33 +109,6 @@ class MiningIPC extends IPC()<"mining"> {
       return data;
     });
 
-    this.handle("mining:toggleNoteNsfw", async (_, { noteId, checked }) => {
-      log.debug({ noteId, checked }, `Updating note NSFW tag`);
-      try {
-        const note = await ankiClient().getNote(noteId);
-        const nsfw = AnkiClient().inNsfw(note);
-        if (nsfw === checked) {
-          log.warn("Note already has the same NSFW tag");
-          return true;
-        }
-        const client = ankiClient().client;
-        if (!client) {
-          log.error("Anki client not connected");
-          return false;
-        }
-        if (checked) {
-          await client.note.addTags({ notes: [noteId], tags: "NSFW" });
-        } else {
-          await client.note.removeTags({ notes: [noteId], tags: "NSFW" });
-        }
-        log.debug({ noteId, checked }, "Note NSFW tag updated");
-        return true;
-      } catch (e) {
-        log.error({ error: e }, "Failed to update note NSFW tag");
-        return false;
-      }
-    });
-
     this.handle("mining:getNoteMedia", async (_, { noteId }) => {
       return await mainDB().getNoteMedia(noteId);
     });
@@ -202,8 +175,11 @@ class MiningIPC extends IPC()<"mining"> {
 
     this.handle(
       "mining:updateNote",
-      async (_, { noteId, picture, sentenceAudio }) => {
-        log.debug({ noteId, picture, sentenceAudio }, "Updating note");
+      async (_, { noteId, picture, sentenceAudio, nsfw }) => {
+        log.debug(
+          { payload: { noteId, picture, sentenceAudio, nsfw } },
+          "mining:updateNote",
+        );
         //  ─────────────────────────────── backup ────────────────────────────
         const ankiMediaDir = ankiClient().mediaDir;
         if (!ankiMediaDir)
@@ -250,15 +226,18 @@ class MiningIPC extends IPC()<"mining"> {
           }
         } catch {}
 
-        await mainDB().insertNoteAndMedia({ noteId, media });
+        if (media.length > 0) {
+          await mainDB().insertNoteAndMedia({ noteId, media });
+        }
         //  ─────────────────────────────── backup ────────────────────────────
 
-        await ankiClient().updateNoteMedia({
-          noteId,
+        await ankiClient().updateNote({
+          note,
           picturePath: picture ? join(env.STORAGE_PATH, picture) : undefined,
           sentenceAudioPath: sentenceAudio
             ? join(env.STORAGE_PATH, sentenceAudio)
             : undefined,
+          nsfw,
           overwrite: true,
         });
       },

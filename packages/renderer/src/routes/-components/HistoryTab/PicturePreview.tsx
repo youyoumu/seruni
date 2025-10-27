@@ -1,4 +1,4 @@
-import { createSignal, Show, Suspense } from "solid-js";
+import { createEffect, createSignal, Show, Suspense } from "solid-js";
 import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { HStack, Stack } from "styled-system/jsx";
@@ -6,20 +6,58 @@ import { Dialog } from "#/components/ui/dialog";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch as Toggle } from "#/components/ui/switch";
 import { GeneralQuery } from "#/lib/query/general";
+import { MiningMutation } from "#/lib/query/mining";
 import { appToaster } from "../AppToaster";
-import { nsfwUpdateLock, srcSet } from "./_util";
+import { srcSet } from "./_util";
 import { useNoteContext } from "./Context";
 
 export function PicturePreview() {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
-  //TODO: modify via context
   const [nsfw, setNsfw] = createSignal(note.nsfw);
   const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
     () => note.picture,
     () => "anki",
   );
   const pictureSrc = () => mediaUrlQuery.data ?? "";
+  const updateNoteMutation = MiningMutation.AnkiMutation.updateNote();
+
+  createEffect(() => {
+    setNsfw(note.nsfw);
+  });
+
+  function toggleNsfw(checked: boolean) {
+    setNsfw(checked);
+    const nsfw_ = nsfw();
+    appToaster.promise(
+      updateNoteMutation.mutateAsync(
+        {
+          noteId: note.id,
+          nsfw: nsfw_,
+        },
+        {
+          onSuccess: () => {},
+          onError: () => {
+            setNsfw((prev) => !prev);
+          },
+        },
+      ),
+      {
+        loading: {
+          title: "Updating note NSFW tag...",
+          description: `${note.expression}`,
+        },
+        error: {
+          title: "Failed to update note NSFW tag",
+          description: note.expression,
+        },
+        success: {
+          title: "Note NSFW tag updated",
+          description: `${note.expression}`,
+        },
+      },
+    );
+  }
 
   return (
     <Suspense>
@@ -102,44 +140,10 @@ export function PicturePreview() {
               />
               <HStack justifyContent="end" px="8">
                 <Toggle
+                  disabled={updateNoteMutation.isPending}
                   checked={nsfw()}
-                  onCheckedChange={() => {
-                    if (nsfwUpdateLock.has(note.id)) return;
-                    nsfwUpdateLock.add(note.id);
-                    setNsfw(!nsfw());
-                    appToaster.promise(
-                      ipcRenderer
-                        .invoke("mining:toggleNoteNsfw", {
-                          noteId: note.id,
-                          checked: nsfw(),
-                        })
-                        .then((success) => {
-                          if (!success) {
-                            setNsfw(!nsfw());
-                            throw new Error("Failed to update NSFW tag");
-                          }
-                        })
-                        .catch(() => {
-                          setNsfw(!nsfw());
-                        })
-                        .finally(() => {
-                          nsfwUpdateLock.delete(note.id);
-                        }),
-                      {
-                        loading: {
-                          title: "Updating note NSFW tag...",
-                          description: `${note.expression}`,
-                        },
-                        error: {
-                          title: "Failed to update note NSFW tag",
-                          description: note.expression,
-                        },
-                        success: {
-                          title: "Note NSFW tag updated",
-                          description: `${note.expression}`,
-                        },
-                      },
-                    );
+                  onCheckedChange={(e) => {
+                    toggleNsfw(e.checked);
                   }}
                 >
                   NSFW
