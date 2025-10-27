@@ -1,4 +1,9 @@
-import type { NoteMediaSrc, SelectionData, TrimData } from "@repo/preload/ipc";
+import type {
+  NoteMediaSrc,
+  SelectionData,
+  TrimData,
+  UpdateNoteData,
+} from "@repo/preload/ipc";
 import {
   queryOptions,
   useMutation,
@@ -112,6 +117,24 @@ const AnkiMutation = {
         },
         onSuccess: async (data) => {
           await Promise.all([
+            qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey, }),
+          ]);
+        },
+      };
+    }),
+
+  // biome-ignore format: this looks nicer
+  updateNote: () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: async (payload: UpdateNoteData) => {
+          await ipcRenderer.invoke("mining:updateNote", payload);
+          return { noteId: payload.noteId };
+        },
+        onSuccess: async (data) => {
+          await Promise.all([
+            qc.invalidateQueries({ queryKey: keyStore["mining:ankiHistory"].all.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey, }),
           ]);
         },

@@ -8,6 +8,7 @@ export function AudioButton(props: { src: string }) {
   const [playing, setPlaying] = createSignal(false);
   const [progress, setProgress] = createSignal(0); // 0 → 1
 
+  //TODO: reactive
   const audio = new Audio(props.src);
 
   const toggle = () => {

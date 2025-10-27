@@ -11,8 +11,9 @@ import { Code } from "#/components/ui/code";
 import { Dialog } from "#/components/ui/dialog";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import { MiningQuery } from "#/lib/query/mining";
+import { MiningMutation, MiningQuery } from "#/lib/query/mining";
 import { SettingsQuery } from "#/lib/query/settings";
+import { appToaster } from "../AppToaster";
 import { AudioWaveMenu } from "./AudioWave";
 import {
   type NoteForm,
@@ -296,11 +297,47 @@ export function EditButton() {
 
 function UpdateNoteButton(props: {
   trigger: (triggerProps: () => ParentProps) => JSX.Element;
+  onSuccess?: () => void;
 }) {
   const [open, setOpen] = createSignal(false);
   const configQuery = SettingsQuery.ConfigQuery.detail.use();
   const note = useNoteContext();
   const [noteForm, setNoteForm] = useNoteFormContext();
+  const updateNoteMutation = MiningMutation.AnkiMutation.updateNote();
+
+  function updateNote() {
+    appToaster.promise(
+      updateNoteMutation.mutateAsync(
+        {
+          noteId: note.id,
+          picture: noteForm.picture,
+          sentenceAudio: noteForm.sentenceAudio,
+        },
+        {
+          onSuccess: () => {
+            setNoteForm("picture", undefined);
+            setNoteForm("sentenceAudio", undefined);
+            setOpen(false);
+            props.onSuccess?.();
+          },
+        },
+      ),
+      {
+        loading: {
+          title: "Updating note...",
+          description: `${note.expression}`,
+        },
+        error: {
+          title: "Failed to update note",
+          description: `${note.expression}`,
+        },
+        success: {
+          title: "Note updated",
+          description: `${note.expression}`,
+        },
+      },
+    );
+  }
 
   return (
     <Dialog.Root
@@ -364,26 +401,37 @@ function UpdateNoteButton(props: {
               <Dialog.Description px="4">
                 <Show when={!!noteForm.picture}>
                   Field <Code>{configQuery.data?.anki.pictureField}</Code> will
-                  be updated from <Code>{note.picture}</Code> to{" "}
-                  <Code>{noteForm.picture}</Code>
+                  be updated to <Code>{noteForm.picture}</Code>
                   <br />
                 </Show>
                 <Show when={!!noteForm.sentenceAudio}>
-                  Field <Code>{configQuery.data?.anki.sentenceAudioField}</Code>{" "}
-                  will be updated from <Code>{note.sentenceAudio}</Code> to{" "}
-                  <Code>{noteForm.sentenceAudio}</Code>
+                  Field <Code>{configQuery.data?.anki.sentenceAudioField}</Code>
+                  will be updated to <Code>{noteForm.sentenceAudio}</Code>
+                  <br />
+                </Show>
+                <Show when={!!note.picture && noteForm.picture}>
+                  Previous <Code>{note.picture}</Code> will be backed up <br />
+                </Show>
+                <Show when={!!note.sentenceAudio && noteForm.sentenceAudio}>
+                  Previous <Code>{note.sentenceAudio}</Code> will be backed up{" "}
                   <br />
                 </Show>
               </Dialog.Description>
               <HStack justifyContent="end" gap="4" p="4">
                 <Button
+                  disabled={updateNoteMutation.isPending}
                   onClick={() => {
                     setOpen(false);
                   }}
                 >
                   Cancel
                 </Button>
-                <Button>Confirm</Button>
+                <Button
+                  loading={updateNoteMutation.isPending}
+                  onClick={updateNote}
+                >
+                  Confirm
+                </Button>
               </HStack>
             </Dialog.Content>
           </Dialog.Positioner>

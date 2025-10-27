@@ -1,3 +1,4 @@
+import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { effect, effectScope } from "alien-signals";
 import { AnkiClient, ankiClient } from "#/client/anki";
@@ -8,6 +9,7 @@ import { env } from "#/env";
 import { ffmpeg } from "#/runner/ffmpeg";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
+import type { VadData } from "#/util/schema";
 import { IPC } from "./base";
 
 class MiningIPC extends IPC()<"mining"> {
@@ -194,6 +196,69 @@ class MiningIPC extends IPC()<"mining"> {
         await mainDB().insertNoteAndMedia({
           noteId,
           media: [{ filePath, type: "sentenceAudio" }],
+        });
+      },
+    );
+
+    this.handle(
+      "mining:updateNote",
+      async (_, { noteId, picture, sentenceAudio }) => {
+        //  ─────────────────────────────── backup ────────────────────────────
+        const ankiMediaDir = ankiClient().mediaDir;
+        if (!ankiMediaDir)
+          throw new Error("Anki media dir not found, is AnkiConnect running?");
+        const note = await ankiClient().getNote(noteId);
+
+        const pictureFieldValue =
+          note.fields[config.store.anki.pictureField]?.value ?? "";
+        const sentenceAudioFieldValue =
+          note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
+        const backupPicture = this.parseAnkiMediaPath(pictureFieldValue);
+        const backupSentenceAudio = this.parseAnkiMediaPath(
+          sentenceAudioFieldValue,
+        );
+        const backupPictureFilePath = backupPicture
+          ? join(ankiMediaDir, backupPicture)
+          : undefined;
+        const backupSentenceAudioFilePath = backupSentenceAudio
+          ? join(ankiMediaDir, backupSentenceAudio)
+          : undefined;
+
+        const media: Array<{
+          type: "picture" | "sentenceAudio";
+          filePath: string;
+          vadData?: VadData;
+        }> = [];
+        try {
+          if (!backupPictureFilePath || !picture) {
+            log.debug("No Picture to backup");
+            return;
+          }
+          await access(backupPictureFilePath);
+          media.push({ filePath: backupPictureFilePath, type: "picture" });
+        } catch {}
+        try {
+          if (!backupSentenceAudioFilePath || !sentenceAudio) {
+            log.debug("No SentenceAudio to backup");
+            return;
+          }
+          await access(backupSentenceAudioFilePath);
+          media.push({
+            filePath: backupSentenceAudioFilePath,
+            type: "sentenceAudio",
+          });
+        } catch {}
+
+        await mainDB().insertNoteAndMedia({ noteId, media });
+        //  ─────────────────────────────── backup ────────────────────────────
+
+        await ankiClient().updateNoteMedia({
+          noteId,
+          picturePath: picture ? join(env.STORAGE_PATH, picture) : undefined,
+          sentenceAudioPath: sentenceAudio
+            ? join(env.STORAGE_PATH, sentenceAudio)
+            : undefined,
+          overwrite: true,
         });
       },
     );

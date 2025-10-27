@@ -422,10 +422,12 @@ const AnkiClient_ = class AnkiClient {
     noteId,
     picturePath,
     sentenceAudioPath,
+    overwrite = false,
   }: {
     noteId: number;
     picturePath: string | undefined | null;
     sentenceAudioPath: string | undefined | null;
+    overwrite?: boolean;
   }) {
     this.log.debug(
       { noteId, picturePath, sentenceAudioPath },
@@ -434,7 +436,14 @@ const AnkiClient_ = class AnkiClient {
     await this.client?.note.updateNoteFields({
       note: {
         id: noteId,
-        fields: {},
+        fields: {
+          ...(picturePath &&
+            overwrite && { [config.store.anki.pictureField]: "" }),
+          ...(sentenceAudioPath &&
+            overwrite && {
+              [config.store.anki.sentenceAudioField]: "",
+            }),
+        },
         ...(picturePath && {
           picture: [
             {
