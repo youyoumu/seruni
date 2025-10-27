@@ -203,6 +203,7 @@ class MiningIPC extends IPC()<"mining"> {
     this.handle(
       "mining:updateNote",
       async (_, { noteId, picture, sentenceAudio }) => {
+        log.debug({ noteId, picture, sentenceAudio }, "Updating note");
         //  ─────────────────────────────── backup ────────────────────────────
         const ankiMediaDir = ankiClient().mediaDir;
         if (!ankiMediaDir)
@@ -232,21 +233,21 @@ class MiningIPC extends IPC()<"mining"> {
         try {
           if (!backupPictureFilePath || !picture) {
             log.debug("No Picture to backup");
-            return;
+          } else {
+            await access(backupPictureFilePath);
+            media.push({ filePath: backupPictureFilePath, type: "picture" });
           }
-          await access(backupPictureFilePath);
-          media.push({ filePath: backupPictureFilePath, type: "picture" });
         } catch {}
         try {
           if (!backupSentenceAudioFilePath || !sentenceAudio) {
             log.debug("No SentenceAudio to backup");
-            return;
+          } else {
+            await access(backupSentenceAudioFilePath);
+            media.push({
+              filePath: backupSentenceAudioFilePath,
+              type: "sentenceAudio",
+            });
           }
-          await access(backupSentenceAudioFilePath);
-          media.push({
-            filePath: backupSentenceAudioFilePath,
-            type: "sentenceAudio",
-          });
         } catch {}
 
         await mainDB().insertNoteAndMedia({ noteId, media });
