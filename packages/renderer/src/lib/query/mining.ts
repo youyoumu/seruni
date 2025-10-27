@@ -10,6 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
+import { uniqBy } from "es-toolkit";
 import { sort } from "fast-sort";
 import { untrack } from "solid-js";
 import { reconcile } from "solid-js/store";
@@ -24,7 +25,8 @@ import { GeneralQuery } from "./general";
 const NoteMediaQuery = {
   // biome-ignore format: this looks nicer
   one: {
-    options: ({ noteId }: { noteId: number }) => queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], }),
+    options: ({ noteId }: { noteId: number }) =>
+      queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], select: (data) => uniqBy(data, (item) => item.fileName), }),
     use: ({ noteId }: { noteId: number }) => {
       const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old), }));
       return queryWithPlaceholderData(query, []);
