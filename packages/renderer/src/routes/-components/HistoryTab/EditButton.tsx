@@ -437,6 +437,7 @@ function UpdateNoteButton(props: {
                 </Dialog.Description>
                 <HStack justifyContent="end" gap="4" p="4">
                   <Button
+                    variant="subtle"
                     disabled={updateNoteMutation.isPending}
                     onClick={() => {
                       setOpen(false);

@@ -130,6 +130,7 @@ export function AudioWaveMenu(props: {
           <HStack>
             <Show when={props.hidePlayButton !== true}>
               <IconButton
+                variant="subtle"
                 size="xs"
                 onClick={() => {
                   setPlaying(!playing());
@@ -151,6 +152,7 @@ export function AudioWaveMenu(props: {
             </Show>
             <Show when={props.hideSelectButton !== true}>
               <IconButton
+                variant="subtle"
                 size="xs"
                 onClick={() => {
                   props.onSelectClick();
@@ -295,7 +297,7 @@ function EditAudioButton(props: { delete?: boolean }) {
       <Dialog.Trigger
         asChild={(triggerProps) => {
           return (
-            <IconButton size="xs" {...triggerProps()}>
+            <IconButton size="xs" variant="subtle" {...triggerProps()}>
               <AudioLinesIcon />
             </IconButton>
           );
