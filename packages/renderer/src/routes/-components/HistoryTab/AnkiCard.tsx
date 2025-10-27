@@ -48,7 +48,6 @@ const expressionVariant = cva({
 export function AnkiCard() {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
-  //TODO: modify via context
   const time = () => formatRelative(new Date(note.id), new Date());
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
   const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(

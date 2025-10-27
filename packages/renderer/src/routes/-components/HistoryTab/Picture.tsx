@@ -208,6 +208,7 @@ export function ImageWithFallback(props: {
 export function PictureWithZoom(props: {
   trigger: (props: () => ParentProps) => JSX.Element;
   hideButtons?: boolean;
+  extraButtons?: JSX.Element;
 }) {
   const [open, setOpen] = createSignal(false);
   const note = useNoteContext();
@@ -324,16 +325,18 @@ export function PictureWithZoom(props: {
                     </Box>
                   </Box>
 
-                  <Show when={props.hideButtons !== true}>
-                    <HStack justifyContent="end">
-                      <Button
-                        {...closeTriggerProps()}
-                        opacity="0"
-                        flex="1"
-                        cursor="default"
-                      >
-                        ""
-                      </Button>
+                  <HStack justifyContent="end">
+                    <Button
+                      {...closeTriggerProps()}
+                      opacity="0"
+                      flex="1"
+                      cursor="default"
+                    >
+                      ""
+                    </Button>
+                    {props.extraButtons}
+
+                    <Show when={props.hideButtons !== true}>
                       <Show when={editing()}>
                         <Button
                           onClick={() => {
@@ -361,8 +364,8 @@ export function PictureWithZoom(props: {
                           <CropIcon />
                         </Button>
                       </Show>
-                    </HStack>
-                  </Show>
+                    </Show>
+                  </HStack>
                 </Stack>
               )}
             />
