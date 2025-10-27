@@ -36,7 +36,7 @@ export function Page() {
     { id: "history", label: "History" },
     { id: "console", label: "Console" },
     { id: "settings", label: "Settings" },
-    { id: "debug", label: "Debug" },
+    import.meta.env.DEV && { id: "debug", label: "Debug" },
   ];
 
   const [tabListEl, setTabListEl] = createSignal<HTMLDivElement>();
