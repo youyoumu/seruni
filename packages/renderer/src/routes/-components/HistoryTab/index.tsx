@@ -1,5 +1,4 @@
 import { usePagination } from "@ark-ui/solid";
-import type { AnkiHistory } from "@repo/preload/ipc";
 import { useQueryClient } from "@tanstack/solid-query";
 import { BirdIcon, PickaxeIcon } from "lucide-solid";
 import {
@@ -7,7 +6,6 @@ import {
   createSignal,
   For,
   Match,
-  onMount,
   Suspense,
   Switch,
 } from "solid-js";
@@ -32,19 +30,16 @@ export function HistoryTab() {
 
   const [currentPage, setCurrentPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
-  const [slicedHistory, setSlicedHistory] = createSignal<AnkiHistory>([]);
-
-  createEffect(() => {
+  const slicedHistory = () => {
+    ankiHistoryQuery.dataUpdatedAt;
     const count = ankiHistoryQuery.data.length;
     const pagination = usePagination({
       count,
       pageSize: pageSize(),
       page: currentPage(),
     });
-    setSlicedHistory(pagination().slice(ankiHistoryQuery.data));
-  });
-
-  onMount(async () => {});
+    return pagination().slice(ankiHistoryQuery.data);
+  };
 
   createEffect(async () => {
     if (clientStatusQuery.data.anki === "connected") {
@@ -53,8 +48,6 @@ export function HistoryTab() {
       });
     }
   });
-
-  createEffect(() => {});
 
   const pageSizeItems = [5, 20, 40, 60].map((item) => ({
     label: item.toString(),
