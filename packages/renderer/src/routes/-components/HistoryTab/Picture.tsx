@@ -380,6 +380,7 @@ export function PictureWithZoom(props: {
                     <Show when={props.hideButtons !== true}>
                       <Show when={editing()}>
                         <Button
+                          variant="subtle"
                           onClick={() => {
                             setEditing(false);
                           }}

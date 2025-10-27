@@ -314,7 +314,7 @@ function EditAudioButton(props: { delete?: boolean }) {
                 borderTopWidth="thin"
                 borderColor="border.default"
               >
-                <Text size="sm" color="fg.muted">
+                <Text size="sm" color="fg.muted" wordBreak="break-all">
                   {src()}
                 </Text>
                 <Show when={props.delete}>

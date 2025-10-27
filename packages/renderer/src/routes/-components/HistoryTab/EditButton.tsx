@@ -254,6 +254,11 @@ export function EditButton() {
                   borderColor="border.default"
                 >
                   <IconButton
+                    variant={
+                      noteForm.picture || noteForm.sentenceAudio
+                        ? "solid"
+                        : "subtle"
+                    }
                     onClick={() => {
                       setNoteForm("picture", undefined);
                       setNoteForm("sentenceAudio", undefined);
@@ -262,6 +267,7 @@ export function EditButton() {
                     <UndoIcon />
                   </IconButton>
                   <Button
+                    variant="subtle"
                     onClick={() => {
                       setOpen(false);
                     }}
