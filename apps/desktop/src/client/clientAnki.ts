@@ -36,6 +36,7 @@ const AnkiClient_ = class AnkiClient {
   selectedTextUuid: string | undefined;
   textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
   mediaDir: string | undefined;
+  duplicateList = new Set<string>();
   //TODO: reactivity?
   port = config.store.anki.ankiConnectPort;
   #abortController = new AbortController();

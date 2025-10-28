@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import z from "zod";
+import { ankiClient } from "#/client/clientAnki";
 import { bus } from "#/util/bus";
 import { config } from "#/util/config";
-import { log } from "#/util/logger";
-import { zAnkiConnectAddNote } from "#/util/schema";
+import { logWithNamespace } from "#/util/logger";
+import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 
+const log = logWithNamespace("HTTP");
 const app = new Hono();
 
 app.post("/", async (c) => {
@@ -40,9 +42,41 @@ app.post("/", async (c) => {
     body,
   });
 
+  const ankiConnectCanAddNote = zAnkiConnectCanAddNotes().safeParse(bodyJson);
+  if (ankiConnectCanAddNote.success) {
+    log.trace(
+      "AnkiConnect proxy received CanAddNotes request, tracking duplicate note",
+    );
+    const expressions = ankiConnectCanAddNote.data.params.notes.map(
+      (item) => item.fields[config.store.anki.expressionField],
+    );
+    if (expressions.some((item) => item === undefined)) {
+      throw new Error(
+        "AnkiConnect request uses Expression field that is different from configured field",
+      );
+    }
+
+    const resClone = res.clone();
+    const result = await resClone.json();
+    const parsed = z.array(z.boolean()).parse(result);
+    for (let i = 0; i < expressions.length; i++) {
+      const expression = expressions[i];
+      const isDuplicate = parsed[i] === false;
+      if (isDuplicate && expression) ankiClient().duplicateList.add(expression);
+    }
+
+    log.trace(
+      { duplicateList: Array.from(ankiClient().duplicateList) },
+      "Updated duplicate list",
+    );
+  }
+
   //TODO: inject payload instead of listening
   const ankiConnectAddNote = zAnkiConnectAddNote.safeParse(bodyJson);
   if (ankiConnectAddNote.success) {
+    log.debug(
+      "AnkiConnect proxy received AddNote request, processing new note",
+    );
     const resClone = res.clone();
     try {
       const noteId = z
