@@ -28,20 +28,11 @@ app.post("/", async (c) => {
     } catch {}
   }
   log.trace(
-    {
-      URL: url.toString(),
-      METHOD: c.req.method,
-      BODY: bodyJson ?? bodyText,
-    },
+    { URL: url.toString(), METHOD: c.req.method, BODY: bodyJson ?? bodyText },
     "AnkiConnect proxy received a request",
   );
 
-  const res = await fetch(target, {
-    method: c.req.method,
-    headers: c.req.raw.headers,
-    body,
-  });
-
+  // intercept and handle canAddNotes
   const ankiConnectCanAddNote = zAnkiConnectCanAddNotes().safeParse(bodyJson);
   if (ankiConnectCanAddNote.success) {
     log.trace(
@@ -56,6 +47,12 @@ app.post("/", async (c) => {
       );
     }
 
+    const res = await fetch(target, {
+      method: c.req.method,
+      headers: c.req.raw.headers,
+      body,
+    });
+
     const resClone = res.clone();
     const result = await resClone.json();
     const parsed = z.array(z.boolean()).parse(result);
@@ -69,14 +66,37 @@ app.post("/", async (c) => {
       { duplicateList: Array.from(ankiClient().duplicateList) },
       "Updated duplicate list",
     );
+
+    return new Response(res.body, {
+      status: res.status,
+      headers: res.headers,
+    });
   }
 
   //TODO: inject payload instead of listening
+  //intercept and handle addNote
   const ankiConnectAddNote = zAnkiConnectAddNote.safeParse(bodyJson);
   if (ankiConnectAddNote.success) {
     log.debug(
       "AnkiConnect proxy received AddNote request, processing new note",
     );
+    const expression =
+      ankiConnectAddNote.data.params.note.fields[
+        config.store.anki.expressionField
+      ];
+    if (expression === undefined)
+      throw new Error("Expression field is missing, invalid config?");
+    if (ankiClient().duplicateList.has(expression)) {
+      return new Response("Intercepted", {
+        status: 500,
+      });
+    }
+
+    const res = await fetch(target, {
+      method: c.req.method,
+      headers: c.req.raw.headers,
+      body,
+    });
     const resClone = res.clone();
     try {
       const noteId = z
@@ -96,7 +116,18 @@ app.post("/", async (c) => {
     } catch (e) {
       log.error({ error: e }, e instanceof Error ? e.message : "Unknown Error");
     }
+
+    return new Response(res.body, {
+      status: res.status,
+      headers: res.headers,
+    });
   }
+
+  const res = await fetch(target, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+    body,
+  });
 
   return new Response(res.body, {
     status: res.status,
