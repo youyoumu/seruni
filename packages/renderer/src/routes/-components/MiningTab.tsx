@@ -23,7 +23,7 @@ import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
-import { MiningQuery } from "#/lib/query/queryMining";
+import { MiningMutation, MiningQuery } from "#/lib/query/queryMining";
 import { localStore, setLocalStore } from "#/lib/store";
 import { inspect } from "#/lib/util";
 import { appToaster } from "./AppToaster";
@@ -161,16 +161,9 @@ export function MiningTab() {
 
   let hoverTimeout: number | undefined;
 
-  const [openDuplicateNoteConfirmation, setOpenDuplicateNoteConfirmation] =
-    createSignal(true);
-  const [uuid, setUuid] = createSignal(crypto.randomUUID());
-
   return (
     <>
-      <DuplicateNoteConfirmation
-        open={[openDuplicateNoteConfirmation, setOpenDuplicateNoteConfirmation]}
-        uuid={uuid()}
-      />
+      <DuplicateNoteConfirmation />
       <Stack h="full" maxW="8xl" mx="auto">
         <HStack justifyContent="end" pb="4">
           <Text fontWeight="semibold">
@@ -381,11 +374,9 @@ function ResetTextButton(props: {
   );
 }
 
-export function DuplicateNoteConfirmation(props: {
-  open: Signal<boolean>;
-  uuid: string;
-}) {
-  const [open, setOpen] = props.open;
+export function DuplicateNoteConfirmation() {
+  const [open, setOpen] = createSignal(true);
+  const [noteIds, setNoteIds] = createSignal<number[]>([100, 200]);
 
   const options = [
     { id: "create", label: "Create" },
@@ -393,21 +384,43 @@ export function DuplicateNoteConfirmation(props: {
   ];
 
   const [duplicateNoteConfirmationForm, setDuplicateNoteConfirmationForm] =
-    createStore({
+    createStore<{
+      uuid: string;
+      action: "create" | "update";
+      params: { noteId: number | null };
+    }>({
       uuid: "",
       action: "create" as const,
-      params: {
-        noteId: 0,
-      },
+      params: { noteId: null },
     });
 
   createEffect(() => {
-    setDuplicateNoteConfirmationForm("uuid", props.uuid);
+    ipcRenderer.on("mining:duplicateNoteConfirmation", ({ uuid, noteIds }) => {
+      setDuplicateNoteConfirmationForm("uuid", uuid);
+      setOpen(true);
+      setNoteIds(noteIds);
+      setDuplicateNoteConfirmationForm("params", "noteId", noteIds[0] ?? null);
+    });
   });
 
-  inspect(() => duplicateNoteConfirmationForm.action);
-  inspect(() => duplicateNoteConfirmationForm.params);
-  inspect(() => duplicateNoteConfirmationForm.uuid);
+  const confirmDuplicateNoteMutation =
+    MiningMutation.AnkiMutation.confirmDuplicateNote();
+
+  const confirmDuplicateNote = async () => {
+    const noteId = duplicateNoteConfirmationForm.params.noteId;
+    confirmDuplicateNoteMutation.mutateAsync(
+      {
+        uuid: duplicateNoteConfirmationForm.uuid,
+        action: duplicateNoteConfirmationForm.action,
+        params: noteId ? { noteId } : undefined,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+        },
+      },
+    );
+  };
 
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
@@ -443,24 +456,43 @@ export function DuplicateNoteConfirmation(props: {
                   )}
                 </For>
               </RadioGroup.Root>
-              <Select_
-                placeholder="Select Note ID"
-                label="Note ID"
-                onValueChange={(e) => {
-                  setDuplicateNoteConfirmationForm("action", e.items[0]?.value);
-                }}
-                collection={createListCollection({
-                  items: [12, 34].map((item) => ({
-                    label: item.toString(),
-                    value: item,
-                  })),
-                })}
-              />
+              <Show when={duplicateNoteConfirmationForm.action === "update"}>
+                <Select_
+                  value={[
+                    duplicateNoteConfirmationForm.params.noteId?.toString() ??
+                      "",
+                  ]}
+                  placeholder="Select Note ID"
+                  label="Note ID"
+                  onValueChange={(e) => {
+                    setDuplicateNoteConfirmationForm(
+                      "params",
+                      "noteId",
+                      Number(e.items[0]?.value),
+                    );
+                  }}
+                  collection={createListCollection({
+                    items: noteIds().map((item) => ({
+                      label: item.toString(),
+                      value: item.toString(),
+                    })),
+                  })}
+                />
+              </Show>
+
               <HStack justifyContent="end">
                 <Button variant="subtle" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button>Confirm</Button>
+                <Button
+                  disabled={
+                    duplicateNoteConfirmationForm.action === "update" &&
+                    duplicateNoteConfirmationForm.params.noteId === null
+                  }
+                  onClick={confirmDuplicateNote}
+                >
+                  Confirm
+                </Button>
               </HStack>
             </Stack>
           </Dialog.Content>

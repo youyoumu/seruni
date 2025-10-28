@@ -1,14 +1,19 @@
-import { Hono, type HonoRequest } from "hono";
+import { Hono } from "hono";
+import type { JsonObject } from "roarr/dist/types";
 import z from "zod";
 import { ankiClient } from "#/client/clientAnki";
-import { bus } from "#/util/bus";
+import {
+  interceptedRequest,
+  proxyAnkiConnectNewNoteRequest,
+  yomitanAnkiConnectSettings,
+} from "#/hono/_util";
+import { miningIPC } from "#/ipc/ipcMining";
 import { config } from "#/util/config";
 import { logWithNamespace } from "#/util/logger";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 
 const log = logWithNamespace("HTTP");
 const app = new Hono();
-const interceptedRequest = new Map<string, HonoRequest>();
 
 app.post("/", async (c) => {
   const url = new URL(c.req.url);
@@ -39,6 +44,9 @@ app.post("/", async (c) => {
     log.trace(
       "AnkiConnect proxy received CanAddNotes request, tracking duplicate note",
     );
+    const deckName = ankiConnectCanAddNote.data.params.notes[0]?.deckName;
+    log.trace({ deckName }, "Detected deckName");
+    if (deckName) yomitanAnkiConnectSettings.deckName = deckName;
     const expressions = ankiConnectCanAddNote.data.params.notes.map(
       (item) => item.fields[config.store.anki.expressionField],
     );
@@ -87,39 +95,23 @@ app.post("/", async (c) => {
       ];
     if (expression === undefined)
       throw new Error("Expression field is missing, invalid config?");
+    // intercept and duplicate notes
     if (ankiClient().duplicateList.has(expression)) {
       const uuid = crypto.randomUUID();
       interceptedRequest.set(uuid, c.req);
+
+      const noteIds = await ankiClient().client?.note.findNotes({
+        query: `"deck:${yomitanAnkiConnectSettings.deckName}" "expression:${expression}"`,
+      });
+      if (!noteIds) throw new Error("Note not found");
+      miningIPC().send("mining:duplicateNoteConfirmation", { uuid, noteIds });
 
       return new Response("Intercepted", {
         status: 500,
       });
     }
 
-    const res = await fetch(target, {
-      method: c.req.method,
-      headers: c.req.raw.headers,
-      body,
-    });
-    const resClone = res.clone();
-    try {
-      const noteId = z
-        .union([z.number(), z.object({ result: z.number() })])
-        .parse(await resClone.json());
-      if (typeof noteId === "number") {
-        bus.emit("anki:handleNewNote", {
-          noteId: noteId,
-        });
-      } else if (typeof noteId === "object") {
-        bus.emit("anki:handleNewNote", {
-          noteId: noteId.result,
-        });
-      } else {
-        throw new Error("Invalid response from AnkiConnect");
-      }
-    } catch (e) {
-      log.error({ error: e }, e instanceof Error ? e.message : "Unknown Error");
-    }
+    const res = await proxyAnkiConnectNewNoteRequest(c.req);
 
     return new Response(res.body, {
       status: res.status,
@@ -132,6 +124,13 @@ app.post("/", async (c) => {
     headers: c.req.raw.headers,
     body,
   });
+
+  const resClone = res.clone();
+  const result = await resClone.json();
+  log.trace(
+    { result: result as JsonObject },
+    "AnkiConnect proxy received response",
+  );
 
   return new Response(res.body, {
     status: res.status,

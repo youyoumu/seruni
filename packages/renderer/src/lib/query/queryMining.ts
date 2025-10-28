@@ -1,4 +1,5 @@
 import type {
+  ConfirmDuplicateNoteData,
   NoteMediaSrc,
   SelectionData,
   TrimData,
@@ -139,6 +140,20 @@ const AnkiMutation = {
             qc.invalidateQueries({ queryKey: keyStore["mining:ankiHistory"].all.queryKey, }),
             qc.invalidateQueries({ queryKey: keyStore["mining:noteMedia"].one(data.noteId).queryKey, }),
           ]);
+        },
+      };
+    }),
+
+  confirmDuplicateNote: () =>
+    useMutation(() => {
+      const qc = useQueryClient();
+      return {
+        mutationFn: async (payload: ConfirmDuplicateNoteData) => {
+          await ipcRenderer.invoke("mining:confirmDuplicateNote", payload);
+        },
+        onSuccess: async (data) => {
+          //TODO: invalidate queries
+          await Promise.all([]);
         },
       };
     }),

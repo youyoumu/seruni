@@ -6,7 +6,12 @@ import { obsClient } from "#/client/clientObs";
 import { textractorClient } from "#/client/clientTextractor";
 import { mainDB } from "#/db/dbMain";
 import { env } from "#/env";
+import {
+  interceptedRequest,
+  proxyAnkiConnectNewNoteRequest,
+} from "#/hono/_util";
 import { ffmpeg } from "#/runner/runnerFfmpeg";
+import { bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import type { VadData } from "#/util/schema";
@@ -79,6 +84,7 @@ class MiningIPC extends IPC()<"mining"> {
       const noteIds = await ankiClient().client?.note.findNotes({
         query: `tag:${env.APP_NAME}`,
       });
+
       if (!noteIds) return [];
 
       const notes = await ankiClient().client?.note.notesInfo({
@@ -255,6 +261,18 @@ class MiningIPC extends IPC()<"mining"> {
         });
       },
     );
+
+    this.handle("mining:confirmDuplicateNote", async (_, payload) => {
+      const request = interceptedRequest.get(payload.uuid);
+      if (!request) throw new Error("No request found");
+      if (payload.action === "create") {
+        await proxyAnkiConnectNewNoteRequest(request);
+      } else if (payload.action === "update") {
+        const noteId = payload.params?.noteId;
+        if (!noteId) throw new Error("Note ID is missing");
+        bus.emit("anki:handleNewNote", { noteId });
+      }
+    });
   }
 
   parseAnkiMediaPath(fieldValue: string) {

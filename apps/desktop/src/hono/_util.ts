@@ -1,9 +1,50 @@
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
-import type { Context } from "hono";
+import type { Context, HonoRequest } from "hono";
 import mime from "mime";
+import z from "zod";
 import { ankiClient } from "#/client/clientAnki";
+import { bus } from "#/util/bus";
+import { config } from "#/util/config";
 import { log } from "#/util/logger";
+
+export const interceptedRequest = new Map<string, HonoRequest>();
+export const yomitanAnkiConnectSettings = {
+  expressionField: "",
+  deckName: "",
+};
+
+export const proxyAnkiConnectNewNoteRequest = async (req: HonoRequest) => {
+  const url = new URL(req.url);
+  const target = `http://localhost:${config.store.anki.ankiConnectPort}${url.pathname}${url.search}`;
+  const body = await req.arrayBuffer();
+  const res = await fetch(target, {
+    method: req.method,
+    headers: req.raw.headers,
+    body,
+  });
+  const resClone = res.clone();
+  try {
+    const noteId = z
+      .union([z.number(), z.object({ result: z.number() })])
+      .parse(await resClone.json());
+    if (typeof noteId === "number") {
+      bus.emit("anki:handleNewNote", {
+        noteId: noteId,
+      });
+    } else if (typeof noteId === "object") {
+      bus.emit("anki:handleNewNote", {
+        noteId: noteId.result,
+      });
+    } else {
+      throw new Error("Invalid response from AnkiConnect");
+    }
+  } catch (e) {
+    log.error({ error: e }, e instanceof Error ? e.message : "Unknown Error");
+  }
+
+  return res;
+};
 
 export function waitForAnkiMediaDir() {
   return new Promise<string | undefined>((resolve) => {

@@ -51,12 +51,21 @@ export const zUpdateNoteData = z.object({
   nsfw: z.boolean().optional(),
 });
 
+export const zConfirmDuplicateNoteData = z.object({
+  uuid: z.string(),
+  action: z.union([z.literal("create"), z.literal("update")]),
+  params: z.object({ noteId: z.number() }).optional(),
+});
+
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 export type NoteMedia = z.infer<typeof zNoteMedia>;
 export type NoteMediaSrc = z.infer<typeof zNoteMediaSrc>;
 export type SelectionData = z.infer<typeof zSelectionData>;
 export type TrimData = z.infer<typeof zTrimData>;
 export type UpdateNoteData = z.infer<typeof zUpdateNoteData>;
+export type ConfirmDuplicateNoteData = z.infer<
+  typeof zConfirmDuplicateNoteData
+>;
 
 export const zMiningIPC = {
   main: z.object({
@@ -69,7 +78,9 @@ export const zMiningIPC = {
       output: z.void(),
     }),
     "mining:duplicateNoteConfirmation": z.object({
-      input: z.tuple([z.object({ uuid: z.string() })]),
+      input: z.tuple([
+        z.object({ uuid: z.string(), noteIds: z.array(z.number()) }),
+      ]),
       output: z.void(),
     }),
   }),
@@ -123,13 +134,7 @@ export const zMiningIPC = {
       output: z.void(),
     }),
     "mining:confirmDuplicateNote": z.object({
-      input: z.tuple([
-        z.object({
-          uuid: z.string(),
-          action: z.union([z.literal("create"), z.literal("update")]),
-          params: z.object({ noteId: z.number() }).optional(),
-        }),
-      ]),
+      input: z.tuple([zConfirmDuplicateNoteData]),
       output: z.void(),
     }),
   }),

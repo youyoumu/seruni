@@ -25,3 +25,5 @@
 - obs password
 - vscode layout
 - mining session
+- get expression and deckName from anki connect proxy
+- backup if image or sentence audio has value
