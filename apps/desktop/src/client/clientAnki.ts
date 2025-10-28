@@ -1,4 +1,4 @@
-import { readdir, rm } from "node:fs/promises";
+import { access, readdir, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
 import type { ClientStatus } from "@repo/preload/ipc";
 import { format } from "date-fns";
@@ -445,6 +445,11 @@ const AnkiClient_ = class AnkiClient {
       "Updating note",
     );
 
+    await this.backupNoteMedia(note, {
+      isBackupPicture: !!picturePath,
+      isBackupSentenceAudio: !!sentenceAudioPath,
+    });
+
     await this.client?.note.updateNote({
       note: {
         id: note.noteId,
@@ -487,6 +492,66 @@ const AnkiClient_ = class AnkiClient {
     return result;
   }
 
+  async backupNoteMedia(
+    note: AnkiNote,
+    { isBackupPicture = true, isBackupSentenceAudio = true } = {},
+  ) {
+    const ankiMediaDir = this.mediaDir;
+    if (!ankiMediaDir)
+      throw new Error("Anki media dir not found, is AnkiConnect running?");
+
+    const pictureFieldValue =
+      note.fields[config.store.anki.pictureField]?.value ?? "";
+    const sentenceAudioFieldValue =
+      note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
+    const backupPicture = AnkiClient.parseAnkiMediaPath(pictureFieldValue);
+    const backupSentenceAudio = AnkiClient.parseAnkiMediaPath(
+      sentenceAudioFieldValue,
+    );
+    const backupPictureFilePath = backupPicture
+      ? join(ankiMediaDir, backupPicture)
+      : undefined;
+    const backupSentenceAudioFilePath = backupSentenceAudio
+      ? join(ankiMediaDir, backupSentenceAudio)
+      : undefined;
+
+    const media: Array<{
+      type: "picture" | "sentenceAudio";
+      filePath: string;
+      vadData?: VadData;
+    }> = [];
+    try {
+      if (!backupPictureFilePath || !isBackupPicture) {
+        this.log.debug("No Picture to backup");
+      } else {
+        await access(backupPictureFilePath);
+        media.push({ filePath: backupPictureFilePath, type: "picture" });
+      }
+    } catch (e) {
+      this.log.error({ error: e }, "Failed to access backupPictureFilePath");
+    }
+    try {
+      if (!backupSentenceAudioFilePath || !isBackupSentenceAudio) {
+        this.log.debug("No SentenceAudio to backup");
+      } else {
+        await access(backupSentenceAudioFilePath);
+        media.push({
+          filePath: backupSentenceAudioFilePath,
+          type: "sentenceAudio",
+        });
+      }
+    } catch (e) {
+      this.log.error(
+        { error: e },
+        "Failed to access backupSentenceAudioFilePath",
+      );
+    }
+
+    if (media.length > 0) {
+      await mainDB().insertNoteAndMedia({ noteId: note.noteId, media });
+    }
+  }
+
   static rm(path: string) {
     rm(path, { force: true });
   }
@@ -506,6 +571,16 @@ const AnkiClient_ = class AnkiClient {
     const sentenceAudioField =
       note.fields[config.store.anki.sentenceAudioField];
     return { expressionField, pictureField, sentenceAudioField };
+  }
+
+  static parseAnkiMediaPath(fieldValue: string) {
+    const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/i;
+    const soundRegex = /\[sound:([^\]]+)\]/i;
+
+    const imageMatch = fieldValue.match(imageRegex);
+    const soundMatch = fieldValue.match(soundRegex);
+
+    return imageMatch?.[1] ?? soundMatch?.[1] ?? "";
   }
 };
 

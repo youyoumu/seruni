@@ -1,4 +1,3 @@
-import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { effect, effectScope } from "alien-signals";
 import { AnkiClient, ankiClient } from "#/client/clientAnki";
@@ -14,7 +13,6 @@ import { ffmpeg } from "#/runner/runnerFfmpeg";
 import { bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
-import type { VadData } from "#/util/schema";
 import { IPC } from "./ipcBase";
 
 class MiningIPC extends IPC()<"mining"> {
@@ -100,8 +98,10 @@ class MiningIPC extends IPC()<"mining"> {
         const sentenceAudioFieldValue =
           note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
 
-        const pictureMedia = this.parseAnkiMediaPath(pictureFieldValue);
-        const audioMedia = this.parseAnkiMediaPath(sentenceAudioFieldValue);
+        const pictureMedia = AnkiClient().parseAnkiMediaPath(pictureFieldValue);
+        const audioMedia = AnkiClient().parseAnkiMediaPath(
+          sentenceAudioFieldValue,
+        );
 
         const mediaDir = ankiClient().mediaDir;
         const picturePath =
@@ -199,57 +199,7 @@ class MiningIPC extends IPC()<"mining"> {
           { payload: { noteId, picture, sentenceAudio, nsfw } },
           "mining:updateNote",
         );
-        //  ─────────────────────────────── backup ────────────────────────────
-        const ankiMediaDir = ankiClient().mediaDir;
-        if (!ankiMediaDir)
-          throw new Error("Anki media dir not found, is AnkiConnect running?");
         const note = await ankiClient().getNote(noteId);
-
-        const pictureFieldValue =
-          note.fields[config.store.anki.pictureField]?.value ?? "";
-        const sentenceAudioFieldValue =
-          note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
-        const backupPicture = this.parseAnkiMediaPath(pictureFieldValue);
-        const backupSentenceAudio = this.parseAnkiMediaPath(
-          sentenceAudioFieldValue,
-        );
-        const backupPictureFilePath = backupPicture
-          ? join(ankiMediaDir, backupPicture)
-          : undefined;
-        const backupSentenceAudioFilePath = backupSentenceAudio
-          ? join(ankiMediaDir, backupSentenceAudio)
-          : undefined;
-
-        const media: Array<{
-          type: "picture" | "sentenceAudio";
-          filePath: string;
-          vadData?: VadData;
-        }> = [];
-        try {
-          if (!backupPictureFilePath || !picture) {
-            log.debug("No Picture to backup");
-          } else {
-            await access(backupPictureFilePath);
-            media.push({ filePath: backupPictureFilePath, type: "picture" });
-          }
-        } catch {}
-        try {
-          if (!backupSentenceAudioFilePath || !sentenceAudio) {
-            log.debug("No SentenceAudio to backup");
-          } else {
-            await access(backupSentenceAudioFilePath);
-            media.push({
-              filePath: backupSentenceAudioFilePath,
-              type: "sentenceAudio",
-            });
-          }
-        } catch {}
-
-        if (media.length > 0) {
-          await mainDB().insertNoteAndMedia({ noteId, media });
-        }
-        //  ─────────────────────────────── backup ────────────────────────────
-
         await ankiClient().updateNote({
           note,
           picturePath: picture ? join(env.STORAGE_PATH, picture) : undefined,
@@ -273,16 +223,6 @@ class MiningIPC extends IPC()<"mining"> {
         bus.emit("anki:handleNewNote", { noteId });
       }
     });
-  }
-
-  parseAnkiMediaPath(fieldValue: string) {
-    const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/i;
-    const soundRegex = /\[sound:([^\]]+)\]/i;
-
-    const imageMatch = fieldValue.match(imageRegex);
-    const soundMatch = fieldValue.match(soundRegex);
-
-    return imageMatch?.[1] ?? soundMatch?.[1] ?? "";
   }
 
   override unregister(): void {
