@@ -1,7 +1,7 @@
-import { yomitanExtension } from "#/extension/yomitan";
+import { yomitanExtension } from "#/extension/extensionYomitan";
 import { log } from "#/util/logger";
-import { yomitanWindow } from "../window/yomitan";
-import { IPC } from "./base";
+import { yomitanWindow } from "../window/windowYomitan";
+import { IPC } from "./ipcBase";
 
 class YomitanIPC extends IPC()<"yomitan"> {
   constructor() {
@@ -32,7 +32,7 @@ export const yomitanIPC = hmr.module(new YomitanIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { yomitanIPC } = await hmr.register<typeof import("./yomitan")>(
+  const { yomitanIPC } = await hmr.register<typeof import("./ipcYomitan")>(
     import.meta,
   );
   import.meta.hot.accept((mod) => {

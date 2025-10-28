@@ -1,16 +1,16 @@
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { effect, effectScope } from "alien-signals";
-import { AnkiClient, ankiClient } from "#/client/anki";
-import { obsClient } from "#/client/obs";
-import { textractorClient } from "#/client/textractor";
-import { mainDB } from "#/db/main";
+import { AnkiClient, ankiClient } from "#/client/clientAnki";
+import { obsClient } from "#/client/clientObs";
+import { textractorClient } from "#/client/clientTextractor";
+import { mainDB } from "#/db/dbMain";
 import { env } from "#/env";
-import { ffmpeg } from "#/runner/ffmpeg";
+import { ffmpeg } from "#/runner/runnerFfmpeg";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import type { VadData } from "#/util/schema";
-import { IPC } from "./base";
+import { IPC } from "./ipcBase";
 
 class MiningIPC extends IPC()<"mining"> {
   stopScopes = new Set<() => void>();
@@ -280,7 +280,7 @@ export const miningIPC = hmr.module(new MiningIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { miningIPC } = await hmr.register<typeof import("./mining")>(
+  const { miningIPC } = await hmr.register<typeof import("./ipcMining")>(
     import.meta,
   );
 

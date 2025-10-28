@@ -4,7 +4,7 @@ import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Field } from "#/components/ui/field";
 import { Heading } from "#/components/ui/heading";
-import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/querySettings";
 import { appToaster } from "../AppToaster";
 
 export function Python() {

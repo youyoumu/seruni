@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import type { Context } from "hono";
 import mime from "mime";
-import { ankiClient } from "#/client/anki";
+import { ankiClient } from "#/client/clientAnki";
 import { log } from "#/util/logger";
 
 export function waitForAnkiMediaDir() {

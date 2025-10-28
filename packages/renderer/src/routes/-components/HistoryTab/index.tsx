@@ -9,8 +9,8 @@ import { Pagination } from "#/components/ui/pagination";
 import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 import { keyStore } from "#/lib/query/_util";
-import { GeneralQuery } from "#/lib/query/general";
-import { MiningQuery } from "#/lib/query/mining";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
+import { MiningQuery } from "#/lib/query/queryMining";
 import { AnkiCard } from "./AnkiCard";
 import { NoteContextProvider } from "./Context";
 

@@ -9,8 +9,8 @@ import { Heading } from "#/components/ui/heading";
 import { Spinner } from "#/components/ui/spinner";
 import { Icon } from "#/components/ui/styled/icon";
 import { Text } from "#/components/ui/text";
-import { GeneralQuery } from "#/lib/query/general";
-import { MiningQuery } from "#/lib/query/mining";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
+import { MiningQuery } from "#/lib/query/queryMining";
 import { appToaster } from "./AppToaster";
 
 function capitalize(str: string) {

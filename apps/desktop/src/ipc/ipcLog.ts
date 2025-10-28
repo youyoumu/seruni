@@ -6,7 +6,7 @@ import type {
 } from "@repo/preload/ipc";
 import { bus } from "#/util/bus";
 import { log } from "#/util/logger";
-import { IPC } from "./base";
+import { IPC } from "./ipcBase";
 
 type ToastPayloadPromise = Promise<
   Partial<ToastPromiseOptionsSuccess> & Partial<ToastPromiseOptionsError>
@@ -68,9 +68,9 @@ export const logIPC = hmr.module(new LogIPC());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
-const module: typeof import("./log") = { logIPC };
+const module: typeof import("./ipcLog") = { logIPC };
 if (import.meta.hot) {
-  const { logIPC } = await hmr.register<typeof import("./log")>(
+  const { logIPC } = await hmr.register<typeof import("./ipcLog")>(
     import.meta,
     module,
   );

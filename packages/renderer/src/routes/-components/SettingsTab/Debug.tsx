@@ -4,7 +4,7 @@ import { cva } from "styled-system/css";
 import { Box, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import { SettingsQuery } from "#/lib/query/settings";
+import { SettingsQuery } from "#/lib/query/querySettings";
 import { appToaster } from "../AppToaster";
 
 export function Debug() {

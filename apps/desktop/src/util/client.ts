@@ -1,6 +1,6 @@
-import { ankiClient } from "#/client/anki";
-import { obsClient } from "#/client/obs";
-import { textractorClient } from "#/client/textractor";
+import { ankiClient } from "#/client/clientAnki";
+import { obsClient } from "#/client/clientObs";
+import { textractorClient } from "#/client/clientTextractor";
 
 export async function prepareAllClient() {
   ankiClient().register();

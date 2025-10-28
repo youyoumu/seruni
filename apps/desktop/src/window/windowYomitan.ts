@@ -1,8 +1,8 @@
 import { session } from "electron";
 import { env } from "#/env";
-import { yomitanExtension } from "#/extension/yomitan";
+import { yomitanExtension } from "#/extension/extensionYomitan";
 import { log } from "#/util/logger";
-import { AppWindow } from "./base";
+import { AppWindow } from "./windowBase";
 
 class YomitanWindow extends AppWindow() {
   preloadScriptIds: string[] = [];
@@ -75,9 +75,9 @@ export const yomitanWindow = hmr.module(new YomitanWindow());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { yomitanWindow } = await hmr.register<typeof import("./yomitan")>(
-    import.meta,
-  );
+  const { yomitanWindow } = await hmr.register<
+    typeof import("./windowYomitan")
+  >(import.meta);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
     yomitanWindow().register();

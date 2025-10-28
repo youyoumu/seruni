@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { ClientStatus } from "@repo/preload/ipc";
 import { WebSocket } from "ws";
-import { vnOverlayIPC } from "#/ipc/vnOverlay";
+import { vnOverlayIPC } from "#/ipc/ipcVnOverlay";
 import { config } from "#/util/config";
 import { logWithNamespace } from "../util/logger";
 
@@ -88,7 +88,7 @@ export const textractorClient = hmr.module(new TextractorClient());
 
 if (import.meta.hot) {
   const { textractorClient } = await hmr.register<
-    typeof import("./textractor")
+    typeof import("./clientTextractor")
   >(import.meta);
   hmr.register(import.meta);
   import.meta.hot.accept(async (mod) => {

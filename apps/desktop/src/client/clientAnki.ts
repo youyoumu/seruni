@@ -5,17 +5,17 @@ import { format } from "date-fns";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
 import { YankiConnect } from "yanki-connect";
-import { mainDB } from "#/db/main";
+import { mainDB } from "#/db/dbMain";
 import { env } from "#/env";
-import { logIPC } from "#/ipc/log";
-import { ffmpeg } from "#/runner/ffmpeg";
-import { python } from "#/runner/python";
+import { logIPC } from "#/ipc/ipcLog";
+import { ffmpeg } from "#/runner/runnerFfmpeg";
+import { python } from "#/runner/runnerPython";
 import { type BusEvents, bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { logWithNamespace } from "#/util/logger";
 import type { AnkiNote, VadData } from "#/util/schema";
-import { obsClient } from "./obs";
-import { textractorClient } from "./textractor";
+import { obsClient } from "./clientObs";
+import { textractorClient } from "./clientTextractor";
 
 type TextUuidQueueResult =
   | {
@@ -514,7 +514,7 @@ export const AnkiClient = hmr.module(AnkiClient_);
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { ankiClient } = await hmr.register<typeof import("./anki")>(
+  const { ankiClient } = await hmr.register<typeof import("./clientAnki")>(
     import.meta,
   );
   hmr.register(import.meta);

@@ -8,8 +8,8 @@ import { Code } from "#/components/ui/code";
 import { Dialog } from "#/components/ui/dialog";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
-import { MiningMutation, MiningQuery } from "#/lib/query/mining";
-import { SettingsQuery } from "#/lib/query/settings";
+import { MiningMutation, MiningQuery } from "#/lib/query/queryMining";
+import { SettingsQuery } from "#/lib/query/querySettings";
 import { appToaster } from "../AppToaster";
 import { AudioWaveMenu } from "./AudioWave";
 import {

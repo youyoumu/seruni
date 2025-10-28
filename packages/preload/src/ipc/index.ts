@@ -1,18 +1,18 @@
 import z from "zod";
-import { zGeneralIPC } from "./general";
-import { zLogIPC } from "./log";
-import { zMiningIPC } from "./mining";
-import { zSettingsIPC } from "./settings";
-import { zVnOverlayIPC } from "./vnOverlay";
-import { zYomitanIPC } from "./yomitan";
+import { zGeneralIPC } from "./zGeneral";
+import { zLogIPC } from "./zLog";
+import { zMiningIPC } from "./zMining";
+import { zSettingsIPC } from "./zSettings";
+import { zVnOverlayIPC } from "./zVnOverlay";
+import { zYomitanIPC } from "./zYomitan";
 
 export * from "./_shared";
-export * from "./general";
-export * from "./log";
-export * from "./mining";
-export * from "./settings";
-export * from "./vnOverlay";
-export * from "./yomitan";
+export * from "./zGeneral";
+export * from "./zLog";
+export * from "./zMining";
+export * from "./zSettings";
+export * from "./zVnOverlay";
+export * from "./zYomitan";
 
 //  ──────────────────────── From Renderer To Main ────────────────────────
 export const zIpcFromRenderer = z.object({

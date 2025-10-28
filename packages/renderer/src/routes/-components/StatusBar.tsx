@@ -4,7 +4,7 @@ import { HStack } from "styled-system/jsx";
 import { Icon } from "#/components/ui/icon";
 import { Spinner } from "#/components/ui/spinner";
 import { Text } from "#/components/ui/text";
-import { GeneralQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
 import { store } from "#/lib/store";
 import { NotificationHistory } from "./NotificationHistory";
 

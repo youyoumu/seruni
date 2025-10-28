@@ -1,5 +1,5 @@
 import { env } from "#/env";
-import { AppWindow } from "./base";
+import { AppWindow } from "./windowBase";
 
 class VnOverlayWindow extends AppWindow() {
   constructor() {
@@ -28,9 +28,9 @@ export const vnOverlayWindow = hmr.module(new VnOverlayWindow());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { vnOverlayWindow } = await hmr.register<typeof import("./vnOverlay")>(
-    import.meta,
-  );
+  const { vnOverlayWindow } = await hmr.register<
+    typeof import("./windowVnOverlay")
+  >(import.meta);
   import.meta.hot.accept((mod) => {
     hmr.update(import.meta, mod);
     vnOverlayWindow().register();

@@ -5,7 +5,7 @@ import { Grid, HStack, Stack } from "styled-system/jsx";
 import { Heading } from "#/components/ui/heading";
 import { IconButton } from "#/components/ui/icon-button";
 import { NumberInput } from "#/components/ui/number-input";
-import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/querySettings";
 import { appToaster } from "../AppToaster";
 
 const defaultTextractorConfig = defaultConfig.textractor;

@@ -4,7 +4,7 @@ import { HStack, Stack } from "styled-system/jsx";
 import type { RecipeVariantProps } from "styled-system/types";
 import { Button } from "#/components/ui/button";
 import { Text } from "#/components/ui/text";
-import { GeneralQuery } from "#/lib/query/general";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
 import { AudioButton } from "./AudioButton";
 import { useNoteContext } from "./Context";
 import { EditButton } from "./EditButton";

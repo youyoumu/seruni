@@ -20,7 +20,7 @@ import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
-import { MiningQuery } from "#/lib/query/mining";
+import { MiningQuery } from "#/lib/query/queryMining";
 import { localStore, setLocalStore } from "#/lib/store";
 import { appToaster } from "./AppToaster";
 

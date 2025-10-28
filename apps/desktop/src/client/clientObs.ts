@@ -1,7 +1,7 @@
 import type { ClientStatus } from "@repo/preload/ipc";
 import { signal } from "alien-signals";
 import OBSWebSocket from "obs-websocket-js";
-import { ffmpeg } from "#/runner/ffmpeg";
+import { ffmpeg } from "#/runner/runnerFfmpeg";
 import { config } from "#/util/config";
 import { logWithNamespace } from "../util/logger";
 
@@ -200,7 +200,9 @@ export const obsClient = hmr.module(new ObsClient());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { obsClient } = await hmr.register<typeof import("./obs")>(import.meta);
+  const { obsClient } = await hmr.register<typeof import("./clientObs")>(
+    import.meta,
+  );
   hmr.register(import.meta);
   import.meta.hot.accept(async (mod) => {
     hmr.update(import.meta, mod);

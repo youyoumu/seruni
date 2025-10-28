@@ -20,7 +20,7 @@ import {
   type Query,
   queryWithPlaceholderData,
 } from "./_util";
-import { GeneralQuery } from "./general";
+import { GeneralQuery } from "./queryGeneral";
 
 const NoteMediaQuery = {
   // biome-ignore format: this looks nicer

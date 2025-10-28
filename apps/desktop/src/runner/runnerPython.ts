@@ -164,7 +164,7 @@ export const python = hmr.module(new Python());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
-type Self = typeof import("./python");
+type Self = typeof import("./runnerPython");
 const module: Self = { python };
 if (import.meta.hot) {
   hmr.register<Self>(import.meta, module);

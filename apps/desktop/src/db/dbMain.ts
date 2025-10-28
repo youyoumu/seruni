@@ -6,7 +6,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { env } from "#/env";
 import { logWithNamespace } from "#/util/logger";
 import type { VadData } from "#/util/schema";
-import { mediaTable, notesTable } from "./schema";
+import { mediaTable, notesTable } from "./dbSchema";
 
 export class DB {
   static log = logWithNamespace("DB");
@@ -116,7 +116,7 @@ export const mainDB = hmr.module(new DB());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
-type Self = typeof import("./main");
+type Self = typeof import("./dbMain");
 const module: Self = { mainDB, DB };
 if (import.meta.hot) {
   hmr.register<Self>(import.meta, module);

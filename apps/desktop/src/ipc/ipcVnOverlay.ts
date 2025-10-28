@@ -1,5 +1,5 @@
-import { vnOverlayWindow } from "../window/vnOverlay";
-import { IPC } from "./base";
+import { vnOverlayWindow } from "../window/windowVnOverlay";
+import { IPC } from "./ipcBase";
 
 class VnOverlayIPC extends IPC()<"vnOverlay"> {
   constructor() {
@@ -24,7 +24,7 @@ export const vnOverlayIPC = hmr.module(new VnOverlayIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { vnOverlayIPC } = await hmr.register<typeof import("./vnOverlay")>(
+  const { vnOverlayIPC } = await hmr.register<typeof import("./ipcVnOverlay")>(
     import.meta,
   );
   import.meta.hot.accept((mod) => {

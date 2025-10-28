@@ -1,13 +1,13 @@
 import { debounce } from "es-toolkit";
 import type { MessageContext } from "roarr";
-import { ankiClient } from "#/client/anki";
+import { ankiClient } from "#/client/clientAnki";
 import { env } from "#/env";
-import { yomitanExtension } from "#/extension/yomitan";
-import { python } from "#/runner/python";
+import { yomitanExtension } from "#/extension/extensionYomitan";
+import { python } from "#/runner/runnerPython";
 import { config } from "#/util/config";
 import { log } from "#/util/logger";
-import { IPC } from "./base";
-import { vnOverlayIPC } from "./vnOverlay";
+import { IPC } from "./ipcBase";
+import { vnOverlayIPC } from "./ipcVnOverlay";
 
 class SettingsIPC extends IPC()<"settings"> {
   dLogTrace;
@@ -94,7 +94,7 @@ export const settingsIPC = hmr.module(new SettingsIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { settingsIPC } = await hmr.register<typeof import("./settings")>(
+  const { settingsIPC } = await hmr.register<typeof import("./ipcSettings")>(
     import.meta,
   );
   import.meta.hot.accept((mod) => {

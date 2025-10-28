@@ -1,7 +1,7 @@
 import { getOwner } from "solid-js";
 import { Grid, Stack } from "styled-system/jsx";
 import { Button } from "#/components/ui/button";
-import { SettingsQuery } from "#/lib/query/settings";
+import { SettingsQuery } from "#/lib/query/querySettings";
 
 export function DebugTab() {
   const { PythonQuery } = SettingsQuery;

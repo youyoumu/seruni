@@ -1,9 +1,9 @@
-import { ankiClient } from "#/client/anki";
-import { obsClient } from "#/client/obs";
-import { textractorClient } from "#/client/textractor";
+import { ankiClient } from "#/client/clientAnki";
+import { obsClient } from "#/client/clientObs";
+import { textractorClient } from "#/client/clientTextractor";
 import { env } from "#/env";
 import { bus } from "#/util/bus";
-import { IPC } from "./base";
+import { IPC } from "./ipcBase";
 
 class GeneralIPC extends IPC()<"general"> {
   ready = Promise.withResolvers<boolean>();
@@ -41,7 +41,7 @@ export const generalIPC = hmr.module(new GeneralIPC());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { generalIPC } = await hmr.register<typeof import("./general")>(
+  const { generalIPC } = await hmr.register<typeof import("./ipcGeneral")>(
     import.meta,
   );
   hmr.register(import.meta);

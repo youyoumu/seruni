@@ -3,7 +3,7 @@ import { Grid, Stack } from "styled-system/jsx";
 import { Alert } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Heading } from "#/components/ui/heading";
-import { SettingsMutation, SettingsQuery } from "#/lib/query/settings";
+import { SettingsMutation, SettingsQuery } from "#/lib/query/querySettings";
 import { appToaster } from "../AppToaster";
 
 export function Yomitan() {

@@ -17,8 +17,8 @@ import { Dialog } from "#/components/ui/dialog";
 import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
 import { Text } from "#/components/ui/text";
-import { GeneralQuery } from "#/lib/query/general";
-import { MiningMutation } from "#/lib/query/mining";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
+import { MiningMutation } from "#/lib/query/queryMining";
 import { appToaster } from "../AppToaster";
 import {
   useNoteContext,

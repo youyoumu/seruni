@@ -1,8 +1,8 @@
 import { css } from "styled-system/css";
 import { Box } from "styled-system/jsx";
 import { Switch as Toggle } from "#/components/ui/switch";
-import { GeneralQuery } from "#/lib/query/general";
-import { MiningMutation } from "#/lib/query/mining";
+import { GeneralQuery } from "#/lib/query/queryGeneral";
+import { MiningMutation } from "#/lib/query/queryMining";
 import { appToaster } from "../AppToaster";
 import { NoteMediaSrcContextProvider, useNoteContext } from "./Context";
 import { ImageWithFallback, PictureWithZoom } from "./Picture";

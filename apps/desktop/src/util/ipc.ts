@@ -1,9 +1,9 @@
-import { generalIPC } from "#/ipc/general";
-import { logIPC } from "#/ipc/log";
-import { miningIPC } from "#/ipc/mining";
-import { settingsIPC } from "#/ipc/settings";
-import { vnOverlayIPC } from "#/ipc/vnOverlay";
-import { yomitanIPC } from "#/ipc/yomitan";
+import { generalIPC } from "#/ipc/ipcGeneral";
+import { logIPC } from "#/ipc/ipcLog";
+import { miningIPC } from "#/ipc/ipcMining";
+import { settingsIPC } from "#/ipc/ipcSettings";
+import { vnOverlayIPC } from "#/ipc/ipcVnOverlay";
+import { yomitanIPC } from "#/ipc/ipcYomitan";
 
 export function registerAllIPC() {
   generalIPC().register();

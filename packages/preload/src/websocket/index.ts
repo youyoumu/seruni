@@ -6,7 +6,7 @@ import {
   type SocketOptions,
 } from "socket.io-client";
 import z from "zod";
-import { zDevWS } from "./dev";
+import { zDevWS } from "./zDev";
 
 export { zDevWS as devWS };
 

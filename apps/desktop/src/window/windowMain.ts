@@ -2,8 +2,8 @@ import { app } from "electron";
 import { delay } from "es-toolkit";
 import { env } from "#/env";
 import { log } from "#/util/logger";
-import { AppWindow } from "./base";
-import { yomitanWindow } from "./yomitan";
+import { AppWindow } from "./windowBase";
+import { yomitanWindow } from "./windowYomitan";
 
 class MainWindow extends AppWindow() {
   constructor() {
@@ -61,7 +61,7 @@ export const mainWindow = hmr.module(new MainWindow());
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
 if (import.meta.hot) {
-  const { mainWindow } = await hmr.register<typeof import("./main")>(
+  const { mainWindow } = await hmr.register<typeof import("./windowMain")>(
     import.meta,
   );
   import.meta.hot.accept((mod) => {

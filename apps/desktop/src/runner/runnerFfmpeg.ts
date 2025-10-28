@@ -231,7 +231,7 @@ export const ffmpeg = hmr.module(new FFmpeg());
 
 //  ───────────────────────────────── HMR ─────────────────────────────────
 
-type Self = typeof import("./ffmpeg");
+type Self = typeof import("./runnerFfmpeg");
 const module: Self = { ffmpeg };
 if (import.meta.hot) {
   hmr.register<Self>(import.meta, module);

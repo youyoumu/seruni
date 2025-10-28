@@ -1,8 +1,8 @@
 //TODO: use register.ts
 
-import { mainWindow } from "#/window/main";
-import { vnOverlayWindow } from "#/window/vnOverlay";
-import { yomitanWindow } from "#/window/yomitan";
+import { mainWindow } from "#/window/windowMain";
+import { vnOverlayWindow } from "#/window/windowVnOverlay";
+import { yomitanWindow } from "#/window/windowYomitan";
 
 export function registerAllWindow() {
   mainWindow().register();
