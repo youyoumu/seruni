@@ -27,3 +27,6 @@
 - mining session
 - get expression and deckName from anki connect proxy
 - backup if image or sentence audio has value
+- health check ffmpeg
+- setup wizard
+- sort history by added time to seruni

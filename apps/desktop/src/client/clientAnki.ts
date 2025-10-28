@@ -1,6 +1,6 @@
 import { access, readdir, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
-import type { ClientStatus } from "@repo/preload/ipc";
+import type { AnkiNote, ClientStatus } from "@repo/preload/ipc";
 import { format } from "date-fns";
 import { delay } from "es-toolkit";
 import { sort } from "fast-sort";
@@ -13,7 +13,7 @@ import { python } from "#/runner/runnerPython";
 import { type BusEvents, bus } from "#/util/bus";
 import { config } from "#/util/config";
 import { logWithNamespace } from "#/util/logger";
-import type { AnkiNote, VadData } from "#/util/schema";
+import type { VadData } from "#/util/schema";
 import { obsClient } from "./clientObs";
 import { textractorClient } from "./clientTextractor";
 

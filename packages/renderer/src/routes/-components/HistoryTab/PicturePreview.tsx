@@ -7,7 +7,7 @@ import { appToaster } from "../AppToaster";
 import { NoteMediaSrcContextProvider, useNoteContext } from "./Context";
 import { ImageWithFallback, PictureWithZoom } from "./Picture";
 
-export function PicturePreview() {
+export function PicturePreview(props: { readOnly?: boolean }) {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   const [nsfw, setNsfw] = createSignal(note.nsfw);
@@ -101,15 +101,17 @@ export function PicturePreview() {
             );
           }}
           extraButtons={
-            <Toggle
-              disabled={updateNoteMutation.isPending}
-              checked={nsfw()}
-              onCheckedChange={(e) => {
-                toggleNsfw(e.checked);
-              }}
-            >
-              NSFW
-            </Toggle>
+            <Show when={!props.readOnly}>
+              <Toggle
+                disabled={updateNoteMutation.isPending}
+                checked={nsfw()}
+                onCheckedChange={(e) => {
+                  toggleNsfw(e.checked);
+                }}
+              >
+                NSFW
+              </Toggle>
+            </Show>
           }
         />
       </NoteMediaSrcContextProvider>

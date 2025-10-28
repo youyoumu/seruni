@@ -58,6 +58,12 @@ const mining = [
       queryFn: () => ipcRenderer.invoke("mining:getAnkiHistory"),
     },
   }),
+  createQueryKeys("mining:ankiNoteInfo", {
+    detail: ({ noteId }: { noteId: number }) => ({
+      queryKey: [noteId],
+      queryFn: () => ipcRenderer.invoke("mining:getNoteInfo", { noteId }),
+    }),
+  }),
 ] as const;
 
 const settings = [

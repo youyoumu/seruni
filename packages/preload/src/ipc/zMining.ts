@@ -1,4 +1,5 @@
 import z from "zod";
+import { zAnkiNote } from "./_shared";
 
 export const zAnkiConnectUrlPath = z.literal("/anki/connect/");
 export const zAnkiCollectionMediaUrlPath = z.literal("/anki/collection.media/");
@@ -136,6 +137,10 @@ export const zMiningIPC = {
     "mining:confirmDuplicateNote": z.object({
       input: z.tuple([zConfirmDuplicateNoteData]),
       output: z.void(),
+    }),
+    "mining:getNoteInfo": z.object({
+      input: z.tuple([z.object({ noteId: z.number() })]),
+      output: zAnkiNote,
     }),
   }),
 };

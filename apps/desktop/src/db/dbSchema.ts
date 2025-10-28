@@ -1,5 +1,5 @@
+import type { AnkiNote } from "@repo/preload/ipc";
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { AnkiNote } from "#/util/schema";
 
 // Notes table
 export const notesTable = sqliteTable("notes", {

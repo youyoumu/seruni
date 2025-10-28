@@ -44,7 +44,7 @@ const expressionVariant = cva({
   },
 });
 
-export function AnkiCard() {
+export function AnkiCard(props: { readOnly?: boolean }) {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
   const time = () => formatRelative(new Date(note.id), new Date());
@@ -90,14 +90,16 @@ export function AnkiCard() {
           </Show>
         </Stack>
         <Show when={note.picture}>
-          <PicturePreview />
+          <PicturePreview readOnly={props.readOnly} />
         </Show>
       </HStack>
       <Stack>
         <HStack gap="4" justifyContent="space-between" alignItems="end">
           <HStack>
             <Button size="sm">Open in Anki</Button>
-            <EditButton />
+            <Show when={!props.readOnly}>
+              <EditButton />
+            </Show>
           </HStack>
 
           <Text size="xs" color="fg.muted">

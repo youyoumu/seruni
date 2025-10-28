@@ -223,6 +223,10 @@ class MiningIPC extends IPC()<"mining"> {
         bus.emit("anki:handleUpdateNoteMedia", { noteId });
       }
     });
+
+    this.handle("mining:getNoteInfo", async (_, payload) => {
+      return await ankiClient().getNote(payload.noteId);
+    });
   }
 
   override unregister(): void {

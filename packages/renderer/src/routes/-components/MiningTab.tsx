@@ -1,4 +1,4 @@
-import { createTimer, makeTimer } from "@solid-primitives/timer";
+import { createTimer } from "@solid-primitives/timer";
 import { useQueryClient } from "@tanstack/solid-query";
 import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
@@ -10,7 +10,7 @@ import {
   TrashIcon,
   XIcon,
 } from "lucide-solid";
-import type { JSX, Signal } from "solid-js";
+import type { JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
 import { Select_ } from "#/components/Form";
@@ -24,9 +24,12 @@ import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
 import { MiningMutation, MiningQuery } from "#/lib/query/queryMining";
+import { SettingsQuery } from "#/lib/query/querySettings";
 import { localStore, setLocalStore } from "#/lib/store";
-import { inspect } from "#/lib/util";
+import { inspect, parseAnkiMediaPath } from "#/lib/util";
 import { appToaster } from "./AppToaster";
+import { AnkiCard } from "./HistoryTab/AnkiCard";
+import { NoteContextProvider } from "./HistoryTab/Context";
 
 const isNotJapaneseRegex =
   /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
@@ -376,7 +379,7 @@ function ResetTextButton(props: {
 
 export function DuplicateNoteConfirmation() {
   const [open, setOpen] = createSignal(true);
-  const [noteIds, setNoteIds] = createSignal<number[]>([100, 200]);
+  const [noteIds, setNoteIds] = createSignal<number[]>([1678418786018]);
 
   const options = [
     { id: "create", label: "Create" },
@@ -390,11 +393,11 @@ export function DuplicateNoteConfirmation() {
       params: { noteId: number | null };
     }>({
       uuid: "",
-      action: "create" as const,
-      params: { noteId: null },
+      action: "update" as const,
+      params: { noteId: 1678418786018 },
     });
 
-  createEffect(() => {
+  onMount(() => {
     ipcRenderer.on("mining:duplicateNoteConfirmation", ({ uuid, noteIds }) => {
       setDuplicateNoteConfirmationForm("uuid", uuid);
       setOpen(true);
@@ -436,7 +439,7 @@ export function DuplicateNoteConfirmation() {
                 </Dialog.Description>
               </Stack>
               <RadioGroup.Root
-                defaultValue="create"
+                value={duplicateNoteConfirmationForm.action}
                 onValueChange={(e) => {
                   if (e.value)
                     setDuplicateNoteConfirmationForm(
@@ -479,6 +482,16 @@ export function DuplicateNoteConfirmation() {
                   })}
                 />
               </Show>
+              <Show
+                when={
+                  duplicateNoteConfirmationForm.action === "update" &&
+                  duplicateNoteConfirmationForm.params.noteId
+                }
+              >
+                <NoteInfo
+                  noteId={duplicateNoteConfirmationForm.params.noteId ?? 0}
+                />
+              </Show>
 
               <HStack justifyContent="end">
                 <Button variant="subtle" onClick={() => setOpen(false)}>
@@ -499,5 +512,55 @@ export function DuplicateNoteConfirmation() {
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>
+  );
+}
+
+function NoteInfo(props: { noteId: number }) {
+  const configQuery = SettingsQuery.ConfigQuery.detail.use();
+  const noteInfoQuery = MiningQuery.AnkiQuery.noteInfo.use({
+    noteId: props.noteId,
+  });
+
+  const picture = () => {
+    const key = configQuery.data?.anki.pictureField;
+    if (!key) return "";
+    return parseAnkiMediaPath(noteInfoQuery.data?.fields[key]?.value ?? "");
+  };
+
+  const sentenceAudio = () => {
+    const key = configQuery.data?.anki.sentenceAudioField;
+    if (!key) return "";
+    return parseAnkiMediaPath(noteInfoQuery.data?.fields[key]?.value ?? "");
+  };
+
+  inspect(() => noteInfoQuery.data);
+  //TODO: move components
+  //
+
+  const expression = () => {
+    const key = configQuery.data?.anki.expressionField;
+    if (!key) return "";
+    return noteInfoQuery.data?.fields[key]?.value ?? "";
+  };
+
+  return (
+    <Suspense>
+      <NoteContextProvider
+        value={{
+          picture: picture(),
+          sentenceAudio: sentenceAudio(),
+          expression: expression(),
+          id: props.noteId,
+          nsfw:
+            noteInfoQuery.data?.tags
+              .map((tag) => tag.toLowerCase())
+              .includes("nsfw") ?? false,
+        }}
+      >
+        <Stack h="64">
+          <AnkiCard readOnly />
+        </Stack>
+      </NoteContextProvider>
+    </Suspense>
   );
 }

@@ -358,6 +358,7 @@ export function PictureWithZoom(props: {
                         {...closeTriggerProps()}
                         class={css({
                           w: "full",
+                          maxH: "[75svh]",
                           maxW: "8xl",
                           objectFit: "contain",
                           shadow: "md",

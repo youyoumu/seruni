@@ -18,7 +18,7 @@ export function HistoryTab() {
   const queryClient = useQueryClient();
   const { ClientStatusQuery } = GeneralQuery;
   const clientStatusQuery = ClientStatusQuery.detail.use();
-  const ankiHistoryQuery = MiningQuery.AnkiHistoryQuery.data.use();
+  const ankiHistoryQuery = MiningQuery.AnkiQuery.history.use();
 
   const [currentPage, setCurrentPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);

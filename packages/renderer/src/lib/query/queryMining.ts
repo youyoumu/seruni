@@ -69,9 +69,9 @@ const SessionQuery = {
   },
 } satisfies Query;
 
-const AnkiHistoryQuery = {
+const AnkiQuery = {
   // biome-ignore format: this looks nicer
-  data: {
+  history: {
     options: () =>
       queryOptions({
         ...keyStore["mining:ankiHistory"].all,
@@ -84,9 +84,23 @@ const AnkiHistoryQuery = {
       const query = useQuery(() => {
         const clientStatus = GeneralQuery.ClientStatusQuery.detail.use();
         clientStatus.dataUpdatedAt
-        return { ...AnkiHistoryQuery.data.options(), enabled: untrack(() => clientStatus.data.anki === "connected"), };
+        return { ...AnkiQuery.history.options(), enabled: untrack(() => clientStatus.data.anki === "connected"), };
       });
       return queryWithPlaceholderData(query, []);
+    },
+  },
+  noteInfo: {
+    options: ({ noteId }: { noteId: number }) =>
+      queryOptions({
+        ...keyStore["mining:ankiNoteInfo"].detail({ noteId }),
+        reconcile: (old, data) => reconcile(data)(old),
+      }),
+    use: ({ noteId }: { noteId: number }) => {
+      return useQuery(() => {
+        return {
+          ...AnkiQuery.noteInfo.options({ noteId }),
+        };
+      });
     },
   },
 } satisfies Query;
@@ -184,7 +198,7 @@ export const MiningQuery = {
   NoteMediaQuery,
   ObsQuery,
   SessionQuery,
-  AnkiHistoryQuery,
+  AnkiQuery,
 };
 
 export const MiningMutation = {
