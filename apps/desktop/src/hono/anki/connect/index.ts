@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type HonoRequest } from "hono";
 import z from "zod";
 import { ankiClient } from "#/client/clientAnki";
 import { bus } from "#/util/bus";
@@ -8,6 +8,7 @@ import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 
 const log = logWithNamespace("HTTP");
 const app = new Hono();
+const interceptedRequest = new Map<string, HonoRequest>();
 
 app.post("/", async (c) => {
   const url = new URL(c.req.url);
@@ -87,6 +88,9 @@ app.post("/", async (c) => {
     if (expression === undefined)
       throw new Error("Expression field is missing, invalid config?");
     if (ankiClient().duplicateList.has(expression)) {
+      const uuid = crypto.randomUUID();
+      interceptedRequest.set(uuid, c.req);
+
       return new Response("Intercepted", {
         status: 500,
       });

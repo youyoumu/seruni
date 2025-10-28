@@ -68,6 +68,10 @@ export const zMiningIPC = {
       input: z.tuple([z.object({ duration: z.number() })]),
       output: z.void(),
     }),
+    "mining:duplicateNoteConfirmation": z.object({
+      input: z.tuple([z.object({ uuid: z.string() })]),
+      output: z.void(),
+    }),
   }),
   renderer: z.object({
     "mining:setTextUuid": z.object({
@@ -116,6 +120,16 @@ export const zMiningIPC = {
     }),
     "mining:updateNote": z.object({
       input: z.tuple([zUpdateNoteData]),
+      output: z.void(),
+    }),
+    "mining:confirmDuplicateNote": z.object({
+      input: z.tuple([
+        z.object({
+          uuid: z.string(),
+          action: z.union([z.literal("create"), z.literal("update")]),
+          params: z.object({ noteId: z.number() }).optional(),
+        }),
+      ]),
       output: z.void(),
     }),
   }),

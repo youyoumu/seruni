@@ -1,4 +1,4 @@
-import { createTimer } from "@solid-primitives/timer";
+import { createTimer, makeTimer } from "@solid-primitives/timer";
 import { useQueryClient } from "@tanstack/solid-query";
 import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
@@ -10,18 +10,22 @@ import {
   TrashIcon,
   XIcon,
 } from "lucide-solid";
-import type { JSX } from "solid-js";
+import type { JSX, Signal } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, Stack } from "styled-system/jsx";
+import { Select_ } from "#/components/Form";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
 import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
+import { RadioGroup } from "#/components/ui/radio-group";
+import { createListCollection } from "#/components/ui/select";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
 import { MiningQuery } from "#/lib/query/queryMining";
 import { localStore, setLocalStore } from "#/lib/store";
+import { inspect } from "#/lib/util";
 import { appToaster } from "./AppToaster";
 
 const isNotJapaneseRegex =
@@ -157,150 +161,163 @@ export function MiningTab() {
 
   let hoverTimeout: number | undefined;
 
-  return (
-    <Stack h="full" maxW="8xl" mx="auto">
-      <HStack justifyContent="end" pb="4">
-        <Text fontWeight="semibold">
-          {characterCount()} characters in {formattedDuration()}
-        </Text>
-        <Box
-          class={css({
-            bg: "border.default",
-            h: "full",
-            w: "0.5",
-          })}
-        ></Box>
-        <Text fontWeight="semibold">{speed()} characters/hour</Text>
-        <Box
-          class={css({
-            bg: "border.default",
-            h: "full",
-            w: "0.5",
-          })}
-        ></Box>
-        <Show when={!timerRunning()}>
-          <IconButton
-            size="xs"
-            onClick={() => {
-              setTimerRunning((prev) => !prev);
-            }}
-          >
-            <PlayIcon></PlayIcon>
-          </IconButton>
-        </Show>
-        <Show when={timerRunning()}>
-          <IconButton
-            size="xs"
-            onClick={() => {
-              setTimerRunning((prev) => !prev);
-            }}
-          >
-            <PauseIcon></PauseIcon>
-          </IconButton>
-        </Show>
-        <ResetTextButton
-          trigger={(onClick) => (
-            <IconButton size="xs" onClick={onClick}>
-              <ListRestartIcon></ListRestartIcon>
-            </IconButton>
-          )}
-          onConfirm={() => {
-            setLocalStore("texthookerTimer", 0);
-            texthoookerDB.text.clear();
-            appToaster.create({
-              description: "Stats have been reset.",
-              type: "info",
-            });
-          }}
-        />
-      </HStack>
+  const [openDuplicateNoteConfirmation, setOpenDuplicateNoteConfirmation] =
+    createSignal(true);
+  const [uuid, setUuid] = createSignal(crypto.randomUUID());
 
-      <Stack
-        gap="12"
-        overflow="auto"
-        p="4"
-        ps="6"
-        pb="64"
-        ref={textContainerRef}
-        class="custom-scrollbar"
-      >
-        <For each={texts.value}>
-          {(item) => {
-            return (
-              <HStack
-                position="relative"
-                alignItems="center"
-                gap="4"
-                p="2"
-                borderColor="border.default"
-                borderBottomWidth="thin"
-                onMouseEnter={() => {
-                  hoverTimeout = window.setTimeout(() => {
-                    ipcRenderer
-                      .invoke("mining:setTextUuid", { uuid: item.uuid })
-                      .then(({ uuid }) => setTextUuid(uuid));
-                  }, 250); // delay in ms
-                }}
-                onMouseLeave={() => {
-                  // cancel if cursor leaves early
-                  clearTimeout(hoverTimeout);
-                }}
-                bg={{
-                  _hover: "bg.subtle",
-                }}
-              >
-                <Icon
-                  class={css({
-                    position: "absolute",
-                    left: "-6",
-                    color: "colorPalette.default",
-                  })}
-                  style={{
-                    transition: "opacity 0.2s, transform 0.2s",
-                    transform: `translateX(${item.uuid === textUuid() ? "0" : "-10px"})`,
-                    opacity: item.uuid === textUuid() ? 1 : 0,
+  return (
+    <>
+      <DuplicateNoteConfirmation
+        open={[openDuplicateNoteConfirmation, setOpenDuplicateNoteConfirmation]}
+        uuid={uuid()}
+      />
+      <Stack h="full" maxW="8xl" mx="auto">
+        <HStack justifyContent="end" pb="4">
+          <Text fontWeight="semibold">
+            {characterCount()} characters in {formattedDuration()}
+          </Text>
+          <Box
+            class={css({
+              bg: "border.default",
+              h: "full",
+              w: "0.5",
+            })}
+          ></Box>
+          <Text fontWeight="semibold">{speed()} characters/hour</Text>
+          <Box
+            class={css({
+              bg: "border.default",
+              h: "full",
+              w: "0.5",
+            })}
+          ></Box>
+          <Show when={!timerRunning()}>
+            <IconButton
+              size="xs"
+              onClick={() => {
+                setTimerRunning((prev) => !prev);
+              }}
+            >
+              <PlayIcon></PlayIcon>
+            </IconButton>
+          </Show>
+          <Show when={timerRunning()}>
+            <IconButton
+              size="xs"
+              onClick={() => {
+                setTimerRunning((prev) => !prev);
+              }}
+            >
+              <PauseIcon></PauseIcon>
+            </IconButton>
+          </Show>
+          <ResetTextButton
+            trigger={(onClick) => (
+              <IconButton size="xs" onClick={onClick}>
+                <ListRestartIcon></ListRestartIcon>
+              </IconButton>
+            )}
+            onConfirm={() => {
+              setLocalStore("texthookerTimer", 0);
+              texthoookerDB.text.clear();
+              appToaster.create({
+                description: "Stats have been reset.",
+                type: "info",
+              });
+            }}
+          />
+        </HStack>
+
+        <Stack
+          gap="12"
+          overflow="auto"
+          p="4"
+          ps="6"
+          pb="64"
+          ref={textContainerRef}
+          class="custom-scrollbar"
+        >
+          <For each={texts.value}>
+            {(item) => {
+              return (
+                <HStack
+                  position="relative"
+                  alignItems="center"
+                  gap="4"
+                  p="2"
+                  borderColor="border.default"
+                  borderBottomWidth="thin"
+                  onMouseEnter={() => {
+                    hoverTimeout = window.setTimeout(() => {
+                      ipcRenderer
+                        .invoke("mining:setTextUuid", { uuid: item.uuid })
+                        .then(({ uuid }) => setTextUuid(uuid));
+                    }, 250); // delay in ms
                   }}
-                  asChild={(props) => {
-                    return <ArrowBigRight {...props()} />;
+                  onMouseLeave={() => {
+                    // cancel if cursor leaves early
+                    clearTimeout(hoverTimeout);
                   }}
-                ></Icon>
-                {"\n"}
-                <Text
-                  as="p"
-                  fontSize="xl"
-                  flex="1"
-                  color={
-                    notInHistoryTexts().some(
-                      (item_) => item_.uuid === item.uuid,
-                    )
-                      ? "fg.muted"
-                      : withinBufferTexts().some(
-                            (item_) => item_.uuid === item.uuid,
-                          )
-                        ? "fg.default"
-                        : "fg.error"
-                  }
+                  bg={{
+                    _hover: "bg.subtle",
+                  }}
                 >
-                  {item.text}
-                </Text>
-                {"\n"}
-                <TrashIcon
-                  class={css({
-                    h: "5",
-                    w: "5",
-                    cursor: "pointer",
-                    color: "fg.error",
-                  })}
-                  onClick={() => {
-                    texthoookerDB.text.where("uuid").equals(item.uuid).delete();
-                  }}
-                ></TrashIcon>
-              </HStack>
-            );
-          }}
-        </For>
+                  <Icon
+                    class={css({
+                      position: "absolute",
+                      left: "-6",
+                      color: "colorPalette.default",
+                    })}
+                    style={{
+                      transition: "opacity 0.2s, transform 0.2s",
+                      transform: `translateX(${item.uuid === textUuid() ? "0" : "-10px"})`,
+                      opacity: item.uuid === textUuid() ? 1 : 0,
+                    }}
+                    asChild={(props) => {
+                      return <ArrowBigRight {...props()} />;
+                    }}
+                  ></Icon>
+                  {"\n"}
+                  <Text
+                    as="p"
+                    fontSize="xl"
+                    flex="1"
+                    color={
+                      notInHistoryTexts().some(
+                        (item_) => item_.uuid === item.uuid,
+                      )
+                        ? "fg.muted"
+                        : withinBufferTexts().some(
+                              (item_) => item_.uuid === item.uuid,
+                            )
+                          ? "fg.default"
+                          : "fg.error"
+                    }
+                  >
+                    {item.text}
+                  </Text>
+                  {"\n"}
+                  <TrashIcon
+                    class={css({
+                      h: "5",
+                      w: "5",
+                      cursor: "pointer",
+                      color: "fg.error",
+                    })}
+                    onClick={() => {
+                      texthoookerDB.text
+                        .where("uuid")
+                        .equals(item.uuid)
+                        .delete();
+                    }}
+                  ></TrashIcon>
+                </HStack>
+              );
+            }}
+          </For>
+        </Stack>
       </Stack>
-    </Stack>
+    </>
   );
 }
 
@@ -360,6 +377,95 @@ function ResetTextButton(props: {
           />
         </Dialog.Content>
       </Dialog.Positioner>
+    </Dialog.Root>
+  );
+}
+
+export function DuplicateNoteConfirmation(props: {
+  open: Signal<boolean>;
+  uuid: string;
+}) {
+  const [open, setOpen] = props.open;
+
+  const options = [
+    { id: "create", label: "Create" },
+    { id: "update", label: "Update" },
+  ];
+
+  const [duplicateNoteConfirmationForm, setDuplicateNoteConfirmationForm] =
+    createStore({
+      uuid: "",
+      action: "create" as const,
+      params: {
+        noteId: 0,
+      },
+    });
+
+  createEffect(() => {
+    setDuplicateNoteConfirmationForm("uuid", props.uuid);
+  });
+
+  inspect(() => duplicateNoteConfirmationForm.action);
+  inspect(() => duplicateNoteConfirmationForm.params);
+  inspect(() => duplicateNoteConfirmationForm.uuid);
+
+  return (
+    <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
+      <Dialog.Backdrop />
+      <Portal mount={document.querySelector("#app") ?? document.body}>
+        <Dialog.Positioner p="4">
+          <Dialog.Content w="full" maxW="3xl" bg="bg.canvas">
+            <Stack gap="8" p="6">
+              <Stack gap="1">
+                <Dialog.Title>Duplicate Note Detected</Dialog.Title>
+                <Dialog.Description>
+                  Do you want to create a new note or update the existing one?
+                </Dialog.Description>
+              </Stack>
+              <RadioGroup.Root
+                defaultValue="create"
+                onValueChange={(e) => {
+                  if (e.value)
+                    setDuplicateNoteConfirmationForm(
+                      "action",
+                      e.value as "create",
+                    );
+                }}
+                flexDirection="row"
+              >
+                <For each={options}>
+                  {(option) => (
+                    <RadioGroup.Item value={option.id}>
+                      <RadioGroup.ItemControl />
+                      <RadioGroup.ItemText>{option.label}</RadioGroup.ItemText>
+                      <RadioGroup.ItemHiddenInput />
+                    </RadioGroup.Item>
+                  )}
+                </For>
+              </RadioGroup.Root>
+              <Select_
+                placeholder="Select Note ID"
+                label="Note ID"
+                onValueChange={(e) => {
+                  setDuplicateNoteConfirmationForm("action", e.items[0]?.value);
+                }}
+                collection={createListCollection({
+                  items: [12, 34].map((item) => ({
+                    label: item.toString(),
+                    value: item,
+                  })),
+                })}
+              />
+              <HStack justifyContent="end">
+                <Button variant="subtle" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button>Confirm</Button>
+              </HStack>
+            </Stack>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
     </Dialog.Root>
   );
 }
