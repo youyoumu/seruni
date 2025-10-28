@@ -41,7 +41,7 @@ export type BusEvents = {
     payload: IPCFromMain[IPCFromMainChannel]["input"];
   };
   "mainWindow:reload": undefined;
-  "anki:handleNewNote": { noteId: number };
+  "anki:handleUpdateNoteMedia": { noteId: number };
   "logIPC:send": LogMessage;
   "env:ready": Env;
   //

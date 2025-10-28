@@ -27,7 +27,6 @@ type TextUuidQueueResult =
 const AnkiClient_ = class AnkiClient {
   log = logWithNamespace("AnkiConnect");
   client: YankiConnect | undefined;
-  lastAddedNote: number | undefined;
   reconnecting = false;
   retryCount = 0;
   maxDelay = 16000;
@@ -43,12 +42,12 @@ const AnkiClient_ = class AnkiClient {
 
   register() {
     this.log.trace("Registering event listeners");
-    const listener = ({ noteId }: BusEvents["anki:handleNewNote"]) => {
-      this.preHandleNewNote(noteId);
+    const listener = ({ noteId }: BusEvents["anki:handleUpdateNoteMedia"]) => {
+      this.preHandleUpdateNoteMedia(noteId);
     };
-    bus.on("anki:handleNewNote", listener);
+    bus.on("anki:handleUpdateNoteMedia", listener);
     this.#abortController.signal.addEventListener("abort", () => {
-      bus.off("anki:handleNewNote", listener);
+      bus.off("anki:handleUpdateNoteMedia", listener);
     });
   }
 
@@ -67,7 +66,6 @@ const AnkiClient_ = class AnkiClient {
       });
       // check if anki is running
       await this.client.miscellaneous.version();
-      this.lastAddedNote = await this.getLastAddedNote();
       this.mediaDir = await this.client?.media.getMediaDirPath();
       this.retryCount = 0;
       this.status = "connected";
@@ -95,12 +93,6 @@ const AnkiClient_ = class AnkiClient {
     }, delay);
   }
 
-  async getLastAddedNote() {
-    if (!this.client) throw new Error("Anki client not connected");
-    const res = await this.client.note.findNotes({ query: "added:1" });
-    return sort(res ?? []).desc()[0];
-  }
-
   async monitor() {
     while (true) {
       if (!this.client) {
@@ -111,16 +103,7 @@ const AnkiClient_ = class AnkiClient {
 
       try {
         await this.client.miscellaneous.version();
-        // const lastAddedNote = await this.getLastAddedNote();
-        // if (
-        //   lastAddedNote &&
-        //   (!this.lastAddedNote || lastAddedNote > this.lastAddedNote)
-        // ) {
-        //   this.lastAddedNote = lastAddedNote;
-        //   this.preHandleNewNote(lastAddedNote);
-        // }
       } catch (error) {
-        // log.error({ error }, "Failed to fetch last added note");
         this.log.error(
           { error },
           `Failed to connect on port ${this.port}, reconnecting...`,
@@ -139,22 +122,17 @@ const AnkiClient_ = class AnkiClient {
     this.status = "disconnected";
   }
 
-  async preHandleNewNote(noteId: number) {
-    const noteInfo = await this.getNote(noteId);
-    this.log.debug({ noteInfo }, "Note Info");
-    const expression = AnkiClient.getExpression(noteInfo);
+  async preHandleUpdateNoteMedia(noteId: number) {
+    const note = await this.getNote(noteId);
+    this.log.debug({ noteInfo: note }, "Note Info");
+    const expression = AnkiClient.getExpression(note);
     //TODO: test this
-    const { expressionField, pictureField, sentenceAudioField } =
-      AnkiClient.validateField(noteInfo);
+    AnkiClient.validateField(note);
 
     logIPC().sendToastPromise(
       async () => {
         try {
-          if (!expressionField) throw new Error("Invalid Expression field");
-          if (!pictureField) throw new Error("Invalid Picture field");
-          if (!sentenceAudioField)
-            throw new Error("Invalid Sentence Audio field");
-          const result = await this.handleNewNote(noteInfo);
+          const result = await this.handleUpdateNoteMedia(note);
           return {
             success: {
               title: `Note Has Been Updated`,
@@ -181,7 +159,7 @@ const AnkiClient_ = class AnkiClient {
   }
 
   //TODO: move this out from anki client
-  async handleNewNote(note: AnkiNote) {
+  async handleUpdateNoteMedia(note: AnkiNote) {
     //get history
     const now = new Date();
     const history = sort(textractorClient().history)
@@ -566,10 +544,15 @@ const AnkiClient_ = class AnkiClient {
   }
 
   static validateField(note: AnkiNote) {
+    //TODO: use yomitan anki connect settings
     const expressionField = note.fields[config.store.anki.expressionField];
     const pictureField = note.fields[config.store.anki.pictureField];
     const sentenceAudioField =
       note.fields[config.store.anki.sentenceAudioField];
+
+    if (!expressionField) throw new Error("Invalid Expression field");
+    if (!pictureField) throw new Error("Invalid Picture field");
+    if (!sentenceAudioField) throw new Error("Invalid Sentence Audio field");
     return { expressionField, pictureField, sentenceAudioField };
   }
 

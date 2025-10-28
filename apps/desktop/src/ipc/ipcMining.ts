@@ -220,7 +220,7 @@ class MiningIPC extends IPC()<"mining"> {
       } else if (payload.action === "update") {
         const noteId = payload.params?.noteId;
         if (!noteId) throw new Error("Note ID is missing");
-        bus.emit("anki:handleNewNote", { noteId });
+        bus.emit("anki:handleUpdateNoteMedia", { noteId });
       }
     });
   }

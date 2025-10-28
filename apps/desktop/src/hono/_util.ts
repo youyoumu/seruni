@@ -29,11 +29,11 @@ export const proxyAnkiConnectNewNoteRequest = async (req: HonoRequest) => {
       .union([z.number(), z.object({ result: z.number() })])
       .parse(await resClone.json());
     if (typeof noteId === "number") {
-      bus.emit("anki:handleNewNote", {
+      bus.emit("anki:handleUpdateNoteMedia", {
         noteId: noteId,
       });
     } else if (typeof noteId === "object") {
-      bus.emit("anki:handleNewNote", {
+      bus.emit("anki:handleUpdateNoteMedia", {
         noteId: noteId.result,
       });
     } else {
