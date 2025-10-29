@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { fork } from "node:child_process";
 import { createReadStream, createWriteStream } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -12,15 +12,17 @@ process.env.ROARR_LOG = "true";
 const logBuffer: string[] = [];
 const logFileWriteStream = createWriteStream(env.LOG_FILE_PATH, { flags: "a" });
 const { Roarr: log_, ROARR } = await import("roarr");
+const roarr = fork(env.ROARR_CLI_PATH, ["--output-format", "pretty"], {
+  stdio: ["pipe", "inherit", "inherit", "ipc"],
+});
 ROARR.write = (message) => {
-  roarr.stdin.write(`${message}\n`);
+  if (!roarr.stdin) {
+    process.stdout.write(`$message\n`);
+  } else {
+    roarr.stdin.write(`${message}\n`);
+  }
   logBuffer.push(message);
 };
-const roarr = spawn(
-  process.execPath,
-  [env.ROARR_CLI_PATH, "--output-format", "pretty"],
-  { stdio: ["pipe", "inherit", "inherit"] },
-);
 
 setInterval(() => {
   if (logBuffer.length) {
