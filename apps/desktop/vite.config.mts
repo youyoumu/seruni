@@ -1,6 +1,7 @@
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import { resolve } from "node:path";
+import { execa } from "execa";
 import { defineConfig } from "vite";
 import circularDpendency from "vite-plugin-circular-dependency";
 
@@ -72,15 +73,6 @@ export default defineConfig(({ command }) => ({
           ["../../packages/python/pyproject.toml", "python/pyproject.toml"],
           ["../../packages/python/uv.lock", "python/uv.lock"],
           ["./drizzle/", "drizzle/"],
-          ["./node_modules/@roarr", "node_modules/@roarr"],
-          [
-            "./node_modules/@libsql/linux-x64-gnu",
-            "node_modules/@libsql/linux-x64-gnu",
-          ],
-          [
-            "./node_modules/@libsql/win32-x64-msvc",
-            "node_modules/@libsql/win32-x64-msvc",
-          ],
         ];
         for (const [src, dest] of copyTasks) {
           await cp(resolve(import.meta.dirname, src), resolve(outDir, dest), {
@@ -97,11 +89,26 @@ export default defineConfig(({ command }) => ({
           version: packageJson.version,
           main: "main.js",
           type: "module",
+          dependencies: {
+            "@libsql/linux-x64-gnu": "0.5.22",
+            "@libsql/win32-x64-msvc": "0.5.22",
+            "@roarr/cli": "5.12.4",
+          },
         };
         await writeFile(
           resolve(outDir, "package.json"),
           JSON.stringify(customPkg, null, 2),
         );
+
+        await writeFile(resolve(outDir, ".npmrc"), "node-linker=hoisted");
+        const cwd = process.cwd();
+        process.chdir(outDir);
+        await execa(
+          "pnpm",
+          ["install", "--prod", "--ignore-workspace", "--no-lockfile"],
+          { stdio: "inherit" },
+        );
+        process.chdir(cwd);
       }
     },
   },

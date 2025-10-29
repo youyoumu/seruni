@@ -110,12 +110,6 @@ importers:
       '@electron/packager':
         specifier: ^18.4.4
         version: 18.4.4
-      '@libsql/linux-x64-gnu':
-        specifier: ^0.5.22
-        version: 0.5.22
-      '@libsql/win32-x64-msvc':
-        specifier: ^0.5.22
-        version: 0.5.22
       '@repo/preload':
         specifier: workspace:*
         version: link:../../packages/preload
@@ -5485,12 +5479,14 @@ snapshots:
   '@libsql/linux-arm64-musl@0.5.22':
     optional: true
 
-  '@libsql/linux-x64-gnu@0.5.22': {}
+  '@libsql/linux-x64-gnu@0.5.22':
+    optional: true
 
   '@libsql/linux-x64-musl@0.5.22':
     optional: true
 
-  '@libsql/win32-x64-msvc@0.5.22': {}
+  '@libsql/win32-x64-msvc@0.5.22':
+    optional: true
 
   '@lukemorales/query-key-factory@1.3.4(@tanstack/query-core@5.90.5)(@tanstack/react-query@5.90.5(react@19.2.0))':
     dependencies:
