@@ -378,8 +378,9 @@ function ResetTextButton(props: {
 }
 
 export function DuplicateNoteConfirmation() {
-  const [open, setOpen] = createSignal(true);
-  const [noteIds, setNoteIds] = createSignal<number[]>([1678418786018]);
+  const [open, setOpen] = createSignal(false);
+  const [noteIds, setNoteIds] = createSignal<number[]>([]);
+  // const [noteIds, setNoteIds] = createSignal<number[]>([1678418786018]);
 
   const options = [
     { id: "create", label: "Create" },
@@ -394,7 +395,8 @@ export function DuplicateNoteConfirmation() {
     }>({
       uuid: "",
       action: "update" as const,
-      params: { noteId: 1678418786018 },
+      params: { noteId: null },
+      // params: { noteId: 1678418786018 },
     });
 
   onMount(() => {

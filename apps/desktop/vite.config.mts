@@ -1,4 +1,5 @@
 import { cp, readFile, writeFile } from "node:fs/promises";
+import { builtinModules } from "node:module";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import circularDpendency from "vite-plugin-circular-dependency";
@@ -47,7 +48,7 @@ export default defineConfig(({ command }) => ({
     electron: {
       resolve: {
         builtins: ["electron", /^node:.*/],
-        external: command === "build" ? true : undefined,
+        external: ["electron", ...builtinModules],
         noExternal: command === "build" ? true : undefined,
       },
       build: {
@@ -64,36 +65,27 @@ export default defineConfig(({ command }) => ({
         await builder.build(builder.environments.electron);
 
         const outDir = resolve(import.meta.dirname, "dist");
-        await cp(
-          resolve(import.meta.dirname, "../../packages/preload/dist/_preload/"),
-          resolve(outDir, "_preload"),
-          { recursive: true },
-        );
-        await cp(
-          resolve(import.meta.dirname, "../../packages/renderer/dist/"),
-          resolve(outDir, "renderer"),
-          { recursive: true },
-        );
-        await cp(
-          resolve(import.meta.dirname, "../../packages/python/src/"),
-          resolve(outDir, "python/src/"),
-          { recursive: true },
-        );
-        await cp(
-          resolve(import.meta.dirname, "../../packages/python/pyproject.toml"),
-          resolve(outDir, "python/pyproject.toml"),
-          { recursive: true },
-        );
-        await cp(
-          resolve(import.meta.dirname, "../../packages/python/uv.lock"),
-          resolve(outDir, "python/uv.lock"),
-          { recursive: true },
-        );
-        await cp(
-          resolve(import.meta.dirname, "./drizzle/"),
-          resolve(outDir, "drizzle/"),
-          { recursive: true },
-        );
+        const copyTasks: [string, string][] = [
+          ["../../packages/preload/dist/_preload/", "_preload"],
+          ["../../packages/renderer/dist/", "renderer"],
+          ["../../packages/python/src/", "python/src/"],
+          ["../../packages/python/pyproject.toml", "python/pyproject.toml"],
+          ["../../packages/python/uv.lock", "python/uv.lock"],
+          ["./drizzle/", "drizzle/"],
+          [
+            "./node_modules/@libsql/linux-x64-gnu",
+            "node_modules/@libsql/linux-x64-gnu",
+          ],
+          [
+            "./node_modules/@libsql/win32-x64-msvc",
+            "node_modules/@libsql/win32-x64-msvc",
+          ],
+        ];
+        for (const [src, dest] of copyTasks) {
+          await cp(resolve(import.meta.dirname, src), resolve(outDir, dest), {
+            recursive: true,
+          });
+        }
 
         const packageJson = JSON.parse(
           await readFile(resolve(import.meta.dirname, "package.json"), "utf-8"),
@@ -105,7 +97,6 @@ export default defineConfig(({ command }) => ({
           main: "main.js",
           type: "module",
         };
-
         await writeFile(
           resolve(outDir, "package.json"),
           JSON.stringify(customPkg, null, 2),
