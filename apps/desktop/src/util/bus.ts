@@ -4,7 +4,6 @@ import type {
   IPCFromMainChannel,
   LogMessage,
 } from "@repo/preload/ipc";
-import type { Env } from "#/env";
 
 interface StringKeyedObject {
   // biome-ignore lint: library
@@ -43,7 +42,6 @@ export type BusEvents = {
   "mainWindow:reload": undefined;
   "anki:handleUpdateNoteMedia": { noteId: number };
   "logIPC:send": LogMessage;
-  "env:ready": Env;
   //
   //
   "test:test": { key: "test:test:result"; data: string };

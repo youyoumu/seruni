@@ -1,26 +1,29 @@
 import { spawn } from "node:child_process";
-import { createReadStream, createWriteStream, type WriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { createGzip } from "node:zlib";
 import { isBefore, parse, subDays } from "date-fns";
 import { serializeError } from "serialize-error";
+import { env } from "#/env";
 import { bus } from "./bus";
 
 process.env.ROARR_LOG = "true";
-const { Roarr: log_, ROARR } = await import("roarr");
-const roarr = spawn("roarr", ["--output-format", "pretty"], {
-  stdio: ["pipe", "inherit", "inherit"],
-});
 const logBuffer: string[] = [];
-let logFileWriteStream: WriteStream | undefined;
+const logFileWriteStream = createWriteStream(env.LOG_FILE_PATH, { flags: "a" });
+const { Roarr: log_, ROARR } = await import("roarr");
 ROARR.write = (message) => {
   roarr.stdin.write(`${message}\n`);
   logBuffer.push(message);
 };
+const roarr = spawn(
+  process.execPath,
+  [env.ROARR_CLI_PATH, "--output-format", "pretty"],
+  { stdio: ["pipe", "inherit", "inherit"] },
+);
 
 setInterval(() => {
-  if (logBuffer.length && logFileWriteStream) {
+  if (logBuffer.length) {
     const joined = logBuffer
       .map((line) => {
         // Ensure each log ends with exactly one newline
@@ -32,6 +35,60 @@ setInterval(() => {
     logBuffer.length = 0;
   }
 }, 500);
+
+async function cleanupOldLogs() {
+  //TODO: configurable
+  const nDaysAgo = subDays(new Date(), 7);
+  const files = await readdir(env.LOG_PATH);
+  const filesToDelete: string[] = [];
+  const filesToGzip: string[] = [];
+
+  for (const file of files) {
+    if (file.endsWith(".gz")) continue;
+    if (!file.endsWith(".jsonl")) {
+      filesToDelete.push(file);
+      continue;
+    }
+
+    const dateString = file.replace(".jsonl", "");
+    try {
+      const date = parse(dateString, "yyyyMMdd_HHmmss_SSS_xxxx", new Date());
+      if (isBefore(date, nDaysAgo)) {
+        filesToDelete.push(file);
+      } else {
+        filesToGzip.push(file);
+      }
+    } catch (e) {
+      log.error({ error: e }, "Failed to parse date from log file name");
+      filesToDelete.push(file);
+    }
+  }
+
+  // Gzip recent files that aren’t already compressed
+  for (const file of filesToGzip) {
+    const filePath = join(env.LOG_PATH, file);
+    if (filePath === env.LOG_FILE_PATH) continue;
+    const destination = `${filePath}.gz`;
+
+    await new Promise<void>((resolve, reject) => {
+      createReadStream(filePath)
+        .pipe(createGzip({ level: 9 }))
+        .pipe(createWriteStream(destination))
+        .on("finish", resolve)
+        .on("error", reject);
+    });
+
+    await rm(filePath);
+    log.debug(`Compressed and removed ${file}`);
+  }
+
+  for (const file of filesToDelete) {
+    await rm(join(env.LOG_PATH, file));
+  }
+
+  log.debug(`Deleted ${filesToDelete.length} old logs`);
+}
+cleanupOldLogs();
 
 export const log = log_.child<{
   error: unknown;
@@ -71,70 +128,6 @@ export const logWithNamespace = (namespace: string) =>
     };
     return message_;
   });
-
-async function cleanupOldLogs({
-  LOG_PATH,
-  LOG_FILE_PATH,
-}: {
-  LOG_PATH: string;
-  LOG_FILE_PATH: string;
-}) {
-  //TODO: configurable
-  const nDaysAgo = subDays(new Date(), 7);
-  const files = await readdir(LOG_PATH);
-  const filesToDelete: string[] = [];
-  const filesToGzip: string[] = [];
-
-  for (const file of files) {
-    if (file.endsWith(".gz")) continue;
-    if (!file.endsWith(".jsonl")) {
-      filesToDelete.push(file);
-      continue;
-    }
-
-    const dateString = file.replace(".jsonl", "");
-    try {
-      const date = parse(dateString, "yyyyMMdd_HHmmss_SSS_xxxx", new Date());
-      if (isBefore(date, nDaysAgo)) {
-        filesToDelete.push(file);
-      } else {
-        filesToGzip.push(file);
-      }
-    } catch (e) {
-      log.error({ error: e }, "Failed to parse date from log file name");
-      filesToDelete.push(file);
-    }
-  }
-
-  // Gzip recent files that aren’t already compressed
-  for (const file of filesToGzip) {
-    const filePath = join(LOG_PATH, file);
-    if (filePath === LOG_FILE_PATH) continue;
-    const destination = `${filePath}.gz`;
-
-    await new Promise<void>((resolve, reject) => {
-      createReadStream(filePath)
-        .pipe(createGzip({ level: 9 }))
-        .pipe(createWriteStream(destination))
-        .on("finish", resolve)
-        .on("error", reject);
-    });
-
-    await rm(filePath);
-    log.debug(`Compressed and removed ${file}`);
-  }
-
-  for (const file of filesToDelete) {
-    await rm(join(LOG_PATH, file));
-  }
-
-  log.debug(`Deleted ${filesToDelete.length} old logs`);
-}
-
-bus.once("env:ready", ({ LOG_PATH, LOG_FILE_PATH }) => {
-  logFileWriteStream = createWriteStream(LOG_FILE_PATH, { flags: "a" });
-  cleanupOldLogs({ LOG_PATH, LOG_FILE_PATH });
-});
 
 process.on("unhandledRejection", (r) =>
   log.error(

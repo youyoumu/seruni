@@ -31,9 +31,6 @@ importers:
       '@libsql/client':
         specifier: ^0.15.15
         version: 0.15.15
-      '@roarr/cli':
-        specifier: ^5.12.4
-        version: 5.12.4(patch_hash=tnuxefenjfvi6z5mxou7hfxsuq)
       '@t3-oss/env-core':
         specifier: ^0.13.8
         version: 0.13.8(typescript@5.9.2)(zod@4.1.9)
@@ -128,6 +125,9 @@ importers:
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
+      '@roarr/cli':
+        specifier: ^5.12.4
+        version: 5.12.4(patch_hash=tnuxefenjfvi6z5mxou7hfxsuq)
       '@types/tar':
         specifier: ^6.1.13
         version: 6.1.13

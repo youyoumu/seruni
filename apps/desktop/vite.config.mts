@@ -72,6 +72,7 @@ export default defineConfig(({ command }) => ({
           ["../../packages/python/pyproject.toml", "python/pyproject.toml"],
           ["../../packages/python/uv.lock", "python/uv.lock"],
           ["./drizzle/", "drizzle/"],
+          ["./node_modules/@roarr", "node_modules/@roarr"],
           [
             "./node_modules/@libsql/linux-x64-gnu",
             "node_modules/@libsql/linux-x64-gnu",

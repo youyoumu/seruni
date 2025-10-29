@@ -14,7 +14,6 @@ import { mainWindow } from "./window/windowMain";
 import { yomitanWindow } from "./window/windowYomitan";
 import "./db/dbMain";
 import { DB, mainDB } from "./db/dbMain";
-import { bus } from "./util/bus";
 import { config } from "./util/config";
 import { registerAllWindow } from "./util/window";
 
@@ -39,7 +38,6 @@ app.on("before-quit", () => {
 });
 
 export async function bootstrap() {
-  bus.emit("env:ready", env);
   await DB.migrate(mainDB().db);
   await app.whenReady();
   registerAllWindow();

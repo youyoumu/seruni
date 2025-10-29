@@ -6,20 +6,21 @@ import { format } from "date-fns";
 import { detect } from "detect-port";
 import { app } from "electron";
 import z from "zod";
-import { log } from "./util/logger";
+
+const log = (text: string) => {
+  console.log(`\x1b[36m[ENV]\x1b[0m: \x1b[33m${text}\x1b[0m`);
+};
 
 async function preferPort(preferredPort: number) {
   try {
     const realPort = await detect(preferredPort);
     if (realPort !== preferredPort) {
-      log.debug(
-        `Port ${preferredPort} was occupied, switching to port ${realPort}`,
-      );
+      log(`Port ${preferredPort} was occupied, switching to port ${realPort}`);
     }
     return realPort;
   } catch (e) {
     if (e instanceof Error) {
-      log.error(`Failed to detect port: ${e.message}`);
+      log(`Failed to detect port: ${e.message}`);
     }
     return preferredPort;
   }
@@ -118,6 +119,15 @@ async function createEnv_() {
     "../../../packages/renderer/dist",
   );
 
+  const ROARR_CLI_PATH = join(
+    import.meta.dirname,
+    "node_modules/@roarr/cli/dist/bin/index.js",
+  );
+  const ROARR_CLI_PATH_DEV = join(
+    import.meta.dirname,
+    "../node_modules/@roarr/cli/dist/bin/index.js",
+  );
+
   // separate chromium stuff from user data
   app.setPath("userData", join(USER_DATA_PATH, "Default"));
 
@@ -137,6 +147,7 @@ async function createEnv_() {
     TEMP_PATH,
 
     DRIZZLE_PATH: DEV ? DRIZZLE_PATH_DEV : DRIZZLE_PATH,
+    ROARR_CLI_PATH: DEV ? ROARR_CLI_PATH_DEV : ROARR_CLI_PATH,
 
     PYTHON_BIN_PATH,
     PYTHON_VENV_PATH,

@@ -28,12 +28,12 @@
     "vite": "npm:rolldown-vite@latest",
     "vite-plugin-circular-dependency": "^0.5.0",
     "@libsql/linux-x64-gnu": "^0.5.22",
-    "@libsql/win32-x64-msvc": "^0.5.22"
+    "@libsql/win32-x64-msvc": "^0.5.22",
+    "@roarr/cli": "^5.12.4"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
     "@libsql/client": "^0.15.15",
-    "@roarr/cli": "^5.12.4",
     "@t3-oss/env-core": "^0.13.8",
     "alien-signals": "^3.0.3",
     "conf": "^14.0.0",
