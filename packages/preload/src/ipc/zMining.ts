@@ -20,6 +20,7 @@ export const zAnkiHistory = z.array(zParsedAnkiNote);
 
 export const zNoteMedia = z.array(
   z.object({
+    id: z.number(),
     fileName: z.string(),
     filePath: z.string(),
     type: z.union([z.literal("picture"), z.literal("sentenceAudio")]),
