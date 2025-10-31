@@ -25,7 +25,7 @@ export function EditButton() {
   const [lazy, setLazy] = createSignal(true);
   const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
-  const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note().id });
+  const noteMediaQuery = NoteMediaQuery.one.use({ noteId: () => note().id });
   const availablePictures = () => {
     const pictures = noteMediaQuery.data.filter((m) => m.type === "picture");
     if (pictures.length === 1) {

@@ -28,8 +28,8 @@ const NoteMediaQuery = {
   one: {
     options: ({ noteId }: { noteId: number }) =>
       queryOptions({ ...keyStore["mining:noteMedia"].one(noteId), placeholderData: [], select: (data) => uniqBy(data, (item) => item.fileName), }),
-    use: ({ noteId }: { noteId: number }) => {
-      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId }), reconcile: (old, data) => reconcile(data)(old), }));
+    use: ({ noteId }: { noteId: () => number }) => {
+      const query = useQuery(() => ({ ...NoteMediaQuery.one.options({ noteId: noteId() }), reconcile: (old, data) => reconcile(data)(old), }));
       return queryWithPlaceholderData(query, []);
     },
   },
