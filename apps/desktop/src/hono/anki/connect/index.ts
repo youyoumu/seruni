@@ -104,6 +104,7 @@ app.post("/", async (c) => {
         query: `"deck:${yomitanAnkiConnectSettings.deckName}" "expression:${expression}"`,
       });
       if (!noteIds) throw new Error("Note not found");
+      log.debug({ noteIds }, "Found duplicate notes");
       miningIPC().send("mining:duplicateNoteConfirmation", { uuid, noteIds });
 
       return new Response("Intercepted", {

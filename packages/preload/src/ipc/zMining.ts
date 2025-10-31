@@ -5,17 +5,18 @@ export const zAnkiConnectUrlPath = z.literal("/anki/connect/");
 export const zAnkiCollectionMediaUrlPath = z.literal("/anki/collection.media/");
 export const zStorageUrlPath = z.literal("/storage/");
 
-export const zAnkiHistory = z.array(
-  z.object({
-    id: z.number(),
-    expression: z.string(),
-    picture: z.string(),
-    picturePath: z.string().optional(),
-    sentenceAudio: z.string(),
-    sentenceAudioPath: z.string().optional(),
-    nsfw: z.boolean(),
-  }),
-);
+export const zParsedAnkiNote = z.object({
+  id: z.number(),
+  expression: z.string(),
+  picture: z.string(),
+  picturePath: z.string().optional(),
+  sentenceAudio: z.string(),
+  sentenceAudioPath: z.string().optional(),
+  nsfw: z.boolean(),
+  raw: zAnkiNote,
+});
+
+export const zAnkiHistory = z.array(zParsedAnkiNote);
 
 export const zNoteMedia = z.array(
   z.object({
@@ -58,6 +59,7 @@ export const zConfirmDuplicateNoteData = z.object({
   params: z.object({ noteId: z.number() }).optional(),
 });
 
+export type ParsedAnkiNote = z.infer<typeof zParsedAnkiNote>;
 export type AnkiHistory = z.infer<typeof zAnkiHistory>;
 export type NoteMedia = z.infer<typeof zNoteMedia>;
 export type NoteMediaSrc = z.infer<typeof zNoteMediaSrc>;
@@ -136,7 +138,7 @@ export const zMiningIPC = {
     }),
     "mining:getNoteInfo": z.object({
       input: z.tuple([z.object({ noteId: z.number() })]),
-      output: zAnkiNote,
+      output: zParsedAnkiNote,
     }),
   }),
 };

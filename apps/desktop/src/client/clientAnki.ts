@@ -547,6 +547,35 @@ const AnkiClient_ = class AnkiClient {
     }
   }
 
+  parseAnkiNote(note: AnkiNote) {
+    const expression = AnkiClient.getExpression(note);
+
+    const pictureFieldValue =
+      note.fields[config.store.anki.pictureField]?.value ?? "";
+    const sentenceAudioFieldValue =
+      note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
+
+    const pictureMedia = AnkiClient.parseAnkiMediaPath(pictureFieldValue);
+    const audioMedia = AnkiClient.parseAnkiMediaPath(sentenceAudioFieldValue);
+
+    const mediaDir = this.mediaDir;
+    const picturePath =
+      pictureMedia && mediaDir ? join(mediaDir, pictureMedia) : undefined;
+    const sentenceAudioPath =
+      audioMedia && mediaDir ? join(mediaDir, audioMedia) : undefined;
+
+    return {
+      id: note.noteId,
+      expression,
+      picture: pictureMedia,
+      picturePath,
+      sentenceAudio: audioMedia,
+      sentenceAudioPath,
+      nsfw: AnkiClient.inNsfw(note),
+      raw: note,
+    };
+  }
+
   static rm(path: string) {
     rm(path, { force: true });
   }

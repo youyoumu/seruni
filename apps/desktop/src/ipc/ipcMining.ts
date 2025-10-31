@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { effect, effectScope } from "alien-signals";
-import { AnkiClient, ankiClient } from "#/client/clientAnki";
+import { ankiClient } from "#/client/clientAnki";
 import { obsClient } from "#/client/clientObs";
 import { textractorClient } from "#/client/clientTextractor";
 import { mainDB } from "#/db/dbMain";
@@ -12,7 +12,6 @@ import {
 } from "#/hono/_util";
 import { ffmpeg } from "#/runner/runnerFfmpeg";
 import { bus } from "#/util/bus";
-import { config } from "#/util/config";
 import { log } from "#/util/logger";
 import { IPC } from "./ipcBase";
 
@@ -86,36 +85,7 @@ class MiningIPC extends IPC()<"mining"> {
       });
       if (!notes) return [];
 
-      const data = notes.map((note) => {
-        const expression = AnkiClient().getExpression(note);
-
-        const pictureFieldValue =
-          note.fields[config.store.anki.pictureField]?.value ?? "";
-        const sentenceAudioFieldValue =
-          note.fields[config.store.anki.sentenceAudioField]?.value ?? "";
-
-        const pictureMedia = AnkiClient().parseAnkiMediaPath(pictureFieldValue);
-        const audioMedia = AnkiClient().parseAnkiMediaPath(
-          sentenceAudioFieldValue,
-        );
-
-        const mediaDir = ankiClient().mediaDir;
-        const picturePath =
-          pictureMedia && mediaDir ? join(mediaDir, pictureMedia) : undefined;
-        const sentenceAudioPath =
-          audioMedia && mediaDir ? join(mediaDir, audioMedia) : undefined;
-
-        return {
-          id: note.noteId,
-          expression,
-          picture: pictureMedia,
-          picturePath,
-          sentenceAudio: audioMedia,
-          sentenceAudioPath,
-          nsfw: AnkiClient().inNsfw(note),
-        };
-      });
-
+      const data = notes.map((note) => ankiClient().parseAnkiNote(note));
       return data;
     });
 
@@ -226,7 +196,8 @@ class MiningIPC extends IPC()<"mining"> {
     });
 
     this.handle("mining:getNoteInfo", async (_, payload) => {
-      return await ankiClient().getNote(payload.noteId);
+      const note = await ankiClient().getNote(payload.noteId);
+      return ankiClient().parseAnkiNote(note);
     });
   }
 

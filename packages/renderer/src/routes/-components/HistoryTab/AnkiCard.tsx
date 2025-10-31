@@ -103,7 +103,7 @@ export function AnkiCard(props: { readOnly?: boolean }) {
           </HStack>
 
           <Text size="xs" color="fg.muted">
-            {time()}
+            {note.id} - {time()}
           </Text>
         </HStack>
       </Stack>

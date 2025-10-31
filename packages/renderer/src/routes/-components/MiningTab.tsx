@@ -22,9 +22,8 @@ import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
 import { MiningMutation, MiningQuery } from "#/lib/query/queryMining";
-import { SettingsQuery } from "#/lib/query/querySettings";
 import { localStore, setLocalStore } from "#/lib/store";
-import { inspect, parseAnkiMediaPath } from "#/lib/util";
+import { inspect } from "#/lib/util";
 import { appToaster } from "./AppToaster";
 import { AnkiCard } from "./HistoryTab/AnkiCard";
 import { NoteContextProvider } from "./HistoryTab/Context";
@@ -356,7 +355,6 @@ function ResetTextButton(props: {
 export function DuplicateNoteConfirmation() {
   const [open, setOpen] = createSignal(false);
   const [noteIds, setNoteIds] = createSignal<number[]>([]);
-  // const [noteIds, setNoteIds] = createSignal<number[]>([1678418786018]);
 
   const options = [
     { id: "create", label: "Create" },
@@ -372,15 +370,14 @@ export function DuplicateNoteConfirmation() {
       uuid: "",
       action: "update" as const,
       params: { noteId: null },
-      // params: { noteId: 1678418786018 },
     });
 
   onMount(() => {
     ipcRenderer.on("mining:duplicateNoteConfirmation", ({ uuid, noteIds }) => {
       setDuplicateNoteConfirmationForm("uuid", uuid);
-      setOpen(true);
       setNoteIds(noteIds);
       setDuplicateNoteConfirmationForm("params", "noteId", noteIds[0] ?? null);
+      setOpen(true);
     });
   });
 
@@ -402,6 +399,8 @@ export function DuplicateNoteConfirmation() {
       },
     );
   };
+
+  inspect(() => duplicateNoteConfirmationForm.params.noteId);
 
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
@@ -494,51 +493,25 @@ export function DuplicateNoteConfirmation() {
 }
 
 function NoteInfo(props: { noteId: number }) {
-  const configQuery = SettingsQuery.ConfigQuery.detail.use();
   const noteInfoQuery = MiningQuery.AnkiQuery.noteInfo.use({
     noteId: props.noteId,
   });
 
-  const picture = () => {
-    const key = configQuery.data?.anki.pictureField;
-    if (!key) return "";
-    return parseAnkiMediaPath(noteInfoQuery.data?.fields[key]?.value ?? "");
-  };
-
-  const sentenceAudio = () => {
-    const key = configQuery.data?.anki.sentenceAudioField;
-    if (!key) return "";
-    return parseAnkiMediaPath(noteInfoQuery.data?.fields[key]?.value ?? "");
-  };
-
-  inspect(() => noteInfoQuery.data);
   //TODO: move components
-  //
-
-  const expression = () => {
-    const key = configQuery.data?.anki.expressionField;
-    if (!key) return "";
-    return noteInfoQuery.data?.fields[key]?.value ?? "";
-  };
 
   return (
     <Suspense>
-      <NoteContextProvider
-        value={{
-          picture: picture(),
-          sentenceAudio: sentenceAudio(),
-          expression: expression(),
-          id: props.noteId,
-          nsfw:
-            noteInfoQuery.data?.tags
-              .map((tag) => tag.toLowerCase())
-              .includes("nsfw") ?? false,
+      <Show when={noteInfoQuery.data}>
+        {(data) => {
+          return (
+            <NoteContextProvider value={data()}>
+              <Stack h="64">
+                <AnkiCard readOnly />
+              </Stack>
+            </NoteContextProvider>
+          );
         }}
-      >
-        <Stack h="64">
-          <AnkiCard readOnly />
-        </Stack>
-      </NoteContextProvider>
+      </Show>
     </Suspense>
   );
 }
