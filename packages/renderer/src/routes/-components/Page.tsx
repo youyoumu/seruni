@@ -196,8 +196,10 @@ export function AppToaster() {
     });
 
     ipcRenderer.on("log:toastPromise", ({ loading, uuid }) => {
-      let result: Partial<ToastPromiseOptionsSuccess> &
-        Partial<ToastPromiseOptionsError>;
+      let result:
+        | (Partial<ToastPromiseOptionsSuccess> &
+            Partial<ToastPromiseOptionsError>)
+        | null = null;
       appToaster.promise(
         async () => {
           result = await ipcRenderer.invoke("log:toastPromise", { uuid });
@@ -208,17 +210,17 @@ export function AppToaster() {
         {
           loading,
           error: () =>
-            result.error ?? {
+            result?.error ?? {
               title: "Unknown Error",
             },
           success: () =>
-            result.success
+            result?.success
               ? {
                   title: result.success.title,
                   description: result.success.description,
                   action: (() => {
-                    const label = result.success?.action?.label;
-                    const id = result.success?.action?.id;
+                    const label = result.success.action?.label;
+                    const id = result.success.action?.id;
                     if (label && id) {
                       return {
                         label,

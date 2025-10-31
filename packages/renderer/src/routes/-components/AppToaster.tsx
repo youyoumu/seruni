@@ -99,33 +99,20 @@ class AppToaster {
     });
 
     const promise_ = typeof promise === "function" ? promise() : promise;
-    const titleSuccess =
-      typeof options.success === "object"
-        ? options.success.title
-        : typeof options.success === "function"
-          ? options.success(undefined).title
-          : undefined;
-    const descriptionSuccess =
-      typeof options.success === "object"
-        ? options.success.description
-        : typeof options.success === "function"
-          ? options.success(undefined).description
-          : undefined;
-    const descriptionError =
-      typeof options.error === "object"
-        ? options.error.description
-        : typeof options.error === "function"
-          ? options.error(undefined).description
-          : undefined;
-    const titleError =
-      typeof options.error === "object"
-        ? options.error.title
-        : typeof options.error === "function"
-          ? options.error(undefined).title
-          : undefined;
-
     promise_
       .then(() => {
+        const titleSuccess =
+          typeof options.success === "object"
+            ? options.success.title
+            : typeof options.success === "function"
+              ? options.success(undefined).title
+              : undefined;
+        const descriptionSuccess =
+          typeof options.success === "object"
+            ? options.success.description
+            : typeof options.success === "function"
+              ? options.success(undefined).description
+              : undefined;
         this.update(toast?.id, {
           id: toast?.id,
           title: titleSuccess,
@@ -134,6 +121,19 @@ class AppToaster {
         });
       })
       .catch(() => {
+        const descriptionError =
+          typeof options.error === "object"
+            ? options.error.description
+            : typeof options.error === "function"
+              ? options.error(undefined).description
+              : undefined;
+        const titleError =
+          typeof options.error === "object"
+            ? options.error.title
+            : typeof options.error === "function"
+              ? options.error(undefined).title
+              : undefined;
+
         this.update(toast?.id, {
           id: toast?.id,
           title: titleError,
