@@ -293,6 +293,12 @@ export function MiningTab() {
                     }
                   >
                     {item.text}
+                    <span
+                      style={{
+                        opacity: 0.01,
+                        "font-size": "0.1px",
+                      }}
+                    >{`‹uuid:${item.uuid}›`}</span>
                   </Text>
                   {"\n"}
                   <TrashIcon

@@ -15,6 +15,15 @@ import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 const log = logWithNamespace("HTTP");
 const app = new Hono();
 
+function extractUuid(sentence: string) {
+  const match = sentence.match(/‹uuid:([0-9a-f-]{36})›/);
+  return match?.[1] ?? null;
+}
+
+function stripUuid(sentence: string) {
+  return sentence.replace(/‹uuid:[0-9a-f-]{36}›/, "");
+}
+
 app.post("/", async (c) => {
   const url = new URL(c.req.url);
   const target = `http://localhost:${config.store.anki.ankiConnectPort}${url.pathname}${url.search}`;
@@ -95,6 +104,18 @@ app.post("/", async (c) => {
       ];
     if (expression === undefined)
       throw new Error("Expression field is missing, invalid config?");
+    const sentence =
+      ankiConnectAddNote.data.params.note.fields[
+        config.store.anki.sentenceField
+      ];
+    if (sentence === undefined)
+      throw new Error("Sentence field is missing, invalid config?");
+    const uuid = extractUuid(sentence);
+    log.trace({ uuid }, "Extracted UUID from sentence");
+    const sentenceWithoutUuid = stripUuid(sentence);
+    ankiConnectAddNote.data.params.note.fields[
+      config.store.anki.sentenceField
+    ] = sentenceWithoutUuid;
     // intercept and duplicate notes
     if (ankiClient().duplicateList.has(expression)) {
       const uuid = crypto.randomUUID();
