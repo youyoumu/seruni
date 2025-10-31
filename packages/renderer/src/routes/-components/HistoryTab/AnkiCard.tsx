@@ -96,7 +96,16 @@ export function AnkiCard(props: { readOnly?: boolean }) {
       <Stack>
         <HStack gap="4" justifyContent="space-between" alignItems="end">
           <HStack>
-            <Button size="sm">Open in Anki</Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                ipcRenderer.send("mining:openNoteInAnki", {
+                  noteId: note().id,
+                });
+              }}
+            >
+              Open in Anki
+            </Button>
             <Show when={!props.readOnly}>
               <EditButton />
             </Show>

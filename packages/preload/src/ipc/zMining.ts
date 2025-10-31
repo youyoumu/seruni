@@ -140,5 +140,9 @@ export const zMiningIPC = {
       input: z.tuple([z.object({ noteId: z.number() })]),
       output: zParsedAnkiNote,
     }),
+    "mining:openNoteInAnki": z.object({
+      input: z.tuple([z.object({ noteId: z.number() })]),
+      output: z.void(),
+    }),
   }),
 };

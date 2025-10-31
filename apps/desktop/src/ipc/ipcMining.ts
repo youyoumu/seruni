@@ -199,6 +199,10 @@ class MiningIPC extends IPC()<"mining"> {
       const note = await ankiClient().getNote(payload.noteId);
       return ankiClient().parseAnkiNote(note);
     });
+
+    this.on("mining:openNoteInAnki", (_, { noteId }) => {
+      ankiClient().openNoteInAnki(noteId);
+    });
   }
 
   override unregister(): void {

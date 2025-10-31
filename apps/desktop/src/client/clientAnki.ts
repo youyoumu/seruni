@@ -576,6 +576,12 @@ const AnkiClient_ = class AnkiClient {
     };
   }
 
+  async openNoteInAnki(noteId: number) {
+    this.log.debug(`Opening note in Anki: ${noteId}`);
+    if (!this.client) throw new Error("Anki client not connected");
+    await this.client.graphical.guiEditNote({ note: noteId });
+  }
+
   static rm(path: string) {
     rm(path, { force: true });
   }
