@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import type { Accessor, JSX } from "solid-js";
 import type { SetStoreFunction, Store } from "solid-js/store";
 
 //  ────────────────────────────── NoteForm ───────────────────────────
@@ -27,13 +27,13 @@ export function useNoteFormContext() {
 
 //  ───────────────────────────── NoteContext ─────────────────────────────
 
-import type { AnkiHistory, NoteMedia } from "@repo/preload/ipc";
+import type { NoteMedia, ParsedAnkiNote } from "@repo/preload/ipc";
 
-export const NoteContext = createContext<AnkiHistory[number]>();
+export const NoteContext = createContext<Accessor<ParsedAnkiNote>>();
 
 export function NoteContextProvider(props: {
   children: JSX.Element;
-  value: AnkiHistory[number];
+  value: Accessor<ParsedAnkiNote>;
 }) {
   return (
     <NoteContext.Provider value={props.value}>

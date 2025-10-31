@@ -288,7 +288,7 @@ export function PictureWithZoom(props: {
     appToaster.promise(
       cropPictureMutation.mutateAsync(
         {
-          noteId: note.id,
+          noteId: note().id,
           mediaSrc: { fileName, source },
           selectionData: selectionData(),
         },
@@ -318,7 +318,7 @@ export function PictureWithZoom(props: {
 
   const filePath = () => {
     if (noteMediaSrc.source() === "anki") {
-      return note.picturePath ?? src();
+      return note().picturePath ?? src();
     } else if (noteMediaSrc.source() === "storage") {
       return noteMediaSrc.noteMedia?.()?.filePath ?? src();
     }

@@ -231,7 +231,7 @@ function EditAudioButton(props: { delete?: boolean }) {
     appToaster.promise(
       trimAudioMutation.mutateAsync(
         {
-          noteId: note.id,
+          noteId: note().id,
           mediaSrc: { fileName, source },
           trimData: trimData(),
         },
@@ -286,7 +286,7 @@ function EditAudioButton(props: { delete?: boolean }) {
 
   const filePath = () => {
     if (noteMediaSrc.source() === "anki") {
-      return note.picturePath ?? src();
+      return note().picturePath ?? src();
     } else if (noteMediaSrc.source() === "storage") {
       return noteMediaSrc.noteMedia?.()?.filePath ?? src();
     }

@@ -96,7 +96,7 @@ export function HistoryTab() {
               <For each={slicedHistory()}>
                 {(item) => {
                   return (
-                    <NoteContextProvider value={item}>
+                    <NoteContextProvider value={() => item}>
                       <AnkiCard />
                     </NoteContextProvider>
                   );

@@ -25,7 +25,7 @@ export function EditButton() {
   const [lazy, setLazy] = createSignal(true);
   const { NoteMediaQuery } = MiningQuery;
   const note = useNoteContext();
-  const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note.id });
+  const noteMediaQuery = NoteMediaQuery.one.use({ noteId: note().id });
   const availablePictures = () => {
     const pictures = noteMediaQuery.data.filter((m) => m.type === "picture");
     if (pictures.length === 1) {
@@ -113,7 +113,7 @@ export function EditButton() {
                     <Box flex="1" bg="bg.subtle" rounded="sm">
                       <NoteMediaSrcContextProvider
                         value={{
-                          fileName: () => note.picture,
+                          fileName: () => note().picture,
                           source: () => "anki",
                         }}
                       >
@@ -191,7 +191,7 @@ export function EditButton() {
                     <Box flex="1">
                       <NoteMediaSrcContextProvider
                         value={{
-                          fileName: () => note.sentenceAudio,
+                          fileName: () => note().sentenceAudio,
                           source: () => "anki",
                         }}
                       >
@@ -324,7 +324,7 @@ function UpdateNoteButton(props: {
     appToaster.promise(
       updateNoteMutation.mutateAsync(
         {
-          noteId: note.id,
+          noteId: note().id,
           picture: noteForm.picture,
           sentenceAudio: noteForm.sentenceAudio,
         },
@@ -340,15 +340,15 @@ function UpdateNoteButton(props: {
       {
         loading: {
           title: "Updating note...",
-          description: `${note.expression}`,
+          description: `${note().expression}`,
         },
         error: {
           title: "Failed to update note",
-          description: `${note.expression}`,
+          description: `${note().expression}`,
         },
         success: {
           title: "Note updated",
-          description: `${note.expression}`,
+          description: `${note().expression}`,
         },
       },
     );
@@ -376,7 +376,7 @@ function UpdateNoteButton(props: {
                 <Stack p="4" gap="6">
                   <Stack gap="1">
                     <Heading size="2xl">Update Note?</Heading>
-                    <Dialog.Description>{note.id}</Dialog.Description>
+                    <Dialog.Description>{note().id}</Dialog.Description>
                   </Stack>
                   <HStack gap="4" justifyContent="center" alignItems="start">
                     <Show when={!!noteForm.picture}>
@@ -426,13 +426,13 @@ function UpdateNoteButton(props: {
                     will be updated to <Code>{noteForm.sentenceAudio}</Code>
                     <br />
                   </Show>
-                  <Show when={!!note.picture && noteForm.picture}>
-                    Previous <Code>{note.picture}</Code> will be backed up{" "}
+                  <Show when={!!note().picture && noteForm.picture}>
+                    Previous <Code>{note().picture}</Code> will be backed up{" "}
                     <br />
                   </Show>
-                  <Show when={!!note.sentenceAudio && noteForm.sentenceAudio}>
-                    Previous <Code>{note.sentenceAudio}</Code> will be backed up{" "}
-                    <br />
+                  <Show when={!!note().sentenceAudio && noteForm.sentenceAudio}>
+                    Previous <Code>{note().sentenceAudio}</Code> will be backed
+                    up <br />
                   </Show>
                 </Dialog.Description>
                 <HStack justifyContent="end" gap="4" p="4">

@@ -95,10 +95,10 @@ const AnkiQuery = {
         ...keyStore["mining:ankiNoteInfo"].detail({ noteId }),
         reconcile: (old, data) => reconcile(data)(old),
       }),
-    use: ({ noteId }: { noteId: number }) => {
+    use: ({ noteId }: { noteId: () => number }) => {
       return useQuery(() => {
         return {
-          ...AnkiQuery.noteInfo.options({ noteId }),
+          ...AnkiQuery.noteInfo.options({ noteId: noteId() }),
         };
       });
     },

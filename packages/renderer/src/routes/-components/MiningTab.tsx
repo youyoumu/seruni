@@ -400,8 +400,6 @@ export function DuplicateNoteConfirmation() {
     );
   };
 
-  inspect(() => duplicateNoteConfirmationForm.params.noteId);
-
   return (
     <Dialog.Root lazyMount open={open()} onOpenChange={(e) => setOpen(e.open)}>
       <Dialog.Backdrop />
@@ -494,17 +492,19 @@ export function DuplicateNoteConfirmation() {
 
 function NoteInfo(props: { noteId: number }) {
   const noteInfoQuery = MiningQuery.AnkiQuery.noteInfo.use({
-    noteId: props.noteId,
+    noteId: () => props.noteId,
   });
 
   //TODO: move components
+  //
+  inspect(() => props.noteId);
 
   return (
     <Suspense>
       <Show when={noteInfoQuery.data}>
         {(data) => {
           return (
-            <NoteContextProvider value={data()}>
+            <NoteContextProvider value={data}>
               <Stack h="64">
                 <AnkiCard readOnly />
               </Stack>

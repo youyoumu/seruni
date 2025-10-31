@@ -10,16 +10,16 @@ import { ImageWithFallback, PictureWithZoom } from "./Picture";
 export function PicturePreview(props: { readOnly?: boolean }) {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
-  const [nsfw, setNsfw] = createSignal(note.nsfw);
+  const [nsfw, setNsfw] = createSignal(note().nsfw);
   const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
-    () => note.picture,
+    () => note().picture,
     () => "anki",
   );
   const pictureSrc = () => mediaUrlQuery.data ?? "";
   const updateNoteMutation = MiningMutation.AnkiMutation.updateNote();
 
   createEffect(() => {
-    setNsfw(note.nsfw);
+    setNsfw(note().nsfw);
   });
 
   function toggleNsfw(checked: boolean) {
@@ -28,7 +28,7 @@ export function PicturePreview(props: { readOnly?: boolean }) {
     appToaster.promise(
       updateNoteMutation.mutateAsync(
         {
-          noteId: note.id,
+          noteId: note().id,
           nsfw: nsfw_,
         },
         {
@@ -41,15 +41,15 @@ export function PicturePreview(props: { readOnly?: boolean }) {
       {
         loading: {
           title: "Updating note NSFW tag...",
-          description: `${note.expression}`,
+          description: `${note().expression}`,
         },
         error: {
           title: "Failed to update note NSFW tag",
-          description: note.expression,
+          description: note().expression,
         },
         success: {
           title: "Note NSFW tag updated",
-          description: `${note.expression}`,
+          description: `${note().expression}`,
         },
       },
     );
@@ -61,7 +61,7 @@ export function PicturePreview(props: { readOnly?: boolean }) {
     <Suspense>
       <NoteMediaSrcContextProvider
         value={{
-          fileName: () => note.picture,
+          fileName: () => note().picture,
           source: () => "anki",
         }}
       >

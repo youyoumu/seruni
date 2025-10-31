@@ -47,10 +47,10 @@ const expressionVariant = cva({
 export function AnkiCard(props: { readOnly?: boolean }) {
   const { HttpServerUrlQuery } = GeneralQuery;
   const note = useNoteContext();
-  const time = () => formatRelative(new Date(note.id), new Date());
+  const time = () => formatRelative(new Date(note().id), new Date());
   type TextVariant = RecipeVariantProps<typeof expressionVariant>;
   const mediaUrlQuery = HttpServerUrlQuery.mediaUrl.use(
-    () => note.sentenceAudio,
+    () => note().sentenceAudio,
     () => "anki",
   );
   const sentenceAudioSrc = () => mediaUrlQuery.data ?? "";
@@ -78,18 +78,18 @@ export function AnkiCard(props: { readOnly?: boolean }) {
         >
           <Text
             class={expressionVariant({
-              wordLength: note.expression.length.toString(),
+              wordLength: note().expression.length.toString(),
             } as TextVariant)}
           >
-            {note.expression}
+            {note().expression}
           </Text>
-          <Show when={note.sentenceAudio}>
+          <Show when={note().sentenceAudio}>
             <Suspense>
               <AudioButton src={sentenceAudioSrc()} />
             </Suspense>
           </Show>
         </Stack>
-        <Show when={note.picture}>
+        <Show when={note().picture}>
           <PicturePreview readOnly={props.readOnly} />
         </Show>
       </HStack>
@@ -103,7 +103,7 @@ export function AnkiCard(props: { readOnly?: boolean }) {
           </HStack>
 
           <Text size="xs" color="fg.muted">
-            {note.id} - {time()}
+            {note().id} - {time()}
           </Text>
         </HStack>
       </Stack>
