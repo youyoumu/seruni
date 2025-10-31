@@ -18,6 +18,7 @@ import { Dialog } from "#/components/ui/dialog";
 import { IconButton } from "#/components/ui/icon-button";
 import { RadioGroup } from "#/components/ui/radio-group";
 import { createListCollection } from "#/components/ui/select";
+import { Skeleton } from "#/components/ui/skeleton";
 import { Text } from "#/components/ui/text";
 import { texthoookerDB } from "#/lib/db";
 import { keyStore } from "#/lib/query/_util";
@@ -356,6 +357,15 @@ export function DuplicateNoteConfirmation() {
   const [open, setOpen] = createSignal(false);
   const [noteIds, setNoteIds] = createSignal<number[]>([]);
 
+  const queryClient = useQueryClient();
+  createEffect(() => {
+    noteIds().forEach((noteId) => {
+      queryClient.prefetchQuery(
+        MiningQuery.AnkiQuery.noteInfo.options({ noteId }),
+      );
+    });
+  });
+
   const options = [
     { id: "create", label: "Create" },
     { id: "update", label: "Update" },
@@ -496,18 +506,14 @@ function NoteInfo(props: { noteId: number }) {
   });
 
   //TODO: move components
-  //
-  inspect(() => props.noteId);
 
   return (
-    <Suspense>
+    <Suspense fallback={<Skeleton h="64" />}>
       <Show when={noteInfoQuery.data}>
         {(data) => {
           return (
             <NoteContextProvider value={data}>
-              <Stack h="64">
-                <AnkiCard readOnly />
-              </Stack>
+              <AnkiCard readOnly />
             </NoteContextProvider>
           );
         }}

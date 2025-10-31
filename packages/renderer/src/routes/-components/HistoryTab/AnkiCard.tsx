@@ -66,14 +66,13 @@ export function AnkiCard(props: { readOnly?: boolean }) {
       w="full"
       maxW="4xl"
     >
-      <HStack gap="4">
+      <HStack gap="4" alignItems="stretch">
         <Stack
           flex="1"
           alignItems="center"
           p="2"
           rounded="md"
           bg="bg.subtle"
-          h="full"
           justifyContent="center"
         >
           <Text
