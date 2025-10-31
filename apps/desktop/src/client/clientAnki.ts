@@ -32,7 +32,6 @@ const AnkiClient_ = class AnkiClient {
   maxDelay = 16000;
   retryTimer: NodeJS.Timeout | null = null;
   status: ClientStatus = "disconnected";
-  selectedTextUuid: string | undefined;
   textUuidQueue: Record<string, Promise<TextUuidQueueResult>> = {};
   mediaDir: string | undefined;
   duplicateList = new Set<string>();
@@ -42,8 +41,11 @@ const AnkiClient_ = class AnkiClient {
 
   register() {
     this.log.trace("Registering event listeners");
-    const listener = ({ noteId }: BusEvents["anki:handleUpdateNoteMedia"]) => {
-      this.preHandleUpdateNoteMedia(noteId);
+    const listener = ({
+      noteId,
+      selectedTextUuid,
+    }: BusEvents["anki:handleUpdateNoteMedia"]) => {
+      this.preHandleUpdateNoteMedia({ noteId, selectedTextUuid });
     };
     bus.on("anki:handleUpdateNoteMedia", listener);
     this.#abortController.signal.addEventListener("abort", () => {
@@ -122,7 +124,13 @@ const AnkiClient_ = class AnkiClient {
     this.status = "disconnected";
   }
 
-  async preHandleUpdateNoteMedia(noteId: number) {
+  async preHandleUpdateNoteMedia({
+    noteId,
+    selectedTextUuid,
+  }: {
+    noteId: number;
+    selectedTextUuid: string;
+  }) {
     const note = await this.getNote(noteId);
     this.log.debug({ noteInfo: note }, "Note Info");
     const expression = AnkiClient.getExpression(note);
@@ -132,7 +140,10 @@ const AnkiClient_ = class AnkiClient {
     logIPC().sendToastPromise(
       async () => {
         try {
-          const result = await this.handleUpdateNoteMedia(note);
+          const result = await this.handleUpdateNoteMedia({
+            note,
+            selectedTextUuid,
+          });
           return {
             success: {
               title: `Note Has Been Updated`,
@@ -159,13 +170,19 @@ const AnkiClient_ = class AnkiClient {
   }
 
   //TODO: move this out from anki client
-  async handleUpdateNoteMedia(note: AnkiNote) {
+  async handleUpdateNoteMedia({
+    note,
+    selectedTextUuid,
+  }: {
+    note: AnkiNote;
+    selectedTextUuid: string;
+  }) {
     //get history
     const now = new Date();
     const history = sort(textractorClient().history)
       .desc(({ time }) => time)
       .find(({ time, uuid }) => {
-        return time <= now && uuid === this.selectedTextUuid;
+        return time <= now && uuid === selectedTextUuid;
       });
     if (!history) throw new Error("Failed to find history");
 

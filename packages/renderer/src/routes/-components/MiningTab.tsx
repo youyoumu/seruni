@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/solid-query";
 import { intervalToDuration, isAfter } from "date-fns";
 import { liveQuery } from "dexie";
 import {
-  ArrowBigRight,
   ListRestartIcon,
   PauseIcon,
   PlayIcon,
@@ -16,7 +15,6 @@ import { Box, HStack, Stack } from "styled-system/jsx";
 import { Select_ } from "#/components/Form";
 import { Button } from "#/components/ui/button";
 import { Dialog } from "#/components/ui/dialog";
-import { Icon } from "#/components/ui/icon";
 import { IconButton } from "#/components/ui/icon-button";
 import { RadioGroup } from "#/components/ui/radio-group";
 import { createListCollection } from "#/components/ui/select";
@@ -59,7 +57,6 @@ export function MiningTab() {
   const [texts, setTexts] = createStore<{
     value: Array<{ text: string; uuid: string }>;
   }>({ value: [] });
-  const [textUuid, setTextUuid] = createSignal("");
   const textObservable = liveQuery(() => texthoookerDB.text.toArray());
   textObservable.subscribe({
     next: (result) => {
@@ -168,8 +165,6 @@ export function MiningTab() {
     });
   });
 
-  let hoverTimeout: number | undefined;
-
   return (
     <>
       <DuplicateNoteConfirmation />
@@ -234,7 +229,6 @@ export function MiningTab() {
           gap="12"
           overflow="auto"
           p="4"
-          ps="6"
           pb="64"
           ref={textContainerRef}
           class="custom-scrollbar"
@@ -249,36 +243,10 @@ export function MiningTab() {
                   p="2"
                   borderColor="border.default"
                   borderBottomWidth="thin"
-                  onMouseEnter={() => {
-                    hoverTimeout = window.setTimeout(() => {
-                      ipcRenderer
-                        .invoke("mining:setTextUuid", { uuid: item.uuid })
-                        .then(({ uuid }) => setTextUuid(uuid));
-                    }, 250); // delay in ms
-                  }}
-                  onMouseLeave={() => {
-                    // cancel if cursor leaves early
-                    clearTimeout(hoverTimeout);
-                  }}
                   bg={{
                     _hover: "bg.subtle",
                   }}
                 >
-                  <Icon
-                    class={css({
-                      position: "absolute",
-                      left: "-6",
-                      color: "colorPalette.default",
-                    })}
-                    style={{
-                      transition: "opacity 0.2s, transform 0.2s",
-                      transform: `translateX(${item.uuid === textUuid() ? "0" : "-10px"})`,
-                      opacity: item.uuid === textUuid() ? 1 : 0,
-                    }}
-                    asChild={(props) => {
-                      return <ArrowBigRight {...props()} />;
-                    }}
-                  ></Icon>
                   {"\n"}
                   <Text
                     as="p"

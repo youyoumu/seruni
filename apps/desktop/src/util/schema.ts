@@ -9,29 +9,31 @@ export const zVadData = z.array(
 );
 export type VadData = z.infer<typeof zVadData>;
 
-export const zAnkiConnectAddNote = z.object({
+export const zAnkiConnectAddNote = z.looseObject({
   action: z.literal("addNote"),
-  params: z.object({
-    note: z.object({
+  params: z.looseObject({
+    note: z.looseObject({
       fields: z.record(z.string(), z.string()),
     }),
   }),
 });
 
 export const zAnkiConnectCanAddNotes = () =>
-  z.object({
+  z.looseObject({
     action: z.literal("canAddNotes"),
-    params: z.object({
+    params: z.looseObject({
       notes: z.array(
-        z.object({
-          fields: z.object({ [config.store.anki.expressionField]: z.string() }),
+        z.looseObject({
+          fields: z.looseObject({
+            [config.store.anki.expressionField]: z.string(),
+          }),
           tags: z.array(z.string()),
           deckName: z.string(),
           modelName: z.string(),
-          options: z.object({
+          options: z.looseObject({
             allowDuplicate: z.literal(false),
             duplicateScope: z.string(),
-            duplicateScopeOptions: z.object({
+            duplicateScopeOptions: z.looseObject({
               deckName: z.any(),
               checkChildren: z.boolean(),
               checkAllModels: z.boolean(),

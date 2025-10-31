@@ -7,7 +7,8 @@ import { mainDB } from "#/db/dbMain";
 import { env } from "#/env";
 import {
   interceptedRequest,
-  proxyAnkiConnectNewNoteRequest,
+  parseAddNoteRequest,
+  proxyAnkiConnectAddNoteRequest,
 } from "#/hono/_util";
 import { ffmpeg } from "#/runner/runnerFfmpeg";
 import { bus } from "#/util/bus";
@@ -22,11 +23,6 @@ class MiningIPC extends IPC()<"mining"> {
   }
 
   override register() {
-    this.handle("mining:setTextUuid", async (_, { uuid }) => {
-      ankiClient().selectedTextUuid = uuid;
-      return { uuid };
-    });
-
     this.handle("mining:getTextHistory", async () => {
       return textractorClient().history;
     });
@@ -216,11 +212,16 @@ class MiningIPC extends IPC()<"mining"> {
       const request = interceptedRequest.get(payload.uuid);
       if (!request) throw new Error("No request found");
       if (payload.action === "create") {
-        await proxyAnkiConnectNewNoteRequest(request);
+        await proxyAnkiConnectAddNoteRequest(request);
       } else if (payload.action === "update") {
         const noteId = payload.params?.noteId;
         if (!noteId) throw new Error("Note ID is missing");
-        bus.emit("anki:handleUpdateNoteMedia", { noteId });
+
+        const { uuid } = await parseAddNoteRequest(request);
+        bus.emit("anki:handleUpdateNoteMedia", {
+          noteId,
+          selectedTextUuid: uuid,
+        });
       }
     });
 
