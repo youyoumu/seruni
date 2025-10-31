@@ -72,14 +72,17 @@ export function MiningTab() {
   const replayBufferStartTime = () => replayBufferStartTimeQuery.data?.time;
   const replayBufferDurationQuery =
     MiningQuery.ObsQuery.replayBufferDuration.use();
-  const replayBufferDuration = () => replayBufferDurationQuery.data.duration;
   const textHistoryQuery = MiningQuery.SessionQuery.textHistory.use();
+  const replayBufferDuration = () => replayBufferDurationQuery.data.duration;
   const textHistory = () => textHistoryQuery.data;
 
-  const notInHistoryTexts = () =>
-    texts.value.filter((item) => {
-      return !textHistory().some((item_) => item_.uuid === item.uuid);
-    });
+  const notInHistoryTexts = createMemo(() => {
+    const historyUuids = new Set(textHistory().map((item) => item.uuid));
+    return texts.value.filter((item) => !historyUuids.has(item.uuid));
+  });
+  const notInHistoryTextsUuids = createMemo(() => {
+    return new Set(notInHistoryTexts().map((item) => item.uuid));
+  });
 
   const withinBufferTexts = () => {
     const startTime = replayBufferStartTime();
@@ -97,10 +100,13 @@ export function MiningTab() {
       );
     });
   };
+  const withinBufferTextsUuids = createMemo(() => {
+    return new Set(withinBufferTexts().map((item) => item.uuid));
+  });
 
   function getCharacterCount(text: string) {
     if (!text) return 0;
-    return Array.from(text.replace(isNotJapaneseRegex, "")).length;
+    return text.replace(isNotJapaneseRegex, "").length;
   }
 
   const characterCount = () =>
@@ -279,13 +285,9 @@ export function MiningTab() {
                     fontSize="xl"
                     flex="1"
                     color={
-                      notInHistoryTexts().some(
-                        (item_) => item_.uuid === item.uuid,
-                      )
+                      notInHistoryTextsUuids().has(item.uuid)
                         ? "fg.muted"
-                        : withinBufferTexts().some(
-                              (item_) => item_.uuid === item.uuid,
-                            )
+                        : withinBufferTextsUuids().has(item.uuid)
                           ? "fg.default"
                           : "fg.error"
                     }
