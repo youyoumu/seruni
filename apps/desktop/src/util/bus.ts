@@ -32,6 +32,7 @@ export interface TypeSafeEventEmitter<C extends StringKeyedObject> extends Event
 
   //custom
   key: <K extends Extract<keyof C, string>>(eventName: K) => K;
+  action: Map<string, () => void>;
 }
 
 export type BusEvents = {
@@ -42,6 +43,7 @@ export type BusEvents = {
   "mainWindow:reload": undefined;
   "anki:handleUpdateNoteMedia": { noteId: number; selectedTextUuid: string };
   "logIPC:send": LogMessage;
+  "action:invoke": { id: string };
   //
   //
   "test:test": { key: "test:test:result"; data: string };
@@ -54,9 +56,14 @@ class EventEmitter_ extends EventEmitter {
   key<K extends keyof BusEvents>(key: K) {
     return Symbol(key) as unknown as K;
   }
+  action = new Map<string, () => void>();
 }
 
 export const bus: TypeSafeEventEmitter<BusEvents> = new EventEmitter_();
+
+bus.on("action:invoke", ({ id }) => {
+  bus.action.get(id)?.();
+});
 
 //example
 () => {

@@ -32,6 +32,11 @@ class LogIPC extends IPC()<"log"> {
       };
     });
 
+    this.on("log:invokeAction", (_, { id }) => {
+      log.trace(`Invoking action: ${id}`);
+      bus.emit("action:invoke", { id });
+    });
+
     const uuid = crypto.randomUUID();
     const listener = (message: LogMessage) => {
       this.send("log:send", message);

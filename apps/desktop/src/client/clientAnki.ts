@@ -144,10 +144,20 @@ const AnkiClient_ = class AnkiClient {
             note,
             selectedTextUuid,
           });
+
+          const uuid = crypto.randomUUID();
+          bus.action.set(uuid, () => {
+            this.openNoteInAnki(noteId);
+          });
+
           return {
             success: {
               title: `Note Has Been Updated`,
               description: `${expression}${result?.reuseMedia ? " (♻  media)" : ""}`,
+              action: {
+                label: "Open in Anki",
+                id: uuid,
+              },
             },
           };
         } catch (e) {
@@ -215,7 +225,6 @@ const AnkiClient_ = class AnkiClient {
             picturePath: result.picturePath,
             sentenceAudioPath: result.sentenceAudioPath,
           });
-          await this.client?.graphical.guiEditNote({ note: note.noteId });
           return { reuseMedia: true };
         }
       }
@@ -400,7 +409,6 @@ const AnkiClient_ = class AnkiClient {
         sentenceAudioPath: audioStage2Path,
       });
 
-      await this.client?.graphical.guiEditNote({ note: note.noteId });
       resolve({
         sentenceAudioPath: audioStage2Path,
         picturePath: imagePath,

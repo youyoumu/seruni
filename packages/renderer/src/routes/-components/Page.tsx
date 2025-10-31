@@ -212,9 +212,27 @@ export function AppToaster() {
               title: "Unknown Error",
             },
           success: () =>
-            result.success ?? {
-              title: "Unknown Success",
-            },
+            result.success
+              ? {
+                  title: result.success.title,
+                  description: result.success.description,
+                  action: (() => {
+                    const label = result.success?.action?.label;
+                    const id = result.success?.action?.id;
+                    if (label && id) {
+                      return {
+                        label,
+                        onClick: () => {
+                          ipcRenderer.send("log:invokeAction", { id });
+                        },
+                      };
+                    }
+                    return undefined;
+                  })(),
+                }
+              : {
+                  title: "Unknown Success",
+                },
         },
       );
     });

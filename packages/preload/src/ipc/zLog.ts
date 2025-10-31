@@ -16,6 +16,12 @@ const zToastPromiseOptions = z.object({
   success: z.object({
     title: z.string().optional(),
     description: z.string().optional(),
+    action: z
+      .object({
+        label: z.string(),
+        id: z.string(),
+      })
+      .optional(),
   }),
   error: z.object({
     title: z.string().optional(),
@@ -74,6 +80,10 @@ export const zLogIPC = {
         success: zToastPromiseOptions.shape.success.optional(),
         error: zToastPromiseOptions.shape.error.optional(),
       }),
+    }),
+    "log:invokeAction": z.object({
+      input: z.tuple([z.object({ id: z.string() })]),
+      output: z.void(),
     }),
   }),
 };
