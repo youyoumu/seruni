@@ -5,7 +5,6 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import path from "node:path";
 import { defineConfig } from "vite";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 
 const config = defineConfig({
   resolve: {
@@ -16,10 +15,6 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro(),
-    // this is the plugin that enables path aliases
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
     tailwindcss(),
     tanstackStart({
       spa: {
