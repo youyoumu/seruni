@@ -1,9 +1,9 @@
-import { useStore } from '@tanstack/react-form'
+import { useStore } from "@tanstack/react-form";
 
-import { useFieldContext, useFormContext } from '@/hooks/demo.form-context'
+import { useFieldContext, useFormContext } from "#/hooks/demo.form-context";
 
 export function SubscribeButton({ label }: { label: string }) {
-  const form = useFormContext()
+  const form = useFormContext();
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
@@ -16,37 +16,27 @@ export function SubscribeButton({ label }: { label: string }) {
         </button>
       )}
     </form.Subscribe>
-  )
+  );
 }
 
-function ErrorMessages({
-  errors,
-}: {
-  errors: Array<string | { message: string }>
-}) {
+function ErrorMessages({ errors }: { errors: Array<string | { message: string }> }) {
   return (
     <>
       {errors.map((error) => (
         <div
-          key={typeof error === 'string' ? error : error.message}
+          key={typeof error === "string" ? error : error.message}
           className="text-red-500 mt-1 font-bold"
         >
-          {typeof error === 'string' ? error : error.message}
+          {typeof error === "string" ? error : error.message}
         </div>
       ))}
     </>
-  )
+  );
 }
 
-export function TextField({
-  label,
-  placeholder,
-}: {
-  label: string
-  placeholder?: string
-}) {
-  const field = useFieldContext<string>()
-  const errors = useStore(field.store, (state) => state.meta.errors)
+export function TextField({ label, placeholder }: { label: string; placeholder?: string }) {
+  const field = useFieldContext<string>();
+  const errors = useStore(field.store, (state) => state.meta.errors);
 
   return (
     <div>
@@ -62,18 +52,12 @@ export function TextField({
       </label>
       {field.state.meta.isTouched && <ErrorMessages errors={errors} />}
     </div>
-  )
+  );
 }
 
-export function TextArea({
-  label,
-  rows = 3,
-}: {
-  label: string
-  rows?: number
-}) {
-  const field = useFieldContext<string>()
-  const errors = useStore(field.store, (state) => state.meta.errors)
+export function TextArea({ label, rows = 3 }: { label: string; rows?: number }) {
+  const field = useFieldContext<string>();
+  const errors = useStore(field.store, (state) => state.meta.errors);
 
   return (
     <div>
@@ -89,19 +73,19 @@ export function TextArea({
       </label>
       {field.state.meta.isTouched && <ErrorMessages errors={errors} />}
     </div>
-  )
+  );
 }
 
 export function Select({
   label,
   values,
 }: {
-  label: string
-  values: Array<{ label: string; value: string }>
-  placeholder?: string
+  label: string;
+  values: Array<{ label: string; value: string }>;
+  placeholder?: string;
 }) {
-  const field = useFieldContext<string>()
-  const errors = useStore(field.store, (state) => state.meta.errors)
+  const field = useFieldContext<string>();
+  const errors = useStore(field.store, (state) => state.meta.errors);
 
   return (
     <div>
@@ -123,5 +107,5 @@ export function Select({
       </select>
       {field.state.meta.isTouched && <ErrorMessages errors={errors} />}
     </div>
-  )
+  );
 }
