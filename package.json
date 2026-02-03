@@ -1,0 +1,17 @@
+{
+  "name": "seruni",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.8.2",
+    "typescript": "5.9.2"
+  },
+  "packageManager": "pnpm@10.26.1",
+  "engines": {
+    "node": ">=24"
+  }
+}
