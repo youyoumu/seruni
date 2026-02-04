@@ -1,7 +1,8 @@
 import { Logger } from "pino";
 
 export class ReconnectingWebsocket extends EventTarget {
-  #log: Logger;
+  log: Logger;
+  name: string;
   #url: string;
   #baseReconnectInterval: number;
   #maxReconnectDelay: number;
@@ -19,7 +20,8 @@ export class ReconnectingWebsocket extends EventTarget {
     maxReconnectAttempts?: number;
   }) {
     super();
-    this.#log = options.logger.child({ name: options.name });
+    this.log = options.logger.child({ name: options.name });
+    this.name = options.name;
     this.#url = options.url;
     this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
@@ -33,7 +35,7 @@ export class ReconnectingWebsocket extends EventTarget {
     this.#readyState = WebSocket.CONNECTING;
 
     this.#ws.onopen = () => {
-      this.#log.info(`Connected to ${this.#url}`);
+      this.log.info(`Connected to ${this.#url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
       this.dispatchEvent(new CustomEvent("open"));
@@ -45,7 +47,7 @@ export class ReconnectingWebsocket extends EventTarget {
 
     this.#ws.onclose = () => {
       if (this.#readyState === WebSocket.OPEN) {
-        this.#log.warn(`Disconnected from ${this.#url}`);
+        this.log.warn(`Disconnected from ${this.#url}`);
       }
       this.#readyState = WebSocket.CLOSED;
       this.dispatchEvent(new CustomEvent("close"));
@@ -64,7 +66,7 @@ export class ReconnectingWebsocket extends EventTarget {
         this.#baseReconnectInterval * Math.pow(2, this.#reconnectAttempts - 1),
         this.#maxReconnectDelay,
       );
-      this.#log.info(
+      this.log.info(
         `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#readyState = WebSocket.CONNECTING;

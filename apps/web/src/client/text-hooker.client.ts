@@ -2,7 +2,7 @@ import { Logger } from "pino";
 import { ReconnectingWebsocket } from "./ReconnectingWebsocket";
 
 export class TextHookerClient extends ReconnectingWebsocket {
-  private messages: string[] = [];
+  messages: string[] = [];
 
   constructor({ url = "ws://localhost:6677", logger }: { url?: string; logger: Logger }) {
     super({
@@ -11,7 +11,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
       logger,
     });
     this.addEventListener("message", (event: CustomEventInit<string>) => {
-      console.log(event.detail);
+      this.log.info(`Message: ${event.detail}`);
       if (event.detail) this.messages.push(event.detail);
     });
   }
