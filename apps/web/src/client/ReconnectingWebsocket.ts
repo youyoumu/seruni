@@ -1,5 +1,4 @@
-import pino, { Logger } from "pino";
-import pretty from "pino-pretty";
+import { Logger } from "pino";
 
 export class ReconnectingWebsocket extends EventTarget {
   #log: Logger;
@@ -14,18 +13,13 @@ export class ReconnectingWebsocket extends EventTarget {
   constructor(options: {
     name: string;
     url: string;
+    logger: Logger;
     baseReconnectInterval?: number;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
   }) {
     super();
-    this.#log = pino(
-      { name: options.name },
-      pretty({
-        ignore: "pid,hostname",
-        translateTime: "SYS:HH:MM:ss",
-      }),
-    );
+    this.#log = options.logger.child({ name: options.name });
     this.#url = options.url;
     this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
