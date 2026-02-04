@@ -1,0 +1,12 @@
+{
+  "name": "@repo/text-hooker-emulator",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.ts"
+  },
+  "packageManager": "pnpm@10.26.1",
+  "dependencies": {
+    "@types/ws": "^8.18.1",
+    "ws": "^8.19.0"
+  }
+}
