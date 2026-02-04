@@ -9,14 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutTextHookerRouteImport } from './routes/_layout/text-hooker'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 
-const IndexRoute = IndexRouteImport.update({
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/_layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTextHookerRoute = LayoutTextHookerRouteImport.update({
+  id: '/text-hooker',
+  path: '/text-hooker',
+  getParentRoute: () => LayoutRoute,
 } as any)
 const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   id: '/demo/form/address',
@@ -30,43 +41,67 @@ const DemoApiTqTodosRoute = DemoApiTqTodosRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof LayoutIndexRoute
+  '/text-hooker': typeof LayoutTextHookerRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/text-hooker': typeof LayoutTextHookerRoute
+  '/': typeof LayoutIndexRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/text-hooker': typeof LayoutTextHookerRoute
+  '/_layout/': typeof LayoutIndexRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo/api/tq-todos' | '/demo/form/address'
+  fullPaths: '/' | '/text-hooker' | '/demo/api/tq-todos' | '/demo/form/address'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo/api/tq-todos' | '/demo/form/address'
-  id: '__root__' | '/' | '/demo/api/tq-todos' | '/demo/form/address'
+  to: '/text-hooker' | '/' | '/demo/api/tq-todos' | '/demo/form/address'
+  id:
+    | '__root__'
+    | '/_layout'
+    | '/_layout/text-hooker'
+    | '/_layout/'
+    | '/demo/api/tq-todos'
+    | '/demo/form/address'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  LayoutRoute: typeof LayoutRouteWithChildren
   DemoApiTqTodosRoute: typeof DemoApiTqTodosRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_layout': {
+      id: '/_layout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_layout/': {
+      id: '/_layout/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof LayoutIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/text-hooker': {
+      id: '/_layout/text-hooker'
+      path: '/text-hooker'
+      fullPath: '/text-hooker'
+      preLoaderRoute: typeof LayoutTextHookerRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/demo/form/address': {
       id: '/demo/form/address'
@@ -85,8 +120,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface LayoutRouteChildren {
+  LayoutTextHookerRoute: typeof LayoutTextHookerRoute
+  LayoutIndexRoute: typeof LayoutIndexRoute
+}
+
+const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutTextHookerRoute: LayoutTextHookerRoute,
+  LayoutIndexRoute: LayoutIndexRoute,
+}
+
+const LayoutRouteWithChildren =
+  LayoutRoute._addFileChildren(LayoutRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  LayoutRoute: LayoutRouteWithChildren,
   DemoApiTqTodosRoute: DemoApiTqTodosRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
 }
