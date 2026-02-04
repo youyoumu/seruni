@@ -10,6 +10,7 @@ export class ReconnectingWebsocket extends EventTarget {
   #reconnectAttempts: number;
   #ws: WebSocket | null = null;
   #readyState: number = WebSocket.CONNECTING;
+  #manualClose = false;
 
   constructor(options: {
     name: string;
@@ -35,6 +36,7 @@ export class ReconnectingWebsocket extends EventTarget {
     this.#readyState = WebSocket.CONNECTING;
 
     this.#ws.onopen = () => {
+      this.#manualClose = false;
       this.log.info(`Connected to ${this.#url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
@@ -60,6 +62,7 @@ export class ReconnectingWebsocket extends EventTarget {
   }
 
   #attemptReconnect() {
+    if (this.#manualClose) return;
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
       this.#reconnectAttempts++;
       const delay = Math.min(
@@ -81,6 +84,7 @@ export class ReconnectingWebsocket extends EventTarget {
   }
 
   close() {
+    this.#manualClose = true;
     this.#ws?.close();
   }
 
