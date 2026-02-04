@@ -1,4 +1,8 @@
+import pino, { Logger } from "pino";
+import pretty from "pino-pretty";
+
 export class ReconnectingWebsocket extends EventTarget {
+  #log: Logger;
   #url: string;
   #reconnectInterval: number;
   #maxReconnectAttempts: number;
@@ -6,12 +10,21 @@ export class ReconnectingWebsocket extends EventTarget {
   #ws: WebSocket | null = null;
   #readyState: number = WebSocket.CONNECTING;
 
-  constructor(
-    url: string,
-    options: { reconnectInterval?: number; maxReconnectAttempts?: number } = {}
-  ) {
+  constructor(options: {
+    name: string;
+    url: string;
+    reconnectInterval?: number;
+    maxReconnectAttempts?: number;
+  }) {
     super();
-    this.#url = url;
+    this.#log = pino(
+      { name: options.name },
+      pretty({
+        ignore: "pid,hostname",
+        translateTime: "SYS:HH:MM:ss",
+      }),
+    );
+    this.#url = options.url;
     this.#reconnectInterval = options.reconnectInterval ?? 1000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? 10;
     this.#reconnectAttempts = 0;
@@ -24,6 +37,7 @@ export class ReconnectingWebsocket extends EventTarget {
       this.#readyState = WebSocket.CONNECTING;
 
       this.#ws.onopen = () => {
+        this.#log.info(`Connected to ${this.#url}`);
         this.#readyState = WebSocket.OPEN;
         this.#reconnectAttempts = 0;
         this.dispatchEvent(new CustomEvent("open"));
@@ -34,6 +48,7 @@ export class ReconnectingWebsocket extends EventTarget {
       };
 
       this.#ws.onclose = () => {
+        this.#log.warn(`Disconnected from ${this.#url}`);
         this.#readyState = WebSocket.CLOSED;
         this.dispatchEvent(new CustomEvent("close"));
         this.#attemptReconnect();
@@ -49,6 +64,7 @@ export class ReconnectingWebsocket extends EventTarget {
 
   #attemptReconnect() {
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
+      this.#log.info(`Reconnecting to ${this.#url}`);
       this.#reconnectAttempts++;
       this.#readyState = WebSocket.CONNECTING;
       setTimeout(() => this.#connect(), this.#reconnectInterval);
