@@ -20,6 +20,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@heroui/react": "3.0.0-beta.5",
+    "@heroui/styles": "3.0.0-beta.5",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "^0.9.4",
     "@tanstack/react-form": "^1.28.0",
