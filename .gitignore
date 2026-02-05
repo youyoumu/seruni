@@ -15,3 +15,5 @@ out/
 build
 dist
 AGENTS.md
+
+*.sqlite
