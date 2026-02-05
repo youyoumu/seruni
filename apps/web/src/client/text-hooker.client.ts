@@ -1,5 +1,7 @@
 import { Logger } from "pino";
 import { ReconnectingWebsocket } from "./ReconnectingWebsocket";
+import { db } from "#/db";
+import { textHistory } from "#/db/schema";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   messages: string[] = [];
@@ -10,9 +12,11 @@ export class TextHookerClient extends ReconnectingWebsocket {
       url,
       logger,
     });
-    this.addEventListener("message", (event: CustomEventInit<string>) => {
-      this.log.info(`Message: ${event.detail}`);
-      if (event.detail) this.messages.push(event.detail);
+    this.addEventListener("message", async (event: CustomEventInit<string>) => {
+      if (event.detail) {
+        this.log.info(`Message: ${event.detail}`);
+        const id = await db.insert(textHistory).values({ text: event.detail }).returning();
+      }
     });
   }
 
