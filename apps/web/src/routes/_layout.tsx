@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { Terminal, FileText, Settings } from "lucide-react";
 import { tv } from "@heroui/react";
+import { useSSEListener } from "#/hooks/sse";
 
 const navLink = tv({
   base: [

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as EventsRouteImport } from './routes/events'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutTextHookerRouteImport } from './routes/_layout/text-hooker'
@@ -16,6 +17,11 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
@@ -48,12 +54,14 @@ const DemoApiTqTodosRoute = DemoApiTqTodosRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/events': typeof EventsRoute
   '/settings': typeof LayoutSettingsRoute
   '/text-hooker': typeof LayoutTextHookerRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
 }
 export interface FileRoutesByTo {
+  '/events': typeof EventsRoute
   '/settings': typeof LayoutSettingsRoute
   '/text-hooker': typeof LayoutTextHookerRoute
   '/': typeof LayoutIndexRoute
@@ -63,6 +71,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/events': typeof EventsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/text-hooker': typeof LayoutTextHookerRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -73,12 +82,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/events'
     | '/settings'
     | '/text-hooker'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/events'
     | '/settings'
     | '/text-hooker'
     | '/'
@@ -87,6 +98,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_layout'
+    | '/events'
     | '/_layout/settings'
     | '/_layout/text-hooker'
     | '/_layout/'
@@ -96,12 +108,20 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  EventsRoute: typeof EventsRoute
   DemoApiTqTodosRoute: typeof DemoApiTqTodosRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_layout': {
       id: '/_layout'
       path: ''
@@ -164,6 +184,7 @@ const LayoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  EventsRoute: EventsRoute,
   DemoApiTqTodosRoute: DemoApiTqTodosRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
 }
