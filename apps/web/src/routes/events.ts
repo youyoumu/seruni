@@ -1,3 +1,4 @@
+import { eventTarget } from "#/util/eventTarget";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/events")({
@@ -14,6 +15,12 @@ export const Route = createFileRoute("/events")({
             };
 
             sendEvent({ type: "connected", message: "SSE connection established" });
+            eventTarget.addEventListener("text_history", (event) => {
+              sendEvent({
+                type: "text_history",
+                detail: event.detail,
+              });
+            });
 
             const interval = setInterval(() => {
               sendEvent({

@@ -10,6 +10,7 @@ export function SSEProvider({ url, children }: { url: string; children: React.Re
 
     es.onmessage = (event) => {
       const parsed = JSON.parse(event.data);
+      console.log("DEBUG[1498]: parsed=", parsed);
       // Dispatch a generic message event
       sseEmitter.dispatchEvent(new CustomEvent("message", { detail: parsed }));
 

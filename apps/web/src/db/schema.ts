@@ -12,10 +12,14 @@ type AnkiNote = {
 };
 
 const id = () => integer().primaryKey({ autoIncrement: true });
-const createdAt = () => integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`);
+const createdAt = () =>
+  integer("created_at", { mode: "timestamp" })
+    .default(sql`(unixepoch())`)
+    .notNull();
 const updatedAt = () =>
   integer("updated_at", { mode: "timestamp" })
     .default(sql`(unixepoch())`)
+    .notNull()
     .$onUpdate(() => new Date());
 
 export const textHistory = sqliteTable("text_history", {
@@ -24,6 +28,7 @@ export const textHistory = sqliteTable("text_history", {
   updatedAt: updatedAt(),
   text: text("text").notNull(),
 });
+export type TextHistory = typeof textHistory.$inferSelect;
 
 export const notes = sqliteTable("notes", {
   id: id(),

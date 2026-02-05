@@ -83,6 +83,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
+      typescript-event-target:
+        specifier: ^1.1.2
+        version: 1.1.2
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -3361,6 +3364,9 @@ packages:
 
   tw-animate-css@1.4.0:
     resolution: {integrity: sha512-7bziOlRqH0hJx80h/3mbicLW7o8qLsH5+RaLR2t+OHM3D0JlWGODQKQ4cxbK7WlvmUxpcj6Kgu6EKqjrGFe3QQ==}
+
+  typescript-event-target@1.1.2:
+    resolution: {integrity: sha512-TvkrTUpv7gCPlcnSoEwUVUBwsdheKm+HF5u2tPAKubkIGMfovdSizCTaZRY/NhR8+Ijy8iZZUapbVQAsNrkFrw==}
 
   typescript@5.9.2:
     resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
@@ -7147,6 +7153,8 @@ snapshots:
       turbo-windows-arm64: 2.8.2
 
   tw-animate-css@1.4.0: {}
+
+  typescript-event-target@1.1.2: {}
 
   typescript@5.9.2: {}
 
