@@ -4,20 +4,42 @@ import { TextHookerClient } from "./client/text-hooker.client";
 import { logger } from "./util/logger";
 import { eventTarget } from "./util/eventTarget";
 
+import { createNodeWebSocket } from '@hono/node-ws'
+
 function main() {
   const app = new Hono()
+  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
   app.get('/', (c) => {
     return c.text('Hello Hono!')
   })
 
-  serve({
+  app.get(
+    '/ws',
+    upgradeWebSocket(() => {
+      return {
+        onMessage(event, ws) {
+          console.log(`Message from client: ${event.data}`)
+          ws.send('Hello from server!')
+        },
+        onOpen: () => {
+          console.log('Connection opened')
+        },
+        onClose: () => {
+          console.log('Connection closed')
+        },
+      }
+    })
+  )
+
+  const server = serve({
     fetch: app.fetch,
-    port: 3000
+    port: 45626
   }, (info) => {
     console.log(`Server is running on http://localhost:${info.port}`)
   })
 
+  injectWebSocket(server)
 
   const textHookerClient = new TextHookerClient({
     logger,
