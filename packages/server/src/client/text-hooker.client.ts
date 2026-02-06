@@ -9,11 +9,11 @@ export class TextHookerClient extends ReconnectingWebsocket {
   constructor({
     url = "ws://localhost:6677",
     logger,
-    bus
+    bus,
   }: {
     url?: string;
     logger: Logger;
-    bus: Bus
+    bus: Bus;
   }) {
     super({
       url,
@@ -24,10 +24,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
         const id = await db.insert(textHistory).values({ text: event.detail }).returning().get();
-        bus.dispatchTypedEvent(
-          "text_history",
-          new CustomEvent("text_history", { detail: id }),
-        );
+        bus.dispatchTypedEvent("text_history", new CustomEvent("text_history", { detail: id }));
       }
     });
   }

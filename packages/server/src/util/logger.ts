@@ -7,6 +7,5 @@ export function createLogger() {
       ignore: "pid,hostname",
       translateTime: "SYS:HH:MM:ss",
     }),
-  )
+  );
 }
-

@@ -1,14 +1,10 @@
-import { defineConfig } from 'tsdown'
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: [
-    './src/db/index.ts',
-    './src/ws/index.ts',
-    './src/types/index.ts',
-  ],
+  entry: ["./src/db/index.ts", "./src/ws/index.ts", "./src/types/index.ts"],
   format: ["es"],
   dts: true,
   sourcemap: true,
   unbundle: true,
   clean: false,
-})
+});

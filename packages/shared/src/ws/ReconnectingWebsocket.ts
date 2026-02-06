@@ -22,7 +22,7 @@ export class ReconnectingWebsocket extends EventTarget {
     maxReconnectAttempts?: number;
   }) {
     super();
-    this.log = options.logger
+    this.log = options.logger;
     this.#url = options.url;
     this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
