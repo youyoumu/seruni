@@ -132,6 +132,12 @@ importers:
 
   packages/webui:
     dependencies:
+      '@heroui/react':
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.1.18)
+      '@heroui/styles':
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
       '@tailwindcss/vite':
         specifier: ^4.0.6
         version: 4.1.18(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -4484,12 +4490,12 @@ snapshots:
       '@react-aria/listbox': 3.15.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/searchfield': 3.8.11(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/textfield': 3.18.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-aria/utils': 3.32.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@react-aria/utils': 3.33.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-stately/autocomplete': 3.0.0-beta.4(react@19.2.4)
       '@react-stately/combobox': 3.12.2(react@19.2.4)
       '@react-types/autocomplete': 3.0.0-alpha.36(react@19.2.4)
       '@react-types/button': 3.15.0(react@19.2.4)
-      '@react-types/shared': 3.32.1(react@19.2.4)
+      '@react-types/shared': 3.33.0(react@19.2.4)
       '@swc/helpers': 0.5.18
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
@@ -5046,8 +5052,8 @@ snapshots:
     dependencies:
       '@react-aria/focus': 3.21.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/i18n': 3.12.15(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-aria/utils': 3.32.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-types/shared': 3.32.1(react@19.2.4)
+      '@react-aria/utils': 3.33.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@react-types/shared': 3.33.0(react@19.2.4)
       '@swc/helpers': 0.5.18
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
@@ -5091,7 +5097,7 @@ snapshots:
       '@react-aria/ssr': 3.9.10(react@19.2.4)
       '@react-stately/flags': 3.1.2
       '@react-stately/utils': 3.11.0(react@19.2.4)
-      '@react-types/shared': 3.32.1(react@19.2.4)
+      '@react-types/shared': 3.33.0(react@19.2.4)
       '@swc/helpers': 0.5.18
       clsx: 2.1.1
       react: 19.2.4
@@ -5390,7 +5396,7 @@ snapshots:
     dependencies:
       '@react-types/combobox': 3.13.11(react@19.2.4)
       '@react-types/searchfield': 3.6.7(react@19.2.4)
-      '@react-types/shared': 3.32.1(react@19.2.4)
+      '@react-types/shared': 3.33.0(react@19.2.4)
       react: 19.2.4
 
   '@react-types/breadcrumbs@3.7.18(react@19.2.4)':
@@ -7007,7 +7013,7 @@ snapshots:
 
   react-aria-components@1.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
-      '@internationalized/date': 3.10.1
+      '@internationalized/date': 3.11.0
       '@internationalized/string': 3.2.7
       '@react-aria/autocomplete': 3.0.0-rc.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/collections': 3.0.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -7019,7 +7025,7 @@ snapshots:
       '@react-aria/ssr': 3.9.10(react@19.2.4)
       '@react-aria/textfield': 3.18.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/toolbar': 3.0.0-beta.22(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-aria/utils': 3.32.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@react-aria/utils': 3.33.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/virtualizer': 4.1.12(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-stately/autocomplete': 3.0.0-beta.4(react@19.2.4)
       '@react-stately/layout': 4.5.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -7029,7 +7035,7 @@ snapshots:
       '@react-stately/virtualizer': 4.4.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-types/form': 3.7.17(react@19.2.4)
       '@react-types/grid': 3.3.7(react@19.2.4)
-      '@react-types/shared': 3.32.1(react@19.2.4)
+      '@react-types/shared': 3.33.0(react@19.2.4)
       '@react-types/table': 3.13.5(react@19.2.4)
       '@swc/helpers': 0.5.18
       client-only: 0.0.1
