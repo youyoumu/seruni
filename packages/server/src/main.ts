@@ -24,7 +24,10 @@ function main() {
         onOpen: (_, ws) => {
           console.log('Connection opened')
           eventTarget.addEventListener("text_history", (e) => {
-            ws.send(JSON.stringify(e.detail))
+            ws.send(JSON.stringify({
+              type: "text_history",
+              data: e.detail,
+            }))
           })
         },
         onClose: () => {
