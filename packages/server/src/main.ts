@@ -20,10 +20,12 @@ function main() {
       return {
         onMessage(event, ws) {
           console.log(`Message from client: ${event.data}`)
-          ws.send('Hello from server!')
         },
-        onOpen: () => {
+        onOpen: (_, ws) => {
           console.log('Connection opened')
+          eventTarget.addEventListener("text_history", (e) => {
+            ws.send(JSON.stringify(e.detail))
+          })
         },
         onClose: () => {
           console.log('Connection closed')

@@ -1,0 +1,19 @@
+{
+  "name": "@repo/shared",
+  "exports": {
+    "./types": "./src/types/index.ts",
+    "./db": "./src/db/index.ts",
+    "./ws": "./src/ws/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b"
+  },
+  "packageManager": "pnpm@10.26.1",
+  "dependencies": {
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.1",
+    "typescript": "^5.8.3"
+  }
+}
