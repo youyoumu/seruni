@@ -1,12 +1,15 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { TextHookerClient } from "./client/text-hooker.client";
-import { logger } from "./util/logger";
-import { eventTarget } from "./util/eventTarget";
+import { createLogger } from "./util/logger";
 
 import { createNodeWebSocket } from '@hono/node-ws'
+import { createBus } from './util/bus';
 
 function main() {
+  const logger = createLogger();
+  const bus = createBus();
+
   const app = new Hono()
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
@@ -23,7 +26,7 @@ function main() {
         },
         onOpen: (_, ws) => {
           console.log('Connection opened')
-          eventTarget.addEventListener("text_history", (e) => {
+          bus.addEventListener("text_history", (e) => {
             ws.send(JSON.stringify({
               type: "text_history",
               data: e.detail,
@@ -48,7 +51,7 @@ function main() {
 
   const textHookerClient = new TextHookerClient({
     logger,
-    et: eventTarget,
+    bus,
   });
 }
 

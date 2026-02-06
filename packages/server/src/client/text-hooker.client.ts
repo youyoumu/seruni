@@ -1,32 +1,30 @@
 import { type Logger } from "pino";
-import { ReconnectingWebsocket } from "./ReconnectingWebsocket";
+import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { db } from "#/db";
 import { textHistory } from "#/db/schema";
-import { TypedEventTarget } from "typescript-event-target";
-import { type AppEventMap } from "#/types/events.types";
+import { type Bus } from "#/util/bus";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   messages: string[] = [];
   constructor({
     url = "ws://localhost:6677",
     logger,
-    et: eventTarget,
+    bus
   }: {
     url?: string;
     logger: Logger;
-    et: TypedEventTarget<AppEventMap>;
+    bus: Bus
   }) {
     super({
-      name: "text-hooker-client",
       url,
-      logger,
+      logger: logger.child({ name: "text-hooker-client" }),
     });
 
     this.addEventListener("message", async (event: CustomEventInit<string>) => {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
         const id = await db.insert(textHistory).values({ text: event.detail }).returning().get();
-        eventTarget.dispatchTypedEvent(
+        bus.dispatchTypedEvent(
           "text_history",
           new CustomEvent("text_history", { detail: id }),
         );
