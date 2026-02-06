@@ -17,15 +17,15 @@ function main() {
     return c.text('Hello Hono!')
   })
 
+  const log = logger.child({ name: "client" })
+
   app.get(
     '/ws',
     upgradeWebSocket(() => {
       return {
-        onMessage(event, ws) {
-          console.log(`Message from client: ${event.data}`)
-        },
+        onMessage(event, ws) { },
         onOpen: (_, ws) => {
-          console.log('Connection opened')
+          log.info('Connection opened')
           bus.addEventListener("text_history", (e) => {
             ws.send(JSON.stringify({
               type: "text_history",
@@ -34,7 +34,7 @@ function main() {
           })
         },
         onClose: () => {
-          console.log('Connection closed')
+          log.warn('Connection closed')
         },
       }
     })
@@ -44,7 +44,7 @@ function main() {
     fetch: app.fetch,
     port: 45626
   }, (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`)
+    logger.info(`Server is running on http://localhost:${info.port}`)
   })
 
   injectWebSocket(server)
