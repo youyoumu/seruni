@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
-import { TextHistory } from "@repo/shared/db";
+import { type TextHistory } from "@repo/shared/db";
 
 export function useTextHistory() {
   const bus = useBus();

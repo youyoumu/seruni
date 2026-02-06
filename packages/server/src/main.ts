@@ -23,7 +23,13 @@ function main() {
     "/ws",
     upgradeWebSocket(() => {
       return {
-        onMessage(event, ws) {},
+        onMessage(e, ws) {
+          const payload = JSON.parse(e.data.toString());
+          bus.dispatchTypedEvent(
+            payload.type,
+            new CustomEvent(payload.type, { detail: payload.data }),
+          );
+        },
         onOpen: (_, ws) => {
           log.info("Connection opened");
 
@@ -32,6 +38,27 @@ function main() {
               JSON.stringify({
                 type: "text_history",
                 data: e.detail,
+              }),
+            );
+          });
+
+          bus.addEventListener("res_config", (e) => {
+            ws.send(
+              JSON.stringify({
+                type: "res_config",
+                data: e.detail,
+              }),
+            );
+          });
+
+          bus.addEventListener("req_config", (e) => {
+            bus.dispatchTypedEvent(
+              "res_config",
+              new CustomEvent("res_config", {
+                detail: {
+                  data: { workdir: "test" },
+                  requestId: e.detail.requestId,
+                },
               }),
             );
           });

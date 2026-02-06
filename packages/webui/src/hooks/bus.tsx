@@ -5,6 +5,8 @@ import { createContext, useContext } from "react";
 
 const bus = new TypedEventTarget<AppEventMap>();
 
+export type Bus = TypedEventTarget<AppEventMap>;
+
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
   logger: {
@@ -16,6 +18,10 @@ const ws = new ReconnectingWebsocket({
 ws.addEventListener("message", (e: CustomEventInit) => {
   const payload = JSON.parse(e.detail);
   bus.dispatchTypedEvent(payload.type, new CustomEvent(payload.type, { detail: payload.data }));
+});
+
+bus.addEventListener("req_config", (e) => {
+  ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
 });
 
 const BusContext = createContext(bus);

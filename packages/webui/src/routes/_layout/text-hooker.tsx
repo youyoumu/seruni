@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTextHistory } from "#/hooks/text-history";
+import { useConfig } from "#/hooks/config";
 
 export const Route = createFileRoute("/_layout/text-hooker")({
   component: TextHookerPage,
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/_layout/text-hooker")({
 
 function TextHookerPage() {
   const [textHistory] = useTextHistory();
+  useConfig();
 
   return (
     <div className="p-2 bg-surface-faint">
