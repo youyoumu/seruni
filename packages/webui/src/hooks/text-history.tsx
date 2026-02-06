@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import { eventTarget } from "#/util/event-target";
+import { useBus } from "./bus";
+import { TextHistory } from "@repo/shared/db";
 
 export function useTextHistory() {
+  const bus = useBus();
   const [textHistory, setTextHistory] = useState<string[]>(["text"]);
 
   useEffect(() => {
-    eventTarget.addEventListener("text_history", (e) => {
+    const handler = (e: CustomEvent<TextHistory>) => {
       setTextHistory([...textHistory, e.detail.text]);
-    });
+    };
+    bus.addEventListener("text_history", handler);
+    return () => {
+      bus.removeEventListener("text_history", handler);
+    };
   });
 
   return [textHistory, setTextHistory] as const;

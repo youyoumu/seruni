@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routeTree } from "./routeTree.gen";
+import { BusProvider } from "./hooks/bus";
 
 const router = createRouter({ routeTree });
 
@@ -21,7 +22,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <BusProvider>
+          <RouterProvider router={router} />
+        </BusProvider>
       </QueryClientProvider>
     </StrictMode>,
   );
