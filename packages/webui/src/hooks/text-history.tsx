@@ -3,16 +3,16 @@ import { useBus } from "./bus";
 import type { ServerPushEventMap } from "@repo/shared/types";
 
 export function useTextHistory() {
-  const { serverPushBus } = useBus();
+  const bus = useBus();
   const [textHistory, setTextHistory] = useState<string[]>(["text"]);
 
   useEffect(() => {
     const handler = (e: ServerPushEventMap["text_history"]) => {
       setTextHistory([...textHistory, e.detail.text]);
     };
-    serverPushBus.addEventListener("text_history", handler);
+    bus.push.server.addEventListener("text_history", handler);
     return () => {
-      serverPushBus.removeEventListener("text_history", handler);
+      bus.push.server.removeEventListener("text_history", handler);
     };
   });
 

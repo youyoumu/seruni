@@ -2,6 +2,7 @@
   "name": "@repo/shared",
   "exports": {
     "./types": "./dist/types/index.mjs",
+    "./events": "./dist/events/index.mjs",
     "./db": "./dist/db/index.mjs",
     "./ws": "./dist/ws/index.mjs"
   },
@@ -15,7 +16,9 @@
     "lint:fix": "oxlint --fix"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.1",
+    "typescript-event-target": "^1.1.2",
+    "uid": "^2.0.2"
   },
   "devDependencies": {
     "@types/node": "^25.2.1",
