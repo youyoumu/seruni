@@ -1,13 +1,23 @@
-import { type ServerEventMap, type ClientEventMap } from "@repo/shared/types";
+import {
+  type ServerReqEventMap,
+  type ClientResEventMap,
+  type ServerResEventMap,
+  type ClientReqEventMap,
+} from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 
-export function createServerBus() {
-  return new TypedEventTarget<ServerEventMap>();
+export function createServerReqBus() {
+  return new TypedEventTarget<ServerReqEventMap>();
 }
 
-export function createClientBus() {
-  return new TypedEventTarget<ClientEventMap>();
+export function createServerResBus() {
+  return new TypedEventTarget<ServerResEventMap>();
 }
 
-export type ServerBus = TypedEventTarget<ServerEventMap>;
-export type ClientBus = TypedEventTarget<ClientEventMap>;
+export function createClientReqBus() {
+  return new TypedEventTarget<ClientReqEventMap>();
+}
+
+export type ServerReqBus = TypedEventTarget<ServerReqEventMap>;
+export type ServerResBus = TypedEventTarget<ServerResEventMap>;
+export type ClientResBus = TypedEventTarget<ClientResEventMap>;

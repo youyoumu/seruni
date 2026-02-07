@@ -1,32 +1,32 @@
 import { ReconnectingWebsocket } from "@repo/shared/ws";
-import { type ServerEventMap, type ClientEventMap, EVENT_MAP } from "@repo/shared/types";
+import { type ServerResEventMap, type ClientReqEventMap, EVENT_MAP } from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 import { createContext, useContext } from "react";
 import { uid } from "uid";
 
-export class ServerBus extends TypedEventTarget<ServerEventMap> {}
-export class ClientBus extends TypedEventTarget<ClientEventMap> {
-  request = <C extends keyof ClientEventMap, S extends keyof ServerEventMap>(
+export class ServerResBus extends TypedEventTarget<ServerResEventMap> {}
+export class ClientReqBus extends TypedEventTarget<ClientReqEventMap> {
+  request = <C extends keyof ClientReqEventMap, S extends keyof ServerResEventMap>(
     clientEvent: C,
-    ...data: undefined extends ClientEventMap[C]["detail"]["data"]
-      ? [data?: ClientEventMap[C]["detail"]["data"]]
-      : [data: ClientEventMap[C]["detail"]["data"]]
+    ...data: undefined extends ClientReqEventMap[C]["detail"]["data"]
+      ? [data?: ClientReqEventMap[C]["detail"]["data"]]
+      : [data: ClientReqEventMap[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
     const serverEvent = EVENT_MAP[clientEvent];
-    type ResponseData = ServerEventMap[S]["detail"]["data"];
+    type ResponseData = ServerResEventMap[S]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
       const handler = (ev: Event) => {
-        const customEv = ev as ServerEventMap[S];
+        const customEv = ev as ServerResEventMap[S];
         if (customEv.detail.requestId === requestId) {
-          serverBus.removeEventListener(serverEvent, handler);
+          serverResBus.removeEventListener(serverEvent, handler);
           resolve(customEv.detail.data);
         }
       };
 
-      serverBus.addEventListener(serverEvent, handler);
-      clientBus.dispatchTypedEvent(
+      serverResBus.addEventListener(serverEvent, handler);
+      clientReqBus.dispatchTypedEvent(
         clientEvent,
         new CustomEvent(clientEvent, {
           detail: { requestId, data: data[0] },
@@ -36,8 +36,8 @@ export class ClientBus extends TypedEventTarget<ClientEventMap> {
   };
 }
 
-const serverBus = new ServerBus();
-const clientBus = new ClientBus();
+const serverResBus = new ServerResBus();
+const clientReqBus = new ClientReqBus();
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -49,22 +49,24 @@ const ws = new ReconnectingWebsocket({
 
 ws.addEventListener("message", (e: CustomEventInit) => {
   const payload = JSON.parse(e.detail);
-  serverBus.dispatchTypedEvent(
+  serverResBus.dispatchTypedEvent(
     payload.type,
     new CustomEvent(payload.type, { detail: payload.data }),
   );
 });
 
-clientBus.addEventListener("req_config", (e) => {
+clientReqBus.addEventListener("req_config", (e) => {
   ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
 });
 
-const BusContext = createContext({ serverBus, clientBus });
+const BusContext = createContext({ serverResBus, clientReqBus });
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return <BusContext.Provider value={{ serverBus, clientBus }}>{children}</BusContext.Provider>;
+  return (
+    <BusContext.Provider value={{ serverResBus, clientReqBus }}>{children}</BusContext.Provider>
+  );
 };
 
 export const useBus = () => {
-  const { serverBus, clientBus } = useContext(BusContext);
-  return { serverBus, clientBus } as const;
+  const { serverResBus, clientReqBus } = useContext(BusContext);
+  return { serverResBus, clientReqBus } as const;
 };

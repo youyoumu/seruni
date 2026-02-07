@@ -4,12 +4,13 @@ import { TextHookerClient } from "./client/text-hooker.client";
 import { createLogger } from "./util/logger";
 
 import { createNodeWebSocket } from "@hono/node-ws";
-import { createServerBus, createClientBus } from "./util/bus";
+import { createServerReqBus, createClientReqBus, createServerResBus } from "./util/bus";
 
 function main() {
   const logger = createLogger();
-  const serverBus = createServerBus();
-  const clientBus = createClientBus();
+  const serverReqBus = createServerReqBus();
+  const serverResBus = createServerResBus();
+  const clientReqBus = createClientReqBus();
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -26,7 +27,7 @@ function main() {
       return {
         onMessage(e, ws) {
           const payload = JSON.parse(e.data.toString());
-          clientBus.dispatchTypedEvent(
+          clientReqBus.dispatchTypedEvent(
             payload.type,
             new CustomEvent(payload.type, { detail: payload.data }),
           );
@@ -34,7 +35,7 @@ function main() {
         onOpen: (_, ws) => {
           log.info("Connection opened");
 
-          serverBus.addEventListener("text_history", (e) => {
+          serverResBus.addEventListener("text_history", (e) => {
             ws.send(
               JSON.stringify({
                 type: "text_history",
@@ -43,7 +44,7 @@ function main() {
             );
           });
 
-          serverBus.addEventListener("res_config", (e) => {
+          serverResBus.addEventListener("res_config", (e) => {
             ws.send(
               JSON.stringify({
                 type: "res_config",
@@ -52,8 +53,8 @@ function main() {
             );
           });
 
-          clientBus.addEventListener("req_config", (e) => {
-            serverBus.dispatchTypedEvent(
+          clientReqBus.addEventListener("req_config", (e) => {
+            serverResBus.dispatchTypedEvent(
               "res_config",
               new CustomEvent("res_config", {
                 detail: {
@@ -85,7 +86,7 @@ function main() {
 
   const textHookerClient = new TextHookerClient({
     logger,
-    serverBus,
+    serverResBus,
   });
 }
 

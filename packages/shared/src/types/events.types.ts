@@ -9,15 +9,23 @@ export interface Envelope<T = undefined> {
   requestId: string;
 }
 
-export interface ServerEventMap {
+export interface ServerResEventMap {
   text_history: CustomEvent<Envelope<TextHistory>>;
   res_config: CustomEvent<Envelope<Config>>;
 }
 
-export interface ClientEventMap {
+export interface ServerReqEventMap {
+  req_user_agent: CustomEvent<Envelope>;
+}
+
+export interface ClientReqEventMap {
   req_config: CustomEvent<Envelope>;
 }
 
-export const EVENT_MAP: Record<keyof ClientEventMap, keyof ServerEventMap> = {
+export interface ClientResEventMap {
+  res_user_agent: CustomEvent<Envelope<string>>;
+}
+
+export const EVENT_MAP: Record<keyof ClientReqEventMap, keyof ServerResEventMap> = {
   req_config: "res_config",
 };

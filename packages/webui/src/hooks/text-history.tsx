@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
-import type { ServerEventMap } from "@repo/shared/types";
+import type { ServerResEventMap } from "@repo/shared/types";
 
 export function useTextHistory() {
-  const { serverBus, clientBus } = useBus();
+  const { serverResBus, clientReqBus } = useBus();
   const [textHistory, setTextHistory] = useState<string[]>(["text"]);
 
   useEffect(() => {
-    const handler = (e: ServerEventMap["text_history"]) => {
+    const handler = (e: ServerResEventMap["text_history"]) => {
       setTextHistory([...textHistory, e.detail.data.text]);
     };
-    serverBus.addEventListener("text_history", handler);
+    serverResBus.addEventListener("text_history", handler);
     return () => {
-      serverBus.removeEventListener("text_history", handler);
+      serverResBus.removeEventListener("text_history", handler);
     };
   });
 
