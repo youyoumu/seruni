@@ -128,7 +128,7 @@ export function createBusCenter() {
     value: (payload: ClientReqEventMap[K]["detail"]["data"]) => R,
   ) => {
     const v = CLIENT_REQ_MAP[type];
-    bus.client.req.addEventListener(type, (e) => {
+    const handler = (e: ClientReqEventMap[K]) => {
       bus.server.res.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
@@ -138,7 +138,9 @@ export function createBusCenter() {
           },
         }),
       );
-    });
+    };
+    bus.client.req.addEventListener(type, handler);
+    return handler;
   };
 
   const addClientReqHandler = <
@@ -150,7 +152,7 @@ export function createBusCenter() {
     value: (payload: ServerReqEventMap[K]["detail"]["data"]) => R,
   ) => {
     const v = SERVER_REQ_MAP[type];
-    bus.server.req.addEventListener(type, (e) => {
+    const handler = (e: ServerReqEventMap[K]) => {
       bus.client.res.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
@@ -160,7 +162,9 @@ export function createBusCenter() {
           },
         }),
       );
-    });
+    };
+    bus.server.req.addEventListener(type, handler);
+    return handler;
   };
 
   return {
@@ -171,7 +175,9 @@ export function createBusCenter() {
       api: {
         push: clientPushBus.dispatchTypedEvent.bind(clientPushBus),
         addPushHandler: serverPushBus.addEventListener.bind(serverPushBus),
+        removePushHandler: serverPushBus.removeEventListener.bind(serverPushBus),
         addReqHandler: addClientReqHandler,
+        removeReqHandler: serverReqBus.removeEventListener.bind(serverReqBus),
         request: clientReqBus.request,
       },
     },
@@ -182,7 +188,9 @@ export function createBusCenter() {
       api: {
         push: serverPushBus.dispatchTypedEvent.bind(serverPushBus),
         addPushHandler: clientPushBus.addEventListener.bind(clientPushBus),
+        removePushHandler: clientPushBus.removeEventListener.bind(clientPushBus),
         addReqHandler: addServerReqHandler,
+        removeReqHandler: clientReqBus.removeEventListener.bind(clientReqBus),
         request: serverReqBus.request,
       },
     },

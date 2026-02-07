@@ -15,7 +15,7 @@ export function useTextHistory() {
     api.addPushHandler("text_history", handler);
 
     return () => {
-      bus.server.push.removeEventListener("text_history", handler);
+      api.removePushHandler("text_history", handler);
     };
   });
 
