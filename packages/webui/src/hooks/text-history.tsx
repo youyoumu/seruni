@@ -8,7 +8,7 @@ export function useTextHistory() {
 
   useEffect(() => {
     const handler = (e: ServerPushEventMap["text_history"]) => {
-      setTextHistory([...textHistory, e.detail.data.text]);
+      setTextHistory([...textHistory, e.detail.text]);
     };
     serverPushBus.addEventListener("text_history", handler);
     return () => {

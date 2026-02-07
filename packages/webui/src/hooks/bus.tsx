@@ -3,7 +3,7 @@ import {
   type ServerResEventMap,
   type ClientReqEventMap,
   type ServerPushEventMap,
-  EVENT_MAP,
+  CLIENT_REQ_MAP,
 } from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 import { createContext, useContext } from "react";
@@ -19,7 +19,7 @@ export class ClientReqBus extends TypedEventTarget<ClientReqEventMap> {
       : [data: ClientReqEventMap[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    const serverEvent = EVENT_MAP[clientEvent];
+    const serverEvent = CLIENT_REQ_MAP[clientEvent];
     type ResponseData = ServerResEventMap[S]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
