@@ -5,9 +5,9 @@ import {
   ServerResBus,
   ServerReqBus,
   ClientResBus,
+  CLIENT_REQ_MAP,
 } from "@repo/shared/events";
-import type { ClientReqEventMap, ServerResEventMap } from "@repo/shared/types";
-import { CLIENT_REQ_MAP } from "@repo/shared/types";
+import type { ClientReqEventMap, ServerResEventMap } from "@repo/shared/events";
 
 export type BusCenter = ReturnType<typeof createBusCenter>;
 

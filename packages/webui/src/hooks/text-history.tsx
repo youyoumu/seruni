@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
-import type { ServerPushEventMap } from "@repo/shared/types";
+import type { ServerPushEventMap } from "@repo/shared/events";
 
 export function useTextHistory() {
   const bus = useBus();

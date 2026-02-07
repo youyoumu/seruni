@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
-import { type Config } from "@repo/shared/types";
+import { type Config } from "@repo/shared/events";
 
 export function useConfig() {
   const bus = useBus();
