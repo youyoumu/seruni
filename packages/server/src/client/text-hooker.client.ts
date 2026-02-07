@@ -3,6 +3,7 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { db } from "#/db";
 import { textHistory } from "#/db/schema";
 import { type ServerBus } from "#/util/bus";
+import { uid } from "uid";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   messages: string[] = [];
@@ -29,7 +30,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
           new CustomEvent("text_history", {
             detail: {
               data: row,
-              requestId: Math.random().toString(36).substring(7),
+              requestId: uid(),
             },
           }),
         );

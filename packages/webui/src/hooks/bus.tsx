@@ -2,6 +2,7 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { type ServerEventMap, type ClientEventMap } from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 import { createContext, useContext } from "react";
+import { uid } from "uid";
 
 export class ServerBus extends TypedEventTarget<ServerEventMap> {}
 export class ClientBus extends TypedEventTarget<ClientEventMap> {
@@ -10,7 +11,7 @@ export class ClientBus extends TypedEventTarget<ClientEventMap> {
     serverEvent: S,
     data: ClientEventMap[C]["detail"]["data"],
   ) => {
-    const requestId = Math.random().toString(36).substring(7);
+    const requestId = uid();
     type ResponseData = ServerEventMap[S]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
