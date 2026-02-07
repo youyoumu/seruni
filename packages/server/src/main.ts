@@ -4,9 +4,13 @@ import { TextHookerClient } from "./client/text-hooker.client";
 import { createLogger } from "./util/logger";
 import { type WSPayload } from "@repo/shared/ws";
 import {
+  CLIENT_REQ_MAP,
+  SERVER_PUSH_MAP,
+  SERVER_REQ_MAP,
   type ClientReqEventMap,
   type ClientResEventMap,
   type ServerPushEventMap,
+  type ServerReqEventMap,
 } from "@repo/shared/types";
 
 import { createNodeWebSocket } from "@hono/node-ws";
@@ -24,6 +28,11 @@ function main() {
   });
 
   const log = logger.child({ name: "client" });
+
+  setInterval(async () => {
+    const userAgent = await bus.req.server.request("req_user_agent");
+    console.log("DEBUG[1514]: userAgent=", userAgent);
+  }, 3000);
 
   app.get(
     "/ws",
@@ -50,22 +59,39 @@ function main() {
         onOpen: (_, ws) => {
           log.info("Connection opened");
 
-          bus.push.server.addEventListener("text_history", (e) => {
-            const payload: WSPayload = {
-              type: "push",
-              tag: "text_history",
-              data: e.detail,
-            };
-            ws.send(JSON.stringify(payload));
+          Object.keys(SERVER_REQ_MAP).forEach((key) => {
+            const tag = key as keyof ServerReqEventMap;
+            bus.req.server.addEventListener(tag, (e) => {
+              const payload: WSPayload = {
+                type: "req",
+                tag: tag,
+                data: e.detail,
+              };
+              ws.send(JSON.stringify(payload));
+            });
           });
 
-          bus.res.server.addEventListener("res_config", (e) => {
-            const payload: WSPayload = {
-              type: "res",
-              tag: "res_config",
-              data: e.detail,
-            };
-            ws.send(JSON.stringify(payload));
+          Object.keys(SERVER_PUSH_MAP).forEach((key) => {
+            const tag = key as keyof ServerPushEventMap;
+            bus.push.server.addEventListener(tag, (e) => {
+              const payload: WSPayload = {
+                type: "push",
+                tag: tag,
+                data: e.detail,
+              };
+              ws.send(JSON.stringify(payload));
+            });
+          });
+
+          Object.values(CLIENT_REQ_MAP).forEach((key) => {
+            bus.res.server.addEventListener(key, (e) => {
+              const payload: WSPayload = {
+                type: "res",
+                tag: key,
+                data: e.detail,
+              };
+              ws.send(JSON.stringify(payload));
+            });
           });
 
           bus.req.client.addEventListener("req_config", (e) => {
