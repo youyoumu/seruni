@@ -89,3 +89,102 @@ export class ServerReqBus extends TypedEventTarget<ServerReqEventMap> {
 }
 
 export class ClientResBus extends TypedEventTarget<ClientResEventMap> {}
+
+export type BusCenter = ReturnType<typeof createBusCenter>;
+
+export function createBusCenter() {
+  const clientPushBus = new ClientPushBus();
+  const serverPushBus = new ServerPushBus();
+
+  const serverResBus = new ServerResBus();
+  const clientReqBus = new ClientReqBus(serverResBus);
+
+  const clientResBus = new ClientResBus();
+  const serverReqBus = new ServerReqBus(clientResBus);
+
+  const bus = {
+    client: {
+      push: clientPushBus,
+      req: clientReqBus,
+      res: clientResBus,
+    },
+    server: {
+      push: serverPushBus,
+      req: serverReqBus,
+      res: serverResBus,
+    },
+    api: {
+      push: serverPushBus.dispatchTypedEvent,
+      onpush: serverPushBus.addEventListener,
+    },
+  };
+
+  const addServerReqHandler = <
+    K extends keyof ClientReqEventMap,
+    V extends (typeof CLIENT_REQ_MAP)[K],
+    R extends ServerResEventMap[V]["detail"]["data"],
+  >(
+    type: K,
+    value: (payload: ClientReqEventMap[K]["detail"]["data"]) => R,
+  ) => {
+    const v = CLIENT_REQ_MAP[type];
+    bus.client.req.addEventListener(type, (e) => {
+      bus.server.res.dispatchTypedEvent(
+        v,
+        new CustomEvent(v, {
+          detail: {
+            data: value(e.detail.data),
+            requestId: e.detail.requestId,
+          },
+        }),
+      );
+    });
+  };
+
+  const addClientReqHandler = <
+    K extends keyof ServerReqEventMap,
+    V extends (typeof SERVER_REQ_MAP)[K],
+    R extends ClientResEventMap[V]["detail"]["data"],
+  >(
+    type: K,
+    value: (payload: ServerReqEventMap[K]["detail"]["data"]) => R,
+  ) => {
+    const v = SERVER_REQ_MAP[type];
+    bus.server.req.addEventListener(type, (e) => {
+      bus.client.res.dispatchTypedEvent(
+        v,
+        new CustomEvent(v, {
+          detail: {
+            data: value(e.detail.data),
+            requestId: e.detail.requestId,
+          },
+        }),
+      );
+    });
+  };
+
+  return {
+    client: {
+      push: clientPushBus,
+      req: clientReqBus,
+      res: clientResBus,
+      api: {
+        push: clientPushBus.dispatchTypedEvent.bind(clientPushBus),
+        addPushHandler: serverPushBus.addEventListener.bind(serverPushBus),
+        addReqHandler: addClientReqHandler,
+        request: clientReqBus.request,
+      },
+    },
+    server: {
+      push: serverPushBus,
+      req: serverReqBus,
+      res: serverResBus,
+      api: {
+        push: serverPushBus.dispatchTypedEvent.bind(serverPushBus),
+        addPushHandler: clientPushBus.addEventListener.bind(clientPushBus),
+        addReqHandler: addServerReqHandler,
+        request: serverReqBus.request,
+      },
+    },
+  };
+}

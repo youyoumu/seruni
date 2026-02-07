@@ -12,40 +12,10 @@ import {
 
 import { createContext, useContext } from "react";
 
-import {
-  ClientPushBus,
-  ServerPushBus,
-  ClientReqBus,
-  ServerResBus,
-  ServerReqBus,
-  ClientResBus,
-} from "@repo/shared/events";
-
-function createBusCenter() {
-  const clientPushBus = new ClientPushBus();
-  const serverPushBus = new ServerPushBus();
-
-  const serverResBus = new ServerResBus();
-  const clientReqBus = new ClientReqBus(serverResBus);
-
-  const clientResBus = new ClientResBus();
-  const serverReqBus = new ServerReqBus(clientResBus);
-
-  return {
-    client: {
-      push: clientPushBus,
-      req: clientReqBus,
-      res: clientResBus,
-    },
-    server: {
-      push: serverPushBus,
-      req: serverReqBus,
-      res: serverResBus,
-    },
-  };
-}
+import { createBusCenter } from "@repo/shared/events";
 
 const bus = createBusCenter();
+const api = bus.client.api;
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -109,13 +79,8 @@ Object.values(SERVER_REQ_MAP).forEach((key) => {
   });
 });
 
-bus.server.req.addEventListener("req_user_agent", (e) => {
-  bus.client.res.dispatchTypedEvent(
-    "res_user_agent",
-    new CustomEvent("res_user_agent", {
-      detail: { data: navigator.userAgent, requestId: e.detail.requestId },
-    }),
-  );
+api.addReqHandler("req_user_agent", () => {
+  return navigator.userAgent;
 });
 
 const BusContext = createContext(bus);

@@ -15,11 +15,12 @@ import {
 } from "@repo/shared/types";
 
 import { createNodeWebSocket } from "@hono/node-ws";
-import { createBusCenter } from "./util/bus";
+import { createBusCenter } from "@repo/shared/events";
 
 function main() {
   const logger = createLogger();
   const bus = createBusCenter();
+  const api = bus.server.api;
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -35,11 +36,11 @@ function main() {
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
-  bus.api.addReqHandler("req_config", () => {
+  api.addReqHandler("req_config", () => {
     return { workdir: "test" };
   });
 
-  bus.api.addPushHandler("ping", (e) => {
+  api.addPushHandler("ping", (e) => {
     console.log("Received ping");
   });
 
@@ -124,7 +125,7 @@ function main() {
 
   const textHookerClient = new TextHookerClient({
     logger,
-    bus,
+    api,
   });
 }
 
