@@ -1,4 +1,9 @@
-import { ReconnectingWebsocket } from "@repo/shared/ws";
+import { ReconnectingWebsocket, type WSPayload } from "@repo/shared/ws";
+import {
+  type ClientReqEventMap,
+  type ServerPushEventMap,
+  type ServerResEventMap,
+} from "@repo/shared/types";
 import { createContext, useContext } from "react";
 
 import {
@@ -47,15 +52,31 @@ const ws = new ReconnectingWebsocket({
 });
 
 ws.addEventListener("message", (e: CustomEventInit) => {
-  const payload = JSON.parse(e.detail);
-  bus.push.server.dispatchTypedEvent(
-    payload.type,
-    new CustomEvent(payload.type, { detail: payload.data }),
-  );
+  const payload: WSPayload = JSON.parse(e.detail);
+  if (payload.type === "push") {
+    const tag = payload.tag as keyof ServerPushEventMap;
+    const data = payload.data as ServerPushEventMap[keyof ServerPushEventMap]["detail"];
+    bus.push.server.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+  }
+  if (payload.type === "res") {
+    const tag = payload.tag as keyof ServerResEventMap;
+    const data = payload.data as ServerResEventMap[keyof ServerResEventMap]["detail"];
+    bus.res.server.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+  }
+  if (payload.type === "req") {
+    const tag = payload.tag as keyof ClientReqEventMap;
+    const data = payload.data as ClientReqEventMap[keyof ClientReqEventMap]["detail"];
+    bus.req.client.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+  }
 });
 
 bus.req.client.addEventListener("req_config", (e) => {
-  ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
+  const payload: WSPayload = {
+    type: "req",
+    tag: "req_config",
+    data: e.detail,
+  };
+  ws.send(JSON.stringify(payload));
 });
 
 const BusContext = createContext(bus);
