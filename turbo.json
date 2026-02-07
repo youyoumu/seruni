@@ -22,7 +22,8 @@
     },
     "typecheck": {
       "dependsOn": [
-        "^typecheck"
+        "^typecheck",
+        "@repo/shared#build",
       ]
     },
     "dev": {

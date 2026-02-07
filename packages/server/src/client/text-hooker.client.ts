@@ -2,18 +2,18 @@ import { type Logger } from "pino";
 import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { db } from "#/db";
 import { textHistory } from "#/db/schema";
-import { type Bus } from "#/util/bus";
+import { type ServerBus } from "#/util/bus";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   messages: string[] = [];
   constructor({
     url = "ws://localhost:6677",
     logger,
-    bus,
+    serverBus,
   }: {
     url?: string;
     logger: Logger;
-    bus: Bus;
+    serverBus: ServerBus;
   }) {
     super({
       url,
@@ -24,7 +24,10 @@ export class TextHookerClient extends ReconnectingWebsocket {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
         const id = await db.insert(textHistory).values({ text: event.detail }).returning().get();
-        bus.dispatchTypedEvent("text_history", new CustomEvent("text_history", { detail: id }));
+        serverBus.dispatchTypedEvent(
+          "text_history",
+          new CustomEvent("text_history", { detail: id }),
+        );
       }
     });
   }

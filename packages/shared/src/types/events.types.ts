@@ -1,16 +1,19 @@
 import { type TextHistory } from "#/db/schema";
 
-type Config = {
+export type Config = {
   workdir: string;
 };
 
-export interface Envelope<T> {
+export interface Envelope<T = undefined> {
   data: T;
-  requestId?: string; // Optional: only present for req/res pairs
+  requestId: string;
 }
 
-export interface AppEventMap {
+export interface ServerEventMap {
   text_history: CustomEvent<TextHistory>;
-  req_config: CustomEvent<Envelope<undefined>>;
   res_config: CustomEvent<Envelope<Config>>;
+}
+
+export interface ClientEventMap {
+  req_config: CustomEvent<Envelope>;
 }

@@ -1,11 +1,13 @@
 import { ReconnectingWebsocket } from "@repo/shared/ws";
-import { type AppEventMap } from "@repo/shared/types";
+import { type ServerEventMap, type ClientEventMap } from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 import { createContext, useContext } from "react";
 
-const bus = new TypedEventTarget<AppEventMap>();
+const serverBus = new TypedEventTarget<ServerEventMap>();
+const clientBus = new TypedEventTarget<ClientEventMap>();
 
-export type Bus = TypedEventTarget<AppEventMap>;
+export type ServerBus = TypedEventTarget<ServerEventMap>;
+export type ClientBus = TypedEventTarget<ClientEventMap>;
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -17,19 +19,22 @@ const ws = new ReconnectingWebsocket({
 
 ws.addEventListener("message", (e: CustomEventInit) => {
   const payload = JSON.parse(e.detail);
-  bus.dispatchTypedEvent(payload.type, new CustomEvent(payload.type, { detail: payload.data }));
+  serverBus.dispatchTypedEvent(
+    payload.type,
+    new CustomEvent(payload.type, { detail: payload.data }),
+  );
 });
 
-bus.addEventListener("req_config", (e) => {
+clientBus.addEventListener("req_config", (e) => {
   ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
 });
 
-const BusContext = createContext(bus);
+const BusContext = createContext([serverBus, clientBus] as const);
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return <BusContext.Provider value={bus}>{children}</BusContext.Provider>;
+  return <BusContext.Provider value={[serverBus, clientBus]}>{children}</BusContext.Provider>;
 };
 
 export const useBus = () => {
-  const bus = useContext(BusContext);
-  return bus;
+  const [serverBus, clientBus] = useContext(BusContext);
+  return [serverBus, clientBus] as const;
 };
