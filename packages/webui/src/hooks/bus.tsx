@@ -59,12 +59,12 @@ clientBus.addEventListener("req_config", (e) => {
   ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
 });
 
-const BusContext = createContext([serverBus, clientBus] as const);
+const BusContext = createContext({ serverBus, clientBus });
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return <BusContext.Provider value={[serverBus, clientBus]}>{children}</BusContext.Provider>;
+  return <BusContext.Provider value={{ serverBus, clientBus }}>{children}</BusContext.Provider>;
 };
 
 export const useBus = () => {
-  const [serverBus, clientBus] = useContext(BusContext);
-  return [serverBus, clientBus] as const;
+  const { serverBus, clientBus } = useContext(BusContext);
+  return { serverBus, clientBus } as const;
 };

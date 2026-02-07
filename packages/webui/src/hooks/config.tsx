@@ -3,7 +3,7 @@ import { useBus, type ServerBus } from "./bus";
 import { type Envelope, type Config } from "@repo/shared/types";
 
 export function useConfig() {
-  const [serverBus, clientBus] = useBus();
+  const { serverBus, clientBus } = useBus();
   const [config, setConfig] = useState<Config>({ workdir: "" });
 
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useBus } from "./bus";
 import type { ServerEventMap } from "@repo/shared/types";
 
 export function useTextHistory() {
-  const [serverBus] = useBus();
+  const { serverBus, clientBus } = useBus();
   const [textHistory, setTextHistory] = useState<string[]>(["text"]);
 
   useEffect(() => {
