@@ -9,19 +9,26 @@ export interface Envelope<T = undefined> {
   requestId: string;
 }
 
-export interface ServerResEventMap {
+export interface ClientPushEventMap {
+  ping: CustomEvent<Envelope>;
+}
+export interface ServerPushEventMap {
   text_history: CustomEvent<Envelope<TextHistory>>;
-  res_config: CustomEvent<Envelope<Config>>;
 }
 
-export interface ServerReqEventMap {
-  req_user_agent: CustomEvent<Envelope>;
-}
+//   ──────────────────────────────────────────────────────────────────────
 
 export interface ClientReqEventMap {
   req_config: CustomEvent<Envelope>;
 }
+export interface ServerResEventMap {
+  res_config: CustomEvent<Envelope<Config>>;
+}
 
+//   ──────────────────────────────────────────────────────────────────────
+export interface ServerReqEventMap {
+  req_user_agent: CustomEvent<Envelope>;
+}
 export interface ClientResEventMap {
   res_user_agent: CustomEvent<Envelope<string>>;
 }

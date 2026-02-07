@@ -4,10 +4,16 @@ import { TextHookerClient } from "./client/text-hooker.client";
 import { createLogger } from "./util/logger";
 
 import { createNodeWebSocket } from "@hono/node-ws";
-import { createServerReqBus, createClientReqBus, createServerResBus } from "./util/bus";
+import {
+  createServerReqBus,
+  createClientReqBus,
+  createServerResBus,
+  createServerPushBus,
+} from "./util/bus";
 
 function main() {
   const logger = createLogger();
+  const serverPushBus = createServerPushBus();
   const serverReqBus = createServerReqBus();
   const serverResBus = createServerResBus();
   const clientReqBus = createClientReqBus();
@@ -35,7 +41,7 @@ function main() {
         onOpen: (_, ws) => {
           log.info("Connection opened");
 
-          serverResBus.addEventListener("text_history", (e) => {
+          serverPushBus.addEventListener("text_history", (e) => {
             ws.send(
               JSON.stringify({
                 type: "text_history",
@@ -86,7 +92,7 @@ function main() {
 
   const textHookerClient = new TextHookerClient({
     logger,
-    serverResBus,
+    serverPushBus,
   });
 }
 

@@ -1,9 +1,15 @@
 import { ReconnectingWebsocket } from "@repo/shared/ws";
-import { type ServerResEventMap, type ClientReqEventMap, EVENT_MAP } from "@repo/shared/types";
+import {
+  type ServerResEventMap,
+  type ClientReqEventMap,
+  type ServerPushEventMap,
+  EVENT_MAP,
+} from "@repo/shared/types";
 import { TypedEventTarget } from "typescript-event-target";
 import { createContext, useContext } from "react";
 import { uid } from "uid";
 
+export class ServerPushBus extends TypedEventTarget<ServerPushEventMap> {}
 export class ServerResBus extends TypedEventTarget<ServerResEventMap> {}
 export class ClientReqBus extends TypedEventTarget<ClientReqEventMap> {
   request = <C extends keyof ClientReqEventMap, S extends keyof ServerResEventMap>(
@@ -36,6 +42,7 @@ export class ClientReqBus extends TypedEventTarget<ClientReqEventMap> {
   };
 }
 
+const serverPushBus = new ServerPushBus();
 const serverResBus = new ServerResBus();
 const clientReqBus = new ClientReqBus();
 
@@ -59,14 +66,11 @@ clientReqBus.addEventListener("req_config", (e) => {
   ws.send(JSON.stringify({ type: "req_config", data: e.detail }));
 });
 
-const BusContext = createContext({ serverResBus, clientReqBus });
+const value = { serverPushBus, serverResBus, clientReqBus };
+const BusContext = createContext(value);
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <BusContext.Provider value={{ serverResBus, clientReqBus }}>{children}</BusContext.Provider>
-  );
+  return <BusContext.Provider value={value}>{children}</BusContext.Provider>;
 };
-
 export const useBus = () => {
-  const { serverResBus, clientReqBus } = useContext(BusContext);
-  return { serverResBus, clientReqBus } as const;
+  return useContext(BusContext);
 };

@@ -2,7 +2,7 @@ import { type Logger } from "pino";
 import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { db } from "#/db";
 import { textHistory } from "#/db/schema";
-import { type ServerResBus } from "#/util/bus";
+import { type ServerPushBus } from "#/util/bus";
 import { uid } from "uid";
 
 export class TextHookerClient extends ReconnectingWebsocket {
@@ -10,11 +10,11 @@ export class TextHookerClient extends ReconnectingWebsocket {
   constructor({
     url = "ws://localhost:6677",
     logger,
-    serverResBus,
+    serverPushBus: serverResBus,
   }: {
     url?: string;
     logger: Logger;
-    serverResBus: ServerResBus;
+    serverPushBus: ServerPushBus;
   }) {
     super({
       url,
