@@ -10,9 +10,9 @@ export function useTextHistory() {
     const handler = (e: ServerPushEventMap["text_history"]) => {
       setTextHistory([...textHistory, e.detail.text]);
     };
-    bus.push.server.addEventListener("text_history", handler);
+    bus.server.push.addEventListener("text_history", handler);
     return () => {
-      bus.push.server.removeEventListener("text_history", handler);
+      bus.server.push.removeEventListener("text_history", handler);
     };
   });
 

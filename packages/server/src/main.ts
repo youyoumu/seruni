@@ -7,6 +7,7 @@ import {
   CLIENT_REQ_MAP,
   SERVER_PUSH_MAP,
   SERVER_REQ_MAP,
+  type ClientPushEventMap,
   type ClientReqEventMap,
   type ClientResEventMap,
   type ServerPushEventMap,
@@ -30,7 +31,7 @@ function main() {
   const log = logger.child({ name: "client" });
 
   setInterval(async () => {
-    const userAgent = await bus.req.server.request("req_user_agent");
+    const userAgent = await bus.server.req.request("req_user_agent");
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
@@ -43,17 +44,17 @@ function main() {
           if (payload.type === "req") {
             const tag = payload.tag as keyof ClientReqEventMap;
             const data = payload.data as ClientReqEventMap[keyof ClientReqEventMap]["detail"];
-            bus.req.client.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+            bus.client.req.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
           }
           if (payload.type === "res") {
             const tag = payload.tag as keyof ClientResEventMap;
             const data = payload.data as ClientResEventMap[keyof ClientResEventMap]["detail"];
-            bus.res.client.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+            bus.client.res.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
           }
           if (payload.type === "push") {
-            const tag = payload.tag as keyof ServerPushEventMap;
-            const data = payload.data as ServerPushEventMap[keyof ServerPushEventMap]["detail"];
-            bus.push.server.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+            const tag = payload.tag as keyof ClientPushEventMap;
+            const data = payload.data as ClientPushEventMap[keyof ClientPushEventMap]["detail"];
+            bus.client.push.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
           }
         },
         onOpen: (_, ws) => {
@@ -61,7 +62,7 @@ function main() {
 
           Object.keys(SERVER_REQ_MAP).forEach((key) => {
             const tag = key as keyof ServerReqEventMap;
-            bus.req.server.addEventListener(tag, (e) => {
+            bus.server.req.addEventListener(tag, (e) => {
               const payload: WSPayload = {
                 type: "req",
                 tag: tag,
@@ -73,7 +74,7 @@ function main() {
 
           Object.keys(SERVER_PUSH_MAP).forEach((key) => {
             const tag = key as keyof ServerPushEventMap;
-            bus.push.server.addEventListener(tag, (e) => {
+            bus.server.push.addEventListener(tag, (e) => {
               const payload: WSPayload = {
                 type: "push",
                 tag: tag,
@@ -84,7 +85,7 @@ function main() {
           });
 
           Object.values(CLIENT_REQ_MAP).forEach((key) => {
-            bus.res.server.addEventListener(key, (e) => {
+            bus.server.res.addEventListener(key, (e) => {
               const payload: WSPayload = {
                 type: "res",
                 tag: key,
@@ -94,8 +95,8 @@ function main() {
             });
           });
 
-          bus.req.client.addEventListener("req_config", (e) => {
-            bus.res.server.dispatchTypedEvent(
+          bus.client.req.addEventListener("req_config", (e) => {
+            bus.server.res.dispatchTypedEvent(
               "res_config",
               new CustomEvent("res_config", {
                 detail: {
@@ -104,6 +105,10 @@ function main() {
                 },
               }),
             );
+          });
+
+          bus.client.push.addEventListener("ping", (e) => {
+            console.log("DEBUG[1537]: e=", e.type);
           });
         },
         onClose: () => {

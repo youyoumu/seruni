@@ -8,8 +8,12 @@ export function useConfig() {
 
   useEffect(() => {
     setInterval(async () => {
-      const config = await bus.req.client.request("req_config");
+      const config = await bus.client.req.request("req_config");
       console.log("DEBUG[1503]: config=", config);
+    }, 3000);
+
+    setInterval(async () => {
+      bus.client.push.dispatchTypedEvent("ping", new CustomEvent("ping"));
     }, 3000);
   }, []);
 }

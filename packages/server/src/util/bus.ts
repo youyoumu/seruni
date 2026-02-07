@@ -20,17 +20,15 @@ export function createBusCenter() {
   const serverReqBus = new ServerReqBus(clientResBus);
 
   return {
-    push: {
-      client: clientPushBus,
-      server: serverPushBus,
+    client: {
+      push: clientPushBus,
+      req: clientReqBus,
+      res: clientResBus,
     },
-    req: {
-      client: clientReqBus,
-      server: serverReqBus,
-    },
-    res: {
-      client: clientResBus,
-      server: serverResBus,
+    server: {
+      push: serverPushBus,
+      req: serverReqBus,
+      res: serverResBus,
     },
   };
 }

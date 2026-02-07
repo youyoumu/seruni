@@ -32,17 +32,15 @@ function createBusCenter() {
   const serverReqBus = new ServerReqBus(clientResBus);
 
   return {
-    push: {
-      client: clientPushBus,
-      server: serverPushBus,
+    client: {
+      push: clientPushBus,
+      req: clientReqBus,
+      res: clientResBus,
     },
-    req: {
-      client: clientReqBus,
-      server: serverReqBus,
-    },
-    res: {
-      client: clientResBus,
-      server: serverResBus,
+    server: {
+      push: serverPushBus,
+      req: serverReqBus,
+      res: serverResBus,
     },
   };
 }
@@ -62,23 +60,23 @@ ws.addEventListener("message", (e: CustomEventInit) => {
   if (payload.type === "req") {
     const tag = payload.tag as keyof ServerReqEventMap;
     const data = payload.data as ServerReqEventMap[keyof ServerReqEventMap]["detail"];
-    bus.req.server.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+    bus.server.req.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
   }
   if (payload.type === "res") {
     const tag = payload.tag as keyof ServerResEventMap;
     const data = payload.data as ServerResEventMap[keyof ServerResEventMap]["detail"];
-    bus.res.server.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+    bus.server.res.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
   }
   if (payload.type === "push") {
-    const tag = payload.tag as keyof ClientPushEventMap;
-    const data = payload.data as ClientPushEventMap[keyof ClientPushEventMap]["detail"];
-    bus.push.client.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
+    const tag = payload.tag as keyof ServerPushEventMap;
+    const data = payload.data as ServerPushEventMap[keyof ServerPushEventMap]["detail"];
+    bus.server.push.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }));
   }
 });
 
 Object.keys(CLIENT_REQ_MAP).forEach((key) => {
   const tag = key as keyof ClientReqEventMap;
-  bus.req.client.addEventListener(tag, (e) => {
+  bus.client.req.addEventListener(tag, (e) => {
     const payload: WSPayload = {
       type: "req",
       tag: tag,
@@ -90,7 +88,7 @@ Object.keys(CLIENT_REQ_MAP).forEach((key) => {
 
 Object.keys(CLIENT_PUSH_MAP).forEach((key) => {
   const tag = key as keyof ClientPushEventMap;
-  bus.push.client.addEventListener(tag, (e) => {
+  bus.client.push.addEventListener(tag, (e) => {
     const payload: WSPayload = {
       type: "push",
       tag: tag,
@@ -101,7 +99,7 @@ Object.keys(CLIENT_PUSH_MAP).forEach((key) => {
 });
 
 Object.values(SERVER_REQ_MAP).forEach((key) => {
-  bus.res.client.addEventListener(key, (e) => {
+  bus.client.res.addEventListener(key, (e) => {
     const payload: WSPayload = {
       type: "res",
       tag: key,
@@ -111,8 +109,8 @@ Object.values(SERVER_REQ_MAP).forEach((key) => {
   });
 });
 
-bus.req.server.addEventListener("req_user_agent", (e) => {
-  bus.res.client.dispatchTypedEvent(
+bus.server.req.addEventListener("req_user_agent", (e) => {
+  bus.client.res.dispatchTypedEvent(
     "res_user_agent",
     new CustomEvent("res_user_agent", {
       detail: { data: navigator.userAgent, requestId: e.detail.requestId },
