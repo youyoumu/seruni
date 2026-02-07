@@ -10,7 +10,7 @@ export interface Envelope<T = undefined> {
 }
 
 export interface ServerEventMap {
-  text_history: CustomEvent<TextHistory>;
+  text_history: CustomEvent<Envelope<TextHistory>>;
   res_config: CustomEvent<Envelope<Config>>;
 }
 

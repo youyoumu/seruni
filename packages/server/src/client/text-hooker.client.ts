@@ -23,10 +23,15 @@ export class TextHookerClient extends ReconnectingWebsocket {
     this.addEventListener("message", async (event: CustomEventInit<string>) => {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
-        const id = await db.insert(textHistory).values({ text: event.detail }).returning().get();
+        const row = await db.insert(textHistory).values({ text: event.detail }).returning().get();
         serverBus.dispatchTypedEvent(
           "text_history",
-          new CustomEvent("text_history", { detail: id }),
+          new CustomEvent("text_history", {
+            detail: {
+              data: row,
+              requestId: Math.random().toString(36).substring(7),
+            },
+          }),
         );
       }
     });
