@@ -17,3 +17,7 @@ export interface ServerEventMap {
 export interface ClientEventMap {
   req_config: CustomEvent<Envelope>;
 }
+
+export const EVENT_MAP: Record<keyof ClientEventMap, keyof ServerEventMap> = {
+  req_config: "res_config",
+};
