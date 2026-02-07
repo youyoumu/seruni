@@ -35,6 +35,14 @@ function main() {
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
+  bus.api.addReqHandler("req_config", () => {
+    return { workdir: "test" };
+  });
+
+  bus.api.addPushHandler("ping", (e) => {
+    console.log("Received ping");
+  });
+
   app.get(
     "/ws",
     upgradeWebSocket(() => {
@@ -93,22 +101,6 @@ function main() {
               };
               ws.send(JSON.stringify(payload));
             });
-          });
-
-          bus.client.req.addEventListener("req_config", (e) => {
-            bus.server.res.dispatchTypedEvent(
-              "res_config",
-              new CustomEvent("res_config", {
-                detail: {
-                  data: { workdir: "test" },
-                  requestId: e.detail.requestId,
-                },
-              }),
-            );
-          });
-
-          bus.client.push.addEventListener("ping", (e) => {
-            console.log("DEBUG[1537]: e=", e.type);
           });
         },
         onClose: () => {
