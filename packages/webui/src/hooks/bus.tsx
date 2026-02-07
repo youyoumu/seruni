@@ -9,7 +9,9 @@ export class ClientBus extends TypedEventTarget<ClientEventMap> {
   request = <C extends keyof ClientEventMap, S extends keyof ServerEventMap>(
     clientEvent: C,
     serverEvent: S,
-    data: ClientEventMap[C]["detail"]["data"],
+    ...data: undefined extends ClientEventMap[C]["detail"]["data"]
+      ? [data?: ClientEventMap[C]["detail"]["data"]]
+      : [data: ClientEventMap[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
     type ResponseData = ServerEventMap[S]["detail"]["data"];
@@ -27,7 +29,7 @@ export class ClientBus extends TypedEventTarget<ClientEventMap> {
       clientBus.dispatchTypedEvent(
         clientEvent,
         new CustomEvent(clientEvent, {
-          detail: { requestId, data },
+          detail: { requestId, data: data[0] },
         }),
       );
     });

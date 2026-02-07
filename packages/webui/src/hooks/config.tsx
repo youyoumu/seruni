@@ -8,7 +8,7 @@ export function useConfig() {
 
   useEffect(() => {
     setInterval(async () => {
-      const config = await clientBus.request("req_config", "res_config", undefined);
+      const config = await clientBus.request("req_config", "res_config");
       console.log("DEBUG[1503]: config=", config);
     }, 3000);
   }, []);
