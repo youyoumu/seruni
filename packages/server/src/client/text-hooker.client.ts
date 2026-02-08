@@ -2,7 +2,7 @@ import { type Logger } from "pino";
 import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { db } from "#/db";
 import { textHistory } from "#/db/schema";
-import { type BusCenter } from "@repo/shared/events";
+import { type ServerApi } from "@repo/shared/ws";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   messages: string[] = [];
@@ -13,7 +13,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
   }: {
     url?: string;
     logger: Logger;
-    api: BusCenter["server"]["api"];
+    api: ServerApi;
   }) {
     super({
       url,

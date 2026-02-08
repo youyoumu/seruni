@@ -1,9 +1,9 @@
-import { ReconnectingWebsocket, type WSPayload } from "@repo/shared/ws";
+import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createContext, useContext } from "react";
-import { clientOnMessage, createBusCenter, clientOnOpen } from "@repo/shared/events";
+import { createClientApi } from "@repo/shared/ws";
 
-const bus = createBusCenter();
-const api = bus.client.api;
+const { clientApi, setupWSForwarder, onPayload } = createClientApi();
+const api = clientApi;
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -14,21 +14,21 @@ const ws = new ReconnectingWebsocket({
 });
 
 ws.addEventListener("message", (e: CustomEventInit) => {
-  const payload: WSPayload = JSON.parse(e.detail);
-  clientOnMessage(payload, bus);
+  const payload = JSON.parse(e.detail);
+  onPayload(payload);
 });
 
 ws.addEventListener("open", (e: CustomEventInit) => {
-  clientOnOpen(bus, ws);
+  setupWSForwarder(ws);
 });
 
 api.addReqHandler("req_user_agent", () => {
   return navigator.userAgent;
 });
 
-const BusContext = createContext(bus);
+const BusContext = createContext(clientApi);
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return <BusContext.Provider value={bus}>{children}</BusContext.Provider>;
+  return <BusContext.Provider value={clientApi}>{children}</BusContext.Provider>;
 };
 export const useBus = () => {
   return useContext(BusContext);

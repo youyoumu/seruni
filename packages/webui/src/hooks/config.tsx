@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
-import { type Config } from "@repo/shared/events";
+import { type Config } from "@repo/shared/ws";
 
 export function useConfig() {
-  const bus = useBus();
-  const api = bus.client.api;
+  const api = useBus();
   const [config, setConfig] = useState<Config>({ workdir: "" });
 
   useEffect(() => {
