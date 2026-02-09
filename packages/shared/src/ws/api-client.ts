@@ -1,6 +1,6 @@
 import { createCentralBus } from "#/events";
 import { type TextHistory } from "#/db/schema";
-import type { WithReqId } from "#/events";
+import type { WithReqId, CreateSchema } from "#/events";
 
 export type Config = {
   workdir: string;
@@ -29,34 +29,36 @@ export type ClientResEventMap = {
   res_user_agent: CustomEvent<WithReqId<string>>;
 };
 
-const createAppCentralBus = () =>
-  createCentralBus<
-    ClientPushEventMap,
-    ServerPushEventMap,
-    ClientReqEventMap,
-    ServerResEventMap,
-    ServerReqEventMap,
-    ClientResEventMap
-  >(
-    {
+type ApiSchema = CreateSchema<{
+  clientPush: ClientPushEventMap;
+  serverPush: ServerPushEventMap;
+  clientRequest: ClientReqEventMap;
+  serverRespond: ServerResEventMap;
+  serverRequest: ServerReqEventMap;
+  clientRespond: ClientResEventMap;
+}>;
+
+const createAppCentralBus = () => {
+  return createCentralBus<ApiSchema>({
+    clientPushPair: {
       ping: undefined,
     },
-    {
+    serverPushPair: {
       text_history: undefined,
     },
-    {
+    clientRequestPair: {
       req_config: "res_config",
       req_config2: "res_config2",
     },
-    {
+    serverRequestPair: {
       req_user_agent: "res_user_agent",
     },
-  );
+  });
+};
 
 export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
   const { client } = createAppCentralBus();
-
   return {
     api: client.bus,
     onPayload: client.onPayload,
@@ -67,7 +69,6 @@ export function createClientApi() {
 export type ServerApi = ReturnType<typeof createServerApi>["api"];
 export function createServerApi() {
   const { server } = createAppCentralBus();
-
   return {
     api: server.bus,
     onPayload: server.onPayload,

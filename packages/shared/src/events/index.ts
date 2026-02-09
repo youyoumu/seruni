@@ -280,19 +280,42 @@ function setupServerWSForwarder<
   });
 }
 
-export function createCentralBus<
-  CPush extends ClientPushEventMap,
-  SPush extends ServerPushEventMap,
-  CReq extends ClientReqEventMap,
-  SRes extends ServerResEventMap,
-  SReq extends ServerReqEventMap,
-  CRes extends ClientResEventMap,
->(
-  cPushPair: Record<keyof CPush & string, undefined>,
-  sPushPair: Record<keyof SPush & string, undefined>,
-  cReqPair: Record<keyof CReq & string, keyof SRes & string>,
-  sReqPair: Record<keyof SReq & string, keyof CRes & string>,
-) {
+export type CreateSchema<T extends BusSchema> = T;
+
+type BusSchema = {
+  clientPush: ClientPushEventMap;
+  serverPush: ServerPushEventMap;
+  clientRequest: ClientReqEventMap;
+  serverRespond: ServerResEventMap;
+  serverRequest: ServerReqEventMap;
+  clientRespond: ClientResEventMap;
+};
+
+export function createCentralBus<Schema extends BusSchema>(contractPair: {
+  clientPushPair: Record<keyof Schema["clientPush"] & string, undefined>;
+  serverPushPair: Record<keyof Schema["serverPush"] & string, undefined>;
+  clientRequestPair: Record<
+    keyof Schema["clientRequest"] & string,
+    keyof Schema["serverRespond"] & string
+  >;
+  serverRequestPair: Record<
+    keyof Schema["serverRequest"] & string,
+    keyof Schema["clientRespond"] & string
+  >;
+}) {
+  type CPush = Schema["clientPush"];
+  type SPush = Schema["serverPush"];
+  type CReq = Schema["clientRequest"];
+  type SRes = Schema["serverRespond"];
+  type SReq = Schema["serverRequest"];
+  type CRes = Schema["clientRespond"];
+
+  const {
+    clientPushPair: cPushPair,
+    serverPushPair: sPushPair,
+    clientRequestPair: cReqPair,
+    serverRequestPair: sReqPair,
+  } = contractPair;
   const cPushBus = new ClientPushBus<CPush>();
   const sPushBus = new ServerPushBus<SPush>();
 
