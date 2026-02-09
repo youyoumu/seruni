@@ -33,7 +33,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
       handler(e.detail);
     };
     this.addEventListener(tag, handler_);
-    return handler_;
+    return () => this.removeEventListener(tag, handler_);
   };
 }
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
@@ -54,7 +54,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
       handler(e.detail);
     };
     this.addEventListener(tag, handler_);
-    return handler_;
+    return () => this.removeEventListener(tag, handler_);
   };
 }
 
@@ -121,7 +121,7 @@ class ClientReqBus<
       );
     };
     this.addEventListener(type, handler);
-    return handler;
+    return () => this.removeEventListener(type, handler);
   };
 }
 
@@ -188,7 +188,7 @@ class ServerReqBus<
       );
     };
     this.addEventListener(type, handler);
-    return handler;
+    return () => this.removeEventListener(type, handler);
   };
 }
 
@@ -428,18 +428,14 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   const clientBus = {
     push: cPushBus.push,
     addPushHandler: sPushBus.addPushHandler,
-    removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
     addReqHandler: sReqBus.addReqHandler,
-    removeReqHandler: sReqBus.removeEventListener.bind(sReqBus),
     request: cReqBus.request,
   };
 
   const serverBus = {
     push: sPushBus.push,
     addPushHandler: cPushBus.addPushHandler,
-    removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
     addReqHandler: cReqBus.addReqHandler,
-    removeReqHandler: cReqBus.removeEventListener.bind(cReqBus),
     request: sReqBus.request,
   };
 
