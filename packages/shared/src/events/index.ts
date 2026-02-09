@@ -7,24 +7,18 @@ export interface WithReqId<T = undefined> {
 }
 
 type ClientPushEventMap = Record<string, CustomEvent<unknown>>;
-function createClientPushEventMap<T extends ClientPushEventMap>(
-  eventList: (keyof T & string)[],
-): Record<keyof T & string, keyof T & string> {
-  const eventMap: Record<string, string> = {};
-  eventList.forEach((key) => {
-    eventMap[key] = key;
-  });
+function createClientPushEventMap<
+  T extends ClientPushEventMap,
+  M extends Record<keyof T & string, undefined>,
+>(eventMap: M): M {
   return eventMap;
 }
 
 type ServerPushEventMap = Record<string, CustomEvent<unknown>>;
-function createServerPushEventMap<T extends ServerPushEventMap>(
-  eventList: (keyof T & string)[],
-): Record<keyof T & string, keyof T & string> {
-  const eventMap: Record<string, string> = {};
-  eventList.forEach((key) => {
-    eventMap[key] = key;
-  });
+function createServerPushEventMap<
+  T extends ServerPushEventMap,
+  M extends Record<keyof T & string, undefined>,
+>(eventMap: M): M {
   return eventMap;
 }
 
@@ -228,7 +222,7 @@ function setupClientWSForwarder<
   CRes extends ClientResEventMap,
 >(
   ws: WS,
-  clientPushMap: Record<keyof CPush & string, keyof CPush & string>,
+  clientPushMap: Record<keyof CPush & string, undefined>,
   clientPushBus: ClientPushBus<CPush>,
   clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
   clientReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>,
@@ -278,7 +272,7 @@ function setupServerWSForwarder<
   CRes extends ClientResEventMap,
 >(
   ws: WS,
-  serverPushMap: Record<keyof SPush & string, keyof SPush & string>,
+  serverPushMap: Record<keyof SPush & string, undefined>,
   serverPushBus: ServerPushBus<SPush>,
   serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
   serverReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>,
@@ -328,13 +322,14 @@ export function createApiClient<
   CRes extends ClientResEventMap,
 >(
   side: "client" | "server",
-  clientPushEventList: (keyof CPush & string)[],
-  serverPushEventList: (keyof SPush & string)[],
+  //TODO: use object instead of array
+  clientPushEventMap: Record<keyof CPush & string, undefined>,
+  serverPushEventMap: Record<keyof SPush & string, undefined>,
   clientReqEventMap: Record<keyof CReq & string, keyof SRes & string>,
   serverReqEventMap: Record<keyof SReq & string, keyof CRes & string>,
 ) {
-  const clientPushMap = createClientPushEventMap(clientPushEventList);
-  const serverPushMap = createServerPushEventMap(serverPushEventList);
+  const clientPushMap = createClientPushEventMap(clientPushEventMap);
+  const serverPushMap = createServerPushEventMap(serverPushEventMap);
   const clientReqMap = createClientReqEventMap(clientReqEventMap);
   const serverReqMap = createServerReqEventMap(serverReqEventMap);
 

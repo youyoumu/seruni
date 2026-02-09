@@ -40,8 +40,12 @@ export function createClientApi() {
     ClientResEventMap
   >(
     "client",
-    ["ping"],
-    ["text_history"],
+    {
+      ping: undefined,
+    },
+    {
+      text_history: undefined,
+    },
     {
       req_config: "res_config",
       req_config2: "res_config2",
@@ -69,8 +73,12 @@ export function createServerApi() {
     ClientResEventMap
   >(
     "server",
-    ["ping"],
-    ["text_history"],
+    {
+      ping: undefined,
+    },
+    {
+      text_history: undefined,
+    },
     {
       req_config: "res_config",
       req_config2: "res_config2",
