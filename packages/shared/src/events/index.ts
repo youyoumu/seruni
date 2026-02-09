@@ -24,6 +24,17 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
   ) => {
     this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as CPush[T]);
   };
+
+  addPushHandler = <T extends keyof CPush & string>(
+    tag: T,
+    handler: (data: CPush[T]["detail"]) => void,
+  ) => {
+    const handler_ = (e: CPush[T]) => {
+      handler(e.detail);
+    };
+    this.addEventListener(tag, handler_);
+    return handler_;
+  };
 }
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
   push = <T extends keyof SPush & string>(
@@ -33,6 +44,17 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
       : [payload: SPush[T]["detail"]]
   ) => {
     this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as SPush[T]);
+  };
+
+  addPushHandler = <T extends keyof SPush & string>(
+    tag: T,
+    handler: (data: SPush[T]["detail"]) => void,
+  ) => {
+    const handler_ = (e: SPush[T]) => {
+      handler(e.detail);
+    };
+    this.addEventListener(tag, handler_);
+    return handler_;
   };
 }
 
@@ -405,7 +427,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
 
   const clientBus = {
     push: cPushBus.push,
-    addPushHandler: sPushBus.addEventListener.bind(sPushBus),
+    addPushHandler: sPushBus.addPushHandler,
     removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
     addReqHandler: sReqBus.addReqHandler,
     removeReqHandler: sReqBus.removeEventListener.bind(sReqBus),
@@ -414,7 +436,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
 
   const serverBus = {
     push: sPushBus.push,
-    addPushHandler: cPushBus.addEventListener.bind(cPushBus),
+    addPushHandler: cPushBus.addPushHandler,
     removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
     addReqHandler: cReqBus.addReqHandler,
     removeReqHandler: cReqBus.removeEventListener.bind(cReqBus),

@@ -7,14 +7,14 @@ export function useTextHistory() {
   const [textHistory, setTextHistory] = useState<string[]>(["text"]);
 
   useEffect(() => {
-    const handler = (e: ServerPushEventMap["text_history"]) => {
-      setTextHistory([...textHistory, e.detail.text]);
+    const handler = (e: ServerPushEventMap["text_history"]["detail"]) => {
+      setTextHistory([...textHistory, e.text]);
     };
 
     api.addPushHandler("text_history", handler);
 
     return () => {
-      api.removePushHandler("text_history", handler);
+      // api.removePushHandler("text_history", (e));
     };
   });
 
