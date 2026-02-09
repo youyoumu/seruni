@@ -24,12 +24,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
         const row = await db.insert(textHistory).values({ text: event.detail }).returning().get();
-        api.push(
-          "text_history",
-          new CustomEvent("text_history", {
-            detail: row,
-          }),
-        );
+        api.push("text_history", row);
       }
     });
   }

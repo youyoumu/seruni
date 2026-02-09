@@ -13,7 +13,8 @@ export function useConfig() {
     }, 3000);
 
     setInterval(async () => {
-      api.push("ping", new CustomEvent("ping"));
+      api.push("ping", undefined);
+      api.push("ping2", 0);
     }, 3000);
   }, []);
 }

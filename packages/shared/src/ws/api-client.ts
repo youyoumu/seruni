@@ -7,10 +7,12 @@ export type Config = {
 };
 
 export type ClientPushEventMap = {
-  ping: CustomEvent;
+  ping: CustomEvent<undefined>;
+  ping2: CustomEvent<number>;
 };
 export type ServerPushEventMap = {
   text_history: CustomEvent<TextHistory>;
+  text_history2: CustomEvent<undefined>;
 };
 
 export type ClientReqEventMap = {
@@ -42,9 +44,11 @@ const createAppCentralBus = () => {
   return createCentralBus<ApiSchema>({
     clientPushPair: {
       ping: undefined,
+      ping2: undefined,
     },
     serverPushPair: {
       text_history: undefined,
+      text_history2: undefined,
     },
     clientRequestPair: {
       req_config: "res_config",

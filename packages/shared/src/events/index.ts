@@ -337,28 +337,22 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   const setupServerWSForwarder_ = (ws: WS) =>
     setupServerWSForwarder(ws, sPushPair, sPushBus, sReqPair, sReqBus, cReqPair, sResBus);
 
-  const addServerReqHandler = <
-    K extends keyof CReq & string,
-    V extends (typeof cReqPair)[K],
-    R extends SRes[V]["detail"]["data"],
-  >(
-    type: K,
-    value: (payload: CReq[K]["detail"]["data"]) => R,
+  const clientPush = <T extends keyof CPush & string>(
+    tag: T,
+    ...payload: undefined extends CPush[T]["detail"]
+      ? [payload?: CPush[T]["detail"]]
+      : [payload: CPush[T]["detail"]]
   ) => {
-    const v = cReqPair[type];
-    const handler = (e: CReq[K]) => {
-      sResBus.dispatchTypedEvent(
-        v,
-        new CustomEvent(v, {
-          detail: {
-            data: value(e.detail.data),
-            requestId: e.detail.requestId,
-          },
-        }) as SRes[V],
-      );
-    };
-    cReqBus.addEventListener(type, handler);
-    return handler;
+    cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as CPush[T]);
+  };
+
+  const serverPush = <T extends keyof SPush & string>(
+    tag: T,
+    ...payload: undefined extends SPush[T]["detail"]
+      ? [payload?: SPush[T]["detail"]]
+      : [payload: SPush[T]["detail"]]
+  ) => {
+    sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as SPush[T]);
   };
 
   const addClientReqHandler = <
@@ -385,8 +379,32 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
     return handler;
   };
 
+  const addServerReqHandler = <
+    K extends keyof CReq & string,
+    V extends (typeof cReqPair)[K],
+    R extends SRes[V]["detail"]["data"],
+  >(
+    type: K,
+    value: (payload: CReq[K]["detail"]["data"]) => R,
+  ) => {
+    const v = cReqPair[type];
+    const handler = (e: CReq[K]) => {
+      sResBus.dispatchTypedEvent(
+        v,
+        new CustomEvent(v, {
+          detail: {
+            data: value(e.detail.data),
+            requestId: e.detail.requestId,
+          },
+        }) as SRes[V],
+      );
+    };
+    cReqBus.addEventListener(type, handler);
+    return handler;
+  };
+
   const clientBus = {
-    push: cPushBus.dispatchTypedEvent.bind(cPushBus),
+    push: clientPush,
     addPushHandler: sPushBus.addEventListener.bind(sPushBus),
     removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
     addReqHandler: addClientReqHandler,
@@ -395,7 +413,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   };
 
   const serverBus = {
-    push: sPushBus.dispatchTypedEvent.bind(sPushBus),
+    push: serverPush,
     addPushHandler: cPushBus.addEventListener.bind(cPushBus),
     removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
     addReqHandler: addServerReqHandler,
