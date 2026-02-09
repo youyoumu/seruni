@@ -24,15 +24,12 @@ class ClientReqBus<
   SRes extends ServerResEventMap,
   SResBus extends ServerResBus<SRes>,
 > extends TypedEventTarget<CReq> {
-  serverResBus: SResBus;
-  clientReqMap: Record<keyof CReq & string, keyof SRes & string>;
-  constructor(
-    serverResBus: SResBus,
-    clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
-  ) {
+  sResBus: SResBus;
+  cReqPair: Record<keyof CReq & string, keyof SRes & string>;
+  constructor(sResBus: SResBus, cReqPair: Record<keyof CReq & string, keyof SRes & string>) {
     super();
-    this.serverResBus = serverResBus;
-    this.clientReqMap = clientReqMap;
+    this.sResBus = sResBus;
+    this.cReqPair = cReqPair;
   }
 
   request = <C extends keyof CReq & string, S extends keyof SRes & string>(
@@ -42,18 +39,18 @@ class ClientReqBus<
       : [data: CReq[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    const responseEvent = this.clientReqMap[clientEvent] as S;
+    const responseEvent = this.cReqPair[clientEvent] as S;
     type ResponseData = SRes[S]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
       const handler = (e: SRes[S]) => {
         if (e.detail.requestId === requestId) {
-          this.serverResBus.removeEventListener(responseEvent, handler);
+          this.sResBus.removeEventListener(responseEvent, handler);
           resolve(e.detail.data);
         }
       };
 
-      this.serverResBus.addEventListener(responseEvent, handler);
+      this.sResBus.addEventListener(responseEvent, handler);
       this.dispatchTypedEvent(
         clientEvent,
         new CustomEvent(clientEvent, {
@@ -70,15 +67,12 @@ class ServerReqBus<
   CRes extends ClientResEventMap,
   CResBus extends ClientResBus<CRes>,
 > extends TypedEventTarget<SReq> {
-  clientResBus: CResBus;
-  serverReqMap: Record<keyof SReq & string, keyof CRes & string>;
-  constructor(
-    clientResBus: CResBus,
-    serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
-  ) {
+  cResBus: CResBus;
+  sReqPair: Record<keyof SReq & string, keyof CRes & string>;
+  constructor(cResBus: CResBus, sReqPair: Record<keyof SReq & string, keyof CRes & string>) {
     super();
-    this.clientResBus = clientResBus;
-    this.serverReqMap = serverReqMap;
+    this.cResBus = cResBus;
+    this.sReqPair = sReqPair;
   }
 
   request = <S extends keyof SReq & string, C extends keyof CRes & string>(
@@ -88,18 +82,18 @@ class ServerReqBus<
       : [data: SReq[S]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    const responseEvent = this.serverReqMap[serverEvent] as C;
+    const responseEvent = this.sReqPair[serverEvent] as C;
     type ResponseData = CRes[C]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
-          this.clientResBus.removeEventListener(responseEvent, handler);
+          this.cResBus.removeEventListener(responseEvent, handler);
           resolve(e.detail.data);
         }
       };
 
-      this.clientResBus.addEventListener(responseEvent, handler);
+      this.cResBus.addEventListener(responseEvent, handler);
       this.dispatchTypedEvent(
         serverEvent,
         new CustomEvent(serverEvent, {
@@ -129,27 +123,27 @@ function clientOnWSPayload<
   CRes extends ClientResEventMap,
 >(
   payload: WSPayload,
-  serverPushBus: ServerPushBus<SPush>,
-  serverReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>,
-  serverResBus: ServerResBus<SRes>,
+  sPushBus: ServerPushBus<SPush>,
+  sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>,
+  sResBus: ServerResBus<SRes>,
 ) {
   if (payload.type === "push") {
     type S = keyof SPush & string;
     const tag = payload.tag as S;
     const data = payload.data as SPush[S]["detail"];
-    serverPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SPush[S]);
+    sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SPush[S]);
   }
   if (payload.type === "req") {
     type S = keyof SReq & string;
     const tag = payload.tag as S;
     const data = payload.data as SReq[S]["detail"];
-    serverReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SReq[S]);
+    sReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SReq[S]);
   }
   if (payload.type === "res") {
     type S = keyof SRes & string;
     const tag = payload.tag as S;
     const data = payload.data as SRes[S]["detail"];
-    serverResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SRes[S]);
+    sResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SRes[S]);
   }
 }
 
@@ -162,27 +156,27 @@ function serverOnWSPayload<
   CRes extends ClientResEventMap,
 >(
   payload: WSPayload,
-  clientPushBus: ClientPushBus<CPush>,
-  clientReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>,
-  clientResBus: ClientResBus<CRes>,
+  cPushBus: ClientPushBus<CPush>,
+  cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>,
+  cResBus: ClientResBus<CRes>,
 ) {
   if (payload.type === "push") {
     type C = keyof CPush & string;
     const tag = payload.tag as C;
     const data = payload.data as CPush[C]["detail"];
-    clientPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CPush[C]);
+    cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CPush[C]);
   }
   if (payload.type === "req") {
     type C = keyof CReq & string;
     const tag = payload.tag as C;
     const data = payload.data as CReq[C]["detail"];
-    clientReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CReq[C]);
+    cReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CReq[C]);
   }
   if (payload.type === "res") {
     type C = keyof CRes & string;
     const tag = payload.tag as C;
     const data = payload.data as CRes[C]["detail"];
-    clientResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CRes[C]);
+    cResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CRes[C]);
   }
 }
 
@@ -195,15 +189,15 @@ function setupClientWSForwarder<
   CRes extends ClientResEventMap,
 >(
   ws: WS,
-  clientPushMap: Record<keyof CPush & string, undefined>,
-  clientPushBus: ClientPushBus<CPush>,
-  clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
-  clientReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>,
-  serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
-  clientResBus: ClientResBus<CRes>,
+  cPushPair: Record<keyof CPush & string, undefined>,
+  cPushBus: ClientPushBus<CPush>,
+  cReqPair: Record<keyof CReq & string, keyof SRes & string>,
+  cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>,
+  sReqPair: Record<keyof SReq & string, keyof CRes & string>,
+  cResBus: ClientResBus<CRes>,
 ) {
-  Object.keys(clientPushMap).forEach((tag: keyof CPush & string) => {
-    clientPushBus.addEventListener(tag, (e) => {
+  Object.keys(cPushPair).forEach((tag: keyof CPush & string) => {
+    cPushBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "push",
         tag: tag,
@@ -213,8 +207,8 @@ function setupClientWSForwarder<
     });
   });
 
-  Object.keys(clientReqMap).forEach((tag: keyof CReq & string) => {
-    clientReqBus.addEventListener(tag, (e) => {
+  Object.keys(cReqPair).forEach((tag: keyof CReq & string) => {
+    cReqBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "req",
         tag: tag,
@@ -224,8 +218,8 @@ function setupClientWSForwarder<
     });
   });
 
-  Object.values(serverReqMap).forEach((tag: keyof SReq & string) => {
-    clientResBus.addEventListener(tag, (e) => {
+  Object.values(sReqPair).forEach((tag: keyof SReq & string) => {
+    cResBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "res",
         tag: tag,
@@ -245,15 +239,15 @@ function setupServerWSForwarder<
   CRes extends ClientResEventMap,
 >(
   ws: WS,
-  serverPushMap: Record<keyof SPush & string, undefined>,
-  serverPushBus: ServerPushBus<SPush>,
-  serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
-  serverReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>,
-  clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
-  serverResBus: ServerResBus<SRes>,
+  sPushPair: Record<keyof SPush & string, undefined>,
+  sPushBus: ServerPushBus<SPush>,
+  sReqPair: Record<keyof SReq & string, keyof CRes & string>,
+  sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>,
+  cReqPair: Record<keyof CReq & string, keyof SRes & string>,
+  sResBus: ServerResBus<SRes>,
 ) {
-  Object.keys(serverReqMap).forEach((tag: keyof SReq & string) => {
-    serverReqBus.addEventListener(tag, (e) => {
+  Object.keys(sReqPair).forEach((tag: keyof SReq & string) => {
+    sReqBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "req",
         tag: tag,
@@ -263,8 +257,8 @@ function setupServerWSForwarder<
     });
   });
 
-  Object.keys(serverPushMap).forEach((tag: keyof SPush & string) => {
-    serverPushBus.addEventListener(tag, (e) => {
+  Object.keys(sPushPair).forEach((tag: keyof SPush & string) => {
+    sPushBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "push",
         tag: tag,
@@ -274,8 +268,8 @@ function setupServerWSForwarder<
     });
   });
 
-  Object.values(clientReqMap).forEach((tag: keyof CReq & string) => {
-    serverResBus.addEventListener(tag, (e) => {
+  Object.values(cReqPair).forEach((tag: keyof CReq & string) => {
+    sResBus.addEventListener(tag, (e) => {
       const payload: WSPayload = {
         type: "res",
         tag: tag,
@@ -295,63 +289,47 @@ export function createApiClient<
   CRes extends ClientResEventMap,
 >(
   side: "client" | "server",
-  clientPushMap: Record<keyof CPush & string, undefined>,
-  serverPushMap: Record<keyof SPush & string, undefined>,
-  clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
-  serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
+  cPushPair: Record<keyof CPush & string, undefined>,
+  sPushPair: Record<keyof SPush & string, undefined>,
+  cReqPair: Record<keyof CReq & string, keyof SRes & string>,
+  sReqPair: Record<keyof SReq & string, keyof CRes & string>,
 ) {
-  const clientPushBus = new ClientPushBus<CPush>();
-  const serverPushBus = new ServerPushBus<SPush>();
+  const cPushBus = new ClientPushBus<CPush>();
+  const sPushBus = new ServerPushBus<SPush>();
 
-  const serverResBus = new ServerResBus<SRes>();
-  const clientReqBus = new ClientReqBus<CReq, SRes, ServerResBus<SRes>>(serverResBus, clientReqMap);
+  const sResBus = new ServerResBus<SRes>();
+  const cReqBus = new ClientReqBus<CReq, SRes, ServerResBus<SRes>>(sResBus, cReqPair);
 
-  const clientResBus = new ClientResBus<CRes>();
-  const serverReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(clientResBus, serverReqMap);
+  const cResBus = new ClientResBus<CRes>();
+  const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus, sReqPair);
 
   const onPayload =
     side === "client"
       ? (payload: WSPayload) => {
-          clientOnWSPayload(payload, serverPushBus, serverReqBus, serverResBus);
+          clientOnWSPayload(payload, sPushBus, sReqBus, sResBus);
         }
       : (payload: WSPayload) => {
-          serverOnWSPayload(payload, clientPushBus, clientReqBus, clientResBus);
+          serverOnWSPayload(payload, cPushBus, cReqBus, cResBus);
         };
 
   const setupWSForwarder =
     side === "client"
       ? (ws: WS) =>
-          setupClientWSForwarder(
-            ws,
-            clientPushMap,
-            clientPushBus,
-            clientReqMap,
-            clientReqBus,
-            serverReqMap,
-            clientResBus,
-          )
+          setupClientWSForwarder(ws, cPushPair, cPushBus, cReqPair, cReqBus, sReqPair, cResBus)
       : (ws: WS) =>
-          setupServerWSForwarder(
-            ws,
-            serverPushMap,
-            serverPushBus,
-            serverReqMap,
-            serverReqBus,
-            clientReqMap,
-            serverResBus,
-          );
+          setupServerWSForwarder(ws, sPushPair, sPushBus, sReqPair, sReqBus, cReqPair, sResBus);
 
   const addServerReqHandler = <
     K extends keyof CReq & string,
-    V extends (typeof clientReqMap)[K],
+    V extends (typeof cReqPair)[K],
     R extends SRes[V]["detail"]["data"],
   >(
     type: K,
     value: (payload: CReq[K]["detail"]["data"]) => R,
   ) => {
-    const v = clientReqMap[type];
+    const v = cReqPair[type];
     const handler = (e: CReq[K]) => {
-      serverResBus.dispatchTypedEvent(
+      sResBus.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
           detail: {
@@ -361,21 +339,21 @@ export function createApiClient<
         }) as SRes[V],
       );
     };
-    clientReqBus.addEventListener(type, handler);
+    cReqBus.addEventListener(type, handler);
     return handler;
   };
 
   const addClientReqHandler = <
     K extends keyof SReq & string,
-    V extends (typeof serverReqMap)[K],
+    V extends (typeof sReqPair)[K],
     R extends CRes[V]["detail"]["data"],
   >(
     type: K,
     value: (payload: SReq[K]["detail"]["data"]) => R,
   ) => {
-    const v = serverReqMap[type];
+    const v = sReqPair[type];
     const handler = (e: SReq[K]) => {
-      clientResBus.dispatchTypedEvent(
+      cResBus.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
           detail: {
@@ -385,26 +363,26 @@ export function createApiClient<
         }) as CRes[V],
       );
     };
-    serverReqBus.addEventListener(type, handler);
+    sReqBus.addEventListener(type, handler);
     return handler;
   };
 
   const clientApi = {
-    push: clientPushBus.dispatchTypedEvent.bind(clientPushBus),
-    addPushHandler: serverPushBus.addEventListener.bind(serverPushBus),
-    removePushHandler: serverPushBus.removeEventListener.bind(serverPushBus),
+    push: cPushBus.dispatchTypedEvent.bind(cPushBus),
+    addPushHandler: sPushBus.addEventListener.bind(sPushBus),
+    removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
     addReqHandler: addClientReqHandler,
-    removeReqHandler: serverReqBus.removeEventListener.bind(serverReqBus),
-    request: clientReqBus.request,
+    removeReqHandler: sReqBus.removeEventListener.bind(sReqBus),
+    request: cReqBus.request,
   };
 
   const serverApi = {
-    push: serverPushBus.dispatchTypedEvent.bind(serverPushBus),
-    addPushHandler: clientPushBus.addEventListener.bind(clientPushBus),
-    removePushHandler: clientPushBus.removeEventListener.bind(clientPushBus),
+    push: sPushBus.dispatchTypedEvent.bind(sPushBus),
+    addPushHandler: cPushBus.addEventListener.bind(cPushBus),
+    removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
     addReqHandler: addServerReqHandler,
-    removeReqHandler: clientReqBus.removeEventListener.bind(clientReqBus),
-    request: serverReqBus.request,
+    removeReqHandler: cReqBus.removeEventListener.bind(cReqBus),
+    request: sReqBus.request,
   };
 
   return {
