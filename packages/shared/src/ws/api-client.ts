@@ -65,8 +65,7 @@ export function createClientApi() {
   const { client } = createAppCentralBus();
   return {
     api: client.bus,
-    onPayload: client.onPayload,
-    setupWSForwarder: client.setupWSForwarder,
+    wsBridge: client.wsBridge,
   };
 }
 
@@ -75,7 +74,6 @@ export function createServerApi() {
   const { server } = createAppCentralBus();
   return {
     api: server.bus,
-    onPayload: server.onPayload,
-    setupWSForwarder: server.setupWSForwarder,
+    wsBridge: server.wsBridge,
   };
 }

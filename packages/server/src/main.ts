@@ -10,7 +10,7 @@ import type { WSPayload } from "@repo/shared/events";
 
 function main() {
   const logger = createLogger();
-  const { api, setupWSForwarder, onPayload } = createServerApi();
+  const { api, wsBridge } = createServerApi();
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -40,11 +40,12 @@ function main() {
       return {
         onMessage(e, _ws) {
           const payload: WSPayload = JSON.parse(e.data.toString());
-          onPayload(payload);
+          wsBridge.onPayload(payload);
         },
         onOpen: (_, ws) => {
           log.info("Connection opened");
-          setupWSForwarder(ws);
+          //TODO: multiple connection?
+          wsBridge.bindWS(ws);
         },
         onClose: () => {
           log.warn("Connection closed");
