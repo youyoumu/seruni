@@ -1,3 +1,4 @@
+// TODO: remove this dependency
 import { TypedEventTarget } from "typescript-event-target";
 import { uid } from "uid";
 

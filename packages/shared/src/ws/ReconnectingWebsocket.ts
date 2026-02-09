@@ -28,15 +28,22 @@ export class ReconnectingWebsocket extends EventTarget {
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
-    this.#connect();
+    this.connect();
   }
 
-  #connect() {
+  connect() {
+    if (
+      this.#ws &&
+      (this.#readyState === WebSocket.CONNECTING || this.#readyState === WebSocket.OPEN)
+    ) {
+      return;
+    }
+
     this.#ws = new WebSocket(this.#url);
     this.#readyState = WebSocket.CONNECTING;
+    this.#manualClose = false;
 
     this.#ws.onopen = () => {
-      this.#manualClose = false;
       this.log.info(`Connected to ${this.#url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
@@ -73,7 +80,7 @@ export class ReconnectingWebsocket extends EventTarget {
         `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#readyState = WebSocket.CONNECTING;
-      setTimeout(() => this.#connect(), delay);
+      setTimeout(() => this.connect(), delay);
     }
   }
 
