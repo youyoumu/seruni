@@ -15,8 +15,26 @@ type ServerResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
 type ServerReqEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
 type ClientResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
 
-class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<CPush> {}
-class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {}
+class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<CPush> {
+  push = <T extends keyof CPush & string>(
+    tag: T,
+    ...payload: undefined extends CPush[T]["detail"]
+      ? [payload?: CPush[T]["detail"]]
+      : [payload: CPush[T]["detail"]]
+  ) => {
+    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as CPush[T]);
+  };
+}
+class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
+  push = <T extends keyof SPush & string>(
+    tag: T,
+    ...payload: undefined extends SPush[T]["detail"]
+      ? [payload?: SPush[T]["detail"]]
+      : [payload: SPush[T]["detail"]]
+  ) => {
+    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as SPush[T]);
+  };
+}
 
 class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<SRes> {}
 class ClientReqBus<
@@ -58,6 +76,30 @@ class ClientReqBus<
         }) as CReq[C],
       );
     });
+  };
+
+  addReqHandler = <
+    K extends keyof CReq & string,
+    V extends (typeof this.cReqPair)[K],
+    R extends SRes[V]["detail"]["data"],
+  >(
+    type: K,
+    value: (payload: CReq[K]["detail"]["data"]) => R,
+  ) => {
+    const v = this.cReqPair[type];
+    const handler = (e: CReq[K]) => {
+      this.sResBus.dispatchTypedEvent(
+        v,
+        new CustomEvent(v, {
+          detail: {
+            data: value(e.detail.data),
+            requestId: e.detail.requestId,
+          },
+        }) as SRes[V],
+      );
+    };
+    this.addEventListener(type, handler);
+    return handler;
   };
 }
 
@@ -101,6 +143,30 @@ class ServerReqBus<
         }) as SReq[S],
       );
     });
+  };
+
+  addReqHandler = <
+    K extends keyof SReq & string,
+    V extends (typeof this.sReqPair)[K],
+    R extends CRes[V]["detail"]["data"],
+  >(
+    type: K,
+    value: (payload: SReq[K]["detail"]["data"]) => R,
+  ) => {
+    const v = this.sReqPair[type];
+    const handler = (e: SReq[K]) => {
+      this.cResBus.dispatchTypedEvent(
+        v,
+        new CustomEvent(v, {
+          detail: {
+            data: value(e.detail.data),
+            requestId: e.detail.requestId,
+          },
+        }) as CRes[V],
+      );
+    };
+    this.addEventListener(type, handler);
+    return handler;
   };
 }
 
@@ -337,86 +403,20 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   const setupServerWSForwarder_ = (ws: WS) =>
     setupServerWSForwarder(ws, sPushPair, sPushBus, sReqPair, sReqBus, cReqPair, sResBus);
 
-  const clientPush = <T extends keyof CPush & string>(
-    tag: T,
-    ...payload: undefined extends CPush[T]["detail"]
-      ? [payload?: CPush[T]["detail"]]
-      : [payload: CPush[T]["detail"]]
-  ) => {
-    cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as CPush[T]);
-  };
-
-  const serverPush = <T extends keyof SPush & string>(
-    tag: T,
-    ...payload: undefined extends SPush[T]["detail"]
-      ? [payload?: SPush[T]["detail"]]
-      : [payload: SPush[T]["detail"]]
-  ) => {
-    sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as SPush[T]);
-  };
-
-  const addClientReqHandler = <
-    K extends keyof SReq & string,
-    V extends (typeof sReqPair)[K],
-    R extends CRes[V]["detail"]["data"],
-  >(
-    type: K,
-    value: (payload: SReq[K]["detail"]["data"]) => R,
-  ) => {
-    const v = sReqPair[type];
-    const handler = (e: SReq[K]) => {
-      cResBus.dispatchTypedEvent(
-        v,
-        new CustomEvent(v, {
-          detail: {
-            data: value(e.detail.data),
-            requestId: e.detail.requestId,
-          },
-        }) as CRes[V],
-      );
-    };
-    sReqBus.addEventListener(type, handler);
-    return handler;
-  };
-
-  const addServerReqHandler = <
-    K extends keyof CReq & string,
-    V extends (typeof cReqPair)[K],
-    R extends SRes[V]["detail"]["data"],
-  >(
-    type: K,
-    value: (payload: CReq[K]["detail"]["data"]) => R,
-  ) => {
-    const v = cReqPair[type];
-    const handler = (e: CReq[K]) => {
-      sResBus.dispatchTypedEvent(
-        v,
-        new CustomEvent(v, {
-          detail: {
-            data: value(e.detail.data),
-            requestId: e.detail.requestId,
-          },
-        }) as SRes[V],
-      );
-    };
-    cReqBus.addEventListener(type, handler);
-    return handler;
-  };
-
   const clientBus = {
-    push: clientPush,
+    push: cPushBus.push,
     addPushHandler: sPushBus.addEventListener.bind(sPushBus),
     removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
-    addReqHandler: addClientReqHandler,
+    addReqHandler: sReqBus.addReqHandler,
     removeReqHandler: sReqBus.removeEventListener.bind(sReqBus),
     request: cReqBus.request,
   };
 
   const serverBus = {
-    push: serverPush,
+    push: sPushBus.push,
     addPushHandler: cPushBus.addEventListener.bind(cPushBus),
     removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
-    addReqHandler: addServerReqHandler,
+    addReqHandler: cReqBus.addReqHandler,
     removeReqHandler: cReqBus.removeEventListener.bind(cReqBus),
     request: sReqBus.request,
   };
