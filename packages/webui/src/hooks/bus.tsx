@@ -2,8 +2,7 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createContext, useContext } from "react";
 import { createClientApi } from "@repo/shared/ws";
 
-const { clientApi, setupWSForwarder, onPayload } = createClientApi();
-const api = clientApi;
+const { api, setupWSForwarder, onPayload } = createClientApi();
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -26,9 +25,10 @@ api.addReqHandler("req_user_agent", () => {
   return navigator.userAgent;
 });
 
-const BusContext = createContext(clientApi);
+//TODO: rename to api
+const BusContext = createContext(api);
 export const BusProvider = ({ children }: { children: React.ReactNode }) => {
-  return <BusContext.Provider value={clientApi}>{children}</BusContext.Provider>;
+  return <BusContext.Provider value={api}>{children}</BusContext.Provider>;
 };
 export const useBus = () => {
   return useContext(BusContext);

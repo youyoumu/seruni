@@ -280,7 +280,7 @@ function setupServerWSForwarder<
   });
 }
 
-export function createApiClient<
+export function createCentralBus<
   CPush extends ClientPushEventMap,
   SPush extends ServerPushEventMap,
   CReq extends ClientReqEventMap,
@@ -288,7 +288,6 @@ export function createApiClient<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
 >(
-  side: "client" | "server",
   cPushPair: Record<keyof CPush & string, undefined>,
   sPushPair: Record<keyof SPush & string, undefined>,
   cReqPair: Record<keyof CReq & string, keyof SRes & string>,
@@ -303,21 +302,17 @@ export function createApiClient<
   const cResBus = new ClientResBus<CRes>();
   const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus, sReqPair);
 
-  const onPayload =
-    side === "client"
-      ? (payload: WSPayload) => {
-          clientOnWSPayload(payload, sPushBus, sReqBus, sResBus);
-        }
-      : (payload: WSPayload) => {
-          serverOnWSPayload(payload, cPushBus, cReqBus, cResBus);
-        };
+  const onClientPayload = (payload: WSPayload) =>
+    clientOnWSPayload(payload, sPushBus, sReqBus, sResBus);
 
-  const setupWSForwarder =
-    side === "client"
-      ? (ws: WS) =>
-          setupClientWSForwarder(ws, cPushPair, cPushBus, cReqPair, cReqBus, sReqPair, cResBus)
-      : (ws: WS) =>
-          setupServerWSForwarder(ws, sPushPair, sPushBus, sReqPair, sReqBus, cReqPair, sResBus);
+  const onServerPayload = (payload: WSPayload) =>
+    serverOnWSPayload(payload, cPushBus, cReqBus, cResBus);
+
+  const setupClientWSForwarder_ = (ws: WS) =>
+    setupClientWSForwarder(ws, cPushPair, cPushBus, cReqPair, cReqBus, sReqPair, cResBus);
+
+  const setupServerWSForwarder_ = (ws: WS) =>
+    setupServerWSForwarder(ws, sPushPair, sPushBus, sReqPair, sReqBus, cReqPair, sResBus);
 
   const addServerReqHandler = <
     K extends keyof CReq & string,
@@ -367,7 +362,7 @@ export function createApiClient<
     return handler;
   };
 
-  const clientApi = {
+  const clientBus = {
     push: cPushBus.dispatchTypedEvent.bind(cPushBus),
     addPushHandler: sPushBus.addEventListener.bind(sPushBus),
     removePushHandler: sPushBus.removeEventListener.bind(sPushBus),
@@ -376,7 +371,7 @@ export function createApiClient<
     request: cReqBus.request,
   };
 
-  const serverApi = {
+  const serverBus = {
     push: sPushBus.dispatchTypedEvent.bind(sPushBus),
     addPushHandler: cPushBus.addEventListener.bind(cPushBus),
     removePushHandler: cPushBus.removeEventListener.bind(cPushBus),
@@ -385,10 +380,18 @@ export function createApiClient<
     request: sReqBus.request,
   };
 
-  return {
-    onPayload,
-    setupWSForwarder,
-    clientApi,
-    serverApi,
+  const bus = {
+    client: {
+      onPayload: onClientPayload,
+      setupWSForwarder: setupClientWSForwarder_,
+      bus: clientBus,
+    },
+    server: {
+      onPayload: onServerPayload,
+      setupWSForwarder: setupServerWSForwarder_,
+      bus: serverBus,
+    },
   };
+
+  return bus;
 }

@@ -1,4 +1,4 @@
-import { createApiClient } from "#/events";
+import { createCentralBus } from "#/events";
 import { type TextHistory } from "#/db/schema";
 import type { WithReqId } from "#/events";
 
@@ -29,9 +29,8 @@ export type ClientResEventMap = {
   res_user_agent: CustomEvent<WithReqId<string>>;
 };
 
-export type ClientApi = ReturnType<typeof createClientApi>["clientApi"];
-export function createClientApi() {
-  const { clientApi, onPayload, setupWSForwarder } = createApiClient<
+const createAppCentralBus = () =>
+  createCentralBus<
     ClientPushEventMap,
     ServerPushEventMap,
     ClientReqEventMap,
@@ -39,7 +38,6 @@ export function createClientApi() {
     ServerReqEventMap,
     ClientResEventMap
   >(
-    "client",
     {
       ping: undefined,
     },
@@ -55,42 +53,24 @@ export function createClientApi() {
     },
   );
 
+export type ClientApi = ReturnType<typeof createClientApi>["api"];
+export function createClientApi() {
+  const { client } = createAppCentralBus();
+
   return {
-    clientApi,
-    onPayload,
-    setupWSForwarder,
+    api: client.bus,
+    onPayload: client.onPayload,
+    setupWSForwarder: client.setupWSForwarder,
   };
 }
 
-export type ServerApi = ReturnType<typeof createServerApi>["serverApi"];
+export type ServerApi = ReturnType<typeof createServerApi>["api"];
 export function createServerApi() {
-  const { serverApi, onPayload, setupWSForwarder } = createApiClient<
-    ClientPushEventMap,
-    ServerPushEventMap,
-    ClientReqEventMap,
-    ServerResEventMap,
-    ServerReqEventMap,
-    ClientResEventMap
-  >(
-    "server",
-    {
-      ping: undefined,
-    },
-    {
-      text_history: undefined,
-    },
-    {
-      req_config: "res_config",
-      req_config2: "res_config2",
-    },
-    {
-      req_user_agent: "res_user_agent",
-    },
-  );
+  const { server } = createAppCentralBus();
 
   return {
-    serverApi,
-    onPayload,
-    setupWSForwarder,
+    api: server.bus,
+    onPayload: server.onPayload,
+    setupWSForwarder: server.setupWSForwarder,
   };
 }

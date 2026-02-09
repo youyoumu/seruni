@@ -10,8 +10,7 @@ import type { WSPayload } from "@repo/shared/events";
 
 function main() {
   const logger = createLogger();
-  const { serverApi, setupWSForwarder, onPayload } = createServerApi();
-  const api = serverApi;
+  const { api, setupWSForwarder, onPayload } = createServerApi();
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -23,7 +22,7 @@ function main() {
   const log = logger.child({ name: "client" });
 
   setInterval(async () => {
-    const userAgent = await serverApi.request("req_user_agent");
+    const userAgent = await api.request("req_user_agent");
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
