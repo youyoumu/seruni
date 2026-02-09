@@ -22,7 +22,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
       ? [payload?: CPush[T]["detail"]]
       : [payload: CPush[T]["detail"]]
   ) => {
-    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as CPush[T]);
+    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as CPush[T]);
   };
 }
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
@@ -32,7 +32,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
       ? [payload?: SPush[T]["detail"]]
       : [payload: SPush[T]["detail"]]
   ) => {
-    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload }) as SPush[T]);
+    this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as SPush[T]);
   };
 }
 
