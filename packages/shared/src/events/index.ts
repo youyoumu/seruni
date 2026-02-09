@@ -7,40 +7,13 @@ export interface WithReqId<T = undefined> {
 }
 
 type ClientPushEventMap = Record<string, CustomEvent<unknown>>;
-function createClientPushEventMap<
-  T extends ClientPushEventMap,
-  M extends Record<keyof T & string, undefined>,
->(eventMap: M): M {
-  return eventMap;
-}
-
 type ServerPushEventMap = Record<string, CustomEvent<unknown>>;
-function createServerPushEventMap<
-  T extends ServerPushEventMap,
-  M extends Record<keyof T & string, undefined>,
->(eventMap: M): M {
-  return eventMap;
-}
 
 type ClientReqEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
 type ServerResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
-function createClientReqEventMap<
-  C extends ClientReqEventMap,
-  S extends ServerResEventMap,
-  M extends Record<keyof C & string, keyof S & string>,
->(eventMap: M): M {
-  return eventMap;
-}
 
 type ServerReqEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
 type ClientResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
-function createServerReqEventMap<
-  S extends ServerReqEventMap,
-  C extends ClientResEventMap,
-  M extends Record<keyof S & string, keyof C & string>,
->(eventMap: M) {
-  return eventMap;
-}
 
 class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<CPush> {}
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {}
@@ -49,7 +22,7 @@ class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<SRes
 class ClientReqBus<
   CReq extends ClientReqEventMap,
   SRes extends ServerResEventMap,
-  SResBus extends TypedEventTarget<SRes>,
+  SResBus extends ServerResBus<SRes>,
 > extends TypedEventTarget<CReq> {
   serverResBus: SResBus;
   clientReqMap: Record<keyof CReq & string, keyof SRes & string>;
@@ -95,7 +68,7 @@ class ClientResBus<CRes extends ClientResEventMap> extends TypedEventTarget<CRes
 class ServerReqBus<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
-  CResBus extends TypedEventTarget<CRes>,
+  CResBus extends ClientResBus<CRes>,
 > extends TypedEventTarget<SReq> {
   clientResBus: CResBus;
   serverReqMap: Record<keyof SReq & string, keyof CRes & string>;
@@ -322,17 +295,11 @@ export function createApiClient<
   CRes extends ClientResEventMap,
 >(
   side: "client" | "server",
-  //TODO: use object instead of array
-  clientPushEventMap: Record<keyof CPush & string, undefined>,
-  serverPushEventMap: Record<keyof SPush & string, undefined>,
-  clientReqEventMap: Record<keyof CReq & string, keyof SRes & string>,
-  serverReqEventMap: Record<keyof SReq & string, keyof CRes & string>,
+  clientPushMap: Record<keyof CPush & string, undefined>,
+  serverPushMap: Record<keyof SPush & string, undefined>,
+  clientReqMap: Record<keyof CReq & string, keyof SRes & string>,
+  serverReqMap: Record<keyof SReq & string, keyof CRes & string>,
 ) {
-  const clientPushMap = createClientPushEventMap(clientPushEventMap);
-  const serverPushMap = createServerPushEventMap(serverPushEventMap);
-  const clientReqMap = createClientReqEventMap(clientReqEventMap);
-  const serverReqMap = createServerReqEventMap(serverReqEventMap);
-
   const clientPushBus = new ClientPushBus<CPush>();
   const serverPushBus = new ServerPushBus<SPush>();
 
