@@ -88,7 +88,7 @@ export class ReconnectingWebsocket extends EventTarget {
     this.#ws?.close();
   }
 
-  getReadyState() {
+  get readyState() {
     return this.#readyState;
   }
 }

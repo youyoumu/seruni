@@ -308,7 +308,7 @@ class ServerWSBridge<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
 > {
-  #ws: WS | undefined;
+  #ws = new Set<WS>();
   #cPushBus: ClientPushBus<CPush>;
   #cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
   #cResBus: ClientResBus<CRes>;
@@ -345,7 +345,7 @@ class ServerWSBridge<
           tag: tag,
           data: e.detail,
         };
-        this.#ws?.send(JSON.stringify(payload));
+        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
       });
     });
 
@@ -356,7 +356,7 @@ class ServerWSBridge<
           tag: tag,
           data: e.detail,
         };
-        this.#ws?.send(JSON.stringify(payload));
+        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
       });
     });
 
@@ -367,7 +367,7 @@ class ServerWSBridge<
           tag: tag,
           data: e.detail,
         };
-        this.#ws?.send(JSON.stringify(payload));
+        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
       });
     });
   }
@@ -393,8 +393,8 @@ class ServerWSBridge<
     }
   }
 
-  bindWS(ws: WS) {
-    this.#ws = ws;
+  addWS(ws: WS) {
+    this.#ws.add(ws);
   }
 }
 

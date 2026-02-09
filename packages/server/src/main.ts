@@ -44,8 +44,7 @@ function main() {
         },
         onOpen: (_, ws) => {
           log.info("Connection opened");
-          //TODO: multiple connection?
-          wsBridge.bindWS(ws);
+          wsBridge.addWS(ws);
         },
         onClose: () => {
           log.warn("Connection closed");
