@@ -7,10 +7,20 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import { createServerApi } from "@repo/shared/ws";
 import type {} from "@repo/shared/types";
 import type { WSPayload } from "@repo/shared/events";
+import { createDb } from "./db";
+import { session } from "@repo/shared/db";
 
-function main() {
+async function main() {
   const logger = createLogger();
   const { api, wsBridge } = createServerApi();
+  const db = createDb();
+  const newSession = await db
+    .insert(session)
+    .values({
+      name: new Date().toISOString(),
+    })
+    .returning()
+    .get();
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -65,7 +75,7 @@ function main() {
 
   injectWebSocket(server);
 
-  new TextHookerClient({ logger, api });
+  new TextHookerClient({ logger, api, db, sessionId: newSession.id });
 }
 
 main();
