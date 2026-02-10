@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTextHistory } from "#/hooks/text-history";
+import { useTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
 
 function TextHookerPage() {
   const { sessionId } = Route.useParams();
-  const [textHistory] = useTextHistory();
+  const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
   const textHistoryContainer = useRef<HTMLDivElement>(null);
   useConfig();
 
