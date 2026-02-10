@@ -1,34 +1,34 @@
 import { createCentralBus } from "#/events";
 import { type TextHistory } from "#/db/schema";
-import type { WithReqId, CreateSchema } from "#/events";
+import type { PushEvent, ReqEvent, ResEvent, CreateSchema } from "#/events";
 
 export type Config = {
   workdir: string;
 };
 
 export type ClientPushEventMap = {
-  ping: CustomEvent<undefined>;
-  ping2: CustomEvent<number>;
+  ping: PushEvent;
+  ping2: PushEvent<number>;
 };
 export type ServerPushEventMap = {
-  text_history: CustomEvent<TextHistory>;
-  text_history2: CustomEvent<undefined>;
+  text_history: PushEvent<TextHistory>;
+  text_history2: PushEvent;
 };
 
 export type ClientReqEventMap = {
-  req_config: CustomEvent<WithReqId>;
-  req_config2: CustomEvent<WithReqId>;
+  req_config: ReqEvent;
+  req_config2: ReqEvent;
 };
 export type ServerResEventMap = {
-  res_config: CustomEvent<WithReqId<Config>>;
-  res_config2: CustomEvent<WithReqId<Config>>;
+  res_config: ResEvent<Config>;
+  res_config2: ResEvent<Config>;
 };
 
 export type ServerReqEventMap = {
-  req_user_agent: CustomEvent<WithReqId>;
+  req_user_agent: ReqEvent;
 };
 export type ClientResEventMap = {
-  res_user_agent: CustomEvent<WithReqId<string>>;
+  res_user_agent: ResEvent<string>;
 };
 
 type ApiSchema = CreateSchema<{

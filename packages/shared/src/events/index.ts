@@ -2,7 +2,7 @@
 import { TypedEventTarget } from "typescript-event-target";
 import { uid } from "uid";
 
-export interface WithReqId<T = undefined> {
+interface WithReqId<T = undefined> {
   data: T;
   requestId: string;
 }
@@ -400,6 +400,9 @@ class ServerWSBridge<
 }
 
 export type CreateSchema<T extends BusSchema> = T;
+export type PushEvent<T = undefined> = CustomEvent<T>;
+export type ReqEvent<T = undefined> = CustomEvent<WithReqId<T>>;
+export type ResEvent<T = undefined> = CustomEvent<WithReqId<T>>;
 
 type BusSchema = {
   clientPush: ClientPushEventMap;
