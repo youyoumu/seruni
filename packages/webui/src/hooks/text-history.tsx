@@ -3,7 +3,7 @@ import { useBus } from "./bus";
 
 export function useTextHistory() {
   const api = useBus();
-  const [textHistory, setTextHistory] = useState<string[]>(["text"]);
+  const [textHistory, setTextHistory] = useState<string[]>([]);
 
   useEffect(() => {
     const cleanHandler = api.addPushHandler("text_history", (e) => {

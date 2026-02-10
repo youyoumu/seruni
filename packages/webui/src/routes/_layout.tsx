@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_layout")({
 
 function LayoutComponent() {
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-surface-faint text-foreground">
       <aside className="w-16 bg-surface flex flex-col items-center py-4 border-r border-border justify-between">
         <nav className="flex flex-col gap-2">
           <Link to="/" className={navLink()} title="Home">

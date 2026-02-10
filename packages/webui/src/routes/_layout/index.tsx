@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TurtleIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_layout/")({
   component: IndexPage,
@@ -6,9 +7,8 @@ export const Route = createFileRoute("/_layout/")({
 
 function IndexPage() {
   return (
-    <div className="p-2">
-      <h3 className="text-xl font-bold mb-4">Welcome to Seruni</h3>
-      <p className="text-gray-400">Select an option from the sidebar to get started.</p>
+    <div className="flex items-center justify-center h-screen">
+      <TurtleIcon className="size-64 text-surface-foreground-faint" strokeWidth={1}></TurtleIcon>
     </div>
   );
 }

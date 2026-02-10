@@ -11,13 +11,15 @@ function TextHookerPage() {
   useConfig();
 
   return (
-    <div className="p-2 bg-surface-faint">
-      <h3 className="text-xl font-bold mb-4">Text Hooker</h3>
-      {textHistory.map((text, i) => (
-        <p key={i} className="text-sm mb-2">
-          {text}
-        </p>
-      ))}
+    <div className="p-4 overflow-auto">
+      <div className="flex flex-col gap-16">
+        {textHistory.map((text, i) => (
+          <p key={i} className="text-xl">
+            {text}
+          </p>
+        ))}
+        <p className="mt-16"></p>
+      </div>
     </div>
   );
 }

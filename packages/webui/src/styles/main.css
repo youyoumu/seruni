@@ -14,9 +14,36 @@
   --color-surface-faint: var(--color-surface-300);
   --color-surface-soft: var(--color-surface-500);
   --color-surface-calm: var(--color-surface-700);
+
+  --color-surface-foreground-100: color-mix(in srgb, var(--surface-foreground) 10%, var(--surface));
+  --color-surface-foreground-200: color-mix(in srgb, var(--surface-foreground) 20%, var(--surface));
+  --color-surface-foreground-300: color-mix(in srgb, var(--surface-foreground) 30%, var(--surface));
+  --color-surface-foreground-400: color-mix(in srgb, var(--surface-foreground) 40%, var(--surface));
+  --color-surface-foreground-500: color-mix(in srgb, var(--surface-foreground) 50%, var(--surface));
+  --color-surface-foreground-600: color-mix(in srgb, var(--surface-foreground) 60%, var(--surface));
+  --color-surface-foreground-700: color-mix(in srgb, var(--surface-foreground) 70%, var(--surface));
+  --color-surface-foreground-800: color-mix(in srgb, var(--surface-foreground) 80%, var(--surface));
+  --color-surface-foreground-900: color-mix(in srgb, var(--surface-foreground) 90%, var(--surface));
+  --color-surface-foreground-faint: var(--color-surface-foreground-300);
+  --color-surface-foreground-soft: var(--color-surface-foreground-500);
+  --color-surface-foreground-calm: var(--color-surface-foreground-700);
+
+  --color-foreground-100: color-mix(in srgb, var(--foreground) 10%, var(--background));
+  --color-foreground-200: color-mix(in srgb, var(--foreground) 20%, var(--background));
+  --color-foreground-300: color-mix(in srgb, var(--foreground) 30%, var(--background));
+  --color-foreground-400: color-mix(in srgb, var(--foreground) 40%, var(--background));
+  --color-foreground-500: color-mix(in srgb, var(--foreground) 50%, var(--background));
+  --color-foreground-600: color-mix(in srgb, var(--foreground) 60%, var(--background));
+  --color-foreground-700: color-mix(in srgb, var(--foreground) 70%, var(--background));
+  --color-foreground-800: color-mix(in srgb, var(--foreground) 80%, var(--background));
+  --color-foreground-900: color-mix(in srgb, var(--foreground) 90%, var(--background));
+  --color-foreground-faint: var(--color-foreground-300);
+  --color-foreground-soft: var(--color-foreground-500);
+  --color-foreground-calm: var(--color-foreground-700);
 }
 
 @layer base {
+  /* prettier-ignore */
   [data-theme] {
     --color-surface-100: color-mix(in srgb, var(--surface) 10%, var(--background));
     --color-surface-200: color-mix(in srgb, var(--surface) 20%, var(--background));
@@ -30,5 +57,31 @@
     --color-surface-faint: var(--color-surface-300);
     --color-surface-soft: var(--color-surface-500);
     --color-surface-calm: var(--color-surface-700);
+
+    --color-surface-foreground-100: color-mix(in srgb, var(--surface-foreground) 10%, var(--surface));
+    --color-surface-foreground-200: color-mix(in srgb, var(--surface-foreground) 20%, var(--surface));
+    --color-surface-foreground-300: color-mix(in srgb, var(--surface-foreground) 30%, var(--surface));
+    --color-surface-foreground-400: color-mix(in srgb, var(--surface-foreground) 40%, var(--surface));
+    --color-surface-foreground-500: color-mix(in srgb, var(--surface-foreground) 50%, var(--surface));
+    --color-surface-foreground-600: color-mix(in srgb, var(--surface-foreground) 60%, var(--surface));
+    --color-surface-foreground-700: color-mix(in srgb, var(--surface-foreground) 70%, var(--surface));
+    --color-surface-foreground-800: color-mix(in srgb, var(--surface-foreground) 80%, var(--surface));
+    --color-surface-foreground-900: color-mix(in srgb, var(--surface-foreground) 90%, var(--surface));
+    --color-surface-foreground-faint: var(--color-surface-foreground-300);
+    --color-surface-foreground-soft: var(--color-surface-foreground-500);
+    --color-surface-foreground-calm: var(--color-surface-foreground-700);
+
+    --color-foreground-100: color-mix(in srgb, var(--foreground) 10%, var(--background));
+    --color-foreground-200: color-mix(in srgb, var(--foreground) 20%, var(--background));
+    --color-foreground-300: color-mix(in srgb, var(--foreground) 30%, var(--background));
+    --color-foreground-400: color-mix(in srgb, var(--foreground) 40%, var(--background));
+    --color-foreground-500: color-mix(in srgb, var(--foreground) 50%, var(--background));
+    --color-foreground-600: color-mix(in srgb, var(--foreground) 60%, var(--background));
+    --color-foreground-700: color-mix(in srgb, var(--foreground) 70%, var(--background));
+    --color-foreground-800: color-mix(in srgb, var(--foreground) 80%, var(--background));
+    --color-foreground-900: color-mix(in srgb, var(--foreground) 90%, var(--background));
+    --color-foreground-faint: var(--color-foreground-300);
+    --color-foreground-soft: var(--color-foreground-500);
+    --color-foreground-calm: var(--color-foreground-700);
   }
 }
