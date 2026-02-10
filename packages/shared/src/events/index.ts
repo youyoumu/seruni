@@ -471,26 +471,41 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   });
 
   const clientBus = {
+    /** Send a push event from client to server */
     push: cPushBus.push,
+    /** Register a handler for server-to-client push events */
     addPushHandler: sPushBus.addPushHandler,
+    /** Register a handler for server-to-client request events */
     addReqHandler: sReqBus.addReqHandler,
+    /** Send a request from client to server and await response */
     request: cReqBus.request,
   };
 
   const serverBus = {
+    /** Send a push event from server to clients */
     push: sPushBus.push,
+    /** Register a handler for client-to-server push events */
     addPushHandler: cPushBus.addPushHandler,
+    /** Register a handler for client-to-server request events */
     addReqHandler: cReqBus.addReqHandler,
+    /** Send a request from server to client and await response */
     request: sReqBus.request,
   };
 
+  /** Central bus instance containing client and server interfaces */
   const bus = {
+    /** Client-side interface */
     client: {
+      /** WebSocket bridge for client connections */
       wsBridge: clientWSBridge,
+      /** Client bus for sending/receiving events */
       bus: clientBus,
     },
+    /** Server-side interface */
     server: {
+      /** WebSocket bridge for server-side WebSocket handling */
       wsBridge: serverWSBridge,
+      /** Server bus for sending/receiving events */
       bus: serverBus,
     },
   };

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown",
+    "build": "tsdown --clean",
     "typecheck": "tsc -b",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
