@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutTextHookerRouteImport } from './routes/_layout/text-hooker'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutTextHookerSessionIdRouteImport } from './routes/_layout/text-hooker.$sessionId'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -23,45 +23,46 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutTextHookerRoute = LayoutTextHookerRouteImport.update({
-  id: '/text-hooker',
-  path: '/text-hooker',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTextHookerSessionIdRoute =
+  LayoutTextHookerSessionIdRouteImport.update({
+    id: '/text-hooker/$sessionId',
+    path: '/text-hooker/$sessionId',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/settings': typeof LayoutSettingsRoute
-  '/text-hooker': typeof LayoutTextHookerRoute
+  '/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRoute
-  '/text-hooker': typeof LayoutTextHookerRoute
   '/': typeof LayoutIndexRoute
+  '/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/text-hooker': typeof LayoutTextHookerRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/text-hooker'
+  fullPaths: '/' | '/settings' | '/text-hooker/$sessionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/text-hooker' | '/'
+  to: '/settings' | '/' | '/text-hooker/$sessionId'
   id:
     | '__root__'
     | '/_layout'
     | '/_layout/settings'
-    | '/_layout/text-hooker'
     | '/_layout/'
+    | '/_layout/text-hooker/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -84,13 +85,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/text-hooker': {
-      id: '/_layout/text-hooker'
-      path: '/text-hooker'
-      fullPath: '/text-hooker'
-      preLoaderRoute: typeof LayoutTextHookerRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -98,19 +92,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/text-hooker/$sessionId': {
+      id: '/_layout/text-hooker/$sessionId'
+      path: '/text-hooker/$sessionId'
+      fullPath: '/text-hooker/$sessionId'
+      preLoaderRoute: typeof LayoutTextHookerSessionIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
   LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutTextHookerRoute: typeof LayoutTextHookerRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutTextHookerSessionIdRoute: typeof LayoutTextHookerSessionIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutTextHookerRoute: LayoutTextHookerRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutTextHookerSessionIdRoute: LayoutTextHookerSessionIdRoute,
 }
 
 const LayoutRouteWithChildren =

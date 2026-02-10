@@ -4,21 +4,22 @@ import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-export const Route = createFileRoute("/_layout/text-hooker")({
+export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
 });
 
 function TextHookerPage() {
+  const { sessionId } = Route.useParams();
   const [textHistory] = useTextHistory();
   const textHistoryContainer = useRef<HTMLDivElement>(null);
   useConfig();
 
   return (
     <div className="p-4 overflow-auto">
-      <div className="flex flex-col gap-16" ref={textHistoryContainer}>
+      <div className="flex flex-col gap-16 pb-16" ref={textHistoryContainer}>
         {textHistory.map((item) => (
-          <div className="flex items-center gap-2 border-b p-2 hover:bg-surface-calm">
-            <p key={item.id} className="text-xl flex-1">
+          <div key={item.id} className="flex items-center gap-2 border-b p-2 hover:bg-surface-calm">
+            <p className="text-xl flex-1">
               {"\n"}
               {item.text}
               <span
@@ -38,7 +39,6 @@ function TextHookerPage() {
             ></TrashIcon>
           </div>
         ))}
-        <p className="mt-16"></p>
       </div>
     </div>
   );

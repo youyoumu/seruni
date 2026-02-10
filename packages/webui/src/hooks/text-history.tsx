@@ -7,8 +7,9 @@ export function useTextHistory() {
   const [textHistory, setTextHistory] = useState<TextHistory[]>([]);
 
   useEffect(() => {
-    const cleanHandler = api.addPushHandler("text_history", (e) => {
-      setTextHistory([...textHistory, e]);
+    console.log("test");
+    const cleanHandler = api.addPushHandler("text_history", (data) => {
+      setTextHistory((prev) => [...prev, data]);
     });
 
     return () => {
