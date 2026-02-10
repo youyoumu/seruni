@@ -107,15 +107,15 @@ class ClientReqBus<
     R extends SRes[V]["detail"]["data"],
   >(
     type: K,
-    value: (payload: CReq[K]["detail"]["data"]) => R,
+    value: (payload: CReq[K]["detail"]["data"]) => R | Promise<R>,
   ) => {
     const v = this.cReqPair[type];
-    const handler = (e: CReq[K]) => {
+    const handler = async (e: CReq[K]) => {
       this.sResBus.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
           detail: {
-            data: value(e.detail.data),
+            data: await value(e.detail.data),
             requestId: e.detail.requestId,
           },
         }) as SRes[V],
@@ -174,15 +174,15 @@ class ServerReqBus<
     R extends CRes[V]["detail"]["data"],
   >(
     type: K,
-    value: (payload: SReq[K]["detail"]["data"]) => R,
+    value: (payload: SReq[K]["detail"]["data"]) => R | Promise<R>,
   ) => {
     const v = this.sReqPair[type];
-    const handler = (e: SReq[K]) => {
+    const handler = async (e: SReq[K]) => {
       this.cResBus.dispatchTypedEvent(
         v,
         new CustomEvent(v, {
           detail: {
-            data: value(e.detail.data),
+            data: await value(e.detail.data),
             requestId: e.detail.requestId,
           },
         }) as CRes[V],

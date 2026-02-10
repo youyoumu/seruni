@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useTextHistory } from "#/hooks/text-history";
 import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/_layout/text-hooker")({
   component: TextHookerPage,

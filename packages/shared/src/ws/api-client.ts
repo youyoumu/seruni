@@ -1,5 +1,5 @@
 import { createCentralBus } from "#/events";
-import { type TextHistory } from "#/db/schema";
+import { type Session, type TextHistory } from "#/db/schema";
 import type { PushEvent, ReqEvent, ResEvent, CreateSchema } from "#/events";
 
 export type Config = {
@@ -17,11 +17,13 @@ export type ServerPushEventMap = {
 
 export type ClientReqEventMap = {
   req_config: ReqEvent;
-  req_config2: ReqEvent;
+  req_text_history_by_session_id: ReqEvent<number>;
+  req_sessions: ReqEvent;
 };
 export type ServerResEventMap = {
   res_config: ResEvent<Config>;
-  res_config2: ResEvent<Config>;
+  res_text_history_by_session_id: ResEvent<TextHistory[]>;
+  res_sessions: ResEvent<Session[]>;
 };
 
 export type ServerReqEventMap = {
@@ -52,7 +54,8 @@ const createAppCentralBus = () => {
     },
     clientRequestPair: {
       req_config: "res_config",
-      req_config2: "res_config2",
+      req_text_history_by_session_id: "res_text_history_by_session_id",
+      req_sessions: "res_sessions",
     },
     serverRequestPair: {
       req_user_agent: "res_user_agent",

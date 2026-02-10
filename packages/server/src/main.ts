@@ -8,7 +8,8 @@ import { createServerApi } from "@repo/shared/ws";
 import type {} from "@repo/shared/types";
 import type { WSPayload } from "@repo/shared/events";
 import { createDb } from "./db";
-import { session } from "@repo/shared/db";
+import { session, textHistory } from "@repo/shared/db";
+import { eq } from "drizzle-orm";
 
 async function main() {
   const logger = createLogger();
@@ -42,6 +43,14 @@ async function main() {
 
   api.addPushHandler("ping", (e) => {
     console.log("Received ping");
+  });
+
+  api.addReqHandler("req_text_history_by_session_id", async (id) => {
+    return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
+  });
+
+  api.addReqHandler("req_sessions", async () => {
+    return await db.select().from(session);
   });
 
   app.get(

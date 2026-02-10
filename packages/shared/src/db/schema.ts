@@ -28,6 +28,7 @@ export const session = sqliteTable("session", {
   updatedAt: updatedAt(),
   name: text("name").notNull(),
 });
+export type Session = typeof session.$inferSelect;
 
 export const textHistory = sqliteTable("text_history", {
   id: id(),
@@ -47,6 +48,7 @@ export const notes = sqliteTable("notes", {
   noteId: integer("note_id").notNull().unique(),
   info: text("info", { mode: "json" }).$type<AnkiNote | null>().default(null),
 });
+export type Note = typeof notes.$inferSelect;
 
 export const media = sqliteTable("media", {
   id: id(),
@@ -61,3 +63,4 @@ export const media = sqliteTable("media", {
     .$type<{ start: number; end: number }[] | null>()
     .default(null),
 });
+export type Media = typeof media.$inferSelect;

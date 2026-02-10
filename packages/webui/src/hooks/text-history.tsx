@@ -14,7 +14,7 @@ export function useTextHistory() {
     return () => {
       cleanHandler();
     };
-  });
+  }, []);
 
   return [textHistory, setTextHistory] as const;
 }
