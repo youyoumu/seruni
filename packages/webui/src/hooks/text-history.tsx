@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useBus } from "./bus";
+import type { TextHistory } from "@repo/shared/db";
 
 export function useTextHistory() {
   const api = useBus();
-  const [textHistory, setTextHistory] = useState<string[]>([]);
+  const [textHistory, setTextHistory] = useState<TextHistory[]>([]);
 
   useEffect(() => {
     const cleanHandler = api.addPushHandler("text_history", (e) => {
-      setTextHistory([...textHistory, e.text]);
+      setTextHistory([...textHistory, e]);
     });
 
     return () => {
