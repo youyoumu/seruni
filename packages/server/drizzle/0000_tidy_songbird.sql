@@ -18,9 +18,18 @@ CREATE TABLE `notes` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `notes_note_id_unique` ON `notes` (`note_id`);--> statement-breakpoint
+CREATE TABLE `session` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`name` text NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `text_history` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
-	`text` text NOT NULL
+	`session_id` integer NOT NULL,
+	`text` text NOT NULL,
+	FOREIGN KEY (`session_id`) REFERENCES `session`(`id`) ON UPDATE no action ON DELETE cascade
 );

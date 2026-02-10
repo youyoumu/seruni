@@ -22,10 +22,20 @@ const updatedAt = () =>
     .notNull()
     .$onUpdate(() => new Date());
 
+export const session = sqliteTable("session", {
+  id: id(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+  name: text("name").notNull(),
+});
+
 export const textHistory = sqliteTable("text_history", {
   id: id(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => session.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
 });
 export type TextHistory = typeof textHistory.$inferSelect;
