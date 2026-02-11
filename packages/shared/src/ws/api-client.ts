@@ -43,21 +43,12 @@ type ApiSchema = CreateSchema<{
 }>;
 
 const createApi = () => {
-  const {
-    clientOnPayload,
-    clientBindWS,
-    linkClientPush,
-    linkClientRequest,
-
-    serverOnPayload,
-    serverAddWS,
-    linkServerPush,
-    linkServerRequest,
-  } = createCentralBus<ApiSchema>();
+  const { bridge, link } = createCentralBus<ApiSchema>();
 
   const createClientPushPair = () => {
-    const [ping, handlePing] = linkClientPush("ping");
-    const [ping2, handlePing2] = linkClientPush("ping2");
+    const push = link.client.push;
+    const [ping, handlePing] = push("ping");
+    const [ping2, handlePing2] = push("ping2");
     return {
       push: {
         ping,
@@ -72,12 +63,13 @@ const createApi = () => {
   const clientPushPair = createClientPushPair();
 
   const createClientRequestPair = () => {
-    const [config, handleConfig] = linkClientRequest("reqConfig", "resConfig");
-    const [textHistoryBySessionId, handleTextHistoryBySessionId] = linkClientRequest(
+    const request = link.client.request;
+    const [config, handleConfig] = request("reqConfig", "resConfig");
+    const [textHistoryBySessionId, handleTextHistoryBySessionId] = request(
       "reqTextHistoryBySessionId",
       "resTextHistoryBySessionId",
     );
-    const [sessions, handleSessions] = linkClientRequest("reqSessions", "resSessions");
+    const [sessions, handleSessions] = request("reqSessions", "resSessions");
 
     return {
       request: {
@@ -95,8 +87,9 @@ const createApi = () => {
   const clientRequestPair = createClientRequestPair();
 
   const createServerPushPair = () => {
-    const [textHistory, handleTextHistory] = linkServerPush("textHistory");
-    const [textHistory2, handleTextHistory2] = linkServerPush("textHistory2");
+    const push = link.server.push;
+    const [textHistory, handleTextHistory] = push("textHistory");
+    const [textHistory2, handleTextHistory2] = push("textHistory2");
 
     return {
       push: {
@@ -112,7 +105,8 @@ const createApi = () => {
   const serverPushPair = createServerPushPair();
 
   const createServerRequestPair = () => {
-    const [userAgent, handleUserAgent] = linkServerRequest("reqUserAgent", "resUserAgent");
+    const request = link.server.request;
+    const [userAgent, handleUserAgent] = request("reqUserAgent", "resUserAgent");
     return {
       request: {
         userAgent,
@@ -126,8 +120,8 @@ const createApi = () => {
 
   return {
     client: {
-      onPayload: clientOnPayload,
-      bindWS: clientBindWS,
+      onPayload: bridge.client.onPayload,
+      bindWS: bridge.client.bindWS,
       api: {
         push: clientPushPair.push,
         request: clientRequestPair.request,
@@ -136,8 +130,8 @@ const createApi = () => {
       },
     },
     server: {
-      onPayload: serverOnPayload,
-      addWS: serverAddWS,
+      onPayload: bridge.server.onPayload,
+      addWS: bridge.server.addWS,
       api: {
         push: serverPushPair.push,
         request: serverRequestPair.request,

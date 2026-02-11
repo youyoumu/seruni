@@ -501,17 +501,20 @@ export function createCentralBus<Schema extends BusSchema>() {
     sReqBus.addWS(ws);
   };
 
-  const bus = {
-    clientOnPayload: cOnPayload,
-    clientBindWS: cBindWS,
-    linkClientPush: cPushBus.linkPush,
-    linkClientRequest: cReqBus.linkReq,
-
-    serverOnPayload: sOnPayload,
-    serverAddWS: sAddWS,
-    linkServerPush: sPushBus.linkPush,
-    linkServerRequest: sReqBus.linkReq,
+  return {
+    bridge: {
+      client: { bindWS: cBindWS, onPayload: cOnPayload },
+      server: { addWS: sAddWS, onPayload: sOnPayload },
+    },
+    link: {
+      client: {
+        push: cPushBus.linkPush,
+        request: cReqBus.linkReq,
+      },
+      server: {
+        push: sPushBus.linkPush,
+        request: sReqBus.linkReq,
+      },
+    },
   };
-
-  return bus;
 }
