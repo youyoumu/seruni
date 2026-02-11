@@ -2,19 +2,25 @@
 import { TypedEventTarget } from "typescript-event-target";
 import { uid } from "uid";
 
-interface WithReqId<T = undefined> {
+export interface WithReqId<T = undefined> {
   data: T;
   requestId: string;
 }
+
+class ResponseErrorEvent<E extends Error = Error> extends CustomEvent<WithReqId<E>> {}
 
 type ClientPushEventMap = Record<string, CustomEvent<unknown>>;
 type ServerPushEventMap = Record<string, CustomEvent<unknown>>;
 
 type ClientReqEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
-type ServerResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
+type ServerResEventMap = Record<string, CustomEvent<WithReqId<unknown>>> & {
+  __error__: ResponseErrorEvent;
+};
 
 type ServerReqEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
-type ClientResEventMap = Record<string, CustomEvent<WithReqId<unknown>>>;
+type ClientResEventMap = Record<string, CustomEvent<WithReqId<unknown>>> & {
+  __error__: ResponseErrorEvent;
+};
 
 class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<CPush> {
   #push = <T extends keyof CPush & string>(
@@ -81,7 +87,9 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   };
 }
 
-class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<SRes> {}
+class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
+  SRes & { __error__: ResponseErrorEvent<Error> }
+> {}
 class ClientReqBus<
   CReq extends ClientReqEventMap,
   SRes extends ServerResEventMap,
@@ -108,15 +116,25 @@ class ClientReqBus<
       : [data: CReq[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    return new Promise<R>((resolve) => {
+    return new Promise<R>((resolve, reject) => {
       const handler = (e: SRes[S]) => {
         if (e.detail.requestId === requestId) {
+          this.#sResBus.removeEventListener("__error__", handleError);
           this.#sResBus.removeEventListener(serverEvent, handler);
           resolve(e.detail.data as R);
         }
       };
-
       this.#sResBus.addEventListener(serverEvent, handler);
+
+      const handleError = (e: ResponseErrorEvent<Error>) => {
+        if (e.detail.requestId === requestId) {
+          this.#sResBus.removeEventListener("__error__", handleError);
+          this.#sResBus.removeEventListener(serverEvent, handler);
+          reject(e.detail.data);
+        }
+      };
+      this.#sResBus.addEventListener("__error__", handleError);
+
       this.dispatchTypedEvent(
         clientEvent,
         new CustomEvent(clientEvent, {
@@ -196,15 +214,24 @@ class ServerReqBus<
       : [data: SReq[S]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    return new Promise<R>((resolve) => {
+    return new Promise<R>((resolve, reject) => {
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
           this.#cResBus.removeEventListener(clientEvent, handler);
           resolve(e.detail.data as R);
         }
       };
-
       this.#cResBus.addEventListener(clientEvent, handler);
+
+      const handleError = (e: ResponseErrorEvent<Error>) => {
+        if (e.detail.requestId === requestId) {
+          this.#cResBus.removeEventListener("__error__", handleError);
+          this.#cResBus.removeEventListener(clientEvent, handler);
+          reject(e.detail.data);
+        }
+      };
+      this.#cResBus.addEventListener("__error__", handleError);
+
       this.dispatchTypedEvent(
         serverEvent,
         new CustomEvent(serverEvent, {
@@ -350,8 +377,7 @@ class ClientWSBridge<
           tag: tag,
           data: e.detail,
         };
-        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
-        this.#ws?.send(JSON.stringify(payload));
+        if (this.#ws?.readyState === WebSocket.OPEN) this.#ws?.send(JSON.stringify(payload));
       });
     });
 
@@ -362,8 +388,19 @@ class ClientWSBridge<
           tag: tag,
           data: e.detail,
         };
-        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
-        this.#ws?.send(JSON.stringify(payload));
+        if (this.#ws?.readyState === WebSocket.OPEN) {
+          this.#ws?.send(JSON.stringify(payload));
+        } else {
+          this.#sResBus.dispatchTypedEvent(
+            "__error__",
+            new ResponseErrorEvent("__error__", {
+              detail: {
+                data: new Error("WebSocket is not open"),
+                requestId: e.detail.requestId,
+              },
+            }),
+          );
+        }
       });
     });
 
@@ -374,8 +411,7 @@ class ClientWSBridge<
           tag: tag,
           data: e.detail,
         };
-        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
-        this.#ws?.send(JSON.stringify(payload));
+        if (this.#ws?.readyState === WebSocket.OPEN) this.#ws?.send(JSON.stringify(payload));
       });
     });
   }
@@ -556,9 +592,9 @@ type BusSchema = {
   clientPush: ClientPushEventMap;
   serverPush: ServerPushEventMap;
   clientRequest: ClientReqEventMap;
-  serverRespond: ServerResEventMap;
+  serverRespond: Omit<ServerResEventMap, "__error__">;
   serverRequest: ServerReqEventMap;
-  clientRespond: ClientResEventMap;
+  clientRespond: Omit<ClientResEventMap, "__error__">;
 };
 
 export function createCentralBus<Schema extends BusSchema>(contractPair: {
@@ -576,9 +612,9 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   type CPush = Schema["clientPush"];
   type SPush = Schema["serverPush"];
   type CReq = Schema["clientRequest"];
-  type SRes = Schema["serverRespond"];
+  type SRes = Schema["serverRespond"] & { __error__: ResponseErrorEvent };
   type SReq = Schema["serverRequest"];
-  type CRes = Schema["clientRespond"];
+  type CRes = Schema["clientRespond"] & { __error__: ResponseErrorEvent };
 
   const {
     clientPushPair: cPushPair,
