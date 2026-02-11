@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useBus } from "./bus";
+import { useApi } from "./api";
 import { type Config } from "@repo/shared/ws";
 
 export function useConfig() {
-  const api = useBus();
+  const api = useApi();
   const [config, setConfig] = useState<Config>({ workdir: "" });
 
   useEffect(() => {

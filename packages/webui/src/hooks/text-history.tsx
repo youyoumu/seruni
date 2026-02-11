@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { useBus } from "./bus";
+import { useApi } from "./api";
 import type { TextHistory } from "@repo/shared/db";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 export function useTextHistory$({ sessionId }: { sessionId: number }) {
-  const api = useBus();
+  const api = useApi();
   const queryClient = useQueryClient();
 
   useEffect(() => {

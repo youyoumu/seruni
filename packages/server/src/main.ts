@@ -48,6 +48,12 @@ async function main() {
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });
 
+  api.handleRequest.session(async (id) => {
+    return await db.query.session.findFirst({
+      where: eq(session.id, id),
+    });
+  });
+
   api.handleRequest.sessions(async () => {
     return await db.select().from(session);
   });

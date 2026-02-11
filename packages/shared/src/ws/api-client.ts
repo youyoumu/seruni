@@ -18,11 +18,13 @@ export type ServerPushEventMap = {
 export type ClientReqEventMap = {
   reqConfig: ReqEvent;
   reqTextHistoryBySessionId: ReqEvent<number>;
+  reqSession: ReqEvent<number>;
   reqSessions: ReqEvent;
 };
 export type ServerResEventMap = {
   resConfig: ResEvent<Config>;
   resTextHistoryBySessionId: ResEvent<TextHistory[]>;
+  resSession: ResEvent<Session | undefined>;
   resSessions: ResEvent<Session[]>;
 };
 
@@ -69,17 +71,20 @@ const createApi = () => {
       "reqTextHistoryBySessionId",
       "resTextHistoryBySessionId",
     );
+    const [session, handleSession] = request("reqSession", "resSession");
     const [sessions, handleSessions] = request("reqSessions", "resSessions");
 
     return {
       request: {
         config,
         textHistoryBySessionId,
+        session,
         sessions,
       },
       handleRequest: {
         config: handleConfig,
         textHistoryBySessionId: handleTextHistoryBySessionId,
+        session: handleSession,
         sessions: handleSessions,
       },
     };

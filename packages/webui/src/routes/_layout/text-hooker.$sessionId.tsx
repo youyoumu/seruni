@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useTextHistory$ } from "#/hooks/text-history";
 import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
@@ -6,6 +6,17 @@ import { useRef } from "react";
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
+  async beforeLoad({ params, context }) {
+    const { sessionId } = params;
+    const { api } = context;
+    let session: any;
+    try {
+      session = await api.request.session(Number(sessionId));
+    } catch {}
+
+    console.log("DEBUG[1579]: session=", session);
+    if (!session) throw notFound();
+  },
 });
 
 function TextHookerPage() {

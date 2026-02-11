@@ -2,11 +2,28 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Api } from "./hooks/api";
 
 import { routeTree } from "./routeTree.gen";
-import { BusProvider } from "./hooks/bus";
+import { ApiProvider } from "./hooks/api";
 
-const router = createRouter({ routeTree });
+const queryClient = new QueryClient();
+const api = new Api();
+
+const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+    api: api.api,
+  },
+  Wrap: ({ children }) => {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  },
+  // TODO: style
+  defaultNotFoundComponent: () => {
+    return <div>404</div>;
+  },
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -14,18 +31,14 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const queryClient = new QueryClient();
-
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <BusProvider>
-          <RouterProvider router={router} />
-        </BusProvider>
-      </QueryClientProvider>
+      <ApiProvider api={api.api}>
+        <RouterProvider router={router} />
+      </ApiProvider>
     </StrictMode>,
   );
 }
