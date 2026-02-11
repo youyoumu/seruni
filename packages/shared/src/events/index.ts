@@ -36,6 +36,17 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
     this.addEventListener(tag, handler_);
     return () => this.removeEventListener(tag, handler_);
   };
+
+  linkPush = <T extends keyof CPush & string>(clientEvent: T) => {
+    const push = (
+      ...data: undefined extends CPush[T]["detail"]
+        ? [data?: CPush[T]["detail"]]
+        : [data: CPush[T]["detail"]]
+    ) => this.push(clientEvent, data[0]);
+    const handle = (handler: (payload: CPush[T]["detail"]) => void) =>
+      this.addPushHandler(clientEvent, handler);
+    return [push, handle] as const;
+  };
 }
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
   push = <T extends keyof SPush & string>(
@@ -56,6 +67,17 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
     };
     this.addEventListener(tag, handler_);
     return () => this.removeEventListener(tag, handler_);
+  };
+
+  linkPush = <T extends keyof SPush & string>(serverEvent: T) => {
+    const push = (
+      ...data: undefined extends SPush[T]["detail"]
+        ? [data?: SPush[T]["detail"]]
+        : [data: SPush[T]["detail"]]
+    ) => this.push(serverEvent, data[0]);
+    const handle = (handler: (payload: SPush[T]["detail"]) => void) =>
+      this.addPushHandler(serverEvent, handler);
+    return [push, handle] as const;
   };
 }
 
