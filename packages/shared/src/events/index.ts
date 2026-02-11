@@ -114,27 +114,27 @@ class ClientReqBus<
   };
 
   addReqHandler = <
-    K extends keyof CReq & string,
-    V extends (typeof this.cReqPair)[K],
-    R extends SRes[V]["detail"]["data"],
+    C extends keyof CReq & string,
+    S extends CReqPair[C],
+    R extends SRes[S]["detail"]["data"],
   >(
-    type: K,
-    value: (payload: CReq[K]["detail"]["data"]) => R | Promise<R>,
+    clientEvent: C,
+    serverEvent: S,
+    value: (payload: CReq[C]["detail"]["data"]) => R | Promise<R>,
   ) => {
-    const v = this.cReqPair[type];
-    const handler = async (e: CReq[K]) => {
+    const handler = async (e: CReq[C]) => {
       this.sResBus.dispatchTypedEvent(
-        v,
-        new CustomEvent(v, {
+        serverEvent,
+        new CustomEvent(serverEvent, {
           detail: {
             data: await value(e.detail.data),
             requestId: e.detail.requestId,
           },
-        }) as SRes[V],
+        }) as SRes[S],
       );
     };
-    this.addEventListener(type, handler);
-    return () => this.removeEventListener(type, handler);
+    this.addEventListener(clientEvent, handler);
+    return () => this.removeEventListener(clientEvent, handler);
   };
 }
 
@@ -193,27 +193,27 @@ class ServerReqBus<
   };
 
   addReqHandler = <
-    K extends keyof SReq & string,
-    V extends (typeof this.sReqPair)[K],
-    R extends CRes[V]["detail"]["data"],
+    S extends keyof SReq & string,
+    C extends SReqPair[S],
+    R extends CRes[C]["detail"]["data"],
   >(
-    type: K,
-    value: (payload: SReq[K]["detail"]["data"]) => R | Promise<R>,
+    serverEvent: S,
+    clientEvent: C,
+    value: (payload: SReq[S]["detail"]["data"]) => R | Promise<R>,
   ) => {
-    const v = this.sReqPair[type];
-    const handler = async (e: SReq[K]) => {
+    const handler = async (e: SReq[S]) => {
       this.cResBus.dispatchTypedEvent(
-        v,
-        new CustomEvent(v, {
+        clientEvent,
+        new CustomEvent(clientEvent, {
           detail: {
             data: await value(e.detail.data),
             requestId: e.detail.requestId,
           },
-        }) as CRes[V],
+        }) as CRes[C],
       );
     };
-    this.addEventListener(type, handler);
-    return () => this.removeEventListener(type, handler);
+    this.addEventListener(serverEvent, handler);
+    return () => this.removeEventListener(serverEvent, handler);
   };
 }
 
