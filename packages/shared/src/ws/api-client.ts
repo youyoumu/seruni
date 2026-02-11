@@ -42,25 +42,6 @@ type ApiSchema = CreateSchema<{
   clientRespond: ClientResEventMap;
 }>;
 
-const pair = {
-  clientPushPair: {
-    ping: undefined,
-    ping2: undefined,
-  },
-  serverPushPair: {
-    textHistory: undefined,
-    textHistory2: undefined,
-  },
-  clientRequestPair: {
-    reqConfig: "resConfig",
-    reqTextHistoryBySessionId: "resTextHistoryBySessionId",
-    reqSessions: "resSessions",
-  } as const,
-  serverRequestPair: {
-    reqUserAgent: "resUserAgent",
-  } as const,
-} as const;
-
 const createApi = () => {
   const {
     linkClientPush,
@@ -69,7 +50,7 @@ const createApi = () => {
     linkServerRequest,
     clientWSBridge,
     serverWSBridge,
-  } = createCentralBus<ApiSchema>(pair);
+  } = createCentralBus<ApiSchema>();
 
   const createClientPushPair = () => {
     const [ping, handlePing] = linkClientPush("ping");

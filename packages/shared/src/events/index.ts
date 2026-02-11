@@ -143,25 +143,22 @@ class ClientReqBus<
   CReq extends ClientReqEventMap,
   SRes extends ServerResEventMap,
   SResBus extends ServerResBus<SRes>,
-  CReqPair extends Record<keyof CReq & string, keyof SRes & string>,
 > extends TypedEventTarget<CReq> {
   #sResBus: SResBus;
-  #cReqPair: CReqPair;
 
   #ws: WS | undefined;
 
   #reqEvents = new Set<string>();
   #resEvents = new Set<string>();
 
-  constructor(sResBus: SResBus, cReqPair: CReqPair) {
+  constructor(sResBus: SResBus) {
     super();
     this.#sResBus = sResBus;
-    this.#cReqPair = cReqPair;
   }
 
   #request = <
-    C extends keyof CReqPair & string,
-    S extends CReqPair[C],
+    C extends keyof CReq & string,
+    S extends keyof SRes & string,
     R extends SRes[S]["detail"]["data"],
   >(
     clientEvent: C,
@@ -201,7 +198,7 @@ class ClientReqBus<
 
   #addReqHandler = <
     C extends keyof CReq & string,
-    S extends CReqPair[C],
+    S extends keyof SRes & string,
     R extends SRes[S]["detail"]["data"],
   >(
     clientEvent: C,
@@ -224,8 +221,8 @@ class ClientReqBus<
   };
 
   linkReq = <
-    C extends keyof CReqPair & string,
-    S extends CReqPair[C],
+    C extends keyof CReq & string,
+    S extends keyof SRes & string,
     R extends SRes[S]["detail"]["data"],
   >(
     clientEvent: C,
@@ -295,24 +292,21 @@ class ServerReqBus<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
   CResBus extends ClientResBus<CRes>,
-  SReqPair extends Record<keyof SReq & string, keyof CRes & string>,
 > extends TypedEventTarget<SReq> {
   #cResBus: CResBus;
-  #sReqPair: SReqPair;
 
   #ws = new Set<WS>();
   #reqEvents = new Set<string>();
   #resEvents = new Set<string>();
 
-  constructor(cResBus: CResBus, sReqPair: SReqPair) {
+  constructor(cResBus: CResBus) {
     super();
     this.#cResBus = cResBus;
-    this.#sReqPair = sReqPair;
   }
 
   #request = <
-    S extends keyof SReqPair & string,
-    C extends SReqPair[S],
+    S extends keyof SReq & string,
+    C extends keyof CRes & string,
     R extends CRes[C]["detail"]["data"],
   >(
     serverEvent: S,
@@ -351,7 +345,7 @@ class ServerReqBus<
 
   #addReqHandler = <
     S extends keyof SReq & string,
-    C extends SReqPair[S],
+    C extends keyof CRes & string,
     R extends CRes[C]["detail"]["data"],
   >(
     serverEvent: S,
@@ -374,8 +368,8 @@ class ServerReqBus<
   };
 
   linkReq = <
-    S extends keyof SReqPair & string,
-    C extends SReqPair[S],
+    S extends keyof SReq & string,
+    C extends keyof CRes & string,
     R extends CRes[C]["detail"]["data"],
   >(
     serverEvent: S,
@@ -442,65 +436,31 @@ class ClientWSBridge<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
 > {
-  #ws: WS | undefined;
-
-  #cPushPair: Record<keyof CPush & string, undefined>;
   #cPushBus: ClientPushBus<CPush>;
-  #cReqPair: Record<keyof CReq & string, keyof SRes & string>;
-  #cReqBus: ClientReqBus<
-    CReq,
-    SRes,
-    ServerResBus<SRes>,
-    Record<keyof CReq & string, keyof SRes & string>
-  >;
-  #sReqPair: Record<keyof SReq & string, keyof CRes & string>;
+  #cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
   #cResBus: ClientResBus<CRes>;
 
   #sPushBus: ServerPushBus<SPush>;
-  #sReqBus: ServerReqBus<
-    SReq,
-    CRes,
-    ClientResBus<CRes>,
-    Record<keyof SReq & string, keyof CRes & string>
-  >;
+  #sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
   #sResBus: ServerResBus<SRes>;
 
   constructor({
-    cPushPair,
     cPushBus,
-    cReqPair,
     cReqBus,
-    sReqPair,
     cResBus,
     sPushBus,
     sReqBus,
     sResBus,
   }: {
-    cPushPair: Record<keyof CPush & string, undefined>;
     cPushBus: ClientPushBus<CPush>;
-    cReqPair: Record<keyof CReq & string, keyof SRes & string>;
-    cReqBus: ClientReqBus<
-      CReq,
-      SRes,
-      ServerResBus<SRes>,
-      Record<keyof CReq & string, keyof SRes & string>
-    >;
-    sReqPair: Record<keyof SReq & string, keyof CRes & string>;
+    cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
     cResBus: ClientResBus<CRes>;
     sPushBus: ServerPushBus<SPush>;
-    sReqBus: ServerReqBus<
-      SReq,
-      CRes,
-      ClientResBus<CRes>,
-      Record<keyof SReq & string, keyof CRes & string>
-    >;
+    sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
     sResBus: ServerResBus<SRes>;
   }) {
-    this.#cPushPair = cPushPair;
     this.#cPushBus = cPushBus;
-    this.#cReqPair = cReqPair;
     this.#cReqBus = cReqBus;
-    this.#sReqPair = sReqPair;
     this.#cResBus = cResBus;
 
     this.#sPushBus = sPushBus;
@@ -532,7 +492,6 @@ class ClientWSBridge<
   }
 
   bindWS(ws: WS) {
-    this.#ws = ws;
     this.#cPushBus.bindWS(ws);
     this.#cResBus.bindWS(ws);
     this.#cReqBus.bindWS(ws);
@@ -548,64 +507,31 @@ class ServerWSBridge<
   CRes extends ClientResEventMap,
 > {
   #ws = new Set<WS>();
-
-  #sPushPair: Record<keyof SPush & string, undefined>;
   #sPushBus: ServerPushBus<SPush>;
-  #sReqPair: Record<keyof SReq & string, keyof CRes & string>;
-  #sReqBus: ServerReqBus<
-    SReq,
-    CRes,
-    ClientResBus<CRes>,
-    Record<keyof SReq & string, keyof CRes & string>
-  >;
-  #cReqPair: Record<keyof CReq & string, keyof SRes & string>;
+  #sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
   #sResBus: ServerResBus<SRes>;
 
   #cPushBus: ClientPushBus<CPush>;
-  #cReqBus: ClientReqBus<
-    CReq,
-    SRes,
-    ServerResBus<SRes>,
-    Record<keyof CReq & string, keyof SRes & string>
-  >;
+  #cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
   #cResBus: ClientResBus<CRes>;
 
   constructor({
-    sPushPair,
     sPushBus,
-    sReqPair,
     sReqBus,
-    cReqPair,
     sResBus,
     cPushBus,
     cReqBus,
     cResBus,
   }: {
-    sPushPair: Record<keyof SPush & string, undefined>;
     sPushBus: ServerPushBus<SPush>;
-    sReqPair: Record<keyof SReq & string, keyof CRes & string>;
-    sReqBus: ServerReqBus<
-      SReq,
-      CRes,
-      ClientResBus<CRes>,
-      Record<keyof SReq & string, keyof CRes & string>
-    >;
-    cReqPair: Record<keyof CReq & string, keyof SRes & string>;
+    sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
     sResBus: ServerResBus<SRes>;
     cPushBus: ClientPushBus<CPush>;
-    cReqBus: ClientReqBus<
-      CReq,
-      SRes,
-      ServerResBus<SRes>,
-      Record<keyof CReq & string, keyof SRes & string>
-    >;
+    cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
     cResBus: ClientResBus<CRes>;
   }) {
-    this.#sPushPair = sPushPair;
     this.#sPushBus = sPushBus;
-    this.#sReqPair = sReqPair;
     this.#sReqBus = sReqBus;
-    this.#cReqPair = cReqPair;
     this.#sResBus = sResBus;
 
     this.#cPushBus = cPushBus;
@@ -658,18 +584,7 @@ type BusSchema = {
   clientRespond: Omit<ClientResEventMap, "__error__">;
 };
 
-export function createCentralBus<Schema extends BusSchema>(contractPair: {
-  clientPushPair: Record<keyof Schema["clientPush"] & string, undefined>;
-  serverPushPair: Record<keyof Schema["serverPush"] & string, undefined>;
-  clientRequestPair: Record<
-    keyof Schema["clientRequest"] & string,
-    keyof Schema["serverRespond"] & string
-  >;
-  serverRequestPair: Record<
-    keyof Schema["serverRequest"] & string,
-    keyof Schema["clientRespond"] & string
-  >;
-}) {
+export function createCentralBus<Schema extends BusSchema>() {
   type CPush = Schema["clientPush"];
   type SPush = Schema["serverPush"];
   type CReq = Schema["clientRequest"];
@@ -677,48 +592,26 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
   type SReq = Schema["serverRequest"];
   type CRes = Schema["clientRespond"] & { __error__: ResponseErrorEvent };
 
-  const {
-    clientPushPair: cPushPair,
-    serverPushPair: sPushPair,
-    clientRequestPair: cReqPair,
-    serverRequestPair: sReqPair,
-  } = contractPair;
   const cPushBus = new ClientPushBus<CPush>();
   const sPushBus = new ServerPushBus<SPush>();
 
   const sResBus = new ServerResBus<SRes>();
-  const cReqBus = new ClientReqBus<
-    CReq,
-    SRes,
-    ServerResBus<SRes>,
-    Record<keyof CReq & string, keyof SRes & string>
-  >(sResBus, cReqPair);
+  const cReqBus = new ClientReqBus<CReq, SRes, ServerResBus<SRes>>(sResBus);
 
   const cResBus = new ClientResBus<CRes>();
-  const sReqBus = new ServerReqBus<
-    SReq,
-    CRes,
-    ClientResBus<CRes>,
-    Record<keyof SReq & string, keyof CRes & string>
-  >(cResBus, sReqPair);
+  const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus);
 
   const clientWSBridge = new ClientWSBridge<CPush, SPush, CReq, SRes, SReq, CRes>({
-    cPushPair,
     cPushBus,
-    cReqPair,
     cReqBus,
-    sReqPair,
     cResBus,
     sPushBus,
     sReqBus,
     sResBus,
   });
   const serverWSBridge = new ServerWSBridge<CPush, SPush, CReq, SRes, SReq, CRes>({
-    sPushPair,
     sPushBus,
-    sReqPair,
     sReqBus,
-    cReqPair,
     sResBus,
     cPushBus,
     cReqBus,
