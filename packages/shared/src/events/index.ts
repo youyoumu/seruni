@@ -7,6 +7,8 @@ export interface WithReqId<T = undefined> {
   requestId: string;
 }
 
+type Arg<T> = undefined extends T ? [data?: T] : [data: T];
+
 class ResponseErrorEvent<E extends Error = Error> extends CustomEvent<WithReqId<E>> {}
 
 type ClientPushEventMap = Record<string, CustomEvent<unknown>>;
@@ -26,12 +28,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
   #events = new Set<string>();
   #ws: WS | undefined;
 
-  #push = <T extends keyof CPush & string>(
-    tag: T,
-    ...payload: undefined extends CPush[T]["detail"]
-      ? [payload?: CPush[T]["detail"]]
-      : [payload: CPush[T]["detail"]]
-  ) => {
+  #push = <T extends keyof CPush & string>(tag: T, ...payload: Arg<CPush[T]["detail"]>) => {
     this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as CPush[T]);
   };
 
@@ -79,12 +76,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   #events = new Set<string>();
   #ws = new Set<WS>();
 
-  #push = <T extends keyof SPush & string>(
-    tag: T,
-    ...payload: undefined extends SPush[T]["detail"]
-      ? [payload?: SPush[T]["detail"]]
-      : [payload: SPush[T]["detail"]]
-  ) => {
+  #push = <T extends keyof SPush & string>(tag: T, ...payload: Arg<SPush[T]["detail"]>) => {
     this.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: payload[0] }) as SPush[T]);
   };
 
@@ -163,9 +155,7 @@ class ClientReqBus<
   >(
     clientEvent: C,
     serverEvent: S,
-    ...data: undefined extends CReq[C]["detail"]["data"]
-      ? [data?: CReq[C]["detail"]["data"]]
-      : [data: CReq[C]["detail"]["data"]]
+    ...data: Arg<CReq[C]["detail"]["data"]>
   ) => {
     const requestId = uid();
     return new Promise<R>((resolve, reject) => {
@@ -311,9 +301,7 @@ class ServerReqBus<
   >(
     serverEvent: S,
     clientEvent: C,
-    ...data: undefined extends SReq[S]["detail"]["data"]
-      ? [data?: SReq[S]["detail"]["data"]]
-      : [data: SReq[S]["detail"]["data"]]
+    ...data: Arg<SReq[S]["detail"]["data"]>
   ) => {
     const requestId = uid();
     return new Promise<R>((resolve, reject) => {
