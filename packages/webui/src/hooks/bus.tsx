@@ -12,6 +12,7 @@ const ws = new ReconnectingWebsocket({
   },
 });
 
+wsBridge.setupEventListener();
 wsBridge.bindWS(ws);
 
 ws.addEventListener("message", (e: CustomEventInit) => {

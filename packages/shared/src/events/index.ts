@@ -265,6 +265,7 @@ export interface WSPayload {
 
 export interface WS {
   send: (data: string) => void;
+  readyState: WebSocket["readyState"];
 }
 
 class ClientWSBridge<
@@ -276,6 +277,19 @@ class ClientWSBridge<
   CRes extends ClientResEventMap,
 > {
   #ws: WS | undefined;
+
+  #cPushPair: Record<keyof CPush & string, undefined>;
+  #cPushBus: ClientPushBus<CPush>;
+  #cReqPair: Record<keyof CReq & string, keyof SRes & string>;
+  #cReqBus: ClientReqBus<
+    CReq,
+    SRes,
+    ServerResBus<SRes>,
+    Record<keyof CReq & string, keyof SRes & string>
+  >;
+  #sReqPair: Record<keyof SReq & string, keyof CRes & string>;
+  #cResBus: ClientResBus<CRes>;
+
   #sPushBus: ServerPushBus<SPush>;
   #sReqBus: ServerReqBus<
     SReq,
@@ -316,39 +330,51 @@ class ClientWSBridge<
     >;
     sResBus: ServerResBus<SRes>;
   }) {
+    this.#cPushPair = cPushPair;
+    this.#cPushBus = cPushBus;
+    this.#cReqPair = cReqPair;
+    this.#cReqBus = cReqBus;
+    this.#sReqPair = sReqPair;
+    this.#cResBus = cResBus;
+
     this.#sPushBus = sPushBus;
     this.#sReqBus = sReqBus;
     this.#sResBus = sResBus;
+  }
 
-    Object.keys(cPushPair).forEach((tag: keyof CPush & string) => {
-      cPushBus.addEventListener(tag, (e) => {
+  setupEventListener() {
+    Object.keys(this.#cPushPair).forEach((tag: keyof CPush & string) => {
+      this.#cPushBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "push",
           tag: tag,
           data: e.detail,
         };
+        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
         this.#ws?.send(JSON.stringify(payload));
       });
     });
 
-    Object.keys(cReqPair).forEach((tag: keyof CReq & string) => {
-      cReqBus.addEventListener(tag, (e) => {
+    Object.keys(this.#cReqPair).forEach((tag: keyof CReq & string) => {
+      this.#cReqBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "req",
           tag: tag,
           data: e.detail,
         };
+        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
         this.#ws?.send(JSON.stringify(payload));
       });
     });
 
-    Object.values(sReqPair).forEach((tag: keyof SReq & string) => {
-      cResBus.addEventListener(tag, (e) => {
+    Object.values(this.#sReqPair).forEach((tag: keyof SReq & string) => {
+      this.#cResBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "res",
           tag: tag,
           data: e.detail,
         };
+        if (this.#ws?.readyState !== WebSocket.OPEN) throw new Error("WebSocket is not open");
         this.#ws?.send(JSON.stringify(payload));
       });
     });
@@ -389,6 +415,19 @@ class ServerWSBridge<
   CRes extends ClientResEventMap,
 > {
   #ws = new Set<WS>();
+
+  #sPushPair: Record<keyof SPush & string, undefined>;
+  #sPushBus: ServerPushBus<SPush>;
+  #sReqPair: Record<keyof SReq & string, keyof CRes & string>;
+  #sReqBus: ServerReqBus<
+    SReq,
+    CRes,
+    ClientResBus<CRes>,
+    Record<keyof SReq & string, keyof CRes & string>
+  >;
+  #cReqPair: Record<keyof CReq & string, keyof SRes & string>;
+  #sResBus: ServerResBus<SRes>;
+
   #cPushBus: ClientPushBus<CPush>;
   #cReqBus: ClientReqBus<
     CReq,
@@ -429,40 +468,55 @@ class ServerWSBridge<
     >;
     cResBus: ClientResBus<CRes>;
   }) {
+    this.#sPushPair = sPushPair;
+    this.#sPushBus = sPushBus;
+    this.#sReqPair = sReqPair;
+    this.#sReqBus = sReqBus;
+    this.#cReqPair = cReqPair;
+    this.#sResBus = sResBus;
+
     this.#cPushBus = cPushBus;
     this.#cReqBus = cReqBus;
     this.#cResBus = cResBus;
+  }
 
-    Object.keys(sReqPair).forEach((tag: keyof SReq & string) => {
-      sReqBus.addEventListener(tag, (e) => {
+  setupEventListener() {
+    Object.keys(this.#sReqPair).forEach((tag: keyof SReq & string) => {
+      this.#sReqBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "req",
           tag: tag,
           data: e.detail,
         };
-        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
+        this.#ws.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        });
       });
     });
 
-    Object.keys(sPushPair).forEach((tag: keyof SPush & string) => {
-      sPushBus.addEventListener(tag, (e) => {
+    Object.keys(this.#sPushPair).forEach((tag: keyof SPush & string) => {
+      this.#sPushBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "push",
           tag: tag,
           data: e.detail,
         };
-        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
+        this.#ws.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        });
       });
     });
 
-    Object.values(cReqPair).forEach((tag: keyof CReq & string) => {
-      sResBus.addEventListener(tag, (e) => {
+    Object.values(this.#cReqPair).forEach((tag: keyof CReq & string) => {
+      this.#sResBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
           type: "res",
           tag: tag,
           data: e.detail,
         };
-        this.#ws.forEach((ws) => ws.send(JSON.stringify(payload)));
+        this.#ws.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        });
       });
     });
   }

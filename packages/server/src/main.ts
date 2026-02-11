@@ -14,6 +14,7 @@ import { eq } from "drizzle-orm";
 async function main() {
   const logger = createLogger();
   const { api, wsBridge } = createServerApi();
+  wsBridge.setupEventListener();
   const db = createDb();
   const newSession = await db
     .insert(session)
