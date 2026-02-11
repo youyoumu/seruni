@@ -74,7 +74,11 @@ class ClientReqBus<
     this.cReqPair = cReqPair;
   }
 
-  request = <C extends keyof CReqPair & string, S extends CReqPair[C]>(
+  request = <
+    C extends keyof CReqPair & string,
+    S extends CReqPair[C],
+    R extends SRes[S]["detail"]["data"],
+  >(
     clientEvent: C,
     serverEvent: S,
     ...data: undefined extends CReq[C]["detail"]["data"]
@@ -82,13 +86,11 @@ class ClientReqBus<
       : [data: CReq[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    type ResponseData = SRes[S]["detail"]["data"];
-
-    return new Promise<ResponseData>((resolve) => {
+    return new Promise<R>((resolve) => {
       const handler = (e: SRes[S]) => {
         if (e.detail.requestId === requestId) {
           this.sResBus.removeEventListener(serverEvent, handler);
-          resolve(e.detail.data);
+          resolve(e.detail.data as R);
         }
       };
 
@@ -100,17 +102,6 @@ class ClientReqBus<
         }) as CReq[C],
       );
     });
-  };
-
-  link = <C extends keyof CReqPair & string, S extends CReqPair[C]>(
-    clientEvent: C,
-    serverEvent: S,
-  ) => {
-    return (
-      ...data: undefined extends CReq[C]["detail"]["data"]
-        ? [data?: CReq[C]["detail"]["data"]]
-        : [data: CReq[C]["detail"]["data"]]
-    ) => this.request(clientEvent, serverEvent, data[0]);
   };
 
   addReqHandler = <
@@ -136,6 +127,24 @@ class ClientReqBus<
     this.addEventListener(clientEvent, handler);
     return () => this.removeEventListener(clientEvent, handler);
   };
+
+  linkReq = <
+    C extends keyof CReqPair & string,
+    S extends CReqPair[C],
+    R extends SRes[S]["detail"]["data"],
+  >(
+    clientEvent: C,
+    serverEvent: S,
+  ) => {
+    const request = (
+      ...data: undefined extends CReq[C]["detail"]["data"]
+        ? [data?: CReq[C]["detail"]["data"]]
+        : [data: CReq[C]["detail"]["data"]]
+    ) => this.request(clientEvent, serverEvent, data[0]);
+    const handle = (handler: (payload: CReq[C]["detail"]["data"]) => R | Promise<R>) =>
+      this.addReqHandler(clientEvent, serverEvent, handler);
+    return [request, handle] as const;
+  };
 }
 
 class ClientResBus<CRes extends ClientResEventMap> extends TypedEventTarget<CRes> {}
@@ -153,7 +162,11 @@ class ServerReqBus<
     this.sReqPair = sReqPair;
   }
 
-  request = <S extends keyof SReqPair & string, C extends SReqPair[S]>(
+  request = <
+    S extends keyof SReqPair & string,
+    C extends SReqPair[S],
+    R extends CRes[C]["detail"]["data"],
+  >(
     serverEvent: S,
     clientEvent: C,
     ...data: undefined extends SReq[S]["detail"]["data"]
@@ -161,13 +174,11 @@ class ServerReqBus<
       : [data: SReq[S]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    type ResponseData = CRes[C]["detail"]["data"];
-
-    return new Promise<ResponseData>((resolve) => {
+    return new Promise<R>((resolve) => {
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
           this.cResBus.removeEventListener(clientEvent, handler);
-          resolve(e.detail.data);
+          resolve(e.detail.data as R);
         }
       };
 
@@ -179,17 +190,6 @@ class ServerReqBus<
         }) as SReq[S],
       );
     });
-  };
-
-  link = <S extends keyof SReqPair & string, C extends SReqPair[S]>(
-    serverEvent: S,
-    clientEvent: C,
-  ) => {
-    return (
-      ...data: undefined extends SReq[S]["detail"]["data"]
-        ? [data?: SReq[S]["detail"]["data"]]
-        : [data: SReq[S]["detail"]["data"]]
-    ) => this.request(serverEvent, clientEvent, data[0]);
   };
 
   addReqHandler = <
@@ -214,6 +214,24 @@ class ServerReqBus<
     };
     this.addEventListener(serverEvent, handler);
     return () => this.removeEventListener(serverEvent, handler);
+  };
+
+  linkReq = <
+    S extends keyof SReqPair & string,
+    C extends SReqPair[S],
+    R extends CRes[C]["detail"]["data"],
+  >(
+    serverEvent: S,
+    clientEvent: C,
+  ) => {
+    const request = (
+      ...data: undefined extends SReq[S]["detail"]["data"]
+        ? [data?: SReq[S]["detail"]["data"]]
+        : [data: SReq[S]["detail"]["data"]]
+    ) => this.request(serverEvent, clientEvent, data[0]);
+    const handle = (handler: (payload: SReq[S]["detail"]["data"]) => R | Promise<R>) =>
+      this.addReqHandler(serverEvent, clientEvent, handler);
+    return [request, handle] as const;
   };
 }
 
@@ -543,7 +561,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
     addReqHandler: sReqBus.addReqHandler,
     /** Send a request from client to server and await response */
     request: cReqBus.request,
-    link: cReqBus.link,
+    linkReq: cReqBus.linkReq,
   };
 
   const serverBus = {
@@ -555,6 +573,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
     addReqHandler: cReqBus.addReqHandler,
     /** Send a request from server to client and await response */
     request: sReqBus.request,
+    linkReq: sReqBus.linkReq,
   };
 
   /** Central bus instance containing client and server interfaces */
