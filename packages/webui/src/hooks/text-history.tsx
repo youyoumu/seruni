@@ -1,33 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useBus } from "./bus";
 import type { TextHistory } from "@repo/shared/db";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 export function useTextHistory$({ sessionId }: { sessionId: number }) {
   const api = useBus();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    return api.handlePush.textHistory((data) => {
+      queryClient.setQueryData(["textHistory", { sessionId }], (old: TextHistory[] = []) => {
+        return [...old, data];
+      });
+    });
+  }, []);
+
   return useSuspenseQuery({
     queryKey: ["textHistory", { sessionId }],
-    queryFn: () => {
-      const a = api.request.textHistoryBySessionId(sessionId);
+    queryFn: async () => {
+      const a = await api.request.textHistoryBySessionId(sessionId);
       return a;
     },
   });
-}
-
-export function useTextHistory() {
-  const api = useBus();
-  const [textHistory, setTextHistory] = useState<TextHistory[]>([]);
-
-  useEffect(() => {
-    console.log("test");
-    const cleanHandler = api.handlePush.textHistory((data) => {
-      setTextHistory((prev) => [...prev, data]);
-    });
-
-    return () => {
-      cleanHandler();
-    };
-  }, []);
-
-  return [textHistory, setTextHistory] as const;
 }
