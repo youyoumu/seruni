@@ -11,26 +11,26 @@ export type ClientPushEventMap = {
   ping2: PushEvent<number>;
 };
 export type ServerPushEventMap = {
-  text_history: PushEvent<TextHistory>;
-  text_history2: PushEvent;
+  textHistory: PushEvent<TextHistory>;
+  textHistory2: PushEvent;
 };
 
 export type ClientReqEventMap = {
-  req_config: ReqEvent;
-  req_text_history_by_session_id: ReqEvent<number>;
-  req_sessions: ReqEvent;
+  reqConfig: ReqEvent;
+  reqTextHistoryBySessionId: ReqEvent<number>;
+  reqSessions: ReqEvent;
 };
 export type ServerResEventMap = {
-  res_config: ResEvent<Config>;
-  res_text_history_by_session_id: ResEvent<TextHistory[]>;
-  res_sessions: ResEvent<Session[]>;
+  resConfig: ResEvent<Config>;
+  resTextHistoryBySessionId: ResEvent<TextHistory[]>;
+  resSessions: ResEvent<Session[]>;
 };
 
 export type ServerReqEventMap = {
-  req_user_agent: ReqEvent;
+  reqUserAgent: ReqEvent;
 };
 export type ClientResEventMap = {
-  res_user_agent: ResEvent<string>;
+  resUserAgent: ResEvent<string>;
 };
 
 type ApiSchema = CreateSchema<{
@@ -42,41 +42,136 @@ type ApiSchema = CreateSchema<{
   clientRespond: ClientResEventMap;
 }>;
 
-const createAppCentralBus = () => {
-  return createCentralBus<ApiSchema>({
-    clientPushPair: {
-      ping: undefined,
-      ping2: undefined,
+const pair = {
+  clientPushPair: {
+    ping: undefined,
+    ping2: undefined,
+  },
+  serverPushPair: {
+    textHistory: undefined,
+    textHistory2: undefined,
+  },
+  clientRequestPair: {
+    reqConfig: "resConfig",
+    reqTextHistoryBySessionId: "resTextHistoryBySessionId",
+    reqSessions: "resSessions",
+  } as const,
+  serverRequestPair: {
+    reqUserAgent: "resUserAgent",
+  } as const,
+} as const;
+
+const createApi = () => {
+  const {
+    linkClientPush,
+    linkClientRequest,
+    linkServerPush,
+    linkServerRequest,
+    clientWSBridge,
+    serverWSBridge,
+  } = createCentralBus<ApiSchema>(pair);
+
+  const createClientPushPair = () => {
+    const [ping, handlePing] = linkClientPush("ping");
+    const [ping2, handlePing2] = linkClientPush("ping2");
+    return {
+      push: {
+        ping,
+        ping2,
+      },
+      handlePush: {
+        ping: handlePing,
+        ping2: handlePing2,
+      },
+    };
+  };
+  const clientPushPair = createClientPushPair();
+
+  const createClientRequestPair = () => {
+    const [config, handleConfig] = linkClientRequest("reqConfig", "resConfig");
+    const [textHistoryBySessionId, handleTextHistoryBySessionId] = linkClientRequest(
+      "reqTextHistoryBySessionId",
+      "resTextHistoryBySessionId",
+    );
+    const [sessions, handleSessions] = linkClientRequest("reqSessions", "resSessions");
+
+    return {
+      request: {
+        config,
+        textHistoryBySessionId,
+        sessions,
+      },
+      handleRequest: {
+        config: handleConfig,
+        textHistoryBySessionId: handleTextHistoryBySessionId,
+        sessions: handleSessions,
+      },
+    };
+  };
+  const clientRequestPair = createClientRequestPair();
+
+  const createServerPushPair = () => {
+    const [textHistory, handleTextHistory] = linkServerPush("textHistory");
+    const [textHistory2, handleTextHistory2] = linkServerPush("textHistory2");
+
+    return {
+      push: {
+        textHistory,
+        textHistory2,
+      },
+      handlePush: {
+        textHistory: handleTextHistory,
+        textHistory2: handleTextHistory2,
+      },
+    };
+  };
+  const serverPushPair = createServerPushPair();
+
+  const createServerRequestPair = () => {
+    const [userAgent, handleUserAgent] = linkServerRequest("reqUserAgent", "resUserAgent");
+    return {
+      request: {
+        userAgent,
+      },
+      handleRequest: {
+        userAgent: handleUserAgent,
+      },
+    };
+  };
+  const serverRequestPair = createServerRequestPair();
+
+  return {
+    client: {
+      push: clientPushPair.push,
+      request: clientRequestPair.request,
+      handlePush: serverPushPair.handlePush,
+      handleRequest: serverRequestPair.handleRequest,
     },
-    serverPushPair: {
-      text_history: undefined,
-      text_history2: undefined,
+    server: {
+      push: serverPushPair.push,
+      request: serverRequestPair.request,
+      handlePush: clientPushPair.handlePush,
+      handleRequest: clientRequestPair.handleRequest,
     },
-    clientRequestPair: {
-      req_config: "res_config",
-      req_text_history_by_session_id: "res_text_history_by_session_id",
-      req_sessions: "res_sessions",
-    },
-    serverRequestPair: {
-      req_user_agent: "res_user_agent",
-    },
-  });
+    clientWSBridge,
+    serverWSBridge,
+  };
 };
 
 export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
-  const { client } = createAppCentralBus();
+  const { client, clientWSBridge } = createApi();
   return {
-    api: client.bus,
-    wsBridge: client.wsBridge,
+    api: client,
+    wsBridge: clientWSBridge,
   };
 }
 
 export type ServerApi = ReturnType<typeof createServerApi>["api"];
 export function createServerApi() {
-  const { server } = createAppCentralBus();
+  const { server, serverWSBridge } = createApi();
   return {
-    api: server.bus,
-    wsBridge: server.wsBridge,
+    api: server,
+    wsBridge: serverWSBridge,
   };
 }

@@ -22,7 +22,13 @@ function LayoutComponent() {
           <Link to="/" className={navLink()} title="Home">
             <Terminal size={20} />
           </Link>
-          <Link to="/text-hooker" className={navLink()} title="Text Hooker">
+          <Link
+            to="/text-hooker/$sessionId"
+            className={navLink()}
+            title="Text Hooker"
+            //TODO: infer to number
+            params={{ sessionId: "1" }}
+          >
             <FileText size={20} />
           </Link>
         </nav>

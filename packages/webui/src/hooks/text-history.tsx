@@ -8,7 +8,7 @@ export function useTextHistory$({ sessionId }: { sessionId: number }) {
   return useSuspenseQuery({
     queryKey: ["textHistory", { sessionId }],
     queryFn: () => {
-      const a = api.request("req_text_history_by_session_id", sessionId);
+      const a = api.request.textHistoryBySessionId(sessionId);
       return a;
     },
   });
@@ -20,7 +20,7 @@ export function useTextHistory() {
 
   useEffect(() => {
     console.log("test");
-    const cleanHandler = api.addPushHandler("text_history", (data) => {
+    const cleanHandler = api.handlePush.textHistory((data) => {
       setTextHistory((prev) => [...prev, data]);
     });
 

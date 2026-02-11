@@ -33,23 +33,23 @@ async function main() {
   const log = logger.child({ name: "client" });
 
   setInterval(async () => {
-    const userAgent = await api.request("req_user_agent");
+    const userAgent = await api.request.userAgent();
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
-  api.addReqHandler("req_config", () => {
+  api.handleRequest.config(() => {
     return { workdir: "test" };
   });
 
-  api.addPushHandler("ping", (e) => {
+  api.handlePush.ping(() => {
     console.log("Received ping");
   });
 
-  api.addReqHandler("req_text_history_by_session_id", async (id) => {
+  api.handleRequest.textHistoryBySessionId(async (id) => {
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });
 
-  api.addReqHandler("req_sessions", async () => {
+  api.handleRequest.sessions(async () => {
     return await db.select().from(session);
   });
 

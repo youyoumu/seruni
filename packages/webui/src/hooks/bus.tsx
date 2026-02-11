@@ -19,7 +19,7 @@ ws.addEventListener("message", (e: CustomEventInit) => {
   wsBridge.onPayload(payload);
 });
 
-api.addReqHandler("req_user_agent", () => {
+api.handleRequest.userAgent(() => {
   return navigator.userAgent;
 });
 

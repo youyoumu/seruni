@@ -34,7 +34,7 @@ export class TextHookerClient extends ReconnectingWebsocket {
           .values({ text: event.detail, sessionId: this.sessionId })
           .returning()
           .get();
-        api.push("text_history", row);
+        api.push.textHistory(row);
       }
     });
   }

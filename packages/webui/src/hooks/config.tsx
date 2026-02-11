@@ -8,13 +8,13 @@ export function useConfig() {
 
   useEffect(() => {
     setInterval(async () => {
-      const config = await api.request("req_config");
+      const config = await api.request.config();
       console.log("DEBUG[1503]: config=", config);
     }, 3000);
 
     setInterval(async () => {
-      api.push("ping", undefined);
-      api.push("ping2", 0);
+      api.push.ping(undefined);
+      api.push.ping2(0);
     }, 3000);
   }, []);
 }
