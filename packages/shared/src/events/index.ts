@@ -23,6 +23,9 @@ type ClientResEventMap = Record<string, CustomEvent<WithReqId<unknown>>> & {
 };
 
 class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<CPush> {
+  #events = new Set<string>();
+  #ws: WS | undefined;
+
   #push = <T extends keyof CPush & string>(
     tag: T,
     ...payload: undefined extends CPush[T]["detail"]
@@ -44,6 +47,9 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
   };
 
   linkPush = <T extends keyof CPush & string>(clientEvent: T) => {
+    if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
+    this.#events.add(clientEvent);
+
     const push = (
       ...data: undefined extends CPush[T]["detail"]
         ? [data?: CPush[T]["detail"]]
@@ -51,10 +57,28 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
     ) => this.#push(clientEvent, data[0]);
     const handle = (handler: (payload: CPush[T]["detail"]) => void) =>
       this.#addPushHandler(clientEvent, handler);
+
+    this.addEventListener(clientEvent, (e) => {
+      if (this.#ws?.readyState !== WebSocket.OPEN) return;
+      const payload: WSPayload = {
+        type: "push",
+        tag: clientEvent,
+        data: e.detail,
+      };
+      this.#ws.send(JSON.stringify(payload));
+    });
+
     return [push, handle] as const;
   };
+
+  bindWS(ws: WS) {
+    this.#ws = ws;
+  }
 }
 class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<SPush> {
+  #events = new Set<string>();
+  #ws = new Set<WS>();
+
   #push = <T extends keyof SPush & string>(
     tag: T,
     ...payload: undefined extends SPush[T]["detail"]
@@ -76,6 +100,9 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   };
 
   linkPush = <T extends keyof SPush & string>(serverEvent: T) => {
+    if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
+    this.#events.add(serverEvent);
+
     const push = (
       ...data: undefined extends SPush[T]["detail"]
         ? [data?: SPush[T]["detail"]]
@@ -83,8 +110,25 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
     ) => this.#push(serverEvent, data[0]);
     const handle = (handler: (payload: SPush[T]["detail"]) => void) =>
       this.#addPushHandler(serverEvent, handler);
+
+    this.addEventListener(serverEvent, (e) => {
+      this.#ws.forEach((ws) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        const payload: WSPayload = {
+          type: "push",
+          tag: serverEvent,
+          data: e.detail,
+        };
+        ws.send(JSON.stringify(payload));
+      });
+    });
+
     return [push, handle] as const;
   };
+
+  addWS(ws: WS) {
+    this.#ws.add(ws);
+  }
 }
 
 class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
@@ -370,17 +414,6 @@ class ClientWSBridge<
   }
 
   setupEventListener() {
-    Object.keys(this.#cPushPair).forEach((tag: keyof CPush & string) => {
-      this.#cPushBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "push",
-          tag: tag,
-          data: e.detail,
-        };
-        if (this.#ws?.readyState === WebSocket.OPEN) this.#ws?.send(JSON.stringify(payload));
-      });
-    });
-
     Object.keys(this.#cReqPair).forEach((tag: keyof CReq & string) => {
       this.#cReqBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
@@ -439,6 +472,7 @@ class ClientWSBridge<
 
   bindWS(ws: WS) {
     this.#ws = ws;
+    this.#cPushBus.bindWS(ws);
   }
 }
 
@@ -530,19 +564,6 @@ class ServerWSBridge<
       });
     });
 
-    Object.keys(this.#sPushPair).forEach((tag: keyof SPush & string) => {
-      this.#sPushBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "push",
-          tag: tag,
-          data: e.detail,
-        };
-        this.#ws.forEach((ws) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-        });
-      });
-    });
-
     Object.values(this.#cReqPair).forEach((tag: keyof CReq & string) => {
       this.#sResBus.addEventListener(tag, (e) => {
         const payload: WSPayload = {
@@ -580,6 +601,7 @@ class ServerWSBridge<
 
   addWS(ws: WS) {
     this.#ws.add(ws);
+    this.#sPushBus.addWS(ws);
   }
 }
 
