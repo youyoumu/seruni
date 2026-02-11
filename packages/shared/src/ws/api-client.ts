@@ -44,12 +44,15 @@ type ApiSchema = CreateSchema<{
 
 const createApi = () => {
   const {
+    clientOnPayload,
+    clientBindWS,
     linkClientPush,
     linkClientRequest,
+
+    serverOnPayload,
+    serverAddWS,
     linkServerPush,
     linkServerRequest,
-    clientWSBridge,
-    serverWSBridge,
   } = createCentralBus<ApiSchema>();
 
   const createClientPushPair = () => {
@@ -123,36 +126,36 @@ const createApi = () => {
 
   return {
     client: {
-      push: clientPushPair.push,
-      request: clientRequestPair.request,
-      handlePush: serverPushPair.handlePush,
-      handleRequest: serverRequestPair.handleRequest,
+      onPayload: clientOnPayload,
+      bindWS: clientBindWS,
+      api: {
+        push: clientPushPair.push,
+        request: clientRequestPair.request,
+        handlePush: serverPushPair.handlePush,
+        handleRequest: serverRequestPair.handleRequest,
+      },
     },
     server: {
-      push: serverPushPair.push,
-      request: serverRequestPair.request,
-      handlePush: clientPushPair.handlePush,
-      handleRequest: clientRequestPair.handleRequest,
+      onPayload: serverOnPayload,
+      addWS: serverAddWS,
+      api: {
+        push: serverPushPair.push,
+        request: serverRequestPair.request,
+        handlePush: clientPushPair.handlePush,
+        handleRequest: clientRequestPair.handleRequest,
+      },
     },
-    clientWSBridge,
-    serverWSBridge,
   };
 };
 
 export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
-  const { client, clientWSBridge } = createApi();
-  return {
-    api: client,
-    wsBridge: clientWSBridge,
-  };
+  const { client } = createApi();
+  return client;
 }
 
 export type ServerApi = ReturnType<typeof createServerApi>["api"];
 export function createServerApi() {
-  const { server, serverWSBridge } = createApi();
-  return {
-    api: server,
-    wsBridge: serverWSBridge,
-  };
+  const { server } = createApi();
+  return server;
 }

@@ -428,148 +428,6 @@ export interface WS {
   readyState: WebSocket["readyState"];
 }
 
-class ClientWSBridge<
-  CPush extends ClientPushEventMap,
-  SPush extends ServerPushEventMap,
-  CReq extends ClientReqEventMap,
-  SRes extends ServerResEventMap,
-  SReq extends ServerReqEventMap,
-  CRes extends ClientResEventMap,
-> {
-  #cPushBus: ClientPushBus<CPush>;
-  #cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
-  #cResBus: ClientResBus<CRes>;
-
-  #sPushBus: ServerPushBus<SPush>;
-  #sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
-  #sResBus: ServerResBus<SRes>;
-
-  constructor({
-    cPushBus,
-    cReqBus,
-    cResBus,
-    sPushBus,
-    sReqBus,
-    sResBus,
-  }: {
-    cPushBus: ClientPushBus<CPush>;
-    cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
-    cResBus: ClientResBus<CRes>;
-    sPushBus: ServerPushBus<SPush>;
-    sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
-    sResBus: ServerResBus<SRes>;
-  }) {
-    this.#cPushBus = cPushBus;
-    this.#cReqBus = cReqBus;
-    this.#cResBus = cResBus;
-
-    this.#sPushBus = sPushBus;
-    this.#sReqBus = sReqBus;
-    this.#sResBus = sResBus;
-  }
-
-  setupEventListener() {}
-
-  onPayload(payload: WSPayload) {
-    if (payload.type === "push") {
-      type S = keyof SPush & string;
-      const tag = payload.tag as S;
-      const data = payload.data as SPush[S]["detail"];
-      this.#sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SPush[S]);
-    }
-    if (payload.type === "req") {
-      type S = keyof SReq & string;
-      const tag = payload.tag as S;
-      const data = payload.data as SReq[S]["detail"];
-      this.#sReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SReq[S]);
-    }
-    if (payload.type === "res") {
-      type S = keyof SRes & string;
-      const tag = payload.tag as S;
-      const data = payload.data as SRes[S]["detail"];
-      this.#sResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SRes[S]);
-    }
-  }
-
-  bindWS(ws: WS) {
-    this.#cPushBus.bindWS(ws);
-    this.#cResBus.bindWS(ws);
-    this.#cReqBus.bindWS(ws);
-  }
-}
-
-class ServerWSBridge<
-  CPush extends ClientPushEventMap,
-  SPush extends ServerPushEventMap,
-  CReq extends ClientReqEventMap,
-  SRes extends ServerResEventMap,
-  SReq extends ServerReqEventMap,
-  CRes extends ClientResEventMap,
-> {
-  #ws = new Set<WS>();
-  #sPushBus: ServerPushBus<SPush>;
-  #sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
-  #sResBus: ServerResBus<SRes>;
-
-  #cPushBus: ClientPushBus<CPush>;
-  #cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
-  #cResBus: ClientResBus<CRes>;
-
-  constructor({
-    sPushBus,
-    sReqBus,
-    sResBus,
-    cPushBus,
-    cReqBus,
-    cResBus,
-  }: {
-    sPushBus: ServerPushBus<SPush>;
-    sReqBus: ServerReqBus<SReq, CRes, ClientResBus<CRes>>;
-    sResBus: ServerResBus<SRes>;
-    cPushBus: ClientPushBus<CPush>;
-    cReqBus: ClientReqBus<CReq, SRes, ServerResBus<SRes>>;
-    cResBus: ClientResBus<CRes>;
-  }) {
-    this.#sPushBus = sPushBus;
-    this.#sReqBus = sReqBus;
-    this.#sResBus = sResBus;
-
-    this.#cPushBus = cPushBus;
-    this.#cReqBus = cReqBus;
-    this.#cResBus = cResBus;
-  }
-
-  setupEventListener() {}
-
-  onPayload(payload: WSPayload) {
-    if (payload.type === "push") {
-      type C = keyof CPush & string;
-      const tag = payload.tag as C;
-      const data = payload.data as CPush[C]["detail"];
-      this.#cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CPush[C]);
-    }
-    if (payload.type === "req") {
-      type C = keyof CReq & string;
-      const tag = payload.tag as C;
-      const data = payload.data as CReq[C]["detail"];
-      this.#cReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CReq[C]);
-    }
-    if (payload.type === "res") {
-      type C = keyof CRes & string;
-      const tag = payload.tag as C;
-      const data = payload.data as CRes[C]["detail"];
-      this.#cResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CRes[C]);
-    }
-  }
-
-  addWS(ws: WS) {
-    this.#ws.add(ws);
-    this.#sPushBus.addWS(ws);
-    this.#sResBus.addWS(ws);
-    this.#sReqBus.addWS(ws);
-  }
-}
-
 export type CreateSchema<T extends BusSchema> = T;
 export type PushEvent<T = undefined> = CustomEvent<T>;
 export type ReqEvent<T = undefined> = CustomEvent<WithReqId<T>>;
@@ -601,28 +459,68 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cResBus = new ClientResBus<CRes>();
   const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus);
 
-  const clientWSBridge = new ClientWSBridge<CPush, SPush, CReq, SRes, SReq, CRes>({
-    cPushBus,
-    cReqBus,
-    cResBus,
-    sPushBus,
-    sReqBus,
-    sResBus,
-  });
-  const serverWSBridge = new ServerWSBridge<CPush, SPush, CReq, SRes, SReq, CRes>({
-    sPushBus,
-    sReqBus,
-    sResBus,
-    cPushBus,
-    cReqBus,
-    cResBus,
-  });
+  const cOnPayload = (payload: WSPayload) => {
+    if (payload.type === "push") {
+      type S = keyof SPush & string;
+      const tag = payload.tag as S;
+      const data = payload.data as SPush[S]["detail"];
+      sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SPush[S]);
+    }
+    if (payload.type === "req") {
+      type S = keyof SReq & string;
+      const tag = payload.tag as S;
+      const data = payload.data as SReq[S]["detail"];
+      sReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SReq[S]);
+    }
+    if (payload.type === "res") {
+      type S = keyof SRes & string & "__error__";
+      const tag = payload.tag as S;
+      const data = payload.data as SRes[S]["detail"];
+      sResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SRes[S]);
+    }
+  };
+
+  const sOnPayload = (payload: WSPayload) => {
+    if (payload.type === "push") {
+      type C = keyof CPush & string;
+      const tag = payload.tag as C;
+      const data = payload.data as CPush[C]["detail"];
+      cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CPush[C]);
+    }
+    if (payload.type === "req") {
+      type C = keyof CReq & string;
+      const tag = payload.tag as C;
+      const data = payload.data as CReq[C]["detail"];
+      cReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CReq[C]);
+    }
+    if (payload.type === "res") {
+      type C = keyof CRes & string & "__error__";
+      const tag = payload.tag as C;
+      const data = payload.data as CRes[C]["detail"];
+      cResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CRes[C]);
+    }
+  };
+
+  const cBindWS = (ws: WS) => {
+    cPushBus.bindWS(ws);
+    cResBus.bindWS(ws);
+    cReqBus.bindWS(ws);
+  };
+
+  const sAddWS = (ws: WS) => {
+    sPushBus.addWS(ws);
+    sResBus.addWS(ws);
+    sReqBus.addWS(ws);
+  };
 
   const bus = {
-    clientWSBridge,
+    clientOnPayload: cOnPayload,
+    clientBindWS: cBindWS,
     linkClientPush: cPushBus.linkPush,
     linkClientRequest: cReqBus.linkReq,
-    serverWSBridge,
+
+    serverOnPayload: sOnPayload,
+    serverAddWS: sAddWS,
     linkServerPush: sPushBus.linkPush,
     linkServerRequest: sReqBus.linkReq,
   };

@@ -2,7 +2,7 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createContext, useContext } from "react";
 import { createClientApi } from "@repo/shared/ws";
 
-const { api, wsBridge } = createClientApi();
+const { api, onPayload, bindWS } = createClientApi();
 
 const ws = new ReconnectingWebsocket({
   url: "ws://localhost:45626/ws",
@@ -12,12 +12,11 @@ const ws = new ReconnectingWebsocket({
   },
 });
 
-wsBridge.setupEventListener();
-wsBridge.bindWS(ws);
+bindWS(ws);
 
 ws.addEventListener("message", (e: CustomEventInit) => {
   const payload = JSON.parse(e.detail);
-  wsBridge.onPayload(payload);
+  onPayload(payload);
 });
 
 api.handleRequest.userAgent(() => {

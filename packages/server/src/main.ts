@@ -13,8 +13,7 @@ import { eq } from "drizzle-orm";
 
 async function main() {
   const logger = createLogger();
-  const { api, wsBridge } = createServerApi();
-  wsBridge.setupEventListener();
+  const { api, addWS, onPayload } = createServerApi();
   const db = createDb();
   const newSession = await db
     .insert(session)
@@ -60,11 +59,11 @@ async function main() {
       return {
         onMessage(e, _ws) {
           const payload: WSPayload = JSON.parse(e.data.toString());
-          wsBridge.onPayload(payload);
+          onPayload(payload);
         },
         onOpen: (_, ws) => {
           log.info("Connection opened");
-          wsBridge.addWS(ws);
+          addWS(ws);
         },
         onClose: () => {
           log.warn("Connection closed");
