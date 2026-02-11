@@ -74,26 +74,25 @@ class ClientReqBus<
     this.cReqPair = cReqPair;
   }
 
-  request = <C extends keyof CReqPair & string>(
+  request = <C extends keyof CReqPair & string, S extends CReqPair[C]>(
     clientEvent: C,
+    serverEvent: S,
     ...data: undefined extends CReq[C]["detail"]["data"]
       ? [data?: CReq[C]["detail"]["data"]]
       : [data: CReq[C]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    const responseEvent = this.cReqPair[clientEvent];
-    type S = CReqPair[C];
     type ResponseData = SRes[S]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
       const handler = (e: SRes[S]) => {
         if (e.detail.requestId === requestId) {
-          this.sResBus.removeEventListener(responseEvent, handler);
+          this.sResBus.removeEventListener(serverEvent, handler);
           resolve(e.detail.data);
         }
       };
 
-      this.sResBus.addEventListener(responseEvent, handler);
+      this.sResBus.addEventListener(serverEvent, handler);
       this.dispatchTypedEvent(
         clientEvent,
         new CustomEvent(clientEvent, {
@@ -101,6 +100,17 @@ class ClientReqBus<
         }) as CReq[C],
       );
     });
+  };
+
+  link = <C extends keyof CReqPair & string, S extends CReqPair[C]>(
+    clientEvent: C,
+    serverEvent: S,
+  ) => {
+    return (
+      ...data: undefined extends CReq[C]["detail"]["data"]
+        ? [data?: CReq[C]["detail"]["data"]]
+        : [data: CReq[C]["detail"]["data"]]
+    ) => this.request(clientEvent, serverEvent, data[0]);
   };
 
   addReqHandler = <
@@ -143,26 +153,25 @@ class ServerReqBus<
     this.sReqPair = sReqPair;
   }
 
-  request = <S extends keyof SReqPair & string>(
+  request = <S extends keyof SReqPair & string, C extends SReqPair[S]>(
     serverEvent: S,
+    clientEvent: C,
     ...data: undefined extends SReq[S]["detail"]["data"]
       ? [data?: SReq[S]["detail"]["data"]]
       : [data: SReq[S]["detail"]["data"]]
   ) => {
     const requestId = uid();
-    const responseEvent = this.sReqPair[serverEvent];
-    type C = SReqPair[S];
     type ResponseData = CRes[C]["detail"]["data"];
 
     return new Promise<ResponseData>((resolve) => {
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
-          this.cResBus.removeEventListener(responseEvent, handler);
+          this.cResBus.removeEventListener(clientEvent, handler);
           resolve(e.detail.data);
         }
       };
 
-      this.cResBus.addEventListener(responseEvent, handler);
+      this.cResBus.addEventListener(clientEvent, handler);
       this.dispatchTypedEvent(
         serverEvent,
         new CustomEvent(serverEvent, {
@@ -170,6 +179,17 @@ class ServerReqBus<
         }) as SReq[S],
       );
     });
+  };
+
+  link = <S extends keyof SReqPair & string, C extends SReqPair[S]>(
+    serverEvent: S,
+    clientEvent: C,
+  ) => {
+    return (
+      ...data: undefined extends SReq[S]["detail"]["data"]
+        ? [data?: SReq[S]["detail"]["data"]]
+        : [data: SReq[S]["detail"]["data"]]
+    ) => this.request(serverEvent, clientEvent, data[0]);
   };
 
   addReqHandler = <
@@ -523,6 +543,7 @@ export function createCentralBus<Schema extends BusSchema>(contractPair: {
     addReqHandler: sReqBus.addReqHandler,
     /** Send a request from client to server and await response */
     request: cReqBus.request,
+    link: cReqBus.link,
   };
 
   const serverBus = {
