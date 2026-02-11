@@ -3,7 +3,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: [
     "./src/db/index.ts",
-    "./src/events/index.ts",
+    "./src/ws-bus/index.ts",
     "./src/ws/index.ts",
     "./src/types/index.ts",
   ],

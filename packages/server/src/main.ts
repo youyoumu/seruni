@@ -6,7 +6,6 @@ import { createLogger } from "./util/logger";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { createServerApi } from "@repo/shared/ws";
 import type {} from "@repo/shared/types";
-import type { WSPayload } from "@repo/shared/events";
 import { createDb } from "./db";
 import { session, textHistory } from "@repo/shared/db";
 import { eq } from "drizzle-orm";
@@ -58,7 +57,7 @@ async function main() {
     upgradeWebSocket(() => {
       return {
         onMessage(e, _ws) {
-          const payload: WSPayload = JSON.parse(e.data.toString());
+          const payload = JSON.parse(e.data.toString());
           onPayload(payload);
         },
         onOpen: (_, ws) => {

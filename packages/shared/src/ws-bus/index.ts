@@ -307,6 +307,7 @@ class ServerReqBus<
     return new Promise<R>((resolve, reject) => {
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
+          this.#cResBus.removeEventListener("__error__", handleError);
           this.#cResBus.removeEventListener(clientEvent, handler);
           resolve(e.detail.data as R);
         }

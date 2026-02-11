@@ -3,7 +3,7 @@
   "type": "module",
   "exports": {
     "./types": "./dist/types/index.mjs",
-    "./events": "./dist/events/index.mjs",
+    "./ws-bus": "./dist/ws-bus/index.mjs",
     "./db": "./dist/db/index.mjs",
     "./ws": "./dist/ws/index.mjs"
   },
