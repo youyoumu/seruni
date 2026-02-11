@@ -133,7 +133,12 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
 
 class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
   SRes & { __error__: ResponseErrorEvent<Error> }
-> {}
+> {
+  ws = new Set<WS>();
+  addWS(ws: WS) {
+    this.ws.add(ws);
+  }
+}
 class ClientReqBus<
   CReq extends ClientReqEventMap,
   SRes extends ServerResEventMap,
@@ -142,6 +147,12 @@ class ClientReqBus<
 > extends TypedEventTarget<CReq> {
   #sResBus: SResBus;
   #cReqPair: CReqPair;
+
+  #ws: WS | undefined;
+
+  #reqEvents = new Set<string>();
+  #resEvents = new Set<string>();
+
   constructor(sResBus: SResBus, cReqPair: CReqPair) {
     super();
     this.#sResBus = sResBus;
@@ -220,6 +231,11 @@ class ClientReqBus<
     clientEvent: C,
     serverEvent: S,
   ) => {
+    if (this.#reqEvents.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
+    if (this.#resEvents.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
+    this.#reqEvents.add(clientEvent);
+    this.#resEvents.add(serverEvent);
+
     const request = (
       ...data: undefined extends CReq[C]["detail"]["data"]
         ? [data?: CReq[C]["detail"]["data"]]
@@ -227,11 +243,54 @@ class ClientReqBus<
     ) => this.#request(clientEvent, serverEvent, data[0]);
     const handle = (handler: (payload: CReq[C]["detail"]["data"]) => R | Promise<R>) =>
       this.#addReqHandler(clientEvent, serverEvent, handler);
+
+    this.addEventListener(clientEvent, (e) => {
+      const payload: WSPayload = {
+        type: "req",
+        tag: clientEvent,
+        data: e.detail,
+      };
+
+      if (this.#ws?.readyState === WebSocket.OPEN) {
+        this.#ws?.send(JSON.stringify(payload));
+      } else {
+        this.#sResBus.dispatchTypedEvent(
+          "__error__",
+          new ResponseErrorEvent("__error__", {
+            detail: {
+              data: new Error("WebSocket is not open"),
+              requestId: e.detail.requestId,
+            },
+          }),
+        );
+      }
+    });
+
+    this.#sResBus.addEventListener(serverEvent, (e) => {
+      const payload: WSPayload = {
+        type: "res",
+        tag: serverEvent,
+        data: e.detail,
+      };
+      this.#sResBus.ws.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+      });
+    });
+
     return [request, handle] as const;
   };
+
+  bindWS(ws: WS) {
+    this.#ws = ws;
+  }
 }
 
-class ClientResBus<CRes extends ClientResEventMap> extends TypedEventTarget<CRes> {}
+class ClientResBus<CRes extends ClientResEventMap> extends TypedEventTarget<CRes> {
+  ws: WS | undefined;
+  bindWS(ws: WS) {
+    this.ws = ws;
+  }
+}
 class ServerReqBus<
   SReq extends ServerReqEventMap,
   CRes extends ClientResEventMap,
@@ -240,6 +299,11 @@ class ServerReqBus<
 > extends TypedEventTarget<SReq> {
   #cResBus: CResBus;
   #sReqPair: SReqPair;
+
+  #ws = new Set<WS>();
+  #reqEvents = new Set<string>();
+  #resEvents = new Set<string>();
+
   constructor(cResBus: CResBus, sReqPair: SReqPair) {
     super();
     this.#cResBus = cResBus;
@@ -317,6 +381,11 @@ class ServerReqBus<
     serverEvent: S,
     clientEvent: C,
   ) => {
+    if (this.#reqEvents.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
+    if (this.#resEvents.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
+    this.#reqEvents.add(serverEvent);
+    this.#resEvents.add(clientEvent);
+
     const request = (
       ...data: undefined extends SReq[S]["detail"]["data"]
         ? [data?: SReq[S]["detail"]["data"]]
@@ -324,8 +393,34 @@ class ServerReqBus<
     ) => this.#request(serverEvent, clientEvent, data[0]);
     const handle = (handler: (payload: SReq[S]["detail"]["data"]) => R | Promise<R>) =>
       this.#addReqHandler(serverEvent, clientEvent, handler);
+
+    this.addEventListener(serverEvent, (e) => {
+      const payload: WSPayload = {
+        type: "req",
+        tag: serverEvent,
+        data: e.detail,
+      };
+      this.#ws.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+      });
+    });
+
+    this.#cResBus.addEventListener(clientEvent, (e) => {
+      const payload: WSPayload = {
+        type: "res",
+        tag: clientEvent,
+        data: e.detail,
+      };
+      const ws = this.#cResBus.ws;
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+    });
+
     return [request, handle] as const;
   };
+
+  addWS(ws: WS) {
+    this.#ws.add(ws);
+  }
 }
 
 export interface WSPayload {
@@ -413,41 +508,7 @@ class ClientWSBridge<
     this.#sResBus = sResBus;
   }
 
-  setupEventListener() {
-    Object.keys(this.#cReqPair).forEach((tag: keyof CReq & string) => {
-      this.#cReqBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "req",
-          tag: tag,
-          data: e.detail,
-        };
-        if (this.#ws?.readyState === WebSocket.OPEN) {
-          this.#ws?.send(JSON.stringify(payload));
-        } else {
-          this.#sResBus.dispatchTypedEvent(
-            "__error__",
-            new ResponseErrorEvent("__error__", {
-              detail: {
-                data: new Error("WebSocket is not open"),
-                requestId: e.detail.requestId,
-              },
-            }),
-          );
-        }
-      });
-    });
-
-    Object.values(this.#sReqPair).forEach((tag: keyof SReq & string) => {
-      this.#cResBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "res",
-          tag: tag,
-          data: e.detail,
-        };
-        if (this.#ws?.readyState === WebSocket.OPEN) this.#ws?.send(JSON.stringify(payload));
-      });
-    });
-  }
+  setupEventListener() {}
 
   onPayload(payload: WSPayload) {
     if (payload.type === "push") {
@@ -473,6 +534,8 @@ class ClientWSBridge<
   bindWS(ws: WS) {
     this.#ws = ws;
     this.#cPushBus.bindWS(ws);
+    this.#cResBus.bindWS(ws);
+    this.#cReqBus.bindWS(ws);
   }
 }
 
@@ -550,33 +613,7 @@ class ServerWSBridge<
     this.#cResBus = cResBus;
   }
 
-  setupEventListener() {
-    Object.keys(this.#sReqPair).forEach((tag: keyof SReq & string) => {
-      this.#sReqBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "req",
-          tag: tag,
-          data: e.detail,
-        };
-        this.#ws.forEach((ws) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-        });
-      });
-    });
-
-    Object.values(this.#cReqPair).forEach((tag: keyof CReq & string) => {
-      this.#sResBus.addEventListener(tag, (e) => {
-        const payload: WSPayload = {
-          type: "res",
-          tag: tag,
-          data: e.detail,
-        };
-        this.#ws.forEach((ws) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-        });
-      });
-    });
-  }
+  setupEventListener() {}
 
   onPayload(payload: WSPayload) {
     if (payload.type === "push") {
@@ -602,6 +639,8 @@ class ServerWSBridge<
   addWS(ws: WS) {
     this.#ws.add(ws);
     this.#sPushBus.addWS(ws);
+    this.#sResBus.addWS(ws);
+    this.#sReqBus.addWS(ws);
   }
 }
 
