@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { Terminal, FileText, Settings } from "lucide-react";
 import { tv } from "@heroui/react";
+import { useOnline } from "#/hooks/api";
 
 const navLink = tv({
   base: [
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/_layout")({
 });
 
 function LayoutComponent() {
+  const online = useOnline();
+
   return (
     <div className="flex h-screen bg-surface-faint text-foreground">
       <aside className="w-16 bg-surface flex flex-col items-center py-4 border-r border-border justify-between">
@@ -39,7 +42,8 @@ function LayoutComponent() {
         </div>
       </aside>
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Outlet />
+        {/* //TODO: pretty loading */}
+        {online ? <Outlet /> : <div>offline</div>}
       </main>
     </div>
   );

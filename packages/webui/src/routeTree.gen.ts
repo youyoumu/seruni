@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutOfflineRouteImport } from './routes/_layout/offline'
 import { Route as LayoutTextHookerSessionIdRouteImport } from './routes/_layout/text-hooker.$sessionId'
 
 const LayoutRoute = LayoutRouteImport.update({
@@ -28,6 +29,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutOfflineRoute = LayoutOfflineRouteImport.update({
+  id: '/offline',
+  path: '/offline',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTextHookerSessionIdRoute =
   LayoutTextHookerSessionIdRouteImport.update({
     id: '/text-hooker/$sessionId',
@@ -37,10 +43,12 @@ const LayoutTextHookerSessionIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/offline': typeof LayoutOfflineRoute
   '/settings': typeof LayoutSettingsRoute
   '/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
 }
 export interface FileRoutesByTo {
+  '/offline': typeof LayoutOfflineRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
   '/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
@@ -48,18 +56,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/offline': typeof LayoutOfflineRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/text-hooker/$sessionId': typeof LayoutTextHookerSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/text-hooker/$sessionId'
+  fullPaths: '/' | '/offline' | '/settings' | '/text-hooker/$sessionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/' | '/text-hooker/$sessionId'
+  to: '/offline' | '/settings' | '/' | '/text-hooker/$sessionId'
   id:
     | '__root__'
     | '/_layout'
+    | '/_layout/offline'
     | '/_layout/settings'
     | '/_layout/'
     | '/_layout/text-hooker/$sessionId'
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/offline': {
+      id: '/_layout/offline'
+      path: '/offline'
+      fullPath: '/offline'
+      preLoaderRoute: typeof LayoutOfflineRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/text-hooker/$sessionId': {
       id: '/_layout/text-hooker/$sessionId'
       path: '/text-hooker/$sessionId'
@@ -103,12 +120,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutRouteChildren {
+  LayoutOfflineRoute: typeof LayoutOfflineRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutTextHookerSessionIdRoute: typeof LayoutTextHookerSessionIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutOfflineRoute: LayoutOfflineRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutTextHookerSessionIdRoute: LayoutTextHookerSessionIdRoute,
