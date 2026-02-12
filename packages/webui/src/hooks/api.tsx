@@ -1,11 +1,12 @@
 import { ReconnectingWebsocket } from "@repo/shared/ws";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { createClientApi } from "@repo/shared/ws";
 
 const { api, onPayload, bindWS } = createClientApi();
 
 export class Api {
   api = api;
+  ws: ReconnectingWebsocket;
   constructor() {
     const ws = new ReconnectingWebsocket({
       url: "ws://localhost:45626/ws",
@@ -14,6 +15,7 @@ export class Api {
         warn: console.log,
       },
     });
+    this.ws = ws;
 
     bindWS(ws);
 
@@ -36,4 +38,39 @@ export const useApi = () => {
   const api = useContext(ApiContext);
   if (!api) throw new Error("Missing ApiProvider");
   return api;
+};
+
+const OnlineContext = createContext<boolean>(false);
+export const OnlineProvider = ({
+  children,
+  ws,
+}: {
+  children: React.ReactNode;
+  ws: ReconnectingWebsocket;
+}) => {
+  const [online, setOnline] = useState(false);
+
+  useEffect(() => {
+    const openHandler = () => {
+      setOnline(true);
+    };
+    ws.addEventListener("open", openHandler);
+
+    const closeHandler = () => {
+      setOnline(false);
+    };
+    ws.addEventListener("close", closeHandler);
+
+    return () => {
+      ws.removeEventListener("open", openHandler);
+      ws.removeEventListener("close", closeHandler);
+    };
+  }, []);
+
+  return <OnlineContext.Provider value={online}>{children}</OnlineContext.Provider>;
+};
+export const useOnline = () => {
+  const online = useContext(OnlineContext);
+  if (!online) throw new Error("Missing OnlineProvider");
+  return online;
 };

@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
     let session: any;
     try {
       session = await api.request.session(Number(sessionId));
-    } catch (e) {
-      console.log("DEBUG[1581]: e=", e);
+    } catch {
+      throw notFound();
     }
 
     console.log("DEBUG[1579]: session=", session);

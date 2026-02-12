@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Api } from "./hooks/api";
+import { Api, OnlineProvider } from "./hooks/api";
 
 import { routeTree } from "./routeTree.gen";
 import { ApiProvider } from "./hooks/api";
@@ -37,7 +37,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <ApiProvider api={api.api}>
-        <RouterProvider router={router} />
+        <OnlineProvider ws={api.ws}>
+          <RouterProvider router={router} />
+        </OnlineProvider>
       </ApiProvider>
     </StrictMode>,
   );
