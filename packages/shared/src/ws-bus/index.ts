@@ -448,25 +448,20 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cResBus = new ClientResBus<CRes>();
   const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus);
 
+  function dispatch(bus: EventTarget, tag: string, data: unknown) {
+    bus.dispatchEvent(new CustomEvent(tag, { detail: data }));
+  }
+
   const cOnPayload = (payload: WSPayload) => {
     switch (payload.type) {
       case "push": {
-        type S = keyof SPush & string;
-        const tag = payload.tag as S;
-        const data = payload.data as SPush[S]["detail"];
-        return sPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SPush[S]);
+        return dispatch(sPushBus, payload.tag, payload.data);
       }
       case "req": {
-        type S = keyof SReq & string;
-        const tag = payload.tag as S;
-        const data = payload.data as SReq[S]["detail"];
-        return sReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SReq[S]);
+        return dispatch(sReqBus, payload.tag, payload.data);
       }
       case "res": {
-        type S = keyof SRes & string & "__error__";
-        const tag = payload.tag as S;
-        const data = payload.data as SRes[S]["detail"];
-        return sResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as SRes[S]);
+        return dispatch(sResBus, payload.tag, payload.data);
       }
     }
   };
@@ -474,22 +469,13 @@ export function createCentralBus<Schema extends BusSchema>() {
   const sOnPayload = (payload: WSPayload) => {
     switch (payload.type) {
       case "push": {
-        type C = keyof CPush & string;
-        const tag = payload.tag as C;
-        const data = payload.data as CPush[C]["detail"];
-        return cPushBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CPush[C]);
+        return dispatch(cPushBus, payload.tag, payload.data);
       }
       case "req": {
-        type C = keyof CReq & string;
-        const tag = payload.tag as C;
-        const data = payload.data as CReq[C]["detail"];
-        return cReqBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CReq[C]);
+        return dispatch(cReqBus, payload.tag, payload.data);
       }
       case "res": {
-        type C = keyof CRes & string & "__error__";
-        const tag = payload.tag as C;
-        const data = payload.data as CRes[C]["detail"];
-        return cResBus.dispatchTypedEvent(tag, new CustomEvent(tag, { detail: data }) as CRes[C]);
+        return dispatch(cResBus, payload.tag, payload.data);
       }
     }
   };
