@@ -5,6 +5,9 @@ import { WSBusError } from "@repo/shared/ws-bus";
 import { Popover } from "@heroui/react";
 import { useSessions$ } from "#/hooks/sessions";
 import { Suspense } from "react";
+import { Button, Description, FieldError, Form, Input, Label, TextField } from "@heroui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApi } from "#/hooks/api";
 
 const navLink = tv({
   base: [
@@ -66,6 +69,49 @@ function LayoutComponent() {
   );
 }
 
+export function NewSessionForm() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: async (name: string) => {
+      await api.request.createSession(name);
+    },
+    onSuccess: () => {
+      //TODO: use query key factory
+      queryClient.invalidateQueries({
+        queryKey: ["sessions"],
+      });
+    },
+  });
+
+  return (
+    <Form
+      className="flex gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const name = formData.get("name");
+        mutate(name?.toString() ?? "New Session");
+      }}
+    >
+      <TextField
+        isRequired
+        name="name"
+        validate={(value) => {
+          if (!value.trim()) return "Name can't be empty";
+          return null;
+        }}
+      >
+        <Input placeholder="New Session" />
+        <FieldError />
+      </TextField>
+      <div className="flex gap-2">
+        <Button type="submit">Create</Button>
+      </div>
+    </Form>
+  );
+}
+
 export function TextHookerSessionListPopover() {
   const matchRoute = useMatchRoute();
   const active = matchRoute({
@@ -83,9 +129,10 @@ export function TextHookerSessionListPopover() {
           <FileText size={20} />
         </button>
       </Popover.Trigger>
-      <Popover.Content className=" overflow-auto">
+      <Popover.Content className=" overflow-auto bg-surface-calm">
         <Popover.Dialog className="flex flex-col gap-4">
-          <Popover.Heading className="text-lg">Text Hooker Session</Popover.Heading>
+          <Popover.Heading className="text-lg">Select Session</Popover.Heading>
+          <NewSessionForm />
           <Suspense fallback="loading...">
             <TextHookerSessionList />
           </Suspense>

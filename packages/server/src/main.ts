@@ -14,13 +14,17 @@ async function main() {
   const logger = createLogger();
   const { api, addWS, removeWS, onPayload } = createServerApi();
   const db = createDb();
-  const newSession = await db
-    .insert(session)
-    .values({
-      name: new Date().toISOString(),
-    })
-    .returning()
-    .get();
+  const sessions = await db.select().from(session);
+  let lastSession = sessions[sessions.length - 1];
+  if (!lastSession) {
+    lastSession = await db
+      .insert(session)
+      .values({
+        name: "Default Session",
+      })
+      .returning()
+      .get();
+  }
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -66,6 +70,10 @@ async function main() {
     return await db.select().from(session);
   });
 
+  api.handleRequest.createSession(async (name) => {
+    return await db.insert(session).values({ name }).returning().get();
+  });
+
   api.handleRequest.checkHealth(() => undefined);
 
   app.get(
@@ -100,7 +108,8 @@ async function main() {
 
   injectWebSocket(server);
 
-  new TextHookerClient({ logger, api, db, sessionId: newSession.id });
+  //TODO: use signal for sessionId
+  new TextHookerClient({ logger, api, db, sessionId: lastSession.id });
 }
 
 main();

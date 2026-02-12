@@ -21,6 +21,7 @@ export type ClientReqEventMap = {
   reqTextHistoryBySessionId: ReqEvent<number>;
   reqSession: ReqEvent<number>;
   reqSessions: ReqEvent;
+  reqCreateSession: ReqEvent<string>;
   reqCheckHealth: ReqEvent;
 };
 export type ServerResEventMap = {
@@ -28,6 +29,7 @@ export type ServerResEventMap = {
   resTextHistoryBySessionId: ResEvent<TextHistory[]>;
   resSession: ResEvent<Session | undefined>;
   resSessions: ResEvent<Session[]>;
+  resCreateSession: ResEvent<Session>;
   resCheckHealth: ResEvent;
 };
 
@@ -76,6 +78,7 @@ const createApi = () => {
     );
     const [session, handleSession] = request("reqSession", "resSession");
     const [sessions, handleSessions] = request("reqSessions", "resSessions");
+    const [createSession, handleCreateSession] = request("reqCreateSession", "resCreateSession");
     const [checkHealth, handleCheckHealth] = request("reqCheckHealth", "resCheckHealth");
 
     return {
@@ -84,6 +87,7 @@ const createApi = () => {
         textHistoryBySessionId,
         session,
         sessions,
+        createSession,
         checkHealth,
       },
       handleRequest: {
@@ -91,6 +95,7 @@ const createApi = () => {
         textHistoryBySessionId: handleTextHistoryBySessionId,
         session: handleSession,
         sessions: handleSessions,
+        createSession: handleCreateSession,
         checkHealth: handleCheckHealth,
       },
     };

@@ -498,7 +498,7 @@ export interface WS {
 }
 
 export type CreateSchema<T extends BusSchema> = T;
-export type PushEvent<T = undefined> = CustomEvent<T>;
+export type PushEvent<T = undefined> = CustomEvent<WithCorelationId<T>>;
 export type ReqEvent<T = undefined> = CustomEvent<WithCorelationId<T>>;
 export type ResEvent<T = undefined> = CustomEvent<WithCorelationId<T>>;
 
