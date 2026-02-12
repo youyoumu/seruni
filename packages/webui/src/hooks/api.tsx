@@ -40,7 +40,7 @@ export const useApi = () => {
   return api;
 };
 
-const OnlineContext = createContext<boolean>(false);
+const OnlineContext = createContext<boolean | null>(null);
 export const OnlineProvider = ({
   children,
   ws,
@@ -71,6 +71,6 @@ export const OnlineProvider = ({
 };
 export const useOnline = () => {
   const online = useContext(OnlineContext);
-  if (!online) throw new Error("Missing OnlineProvider");
+  if (online === null) throw new Error("Missing OnlineProvider");
   return online;
 };
