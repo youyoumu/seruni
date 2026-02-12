@@ -13,11 +13,12 @@ const navLink = tv({
 
 export const Route = createFileRoute("/_layout")({
   component: LayoutComponent,
+  loader: () => {
+    console.log("test2");
+  },
 });
 
 function LayoutComponent() {
-  const online = useOnline();
-
   return (
     <div className="flex h-screen bg-surface-faint text-foreground">
       <aside className="w-16 bg-surface flex flex-col items-center py-4 border-r border-border justify-between">
@@ -42,8 +43,7 @@ function LayoutComponent() {
         </div>
       </aside>
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* //TODO: pretty loading */}
-        {online ? <Outlet /> : <div>offline</div>}
+        <Outlet />
       </main>
     </div>
   );

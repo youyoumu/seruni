@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   async loader({ params, context, location }) {
     const { sessionId } = params;
     const { api } = context;
+    console.log("test1");
     try {
       const session = await api.request.session(Number(sessionId));
       if (!session) {
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
       if (e instanceof WSBusError) {
         throw redirect({
           to: "/offline",
+          search: { redirect: location.pathname },
         });
       } else {
         throw new Error("Error while loading session");
