@@ -158,11 +158,18 @@ class ClientReqBus<
     ...data: Arg<CReq[C]["detail"]["data"]>
   ) => {
     const requestId = uid();
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutDuration = 5 * 60 * 1000;
     return new Promise<R>((resolve, reject) => {
+      const cleanup = () => {
+        this.#sResBus.removeEventListener("__error__", handleError);
+        this.#sResBus.removeEventListener(serverEvent, handler);
+      };
+
       const handler = (e: SRes[S]) => {
         if (e.detail.requestId === requestId) {
-          this.#sResBus.removeEventListener("__error__", handleError);
-          this.#sResBus.removeEventListener(serverEvent, handler);
+          clearTimeout(timeoutId);
+          cleanup();
           resolve(e.detail.data as R);
         }
       };
@@ -170,12 +177,17 @@ class ClientReqBus<
 
       const handleError = (e: ResponseErrorEvent<Error>) => {
         if (e.detail.requestId === requestId) {
-          this.#sResBus.removeEventListener("__error__", handleError);
-          this.#sResBus.removeEventListener(serverEvent, handler);
+          clearTimeout(timeoutId);
+          cleanup();
           reject(e.detail.data);
         }
       };
       this.#sResBus.addEventListener("__error__", handleError);
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Request timed out"));
+      }, timeoutDuration);
 
       this.dispatchTypedEvent(
         clientEvent,
@@ -304,11 +316,17 @@ class ServerReqBus<
     ...data: Arg<SReq[S]["detail"]["data"]>
   ) => {
     const requestId = uid();
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutDuration = 5 * 60 * 1000;
     return new Promise<R>((resolve, reject) => {
+      const cleanup = () => {
+        this.#cResBus.removeEventListener("__error__", handleError);
+        this.#cResBus.removeEventListener(clientEvent, handler);
+      };
       const handler = (e: CRes[C]) => {
         if (e.detail.requestId === requestId) {
-          this.#cResBus.removeEventListener("__error__", handleError);
-          this.#cResBus.removeEventListener(clientEvent, handler);
+          clearTimeout(timeoutId);
+          cleanup();
           resolve(e.detail.data as R);
         }
       };
@@ -316,12 +334,17 @@ class ServerReqBus<
 
       const handleError = (e: ResponseErrorEvent<Error>) => {
         if (e.detail.requestId === requestId) {
-          this.#cResBus.removeEventListener("__error__", handleError);
-          this.#cResBus.removeEventListener(clientEvent, handler);
+          clearTimeout(timeoutId);
+          cleanup();
           reject(e.detail.data);
         }
       };
       this.#cResBus.addEventListener("__error__", handleError);
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Request timed out"));
+      }, timeoutDuration);
 
       this.dispatchTypedEvent(
         serverEvent,
