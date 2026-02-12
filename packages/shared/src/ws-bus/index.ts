@@ -7,7 +7,13 @@ export interface WithReqId<T = undefined> {
   requestId: string;
 }
 
-type Arg<T> = undefined extends T ? [data?: T] : [data: T];
+type Arg<T1, T2 = undefined> = undefined extends T1
+  ? undefined extends T2
+    ? [data1?: T1, data2?: T2]
+    : [data1: T1 | undefined, data2: T2]
+  : undefined extends T2
+    ? [data1: T1, data2?: T2]
+    : [data1: T1, data2: T2];
 
 class ResponseErrorEvent<E extends Error = Error> extends CustomEvent<WithReqId<E>> {}
 
@@ -123,6 +129,11 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   }
 }
 
+type RequestOption =
+  | {
+      timeout?: number;
+    }
+  | undefined;
 class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
   SRes & { __error__: ResponseErrorEvent<Error> }
 > {
@@ -155,11 +166,11 @@ class ClientReqBus<
   >(
     clientEvent: C,
     serverEvent: S,
-    ...data: Arg<CReq[C]["detail"]["data"]>
+    ...data: Arg<CReq[C]["detail"]["data"], RequestOption>
   ) => {
     const requestId = uid();
     let timeoutId: ReturnType<typeof setTimeout>;
-    const timeoutDuration = 5 * 60 * 1000;
+    const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
     return new Promise<R>((resolve, reject) => {
       const cleanup = () => {
         this.#sResBus.removeEventListener("__error__", handleError);
@@ -235,11 +246,8 @@ class ClientReqBus<
     this.#reqEvents.add(clientEvent);
     this.#resEvents.add(serverEvent);
 
-    const request = (
-      ...data: undefined extends CReq[C]["detail"]["data"]
-        ? [data?: CReq[C]["detail"]["data"]]
-        : [data: CReq[C]["detail"]["data"]]
-    ) => this.#request(clientEvent, serverEvent, data[0]);
+    const request = (...data: Arg<CReq[C]["detail"]["data"], RequestOption>) =>
+      this.#request(clientEvent, serverEvent, data[0], data[1]);
     const handle = (handler: (payload: CReq[C]["detail"]["data"]) => R | Promise<R>) =>
       this.#addReqHandler(clientEvent, serverEvent, handler);
 
@@ -313,11 +321,11 @@ class ServerReqBus<
   >(
     serverEvent: S,
     clientEvent: C,
-    ...data: Arg<SReq[S]["detail"]["data"]>
+    ...data: Arg<SReq[S]["detail"]["data"], RequestOption>
   ) => {
     const requestId = uid();
     let timeoutId: ReturnType<typeof setTimeout>;
-    const timeoutDuration = 5 * 60 * 1000;
+    const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
     return new Promise<R>((resolve, reject) => {
       const cleanup = () => {
         this.#cResBus.removeEventListener("__error__", handleError);
@@ -392,11 +400,8 @@ class ServerReqBus<
     this.#reqEvents.add(serverEvent);
     this.#resEvents.add(clientEvent);
 
-    const request = (
-      ...data: undefined extends SReq[S]["detail"]["data"]
-        ? [data?: SReq[S]["detail"]["data"]]
-        : [data: SReq[S]["detail"]["data"]]
-    ) => this.#request(serverEvent, clientEvent, data[0]);
+    const request = (...data: Arg<SReq[S]["detail"]["data"], RequestOption>) =>
+      this.#request(serverEvent, clientEvent, data[0], data[1]);
     const handle = (handler: (payload: SReq[S]["detail"]["data"]) => R | Promise<R>) =>
       this.#addReqHandler(serverEvent, clientEvent, handler);
 
