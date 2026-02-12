@@ -415,7 +415,20 @@ class ServerReqBus<
         data: e.detail,
       };
       this.#ws.forEach((ws) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(payload));
+        } else {
+          this.#cResBus.dispatchTypedEvent(
+            "__error__",
+            new ResponseErrorEvent("__error__", {
+              detail: {
+                data: new Error("WebSocket is not open"),
+                requestId: e.detail.requestId,
+                ws,
+              },
+            }),
+          );
+        }
       });
     });
 
