@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 
 async function main() {
   const logger = createLogger();
-  const { api, addWS, onPayload } = createServerApi();
+  const { api, addWS, removeWS, onPayload } = createServerApi();
   const db = createDb();
   const newSession = await db
     .insert(session)
@@ -33,8 +33,15 @@ async function main() {
 
   setInterval(async () => {
     console.log("DEBUG[1582]: interval userAgent=");
-    const userAgent = await Promise.all(api.request.userAgent());
-    console.log("DEBUG[1514]: userAgent=", userAgent);
+    api.request.userAgent().forEach((res) => {
+      res
+        .then((userAgent) => {
+          console.log("DEBUG[1514]: userAgent=", userAgent);
+        })
+        .catch((e) => {
+          console.log("DEBUG[1514]: userAgentError=", e.message);
+        });
+    });
   }, 3000);
 
   api.handleRequest.config(() => {
@@ -71,8 +78,9 @@ async function main() {
           log.info("Connection opened");
           addWS(ws);
         },
-        onClose: () => {
+        onClose: (_, ws) => {
           log.warn("Connection closed");
+          removeWS(ws);
         },
       };
     }),

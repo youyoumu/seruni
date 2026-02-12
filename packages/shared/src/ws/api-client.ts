@@ -137,6 +137,7 @@ const createApi = () => {
     server: {
       onPayload: bridge.server.onPayload,
       addWS: bridge.server.addWS,
+      removeWS: bridge.server.removeWS,
       api: {
         push: serverPushPair.push,
         request: serverRequestPair.request,

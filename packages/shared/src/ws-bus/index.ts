@@ -128,6 +128,10 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
+
+  removeWS(ws: WS) {
+    this.#ws.delete(ws);
+  }
 }
 
 type RequestOption =
@@ -141,6 +145,9 @@ class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
   ws = new Set<WS>();
   addWS(ws: WS) {
     this.ws.add(ws);
+  }
+  removeWS(ws: WS) {
+    this.ws.delete(ws);
   }
 }
 class ClientReqBus<
@@ -448,6 +455,10 @@ class ServerReqBus<
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
+
+  removeWS(ws: WS) {
+    this.#ws.delete(ws);
+  }
 }
 
 export interface WSPayload {
@@ -543,10 +554,16 @@ export function createCentralBus<Schema extends BusSchema>() {
     sReqBus.addWS(ws);
   };
 
+  const sRemoveWS = (ws: WS) => {
+    sPushBus.removeWS(ws);
+    sResBus.removeWS(ws);
+    sReqBus.removeWS(ws);
+  };
+
   return {
     bridge: {
       client: { bindWS: cBindWS, onPayload: cOnPayload },
-      server: { addWS: sAddWS, onPayload: sOnPayload },
+      server: { addWS: sAddWS, removeWS: sRemoveWS, onPayload: sOnPayload },
     },
     link: {
       client: {
