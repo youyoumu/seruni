@@ -65,6 +65,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
     this.addEventListener(clientEvent, (e) => {
       if (this.#ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
+        __wsBus__: true,
         type: "push",
         tag: clientEvent,
         data: e.detail as WithReqId<unknown>,
@@ -114,6 +115,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
       this.#ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: WSPayload = {
+          __wsBus__: true,
           type: "push",
           tag: serverEvent,
           data: e.detail as WithReqId<unknown>,
@@ -261,6 +263,7 @@ class ClientReqBus<
 
     this.addEventListener(clientEvent, (e) => {
       const payload: WSPayload = {
+        __wsBus__: true,
         type: "req",
         tag: clientEvent,
         data: e.detail,
@@ -283,6 +286,7 @@ class ClientReqBus<
 
     this.#sResBus.addEventListener(serverEvent, (e) => {
       const payload: WSPayload = {
+        __wsBus__: true,
         type: "res",
         tag: serverEvent,
         data: e.detail,
@@ -417,6 +421,7 @@ class ServerReqBus<
 
     this.addEventListener(serverEvent, (e) => {
       const payload: WSPayload = {
+        __wsBus__: true,
         type: "req",
         tag: serverEvent,
         data: e.detail,
@@ -441,6 +446,7 @@ class ServerReqBus<
 
     this.#cResBus.addEventListener(clientEvent, (e) => {
       const payload: WSPayload = {
+        __wsBus__: true,
         type: "res",
         tag: clientEvent,
         data: e.detail,
@@ -462,6 +468,7 @@ class ServerReqBus<
 }
 
 export interface WSPayload {
+  __wsBus__: true;
   type: "push" | "req" | "res";
   tag: string;
   data: WithReqId<unknown>;
@@ -503,18 +510,12 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cResBus = new ClientResBus<CRes>();
   const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus);
 
-  function dispatch(bus: EventTarget, tag: string, data: WithReqId<unknown>, ws?: WS) {
-    bus.dispatchEvent(
-      new CustomEvent(tag, {
-        detail: {
-          ...data,
-          ws,
-        },
-      }),
-    );
+  function dispatch(bus: EventTarget, tag: string, data: WithReqId<unknown>) {
+    bus.dispatchEvent(new CustomEvent(tag, { detail: data }));
   }
 
   const cOnPayload = (payload: WSPayload) => {
+    if (!payload?.__wsBus__) return;
     switch (payload.type) {
       case "push": {
         return dispatch(sPushBus, payload.tag, payload.data);
@@ -529,6 +530,8 @@ export function createCentralBus<Schema extends BusSchema>() {
   };
 
   const sOnPayload = (payload: WSPayload, ws: WS) => {
+    if (!payload?.__wsBus__) return;
+    payload.data.ws = ws;
     switch (payload.type) {
       case "push": {
         return dispatch(cPushBus, payload.tag, payload.data);
@@ -537,7 +540,7 @@ export function createCentralBus<Schema extends BusSchema>() {
         return dispatch(cReqBus, payload.tag, payload.data);
       }
       case "res": {
-        return dispatch(cResBus, payload.tag, payload.data, ws);
+        return dispatch(cResBus, payload.tag, payload.data);
       }
     }
   };
