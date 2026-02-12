@@ -2,6 +2,14 @@
 import { TypedEventTarget } from "typescript-event-target";
 import { uid } from "uid";
 
+export class WSBusError extends Error {
+  type: "connectionClosed" | "requestTimeout";
+  constructor(type: "connectionClosed" | "requestTimeout") {
+    super(type);
+    this.type = type;
+  }
+}
+
 export interface WithReqId<T = undefined> {
   data: T;
   requestId: string;
@@ -16,7 +24,7 @@ type Arg<T1, T2 = undefined> = undefined extends T1
     ? [data1: T1, data2?: T2]
     : [data1: T1, data2: T2];
 
-class ResponseErrorEvent<E extends Error = Error> extends CustomEvent<WithReqId<E>> {}
+class ResponseErrorEvent<E extends WSBusError = WSBusError> extends CustomEvent<WithReqId<E>> {}
 
 type ClientPushEventMap = Record<string, CustomEvent<unknown>>;
 type ServerPushEventMap = Record<string, CustomEvent<unknown>>;
@@ -142,7 +150,7 @@ type RequestOption =
     }
   | undefined;
 class ServerResBus<SRes extends ServerResEventMap> extends TypedEventTarget<
-  SRes & { __error__: ResponseErrorEvent<Error> }
+  SRes & { __error__: ResponseErrorEvent }
 > {
   ws = new Set<WS>();
   addWS(ws: WS) {
@@ -196,7 +204,7 @@ class ClientReqBus<
       };
       this.#sResBus.addEventListener(serverEvent, handler);
 
-      const handleError = (e: ResponseErrorEvent<Error>) => {
+      const handleError = (e: ResponseErrorEvent) => {
         if (e.detail.requestId === requestId) {
           clearTimeout(timeoutId);
           cleanup();
@@ -276,7 +284,7 @@ class ClientReqBus<
           "__error__",
           new ResponseErrorEvent("__error__", {
             detail: {
-              data: new Error("WebSocket is not open"),
+              data: new WSBusError("connectionClosed"),
               requestId: e.detail.requestId,
             },
           }),
@@ -353,7 +361,7 @@ class ServerReqBus<
         };
         this.#cResBus.addEventListener(clientEvent, handler);
 
-        const handleError = (e: ResponseErrorEvent<Error>) => {
+        const handleError = (e: ResponseErrorEvent) => {
           if (e.detail.requestId === requestId && e.detail.ws === ws) {
             clearTimeout(timeoutId);
             cleanup();
@@ -434,7 +442,7 @@ class ServerReqBus<
             "__error__",
             new ResponseErrorEvent("__error__", {
               detail: {
-                data: new Error("WebSocket is not open"),
+                data: new WSBusError("connectionClosed"),
                 requestId: e.detail.requestId,
                 ws,
               },

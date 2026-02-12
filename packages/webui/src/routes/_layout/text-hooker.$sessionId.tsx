@@ -3,6 +3,7 @@ import { useTextHistory$ } from "#/hooks/text-history";
 import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
 import { useRef } from "react";
+import { WSBusError } from "@repo/shared/ws-bus";
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
@@ -12,8 +13,12 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
     let session: any;
     try {
       session = await api.request.session(Number(sessionId));
-    } catch {
-      throw notFound();
+    } catch (e) {
+      if (e instanceof WSBusError) {
+        console.log("DEBUG[1586]: e=", e.type);
+      } else {
+        throw new Error("Error while loading session");
+      }
     }
 
     console.log("DEBUG[1579]: session=", session);
