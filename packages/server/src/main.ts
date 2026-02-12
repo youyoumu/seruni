@@ -32,7 +32,8 @@ async function main() {
   const log = logger.child({ name: "client" });
 
   setInterval(async () => {
-    const userAgent = await api.request.userAgent();
+    console.log("DEBUG[1582]: interval userAgent=");
+    const userAgent = await Promise.all(api.request.userAgent());
     console.log("DEBUG[1514]: userAgent=", userAgent);
   }, 3000);
 
@@ -62,9 +63,9 @@ async function main() {
     "/ws",
     upgradeWebSocket(() => {
       return {
-        onMessage(e, _ws) {
+        onMessage(e, ws) {
           const payload = JSON.parse(e.data.toString());
-          onPayload(payload);
+          onPayload(payload, ws);
         },
         onOpen: (_, ws) => {
           log.info("Connection opened");

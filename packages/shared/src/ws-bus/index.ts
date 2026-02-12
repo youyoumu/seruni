@@ -5,6 +5,7 @@ import { uid } from "uid";
 export interface WithReqId<T = undefined> {
   data: T;
   requestId: string;
+  ws?: WS;
 }
 
 type Arg<T1, T2 = undefined> = undefined extends T1
@@ -66,7 +67,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
       const payload: WSPayload = {
         type: "push",
         tag: clientEvent,
-        data: e.detail,
+        data: e.detail as WithReqId<unknown>,
       };
       this.#ws.send(JSON.stringify(payload));
     });
@@ -115,7 +116,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
         const payload: WSPayload = {
           type: "push",
           tag: serverEvent,
-          data: e.detail,
+          data: e.detail as WithReqId<unknown>,
         };
         ws.send(JSON.stringify(payload));
       });
@@ -323,43 +324,45 @@ class ServerReqBus<
     clientEvent: C,
     ...data: Arg<SReq[S]["detail"]["data"], RequestOption>
   ) => {
-    const requestId = uid();
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
-    return new Promise<R>((resolve, reject) => {
-      const cleanup = () => {
-        this.#cResBus.removeEventListener("__error__", handleError);
-        this.#cResBus.removeEventListener(clientEvent, handler);
-      };
-      const handler = (e: CRes[C]) => {
-        if (e.detail.requestId === requestId) {
-          clearTimeout(timeoutId);
+    return Array.from(this.#ws).map((ws) => {
+      const requestId = uid();
+      const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
+      let timeoutId: ReturnType<typeof setTimeout>;
+      return new Promise<R>((resolve, reject) => {
+        const cleanup = () => {
+          this.#cResBus.removeEventListener("__error__", handleError);
+          this.#cResBus.removeEventListener(clientEvent, handler);
+        };
+        const handler = (e: CRes[C]) => {
+          if (e.detail.requestId === requestId && e.detail.ws === ws) {
+            clearTimeout(timeoutId);
+            cleanup();
+            resolve(e.detail.data as R);
+          }
+        };
+        this.#cResBus.addEventListener(clientEvent, handler);
+
+        const handleError = (e: ResponseErrorEvent<Error>) => {
+          if (e.detail.requestId === requestId && e.detail.ws === ws) {
+            clearTimeout(timeoutId);
+            cleanup();
+            reject(e.detail.data);
+          }
+        };
+        this.#cResBus.addEventListener("__error__", handleError);
+
+        timeoutId = setTimeout(() => {
           cleanup();
-          resolve(e.detail.data as R);
-        }
-      };
-      this.#cResBus.addEventListener(clientEvent, handler);
+          reject(new Error("Request timed out"));
+        }, timeoutDuration);
 
-      const handleError = (e: ResponseErrorEvent<Error>) => {
-        if (e.detail.requestId === requestId) {
-          clearTimeout(timeoutId);
-          cleanup();
-          reject(e.detail.data);
-        }
-      };
-      this.#cResBus.addEventListener("__error__", handleError);
-
-      timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error("Request timed out"));
-      }, timeoutDuration);
-
-      this.dispatchTypedEvent(
-        serverEvent,
-        new CustomEvent(serverEvent, {
-          detail: { requestId, data: data[0] },
-        }) as SReq[S],
-      );
+        this.dispatchTypedEvent(
+          serverEvent,
+          new CustomEvent(serverEvent, {
+            detail: { requestId, data: data[0] },
+          }) as SReq[S],
+        );
+      });
     });
   };
 
@@ -437,7 +440,7 @@ class ServerReqBus<
 export interface WSPayload {
   type: "push" | "req" | "res";
   tag: string;
-  data: unknown;
+  data: WithReqId<unknown>;
 }
 
 export interface WS {
@@ -476,8 +479,15 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cResBus = new ClientResBus<CRes>();
   const sReqBus = new ServerReqBus<SReq, CRes, ClientResBus<CRes>>(cResBus);
 
-  function dispatch(bus: EventTarget, tag: string, data: unknown) {
-    bus.dispatchEvent(new CustomEvent(tag, { detail: data }));
+  function dispatch(bus: EventTarget, tag: string, data: WithReqId<unknown>, ws?: WS) {
+    bus.dispatchEvent(
+      new CustomEvent(tag, {
+        detail: {
+          ...data,
+          ws,
+        },
+      }),
+    );
   }
 
   const cOnPayload = (payload: WSPayload) => {
@@ -494,7 +504,7 @@ export function createCentralBus<Schema extends BusSchema>() {
     }
   };
 
-  const sOnPayload = (payload: WSPayload) => {
+  const sOnPayload = (payload: WSPayload, ws: WS) => {
     switch (payload.type) {
       case "push": {
         return dispatch(cPushBus, payload.tag, payload.data);
@@ -503,7 +513,7 @@ export function createCentralBus<Schema extends BusSchema>() {
         return dispatch(cReqBus, payload.tag, payload.data);
       }
       case "res": {
-        return dispatch(cResBus, payload.tag, payload.data);
+        return dispatch(cResBus, payload.tag, payload.data, ws);
       }
     }
   };
