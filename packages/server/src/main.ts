@@ -66,6 +66,8 @@ async function main() {
     return await db.select().from(session);
   });
 
+  api.handleRequest.checkHealth(() => undefined);
+
   app.get(
     "/ws",
     upgradeWebSocket(() => {

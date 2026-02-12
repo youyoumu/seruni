@@ -1,7 +1,7 @@
-import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { Terminal, FileText, Settings } from "lucide-react";
 import { tv } from "@heroui/react";
-import { useOnline } from "#/hooks/api";
+import { WSBusError } from "@repo/shared/ws-bus";
 
 const navLink = tv({
   base: [
@@ -13,8 +13,21 @@ const navLink = tv({
 
 export const Route = createFileRoute("/_layout")({
   component: LayoutComponent,
-  loader: () => {
-    console.log("test2");
+  async loader({ context, location }) {
+    if (location.pathname === "/offline") return;
+    const { api } = context;
+    try {
+      await api.request.checkHealth();
+    } catch (e) {
+      if (e instanceof WSBusError && e.type === "connectionClosed") {
+        throw redirect({
+          to: "/offline",
+          search: { redirect: location.pathname },
+        });
+      } else {
+        throw new Error("checkHealth fail");
+      }
+    }
   },
 });
 

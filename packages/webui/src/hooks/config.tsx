@@ -7,14 +7,19 @@ export function useConfig() {
   const [config, setConfig] = useState<Config>({ workdir: "" });
 
   useEffect(() => {
-    setInterval(async () => {
+    const id = setInterval(async () => {
       const config = await api.request.config();
       console.log("DEBUG[1503]: config=", config);
     }, 3000);
 
-    setInterval(async () => {
+    const id2 = setInterval(async () => {
       api.push.ping(undefined);
       api.push.ping2(0);
     }, 3000);
+
+    return () => {
+      clearInterval(id);
+      clearInterval(id2);
+    };
   }, []);
 }

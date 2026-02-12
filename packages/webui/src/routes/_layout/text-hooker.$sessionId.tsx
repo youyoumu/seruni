@@ -3,34 +3,21 @@ import { useTextHistory$ } from "#/hooks/text-history";
 import { useConfig } from "#/hooks/config";
 import { TrashIcon } from "lucide-react";
 import { Suspense, useRef } from "react";
-import { WSBusError } from "@repo/shared/ws-bus";
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
-  async loader({ params, context, location }) {
+  async loader({ params, context }) {
     const { sessionId } = params;
     const { api } = context;
-    console.log("test1");
-    try {
-      const session = await api.request.session(Number(sessionId));
-      if (!session) {
-        const sessions = await api.request.sessions();
-        const lastSession = sessions[0];
-        if (!lastSession) throw notFound();
-        throw redirect({
-          to: "/text-hooker/$sessionId",
-          params: { sessionId: String(sessions[0].id) },
-        });
-      }
-    } catch (e) {
-      if (e instanceof WSBusError) {
-        throw redirect({
-          to: "/offline",
-          search: { redirect: location.pathname },
-        });
-      } else {
-        throw new Error("Error while loading session");
-      }
+    const session = await api.request.session(Number(sessionId));
+    if (!session) {
+      const sessions = await api.request.sessions();
+      const lastSession = sessions[0];
+      if (!lastSession) throw Error("Last session not found");
+      throw redirect({
+        to: "/text-hooker/$sessionId",
+        params: { sessionId: String(sessions[0].id) },
+      });
     }
   },
 });
