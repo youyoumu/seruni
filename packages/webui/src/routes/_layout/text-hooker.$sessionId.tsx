@@ -12,11 +12,11 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
     const session = await api.request.session(Number(sessionId));
     if (!session) {
       const sessions = await api.request.sessions();
-      const lastSession = sessions[0];
+      const lastSession = sessions[sessions.length - 1];
       if (!lastSession) throw Error("Last session not found");
       throw redirect({
         to: "/text-hooker/$sessionId",
-        params: { sessionId: String(sessions[0].id) },
+        params: { sessionId: String(lastSession.id) },
       });
     }
   },
