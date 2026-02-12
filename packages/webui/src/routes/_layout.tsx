@@ -1,15 +1,22 @@
-import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
 import { Terminal, FileText, Settings } from "lucide-react";
 import { tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
+import { Popover } from "@heroui/react";
+import { useSessions$ } from "#/hooks/sessions";
+import { Suspense } from "react";
 
 const navLink = tv({
   base: [
-    "p-3 rounded transition-colors text-foreground/60",
+    "p-3 rounded transition-colors text-foreground/60 cursor-pointer",
     "hover:text-foreground",
     "[&.active]:bg-surface-hover [&.active]:text-foreground",
-    "aria-disabled:text-foreground/20",
   ],
+  variants: {
+    active: {
+      active: "bg-surface-hover text-foreground",
+    },
+  },
 });
 
 export const Route = createFileRoute("/_layout")({
@@ -37,26 +44,14 @@ export const Route = createFileRoute("/_layout")({
 });
 
 function LayoutComponent() {
-  const loaderData = Route.useLoaderData();
-  const lastSessionId = loaderData?.lastSessionId;
-
   return (
-    <div className="flex h-screen bg-surface-faint text-foreground">
+    <div className="flex h-screen">
       <aside className="w-16 bg-surface flex flex-col items-center py-4 border-r border-border justify-between">
         <nav className="flex flex-col gap-2">
           <Link to="/" className={navLink()} title="Home">
             <Terminal size={20} />
           </Link>
-          <Link
-            disabled={typeof lastSessionId !== "number"}
-            to="/text-hooker/$sessionId"
-            className={navLink()}
-            title="Text Hooker"
-            //TODO: infer to number
-            params={{ sessionId: lastSessionId?.toString() ?? "" }}
-          >
-            <FileText size={20} />
-          </Link>
+          <TextHookerSessionListPopover />
         </nav>
         <div className="flex flex-col gap-2">
           <Link to="/settings" className={navLink()} title="Settings">
@@ -67,6 +62,55 @@ function LayoutComponent() {
       <main className="flex-1 flex flex-col overflow-hidden">
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+export function TextHookerSessionListPopover() {
+  const matchRoute = useMatchRoute();
+  const active = matchRoute({
+    to: "/text-hooker/$sessionId",
+  });
+
+  return (
+    <Popover>
+      <Popover.Trigger>
+        <button
+          className={navLink({
+            active: !!active ? "active" : undefined,
+          })}
+        >
+          <FileText size={20} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Content className=" overflow-auto">
+        <Popover.Dialog className="flex flex-col gap-4">
+          <Popover.Heading className="text-lg">Text Hooker Session</Popover.Heading>
+          <Suspense fallback="loading...">
+            <TextHookerSessionList />
+          </Suspense>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
+export function TextHookerSessionList() {
+  const { data: sessions } = useSessions$();
+  const reversedSessions = [...sessions].reverse();
+
+  return (
+    <div className="flex flex-col gap-2 max-h-[50vh] overflow-auto">
+      {reversedSessions.map((session) => (
+        <Link
+          className="text-surface-foreground-calm hover:text-surface-foreground transition-colors pe-2"
+          key={session.id}
+          to={`/text-hooker/$sessionId`}
+          params={{ sessionId: String(session.id) }}
+        >
+          {session.name}
+        </Link>
+      ))}
     </div>
   );
 }
