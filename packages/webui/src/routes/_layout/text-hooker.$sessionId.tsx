@@ -45,8 +45,9 @@ function TextHistoryList() {
   const virtualizer = useVirtualizer({
     count: textHistory.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 100,
-    overscan: 5,
+    estimateSize: () => 80,
+    measureElement: (element) => element.getBoundingClientRect().height,
+    gap: 32,
   });
 
   return (
@@ -60,26 +61,30 @@ function TextHistoryList() {
       >
         {virtualizer.getVirtualItems().map((virtualItem) => {
           const item = textHistory[virtualItem.index];
+
           return (
             <div
               key={virtualItem.key}
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-              className="flex items-center gap-2 border-b p-2 hover:bg-surface-calm"
+              className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm"
             >
-              <p className="flex-1 text-xl break-words whitespace-pre-wrap">
+              <p className="flex-1 text-xl">
                 {"\n"}
                 {item.text}
                 <span
                   style={{
                     opacity: 0.01,
                     fontSize: "0.1px",
+                    pointerEvents: "none",
+                    userSelect: "none",
                   }}
                 >{`‹id:${item.id}›`}</span>
                 {"\n"}
@@ -87,7 +92,7 @@ function TextHistoryList() {
 
               <TrashIcon
                 size={20}
-                className="cursor-pointer text-danger"
+                className="shrink-0 cursor-pointer text-danger"
                 onClick={() => {
                   deleteTextHistory(item.id);
                 }}
