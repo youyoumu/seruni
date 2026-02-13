@@ -74,6 +74,11 @@ async function main() {
     return await db.insert(session).values({ name }).returning().get();
   });
 
+  api.handleRequest.deleteSession(async (id) => {
+    const [result] = await db.delete(session).where(eq(session.id, id)).returning();
+    return result;
+  });
+
   api.handleRequest.checkHealth(() => undefined);
 
   app.get(

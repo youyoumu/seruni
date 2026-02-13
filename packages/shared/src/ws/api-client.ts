@@ -22,6 +22,7 @@ export type ClientReqEventMap = {
   reqSession: ReqEvent<number>;
   reqSessions: ReqEvent;
   reqCreateSession: ReqEvent<string>;
+  reqDeleteSession: ReqEvent<number>;
   reqCheckHealth: ReqEvent;
 };
 export type ServerResEventMap = {
@@ -30,6 +31,7 @@ export type ServerResEventMap = {
   resSession: ResEvent<Session | undefined>;
   resSessions: ResEvent<Session[]>;
   resCreateSession: ResEvent<Session>;
+  resDeleteSession: ResEvent<Session | undefined>;
   resCheckHealth: ResEvent;
 };
 
@@ -79,6 +81,7 @@ const createApi = () => {
     const [session, handleSession] = request("reqSession", "resSession");
     const [sessions, handleSessions] = request("reqSessions", "resSessions");
     const [createSession, handleCreateSession] = request("reqCreateSession", "resCreateSession");
+    const [deleteSession, handleDeleteSession] = request("reqDeleteSession", "resDeleteSession");
     const [checkHealth, handleCheckHealth] = request("reqCheckHealth", "resCheckHealth");
 
     return {
@@ -88,6 +91,7 @@ const createApi = () => {
         session,
         sessions,
         createSession,
+        deleteSession,
         checkHealth,
       },
       handleRequest: {
@@ -96,6 +100,7 @@ const createApi = () => {
         session: handleSession,
         sessions: handleSessions,
         createSession: handleCreateSession,
+        deleteSession: handleDeleteSession,
         checkHealth: handleCheckHealth,
       },
     };

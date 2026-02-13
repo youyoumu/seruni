@@ -42,6 +42,7 @@ function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
 
+  //TODO: virtual list
   return textHistory.map((item) => (
     <div key={item.id} className="flex items-center gap-2 border-b p-2 hover:bg-surface-calm">
       <p className="text-xl flex-1">

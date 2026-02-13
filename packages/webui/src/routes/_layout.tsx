@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
-import { Terminal, FileText, Settings } from "lucide-react";
+import { Terminal, FileText, Settings, TrashIcon } from "lucide-react";
 import { tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { Popover } from "@heroui/react";
@@ -107,14 +107,17 @@ export function TextHookerSessionList() {
   return (
     <div className="flex flex-col gap-2 max-h-[50vh] overflow-auto">
       {reversedSessions.map((session) => (
-        <Link
-          className="text-surface-foreground-calm hover:text-surface-foreground transition-colors pe-2"
-          key={session.id}
-          to={`/text-hooker/$sessionId`}
-          params={{ sessionId: String(session.id) }}
-        >
-          {session.name}
-        </Link>
+        <div className="flex gap-2 pe-2">
+          <Link
+            className="text-surface-foreground-calm hover:text-surface-foreground transition-colors flex-1"
+            key={session.id}
+            to={`/text-hooker/$sessionId`}
+            params={{ sessionId: String(session.id) }}
+          >
+            {session.name}
+          </Link>
+          <DeleteSessionButton sessionId={session.id} />
+        </div>
       ))}
     </div>
   );
@@ -165,5 +168,31 @@ function NewSessionForm() {
         <form.SubmitButton>Create</form.SubmitButton>
       </form.AppForm>
     </form>
+  );
+}
+
+function DeleteSessionButton({ sessionId }: { sessionId: number }) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const { mutateAsync: deleteSession } = useMutation({
+    mutationFn: async (id: number) => {
+      await api.request.deleteSession(id);
+    },
+    onSuccess: () => {
+      //TODO: use query key factory
+      queryClient.invalidateQueries({
+        queryKey: ["sessions"],
+      });
+    },
+  });
+
+  return (
+    <TrashIcon
+      className="cursor-pointer text-danger"
+      size={20}
+      onClick={() => {
+        deleteSession(sessionId);
+      }}
+    ></TrashIcon>
   );
 }
