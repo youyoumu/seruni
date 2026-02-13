@@ -3,21 +3,14 @@ import { type Session, type TextHistory } from "#/db/schema";
 import type { PushEvent, ReqEvent, ResEvent, CreateSchema } from "#/ws-bus";
 export { WSBusError } from "#/ws-bus";
 
-export type Config = {
-  workdir: string;
-};
-
 export type ClientPushEventMap = {
   ping: PushEvent;
-  ping2: PushEvent<number>;
 };
 export type ServerPushEventMap = {
   textHistory: PushEvent<TextHistory>;
-  textHistory2: PushEvent;
 };
 
 export type ClientReqEventMap = {
-  reqConfig: ReqEvent;
   reqTextHistoryBySessionId: ReqEvent<number>;
   reqSession: ReqEvent<number>;
   reqSessions: ReqEvent;
@@ -28,7 +21,6 @@ export type ClientReqEventMap = {
   reqCheckHealth: ReqEvent;
 };
 export type ServerResEventMap = {
-  resConfig: ResEvent<Config>;
   resTextHistoryBySessionId: ResEvent<TextHistory[]>;
   resSession: ResEvent<Session | undefined>;
   resSessions: ResEvent<Session[]>;
@@ -61,15 +53,12 @@ const createApi = () => {
   const createClientPushPair = () => {
     const push = link.client.push;
     const [ping, handlePing] = push("ping");
-    const [ping2, handlePing2] = push("ping2");
     return {
       push: {
         ping,
-        ping2,
       },
       handlePush: {
         ping: handlePing,
-        ping2: handlePing2,
       },
     };
   };
@@ -77,7 +66,6 @@ const createApi = () => {
 
   const createClientRequestPair = () => {
     const request = link.client.request;
-    const [config, handleConfig] = request("reqConfig", "resConfig");
     const [textHistoryBySessionId, handleTextHistoryBySessionId] = request(
       "reqTextHistoryBySessionId",
       "resTextHistoryBySessionId",
@@ -98,7 +86,6 @@ const createApi = () => {
 
     return {
       request: {
-        config,
         textHistoryBySessionId,
         session,
         sessions,
@@ -109,7 +96,6 @@ const createApi = () => {
         checkHealth,
       },
       handleRequest: {
-        config: handleConfig,
         textHistoryBySessionId: handleTextHistoryBySessionId,
         session: handleSession,
         sessions: handleSessions,
@@ -126,16 +112,13 @@ const createApi = () => {
   const createServerPushPair = () => {
     const push = link.server.push;
     const [textHistory, handleTextHistory] = push("textHistory");
-    const [textHistory2, handleTextHistory2] = push("textHistory2");
 
     return {
       push: {
         textHistory,
-        textHistory2,
       },
       handlePush: {
         textHistory: handleTextHistory,
-        textHistory2: handleTextHistory2,
       },
     };
   };

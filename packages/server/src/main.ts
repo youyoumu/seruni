@@ -39,27 +39,6 @@ async function main() {
 
   const log = logger.child({ name: "client" });
 
-  setInterval(async () => {
-    console.log("DEBUG[1582]: interval userAgent=");
-    api.request.userAgent().forEach((res) => {
-      res
-        .then((userAgent) => {
-          console.log("DEBUG[1514]: userAgent=", userAgent);
-        })
-        .catch((e) => {
-          console.log("DEBUG[1514]: userAgentError=", e.message);
-        });
-    });
-  }, 3000);
-
-  api.handleRequest.config(() => {
-    return { workdir: "test" };
-  });
-
-  api.handlePush.ping(() => {
-    console.log("Received ping");
-  });
-
   api.handleRequest.textHistoryBySessionId(async (id) => {
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });
