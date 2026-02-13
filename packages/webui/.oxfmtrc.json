@@ -11,5 +11,11 @@
       ["sibling", "type-sibling"],
       ["index", "type-index"]
     ]
+  },
+  "experimentalTailwindcss": {
+    "stylesheet": "./src/styles/main.css",
+    "attributes": ["class", "className"],
+    "functions": ["clsx", "cn", "tv"],
+    "preserveWhitespace": true
   }
 }

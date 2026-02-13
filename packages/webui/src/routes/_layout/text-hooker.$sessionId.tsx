@@ -25,7 +25,7 @@ function TextHookerPage() {
   const textHistoryContainer = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="p-4 overflow-auto">
+    <div className="overflow-auto p-4">
       <div className="flex flex-col gap-16 pb-16" ref={textHistoryContainer}>
         {/* //TODO: pretty loading */}
         <Suspense fallback="loading...">
@@ -44,7 +44,7 @@ function TextHistoryList() {
   //TODO: virtual list
   return textHistory.map((item) => (
     <div key={item.id} className="flex items-center gap-2 border-b p-2 hover:bg-surface-calm">
-      <p className="text-xl flex-1">
+      <p className="flex-1 text-xl">
         {"\n"}
         {item.text}
         <span

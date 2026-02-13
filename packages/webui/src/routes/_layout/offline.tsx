@@ -38,8 +38,8 @@ function RouteComponent() {
   }, [online, navigate, redirect]);
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <ShellIcon className="size-64 animate-spin  [animation-direction:reverse] text-surface-foreground-faint"></ShellIcon>
+    <div className="flex h-screen items-center justify-center">
+      <ShellIcon className="size-64 animate-spin  text-surface-foreground-faint [animation-direction:reverse]"></ShellIcon>
     </div>
   );
 }

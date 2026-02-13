@@ -16,7 +16,7 @@ import { z } from "zod";
 
 const navLink = tv({
   base: [
-    "p-3 rounded transition-colors text-foreground/60 cursor-pointer",
+    "cursor-pointer rounded p-3 text-foreground/60 transition-colors",
     "hover:text-foreground",
     "[&.active]:bg-surface-hover [&.active]:text-foreground",
   ],
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_layout")({
 function LayoutComponent() {
   return (
     <div className="flex h-screen">
-      <aside className="w-16 bg-surface flex flex-col items-center py-4 border-r border-border justify-between">
+      <aside className="flex w-16 flex-col items-center justify-between border-r border-border bg-surface py-4">
         <nav className="flex flex-col gap-2">
           <Link to="/" className={navLink()} title="Home">
             <Terminal size={20} />
@@ -67,7 +67,7 @@ function LayoutComponent() {
           </Link>
         </div>
       </aside>
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden">
         <Outlet />
       </main>
     </div>
@@ -111,12 +111,12 @@ export function TextHookerSessionList() {
   const reversedSessions = [...sessions].reverse();
 
   return (
-    <div className="flex flex-col gap-2 max-h-[50vh] overflow-auto">
+    <div className="flex max-h-[50vh] flex-col gap-2 overflow-auto">
       {reversedSessions.map((session) => (
-        <div className="flex gap-2 pe-2 items-center" key={session.id}>
+        <div className="flex items-center gap-2 pe-2" key={session.id}>
           <Link
             className={cn(
-              "text-surface-foreground-calm hover:text-surface-foreground transition-colors",
+              "text-surface-foreground-calm transition-colors hover:text-surface-foreground",
               {
                 "text-surface-foreground": session.id === activeSession?.id,
               },
