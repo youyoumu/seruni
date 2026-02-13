@@ -5,17 +5,19 @@ import { createLogger } from "./util/logger";
 
 import { createNodeWebSocket } from "@hono/node-ws";
 import { createServerApi } from "@repo/shared/ws";
-import type {} from "@repo/shared/types";
 import { createDb } from "./db";
-import { session, textHistory } from "@repo/shared/db";
-import { eq } from "drizzle-orm";
+import { session } from "@repo/shared/db";
 import { createState } from "./state/state";
+import { registerHandlers } from "./wss/handlers";
 
 async function main() {
   const logger = createLogger();
+  const log = logger.child({ name: "client" });
   const { api, addWS, removeWS, onPayload } = createServerApi();
   const db = createDb();
   const state = createState();
+  const app = new Hono();
+  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
   const sessions = await db.select().from(session);
   let lastSession = sessions[sessions.length - 1];
@@ -30,57 +32,11 @@ async function main() {
   }
   state.activeSessionId(lastSession.id);
 
-  const app = new Hono();
-  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
-
   app.get("/", (c) => {
     return c.text("Hello Hono!");
   });
 
-  const log = logger.child({ name: "client" });
-
-  api.handleRequest.textHistoryBySessionId(async (id) => {
-    return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
-  });
-
-  api.handleRequest.session(async (id) => {
-    return await db.query.session.findFirst({
-      where: eq(session.id, id),
-    });
-  });
-
-  api.handleRequest.sessions(async () => {
-    return await db.select().from(session);
-  });
-
-  api.handleRequest.createSession(async (name) => {
-    const result = await db.insert(session).values({ name }).returning().get();
-    state.activeSessionId(result.id);
-    return result;
-  });
-
-  api.handleRequest.deleteSession(async (id) => {
-    const [result] = await db.delete(session).where(eq(session.id, id)).returning();
-    if (result?.id === state.activeSessionId()) state.activeSessionId(undefined);
-    return result;
-  });
-
-  api.handleRequest.setActiveSession(async (id) => {
-    state.activeSessionId(id);
-    return await db.query.session.findFirst({
-      where: eq(session.id, id),
-    });
-  });
-
-  api.handleRequest.getActiveSession(async () => {
-    const activeSessionId = state.activeSessionId();
-    if (!activeSessionId) return undefined;
-    return await db.query.session.findFirst({
-      where: eq(session.id, activeSessionId),
-    });
-  });
-
-  api.handleRequest.checkHealth(() => undefined);
+  registerHandlers({ api, db, state });
 
   app.get(
     "/ws",
