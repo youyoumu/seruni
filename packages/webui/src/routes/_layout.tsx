@@ -5,9 +5,10 @@ import { WSBusError } from "@repo/shared/ws-bus";
 import { Popover } from "@heroui/react";
 import { useSessions$ } from "#/hooks/sessions";
 import { Suspense } from "react";
-import { Button, Description, FieldError, Form, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "#/hooks/api";
+import { z } from "zod";
+import { useAppForm } from "#/hooks/form";
 
 const navLink = tv({
   base: [
@@ -69,49 +70,6 @@ function LayoutComponent() {
   );
 }
 
-export function NewSessionForm() {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const { mutate } = useMutation({
-    mutationFn: async (name: string) => {
-      await api.request.createSession(name);
-    },
-    onSuccess: () => {
-      //TODO: use query key factory
-      queryClient.invalidateQueries({
-        queryKey: ["sessions"],
-      });
-    },
-  });
-
-  return (
-    <Form
-      className="flex gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const name = formData.get("name");
-        mutate(name?.toString() ?? "New Session");
-      }}
-    >
-      <TextField
-        isRequired
-        name="name"
-        validate={(value) => {
-          if (!value.trim()) return "Name can't be empty";
-          return null;
-        }}
-      >
-        <Input placeholder="New Session" />
-        <FieldError />
-      </TextField>
-      <div className="flex gap-2">
-        <Button type="submit">Create</Button>
-      </div>
-    </Form>
-  );
-}
-
 export function TextHookerSessionListPopover() {
   const matchRoute = useMatchRoute();
   const active = matchRoute({
@@ -159,5 +117,53 @@ export function TextHookerSessionList() {
         </Link>
       ))}
     </div>
+  );
+}
+
+function NewSessionForm() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const { mutateAsync: createNewSession } = useMutation({
+    mutationFn: async (name: string) => {
+      await api.request.createSession(name);
+    },
+    onSuccess: () => {
+      //TODO: use query key factory
+      queryClient.invalidateQueries({
+        queryKey: ["sessions"],
+      });
+    },
+  });
+
+  const form = useAppForm({
+    defaultValues: {
+      name: "",
+    },
+    validators: {
+      onChange: z.object({
+        name: z.string().min(1, "can't be empty"),
+      }),
+    },
+    onSubmit: async ({ value }) => {
+      await createNewSession(value.name);
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+      className="flex gap-4"
+    >
+      <form.AppField
+        name="name"
+        children={(field) => <field.TextFieldSet placeholder="New Session" />}
+      />
+      <form.AppForm>
+        <form.SubmitButton>Create</form.SubmitButton>
+      </form.AppForm>
+    </form>
   );
 }
