@@ -13,6 +13,7 @@ export type ServerPushEventMap = {
 
 export type ClientReqEventMap = {
   reqTextHistoryBySessionId: ReqEvent<number>;
+  reqDeleteTextHistory: ReqEvent<number>;
   reqSession: ReqEvent<number>;
   reqSessions: ReqEvent;
   reqCreateSession: ReqEvent<string>;
@@ -23,6 +24,7 @@ export type ClientReqEventMap = {
 };
 export type ServerResEventMap = {
   resTextHistoryBySessionId: ResEvent<TextHistory[]>;
+  resDeleteTextHistory: ResEvent<TextHistory | null>;
   resSession: ResEvent<Session | null>;
   resSessions: ResEvent<Session[]>;
   resCreateSession: ResEvent<Session>;
@@ -71,6 +73,10 @@ const createApi = () => {
       "reqTextHistoryBySessionId",
       "resTextHistoryBySessionId",
     );
+    const [deleteTextHistory, handleDeleteTextHistory] = request(
+      "reqDeleteTextHistory",
+      "resDeleteTextHistory",
+    );
     const [session, handleSession] = request("reqSession", "resSession");
     const [sessions, handleSessions] = request("reqSessions", "resSessions");
     const [createSession, handleCreateSession] = request("reqCreateSession", "resCreateSession");
@@ -88,6 +94,7 @@ const createApi = () => {
     return {
       request: {
         textHistoryBySessionId,
+        deleteTextHistory,
         session,
         sessions,
         createSession,
@@ -98,6 +105,7 @@ const createApi = () => {
       },
       handleRequest: {
         textHistoryBySessionId: handleTextHistoryBySessionId,
+        deleteTextHistory: handleDeleteTextHistory,
         session: handleSession,
         sessions: handleSessions,
         createSession: handleCreateSession,

@@ -19,6 +19,11 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });
 
+  api.handleRequest.deleteTextHistory(async (id) => {
+    const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
+    return result ?? null;
+  });
+
   api.handleRequest.session(async (id) => {
     return (
       (await db.query.session.findFirst({

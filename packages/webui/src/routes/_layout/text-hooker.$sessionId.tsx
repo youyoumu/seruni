@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useTextHistory$ } from "#/hooks/text-history";
+import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { TrashIcon } from "lucide-react";
 import { Suspense, useRef } from "react";
 
@@ -39,6 +39,7 @@ function TextHookerPage() {
 function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+  const { mutate: deleteTextHistory } = useDeleteTextHistory();
 
   //TODO: virtual list
   return textHistory.map((item) => (
@@ -56,9 +57,10 @@ function TextHistoryList() {
       </p>
 
       <TrashIcon
-        className="size-5, cursor-pointer text-danger"
+        size={20}
+        className="cursor-pointer text-danger"
         onClick={() => {
-          // texthoookerDB.text.where("uuid").equals(item.uuid).delete();
+          deleteTextHistory(item.id);
         }}
       ></TrashIcon>
     </div>
