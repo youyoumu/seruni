@@ -113,7 +113,7 @@ export function TextHookerSessionList() {
   return (
     <div className="flex flex-col gap-2 max-h-[50vh] overflow-auto">
       {reversedSessions.map((session) => (
-        <div className="flex gap-2 pe-2 items-center">
+        <div className="flex gap-2 pe-2 items-center" key={session.id}>
           <Link
             className={cn(
               "text-surface-foreground-calm hover:text-surface-foreground transition-colors",

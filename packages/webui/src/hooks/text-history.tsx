@@ -5,15 +5,6 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 export function useTextHistory$({ sessionId }: { sessionId: number }) {
   const api = useApi();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    return api.handlePush.textHistory((data) => {
-      queryClient.setQueryData(["textHistory", { sessionId }], (old: TextHistory[] = []) => {
-        return [...old, data];
-      });
-    });
-  }, []);
 
   return useSuspenseQuery({
     queryKey: ["textHistory", { sessionId }],
@@ -22,4 +13,20 @@ export function useTextHistory$({ sessionId }: { sessionId: number }) {
       return a;
     },
   });
+}
+
+export function useTextHistoryPush() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    return api.handlePush.textHistory((data) => {
+      queryClient.setQueryData(
+        ["textHistory", { sessionId: data.sessionId }],
+        (old: TextHistory[] = []) => {
+          return [...old, data];
+        },
+      );
+    });
+  }, []);
 }

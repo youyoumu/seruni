@@ -1,6 +1,5 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import { useTextHistory$ } from "#/hooks/text-history";
-import { useConfig } from "#/hooks/config";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useTextHistory$, useTextHistoryPush } from "#/hooks/text-history";
 import { TrashIcon } from "lucide-react";
 import { Suspense, useRef } from "react";
 
@@ -24,7 +23,6 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
 
 function TextHookerPage() {
   const textHistoryContainer = useRef<HTMLDivElement>(null);
-  useConfig();
 
   return (
     <div className="p-4 overflow-auto">
@@ -41,6 +39,7 @@ function TextHookerPage() {
 function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+  useTextHistoryPush();
 
   //TODO: virtual list
   return textHistory.map((item) => (
