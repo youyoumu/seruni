@@ -2,9 +2,14 @@ import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
+import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { TrashIcon } from "lucide-react";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
+
+function easeInOutQuint(t: number) {
+  return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
+}
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
@@ -43,6 +48,42 @@ function TextHistoryList() {
 
   const parentRef = useRef<HTMLDivElement>(null);
   const hasScrolledOnLoad = useRef(false);
+  const scrollingRef = useRef<number | undefined>(undefined);
+
+  const scrollToFn: VirtualizerOptions<HTMLDivElement, Element>["scrollToFn"] = useCallback(
+    (offset, canSmooth, instance) => {
+      const start = parentRef.current?.scrollTop ?? 0;
+      const distance = Math.abs(offset - start);
+
+      // For large scrolls, use instant scroll to avoid scroll failures
+      if (distance > 10000) {
+        elementScroll(offset, canSmooth, instance);
+        return;
+      }
+
+      // Dynamic duration based on distance (0.5ms per pixel, min 500ms, max 2000ms)
+      const duration = Math.min(Math.max(distance * 0.5, 500), 2000);
+      const startTime = (scrollingRef.current = Date.now());
+
+      const run = () => {
+        if (scrollingRef.current !== startTime) return;
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const progress = easeInOutQuint(Math.min(elapsed / duration, 1));
+        const interpolated = start + (offset - start) * progress;
+
+        if (elapsed < duration) {
+          elementScroll(interpolated, canSmooth, instance);
+          requestAnimationFrame(run);
+        } else {
+          elementScroll(interpolated, canSmooth, instance);
+        }
+      };
+
+      requestAnimationFrame(run);
+    },
+    [],
+  );
 
   const virtualizer = useVirtualizer({
     count: textHistory.length,
@@ -51,6 +92,8 @@ function TextHistoryList() {
     measureElement: (element) => element.getBoundingClientRect().height,
     gap: 32,
     paddingEnd: 128,
+    overscan: 5,
+    scrollToFn,
   });
 
   useEffect(() => {
