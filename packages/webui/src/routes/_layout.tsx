@@ -1,9 +1,9 @@
 import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
-import { Terminal, FileText, Settings, TrashIcon } from "lucide-react";
-import { tv } from "@heroui/react";
+import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
+import { cn, tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { Popover } from "@heroui/react";
-import { useSessions$ } from "#/hooks/sessions";
+import { useActiveSession$, useSessions$ } from "#/hooks/sessions";
 import { Suspense } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "#/hooks/api";
@@ -102,20 +102,28 @@ export function TextHookerSessionListPopover() {
 
 export function TextHookerSessionList() {
   const { data: sessions } = useSessions$();
+  const { data: activeSession } = useActiveSession$();
   const reversedSessions = [...sessions].reverse();
 
   return (
     <div className="flex flex-col gap-2 max-h-[50vh] overflow-auto">
       {reversedSessions.map((session) => (
-        <div className="flex gap-2 pe-2">
+        <div className="flex gap-2 pe-2 items-center">
           <Link
-            className="text-surface-foreground-calm hover:text-surface-foreground transition-colors flex-1"
+            className={cn(
+              "text-surface-foreground-calm hover:text-surface-foreground transition-colors",
+              {
+                "text-surface-foreground": session.id === activeSession?.id,
+              },
+            )}
             key={session.id}
             to={`/text-hooker/$sessionId`}
             params={{ sessionId: String(session.id) }}
           >
             {session.name}
           </Link>
+          {session.id === activeSession?.id && <RssIcon size={16} />}
+          <div className="flex-1"></div>
           <DeleteSessionButton sessionId={session.id} />
         </div>
       ))}

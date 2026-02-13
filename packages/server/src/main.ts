@@ -26,6 +26,10 @@ async function main() {
       .get();
   }
 
+  //TODO: use signal for sessionId
+  let activeSessionId_: number | undefined = lastSession.id;
+  const activeSessionId = () => activeSessionId_;
+
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
@@ -76,7 +80,22 @@ async function main() {
 
   api.handleRequest.deleteSession(async (id) => {
     const [result] = await db.delete(session).where(eq(session.id, id)).returning();
+    if (result?.id === activeSessionId_) activeSessionId_ = undefined;
     return result;
+  });
+
+  api.handleRequest.setActiveSession(async (id) => {
+    activeSessionId_ = id;
+    return await db.query.session.findFirst({
+      where: eq(session.id, id),
+    });
+  });
+
+  api.handleRequest.getActiveSession(async () => {
+    if (!activeSessionId_) return undefined;
+    return await db.query.session.findFirst({
+      where: eq(session.id, activeSessionId_),
+    });
   });
 
   api.handleRequest.checkHealth(() => undefined);
@@ -114,7 +133,7 @@ async function main() {
   injectWebSocket(server);
 
   //TODO: use signal for sessionId
-  new TextHookerClient({ logger, api, db, sessionId: lastSession.id });
+  new TextHookerClient({ logger, api, db, activeSessionId });
 }
 
 main();
