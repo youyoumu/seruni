@@ -64,7 +64,9 @@ function TextHistoryList() {
   useEffect(() => {
     const handleNewTextHistory = (e: CustomEvent<TextHistory>) => {
       if (e.detail.sessionId === Number(sessionId)) {
-        virtualizer.scrollToIndex(textHistory.length - 1, { align: "end" });
+        setTimeout(() => {
+          virtualizer.scrollToOffset(virtualizer.getTotalSize());
+        }, 0);
       }
     };
 
