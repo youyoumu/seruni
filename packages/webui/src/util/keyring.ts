@@ -1,7 +1,7 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import type { Api } from "#/hooks/api";
+import type { Services } from "#/hooks/api";
 
-export const createKeyring = (api: Api["api"]) =>
+export const createKeyring = (api: Services["api"]) =>
   createQueryKeyStore({
     sessions: {
       all: {

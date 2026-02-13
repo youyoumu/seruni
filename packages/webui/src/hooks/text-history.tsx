@@ -1,26 +1,23 @@
-import { useEffect, useMemo } from "react";
-import { useApi } from "./api";
+import { useEffect } from "react";
+import { useServices } from "./api";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createKeyring } from "#/util/keyring";
 
 export function useTextHistory$({ sessionId }: { sessionId: number }) {
-  const api = useApi();
+  const { keyring } = useServices();
   const queryClient = useQueryClient();
-  const queries = useMemo(() => createKeyring(api), [api]);
 
   useEffect(() => {
     queryClient.invalidateQueries({
-      queryKey: queries.textHistory.bySession(sessionId).queryKey,
+      queryKey: keyring.textHistory.bySession(sessionId).queryKey,
     });
-  }, [sessionId, queries, queryClient]);
+  }, [sessionId, keyring, queryClient]);
 
-  return useSuspenseQuery(queries.textHistory.bySession(sessionId));
+  return useSuspenseQuery(keyring.textHistory.bySession(sessionId));
 }
 
 export function useDeleteTextHistory() {
-  const api = useApi();
+  const { api, keyring } = useServices();
   const queryClient = useQueryClient();
-  const queries = useMemo(() => createKeyring(api), [api]);
   return useMutation({
     mutationFn: async (id: number) => {
       return await api.request.deleteTextHistory(id);
@@ -28,7 +25,7 @@ export function useDeleteTextHistory() {
     onSuccess: (data) => {
       if (data) {
         queryClient.invalidateQueries({
-          queryKey: queries.textHistory.bySession(data.sessionId).queryKey,
+          queryKey: keyring.textHistory.bySession(data.sessionId).queryKey,
         });
       }
     },

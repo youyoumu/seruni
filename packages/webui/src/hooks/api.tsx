@@ -4,12 +4,15 @@ import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import type { TextHistory } from "@repo/shared/db";
 import { createKeyring } from "#/util/keyring";
+import type { Keyring } from "#/util/keyring";
 
-const { api, onPayload, bindWS } = createClientApi();
+const { api: clientApi, onPayload, bindWS } = createClientApi();
 
-export class Api {
-  api = api;
+export class Services {
+  api: typeof clientApi;
+  keyring: Keyring;
   ws: ReconnectingWebsocket;
+
   constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebsocket({
       url: "ws://localhost:45626/ws",
@@ -19,27 +22,27 @@ export class Api {
       },
     });
     this.ws = ws;
+    this.api = clientApi;
+    this.keyring = createKeyring(clientApi);
 
     bindWS(ws);
-
-    const keyring = createKeyring(api);
 
     ws.addEventListener("message", (e: CustomEventInit) => {
       const payload = JSON.parse(e.detail);
       onPayload(payload);
     });
 
-    api.handleRequest.userAgent(() => {
+    this.api.handleRequest.userAgent(() => {
       return navigator.userAgent;
     });
 
-    api.handlePush.activeSession((data) => {
-      queryClient.setQueryData(keyring.sessions.active.queryKey, data);
+    this.api.handlePush.activeSession((data) => {
+      queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
-    api.handlePush.textHistory((data) => {
+    this.api.handlePush.textHistory((data) => {
       queryClient.setQueryData(
-        keyring.textHistory.bySession(data.sessionId).queryKey,
+        this.keyring.textHistory.bySession(data.sessionId).queryKey,
         (old: TextHistory[] = []) => {
           return [...old, data];
         },
@@ -48,14 +51,22 @@ export class Api {
   }
 }
 
-const ApiContext = createContext<Api["api"] | null>(null);
-export const ApiProvider = ({ children, api }: { children: React.ReactNode; api: Api["api"] }) => {
-  return <ApiContext.Provider value={api}>{children}</ApiContext.Provider>;
+const ServicesContext = createContext<Services | null>(null);
+
+export const ServicesProvider = ({
+  children,
+  value,
+}: {
+  children: React.ReactNode;
+  value: Services;
+}) => {
+  return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>;
 };
-export const useApi = () => {
-  const api = useContext(ApiContext);
-  if (!api) throw new Error("Missing ApiProvider");
-  return api;
+
+export const useServices = () => {
+  const ctx = useContext(ServicesContext);
+  if (!ctx) throw new Error("Missing ServicesProvider");
+  return ctx;
 };
 
 const OnlineContext = createContext<boolean | null>(null);
@@ -87,6 +98,7 @@ export const OnlineProvider = ({
 
   return <OnlineContext.Provider value={online}>{children}</OnlineContext.Provider>;
 };
+
 export const useOnline = () => {
   const online = useContext(OnlineContext);
   if (online === null) throw new Error("Missing OnlineProvider");

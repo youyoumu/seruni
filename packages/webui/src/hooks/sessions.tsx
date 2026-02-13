@@ -1,24 +1,18 @@
-import { useMemo } from "react";
-import { useApi } from "./api";
+import { useServices } from "./api";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createKeyring } from "#/util/keyring";
 
 export function useSessions$() {
-  const api = useApi();
-  const queries = useMemo(() => createKeyring(api), [api]);
-
-  return useSuspenseQuery(queries.sessions.all);
+  const { keyring } = useServices();
+  return useSuspenseQuery(keyring.sessions.all);
 }
 
 export function useActiveSession$() {
-  const api = useApi();
-  const queries = useMemo(() => createKeyring(api), [api]);
-
-  return useSuspenseQuery(queries.sessions.active);
+  const { keyring } = useServices();
+  return useSuspenseQuery(keyring.sessions.active);
 }
 
 export function useSetActiveSession() {
-  const api = useApi();
+  const { api } = useServices();
   return useMutation({
     mutationFn: async (id: number) => {
       return await api.request.setActiveSession(id);
@@ -27,32 +21,30 @@ export function useSetActiveSession() {
 }
 
 export function useCreateNewSession() {
-  const api = useApi();
+  const { api, keyring } = useServices();
   const queryClient = useQueryClient();
-  const queries = useMemo(() => createKeyring(api), [api]);
   return useMutation({
     mutationFn: async (name: string) => {
       await api.request.createSession(name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queries.sessions.all.queryKey,
+        queryKey: keyring.sessions.all.queryKey,
       });
     },
   });
 }
 
 export function useDeleteSession() {
-  const api = useApi();
+  const { api, keyring } = useServices();
   const queryClient = useQueryClient();
-  const queries = useMemo(() => createKeyring(api), [api]);
   return useMutation({
     mutationFn: async (id: number) => {
       await api.request.deleteSession(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queries.sessions.all.queryKey,
+        queryKey: keyring.sessions.all.queryKey,
       });
     },
   });

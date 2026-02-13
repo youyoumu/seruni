@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
   async loader({ params, context }) {
     const { sessionId } = params;
-    const { api } = context;
+    const { api } = context.services;
     const session = await api.request.session(Number(sessionId));
     if (!session) {
       const sessions = await api.request.sessions();

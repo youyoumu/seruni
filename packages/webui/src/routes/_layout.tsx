@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_layout")({
   component: LayoutComponent,
   async loader({ context, location }) {
     if (location.pathname === "/offline") return;
-    const { api } = context;
+    const { api } = context.services;
     let lastSessionId: number | undefined;
     try {
       await api.request.checkHealth();

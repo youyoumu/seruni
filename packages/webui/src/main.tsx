@@ -2,19 +2,23 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Api, OnlineProvider } from "./hooks/api";
+import { Services, OnlineProvider } from "./hooks/api";
 
 import { routeTree } from "./routeTree.gen";
-import { ApiProvider } from "./hooks/api";
+import { ServicesProvider } from "./hooks/api";
 
 const queryClient = new QueryClient();
-const api = new Api({ queryClient });
+const services = new Services({ queryClient });
 
 const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    api: api.api,
+    services: {
+      api: services.api,
+      keyring: services.keyring,
+      ws: services.ws,
+    },
   },
   Wrap: ({ children }) => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -36,11 +40,11 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ApiProvider api={api.api}>
-        <OnlineProvider ws={api.ws}>
+      <ServicesProvider value={services}>
+        <OnlineProvider ws={services.ws}>
           <RouterProvider router={router} />
         </OnlineProvider>
-      </ApiProvider>
+      </ServicesProvider>
     </StrictMode>,
   );
 }
