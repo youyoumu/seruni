@@ -45,7 +45,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
   #events = new Set<string>();
   #ws: WS | undefined;
 
-  #push = <T extends keyof CPush & string>(tag: T, ...payload: Arg<CPush[T]["detail"]>) => {
+  #push = <T extends keyof CPush & string>(tag: T, ...payload: Arg<CPush[T]["detail"]["data"]>) => {
     this.dispatchTypedEvent(
       tag,
       new CustomEvent(tag, {
@@ -59,7 +59,7 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
 
   #addPushHandler = <T extends keyof CPush & string>(
     tag: T,
-    handler: (data: CPush[T]["detail"]) => void,
+    handler: (data: CPush[T]["detail"]["data"]) => void,
   ) => {
     const handler_ = (e: CPush[T]) => {
       handler(e.detail.data as CPush[T]["detail"]);
@@ -72,8 +72,8 @@ class ClientPushBus<CPush extends ClientPushEventMap> extends TypedEventTarget<C
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#events.add(clientEvent);
 
-    const push = (...data: Arg<CPush[T]["detail"]>) => this.#push(clientEvent, ...data);
-    const handle = (handler: (payload: CPush[T]["detail"]) => void) =>
+    const push = (...data: Arg<CPush[T]["detail"]["data"]>) => this.#push(clientEvent, ...data);
+    const handle = (handler: (payload: CPush[T]["detail"]["data"]) => void) =>
       this.#addPushHandler(clientEvent, handler);
 
     this.addEventListener(clientEvent, (e) => {
@@ -98,7 +98,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
   #events = new Set<string>();
   #ws = new Set<WS>();
 
-  #push = <T extends keyof SPush & string>(tag: T, ...payload: Arg<SPush[T]["detail"]>) => {
+  #push = <T extends keyof SPush & string>(tag: T, ...payload: Arg<SPush[T]["detail"]["data"]>) => {
     this.dispatchTypedEvent(
       tag,
       new CustomEvent(tag, {
@@ -112,7 +112,7 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
 
   #addPushHandler = <T extends keyof SPush & string>(
     tag: T,
-    handler: (data: SPush[T]["detail"]) => void,
+    handler: (data: SPush[T]["detail"]["data"]) => void,
   ) => {
     const handler_ = (e: SPush[T]) => {
       handler(e.detail.data as SPush[T]["detail"]);
@@ -125,8 +125,8 @@ class ServerPushBus<SPush extends ServerPushEventMap> extends TypedEventTarget<S
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#events.add(serverEvent);
 
-    const push = (...data: Arg<SPush[T]["detail"]>) => this.#push(serverEvent, ...data);
-    const handle = (handler: (payload: SPush[T]["detail"]) => void) =>
+    const push = (...data: Arg<SPush[T]["detail"]["data"]>) => this.#push(serverEvent, ...data);
+    const handle = (handler: (payload: SPush[T]["detail"]["data"]) => void) =>
       this.#addPushHandler(serverEvent, handler);
 
     this.addEventListener(serverEvent, (e) => {
