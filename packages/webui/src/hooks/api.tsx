@@ -48,16 +48,21 @@ export class Services {
     });
 
     this.api.handlePush.textHistory((data) => {
-      queryClient.setQueryData(
+      const old = queryClient.getQueryData(
         this.keyring.textHistory.bySession(data.sessionId).queryKey,
-        (old: TextHistory[] = []) => {
-          return [...old, data];
-        },
       );
-      this.bus.dispatchTypedEvent(
-        "textHistory:new",
-        new CustomEvent("textHistory:new", { detail: data }),
-      );
+      if (old) {
+        queryClient.setQueryData(
+          this.keyring.textHistory.bySession(data.sessionId).queryKey,
+          (old: TextHistory[] = []) => {
+            return [...old, data];
+          },
+        );
+        this.bus.dispatchTypedEvent(
+          "textHistory:new",
+          new CustomEvent("textHistory:new", { detail: data }),
+        );
+      }
     });
   }
 }
