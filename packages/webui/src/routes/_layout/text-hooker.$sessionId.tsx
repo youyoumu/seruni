@@ -26,13 +26,11 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
 
 function TextHookerPage() {
   return (
-    <div className="overflow-auto p-4">
-      <div className="flex flex-col gap-16 pb-16">
-        {/* //TODO: pretty loading */}
-        <Suspense fallback="loading...">
-          <TextHistoryList />
-        </Suspense>
-      </div>
+    <div className="h-screen overflow-auto">
+      {/* //TODO: pretty loading */}
+      <Suspense fallback="loading...">
+        <TextHistoryList />
+      </Suspense>
     </div>
   );
 }
@@ -52,6 +50,7 @@ function TextHistoryList() {
     estimateSize: () => 80,
     measureElement: (element) => element.getBoundingClientRect().height,
     gap: 32,
+    paddingEnd: 128,
   });
 
   useEffect(() => {
@@ -77,7 +76,7 @@ function TextHistoryList() {
   }, [sessionId, bus, virtualizer, textHistory.length]);
 
   return (
-    <div ref={parentRef} className="h-[calc(100vh-8rem)] overflow-auto">
+    <div ref={parentRef} className="h-full overflow-auto">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -100,29 +99,31 @@ function TextHistoryList() {
                 width: "100%",
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-              className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm"
+              className="px-4"
             >
-              <p className="flex-1 text-xl">
-                {"\n"}
-                {item.text}
-                <span
-                  style={{
-                    opacity: 0.01,
-                    fontSize: "0.1px",
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}
-                >{`‹id:${item.id}›`}</span>
-                {"\n"}
-              </p>
+              <div className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
+                <p className="flex-1 text-xl">
+                  {"\n"}
+                  {item.text}
+                  <span
+                    style={{
+                      opacity: 0.01,
+                      fontSize: "0.1px",
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  >{`‹id:${item.id}›`}</span>
+                  {"\n"}
+                </p>
 
-              <TrashIcon
-                size={20}
-                className="shrink-0 cursor-pointer text-danger"
-                onClick={() => {
-                  deleteTextHistory(item.id);
-                }}
-              />
+                <TrashIcon
+                  size={20}
+                  className="shrink-0 cursor-pointer text-danger"
+                  onClick={() => {
+                    deleteTextHistory(item.id);
+                  }}
+                />
+              </div>
             </div>
           );
         })}
