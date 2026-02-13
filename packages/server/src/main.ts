@@ -9,11 +9,14 @@ import type {} from "@repo/shared/types";
 import { createDb } from "./db";
 import { session, textHistory } from "@repo/shared/db";
 import { eq } from "drizzle-orm";
+import { createState } from "./state/state";
 
 async function main() {
   const logger = createLogger();
   const { api, addWS, removeWS, onPayload } = createServerApi();
   const db = createDb();
+  const state = createState();
+
   const sessions = await db.select().from(session);
   let lastSession = sessions[sessions.length - 1];
   if (!lastSession) {
@@ -25,10 +28,7 @@ async function main() {
       .returning()
       .get();
   }
-
-  //TODO: use signal for sessionId
-  let activeSessionId_: number | undefined = lastSession.id;
-  const activeSessionId = () => activeSessionId_;
+  state.activeSessionId(lastSession.id);
 
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -76,27 +76,28 @@ async function main() {
 
   api.handleRequest.createSession(async (name) => {
     const result = await db.insert(session).values({ name }).returning().get();
-    activeSessionId_ = result.id;
+    state.activeSessionId(result.id);
     return result;
   });
 
   api.handleRequest.deleteSession(async (id) => {
     const [result] = await db.delete(session).where(eq(session.id, id)).returning();
-    if (result?.id === activeSessionId_) activeSessionId_ = undefined;
+    if (result?.id === state.activeSessionId()) state.activeSessionId(undefined);
     return result;
   });
 
   api.handleRequest.setActiveSession(async (id) => {
-    activeSessionId_ = id;
+    state.activeSessionId(id);
     return await db.query.session.findFirst({
       where: eq(session.id, id),
     });
   });
 
   api.handleRequest.getActiveSession(async () => {
-    if (!activeSessionId_) return undefined;
+    const activeSessionId = state.activeSessionId();
+    if (!activeSessionId) return undefined;
     return await db.query.session.findFirst({
-      where: eq(session.id, activeSessionId_),
+      where: eq(session.id, activeSessionId),
     });
   });
 
@@ -131,11 +132,9 @@ async function main() {
       logger.info(`Server is running on http://localhost:${info.port}`);
     },
   );
-
   injectWebSocket(server);
 
-  //TODO: use signal for sessionId
-  new TextHookerClient({ logger, api, db, activeSessionId });
+  new TextHookerClient({ logger, api, db, state });
 }
 
 main();

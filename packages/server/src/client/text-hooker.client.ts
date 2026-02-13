@@ -3,33 +3,34 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { type DB } from "#/db";
 import { textHistory } from "@repo/shared/db";
 import { type ServerApi } from "@repo/shared/ws";
+import type { State } from "#/state/state";
 
 export class TextHookerClient extends ReconnectingWebsocket {
-  activeSessionId: () => number | undefined;
+  state: State;
   messages: string[] = [];
   constructor({
     url = "ws://localhost:6677",
     logger,
     api,
     db,
-    activeSessionId,
+    state,
   }: {
     url?: string;
     logger: Logger;
     api: ServerApi;
     db: DB;
-    activeSessionId: () => number | undefined;
+    state: State;
   }) {
     super({
       url,
       logger: logger.child({ name: "text-hooker-client" }),
     });
-    this.activeSessionId = activeSessionId;
+    this.state = state;
 
     this.addEventListener("message", async (event: CustomEventInit<string>) => {
       if (event.detail) {
         this.log.info(`Message: ${event.detail}`);
-        const activeSessionId = this.activeSessionId();
+        const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
         const row = await db
           .insert(textHistory)
