@@ -75,7 +75,9 @@ async function main() {
   });
 
   api.handleRequest.createSession(async (name) => {
-    return await db.insert(session).values({ name }).returning().get();
+    const result = await db.insert(session).values({ name }).returning().get();
+    activeSessionId_ = result.id;
+    return result;
   });
 
   api.handleRequest.deleteSession(async (id) => {

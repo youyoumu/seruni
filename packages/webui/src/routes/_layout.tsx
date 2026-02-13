@@ -3,10 +3,14 @@ import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
 import { cn, tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { Popover } from "@heroui/react";
-import { useActiveSession$, useSessions$ } from "#/hooks/sessions";
+import {
+  useActiveSession$,
+  useCreateNewSession,
+  useDeleteSession,
+  useSessions$,
+  useSetActiveSession,
+} from "#/hooks/sessions";
 import { Suspense } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useApi } from "#/hooks/api";
 import { z } from "zod";
 import { useAppForm } from "#/hooks/form";
 
@@ -103,6 +107,7 @@ export function TextHookerSessionListPopover() {
 export function TextHookerSessionList() {
   const { data: sessions } = useSessions$();
   const { data: activeSession } = useActiveSession$();
+  const { mutateAsync: setActiveSession } = useSetActiveSession();
   const reversedSessions = [...sessions].reverse();
 
   return (
@@ -119,6 +124,9 @@ export function TextHookerSessionList() {
             key={session.id}
             to={`/text-hooker/$sessionId`}
             params={{ sessionId: String(session.id) }}
+            onClick={() => {
+              setActiveSession(session.id);
+            }}
           >
             {session.name}
           </Link>
@@ -132,19 +140,7 @@ export function TextHookerSessionList() {
 }
 
 function NewSessionForm() {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const { mutateAsync: createNewSession } = useMutation({
-    mutationFn: async (name: string) => {
-      await api.request.createSession(name);
-    },
-    onSuccess: () => {
-      //TODO: use query key factory
-      queryClient.invalidateQueries({
-        queryKey: ["sessions"],
-      });
-    },
-  });
+  const { mutateAsync: createNewSession } = useCreateNewSession();
 
   const form = useAppForm({
     defaultValues: {
@@ -180,19 +176,7 @@ function NewSessionForm() {
 }
 
 function DeleteSessionButton({ sessionId }: { sessionId: number }) {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const { mutateAsync: deleteSession } = useMutation({
-    mutationFn: async (id: number) => {
-      await api.request.deleteSession(id);
-    },
-    onSuccess: () => {
-      //TODO: use query key factory
-      queryClient.invalidateQueries({
-        queryKey: ["sessions"],
-      });
-    },
-  });
+  const { mutateAsync: deleteSession } = useDeleteSession();
 
   return (
     <TrashIcon
