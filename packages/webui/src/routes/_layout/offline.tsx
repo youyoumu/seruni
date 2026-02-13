@@ -22,8 +22,8 @@ function RouteComponent() {
   const { redirect } = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  let timeoutId: ReturnType<typeof setTimeout>;
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     if (online) {
       timeoutId = setTimeout(() => {
         //@ts-expect-error dynamic link
@@ -32,7 +32,11 @@ function RouteComponent() {
         });
       }, 1000);
     }
-  }, [online]);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [online, navigate, redirect]);
+
   return (
     <div className="flex items-center justify-center h-screen">
       <ShellIcon className="size-64 animate-spin  [animation-direction:reverse] text-surface-foreground-faint"></ShellIcon>

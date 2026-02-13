@@ -85,7 +85,7 @@ export function TextHookerSessionListPopover() {
       <Popover.Trigger>
         <button
           className={navLink({
-            active: !!active ? "active" : undefined,
+            active: active ? "active" : undefined,
           })}
         >
           <FileText size={20} />

@@ -94,7 +94,7 @@ export const OnlineProvider = ({
       ws.removeEventListener("open", openHandler);
       ws.removeEventListener("close", closeHandler);
     };
-  }, []);
+  }, [ws]);
 
   return <OnlineContext.Provider value={online}>{children}</OnlineContext.Provider>;
 };
