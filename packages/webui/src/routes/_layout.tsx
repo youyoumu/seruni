@@ -32,11 +32,8 @@ export const Route = createFileRoute("/_layout")({
   async loader({ context, location }) {
     if (location.pathname === "/offline") return;
     const { api } = context.services;
-    let lastSessionId: number | undefined;
     try {
       await api.request.checkHealth();
-      const sessions = await api.request.sessions();
-      lastSessionId = sessions[sessions.length - 1].id;
     } catch (e) {
       if (e instanceof WSBusError && e.type === "connectionClosed") {
         throw redirect({
@@ -47,7 +44,6 @@ export const Route = createFileRoute("/_layout")({
         throw new Error("checkHealth fail");
       }
     }
-    return { lastSessionId };
   },
 });
 
