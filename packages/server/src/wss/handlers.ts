@@ -10,9 +10,11 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
   });
 
   api.handleRequest.session(async (id) => {
-    return await db.query.session.findFirst({
-      where: eq(session.id, id),
-    });
+    return (
+      (await db.query.session.findFirst({
+        where: eq(session.id, id),
+      })) ?? null
+    );
   });
 
   api.handleRequest.sessions(async () => {
@@ -27,23 +29,30 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
 
   api.handleRequest.deleteSession(async (id) => {
     const [result] = await db.delete(session).where(eq(session.id, id)).returning();
-    if (result?.id === state.activeSessionId()) state.activeSessionId(undefined);
-    return result;
+    if (result?.id === state.activeSessionId()) state.activeSessionId(null);
+    return result ?? null;
   });
 
   api.handleRequest.setActiveSession(async (id) => {
-    state.activeSessionId(id);
-    return await db.query.session.findFirst({
+    const result = await db.query.session.findFirst({
       where: eq(session.id, id),
     });
+    if (result) {
+      state.activeSessionId(result.id);
+    } else {
+      state.activeSessionId(null);
+    }
+    return result ?? null;
   });
 
   api.handleRequest.getActiveSession(async () => {
     const activeSessionId = state.activeSessionId();
-    if (!activeSessionId) return undefined;
-    return await db.query.session.findFirst({
-      where: eq(session.id, activeSessionId),
-    });
+    if (!activeSessionId) return null;
+    return (
+      (await db.query.session.findFirst({
+        where: eq(session.id, activeSessionId),
+      })) ?? null
+    );
   });
 
   api.handleRequest.checkHealth(() => undefined);

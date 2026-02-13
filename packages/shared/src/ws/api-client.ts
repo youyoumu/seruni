@@ -22,12 +22,12 @@ export type ClientReqEventMap = {
 };
 export type ServerResEventMap = {
   resTextHistoryBySessionId: ResEvent<TextHistory[]>;
-  resSession: ResEvent<Session | undefined>;
+  resSession: ResEvent<Session | null>;
   resSessions: ResEvent<Session[]>;
   resCreateSession: ResEvent<Session>;
-  resDeleteSession: ResEvent<Session | undefined>;
-  resSetActiveSession: ResEvent<Session | undefined>;
-  resGetActiveSession: ResEvent<Session | undefined>;
+  resDeleteSession: ResEvent<Session | null>;
+  resSetActiveSession: ResEvent<Session | null>;
+  resGetActiveSession: ResEvent<Session | null>;
   resCheckHealth: ResEvent;
 };
 
