@@ -5,6 +5,11 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
+import { TypedEventTarget } from "typescript-event-target";
+
+interface ServicesEventMap {
+  "textHistory:new": CustomEvent<TextHistory>;
+}
 
 const { api: clientApi, onPayload, bindWS } = createClientApi();
 
@@ -12,6 +17,7 @@ export class Services {
   api: typeof clientApi;
   keyring: Keyring;
   ws: ReconnectingWebsocket;
+  bus: TypedEventTarget<ServicesEventMap>;
 
   constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebsocket({
@@ -24,6 +30,7 @@ export class Services {
     this.ws = ws;
     this.api = clientApi;
     this.keyring = createKeyring(clientApi);
+    this.bus = new TypedEventTarget<ServicesEventMap>();
 
     bindWS(ws);
 
@@ -46,6 +53,10 @@ export class Services {
         (old: TextHistory[] = []) => {
           return [...old, data];
         },
+      );
+      this.bus.dispatchTypedEvent(
+        "textHistory:new",
+        new CustomEvent("textHistory:new", { detail: data }),
       );
     });
   }

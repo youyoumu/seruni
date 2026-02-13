@@ -1,8 +1,10 @@
+import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
+import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TrashIcon } from "lucide-react";
-import { Suspense, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
@@ -39,8 +41,10 @@ function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
+  const { bus } = useServices();
 
   const parentRef = useRef<HTMLDivElement>(null);
+  const hasScrolledOnLoad = useRef(false);
 
   const virtualizer = useVirtualizer({
     count: textHistory.length,
@@ -49,6 +53,26 @@ function TextHistoryList() {
     measureElement: (element) => element.getBoundingClientRect().height,
     gap: 32,
   });
+
+  useEffect(() => {
+    if (textHistory.length > 0 && !hasScrolledOnLoad.current) {
+      virtualizer.scrollToIndex(textHistory.length - 1, { align: "end" });
+      hasScrolledOnLoad.current = true;
+    }
+  }, [textHistory.length, virtualizer]);
+
+  useEffect(() => {
+    const handleNewTextHistory = (e: CustomEvent<TextHistory>) => {
+      if (e.detail.sessionId === Number(sessionId)) {
+        virtualizer.scrollToIndex(textHistory.length - 1, { align: "end" });
+      }
+    };
+
+    bus.addEventListener("textHistory:new", handleNewTextHistory);
+    return () => {
+      bus.removeEventListener("textHistory:new", handleNewTextHistory);
+    };
+  }, [sessionId, bus, virtualizer, textHistory.length]);
 
   return (
     <div ref={parentRef} className="h-[calc(100vh-8rem)] overflow-auto">

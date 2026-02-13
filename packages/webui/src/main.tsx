@@ -14,11 +14,7 @@ const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    services: {
-      api: services.api,
-      keyring: services.keyring,
-      ws: services.ws,
-    },
+    services,
   },
   Wrap: ({ children }) => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
