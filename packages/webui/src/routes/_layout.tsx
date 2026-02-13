@@ -1,3 +1,4 @@
+import { useServices } from "#/hooks/api";
 import { useAppForm } from "#/hooks/form";
 import {
   useActiveSession$,
@@ -9,9 +10,16 @@ import {
 import { cn, tv } from "@heroui/react";
 import { Popover } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
-import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
+import {
+  Link,
+  Outlet,
+  createFileRoute,
+  redirect,
+  useLocation,
+  useMatchRoute,
+} from "@tanstack/react-router";
 import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { z } from "zod";
 
 const navLink = tv({
@@ -48,6 +56,24 @@ export const Route = createFileRoute("/_layout")({
 });
 
 function LayoutComponent() {
+  const { ws } = useServices();
+  const navigate = Route.useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const handler = () => {
+      ws.removeEventListener("close", handler);
+      navigate({
+        to: "/offline",
+        search: { redirect: location.pathname },
+      });
+    };
+    ws.addEventListener("close", handler);
+    return () => {
+      ws.removeEventListener("close", handler);
+    };
+  }, [navigate, ws, location]);
+
   return (
     <div className="flex h-screen">
       <aside className="flex w-16 flex-col items-center justify-between border-r border-border bg-surface py-4">

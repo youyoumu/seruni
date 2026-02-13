@@ -58,6 +58,7 @@ export class ReconnectingWebsocket extends EventTarget {
       if (this.#readyState === WebSocket.OPEN) {
         this.log.warn(`Disconnected from ${this.#url}`);
       }
+      this.#ws = null;
       this.#readyState = WebSocket.CLOSED;
       this.dispatchEvent(new CustomEvent("close"));
       this.#attemptReconnect();

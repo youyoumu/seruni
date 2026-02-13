@@ -1,7 +1,7 @@
-import { useOnline } from "#/hooks/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { useOnline, useServices } from "#/hooks/api";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { ShellIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type Search = {
   redirect: string;
@@ -18,24 +18,28 @@ export const Route = createFileRoute("/_layout/offline")({
 
 function RouteComponent() {
   /* //TODO: pretty loading */
-  const online = useOnline();
   const { redirect } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const { ws } = useServices();
+  const location = useLocation();
+  const timeoutId = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (online) {
-      timeoutId = setTimeout(() => {
-        //@ts-expect-error dynamic link
+    const handler = () => {
+      ws.removeEventListener("open", handler);
+      if (timeoutId.current) clearTimeout(timeoutId.current);
+      timeoutId.current = setTimeout(() => {
         navigate({
           to: redirect,
+          search: { redirect: location.pathname },
         });
       }, 1000);
-    }
-    return () => {
-      clearTimeout(timeoutId);
     };
-  }, [online, navigate, redirect]);
+    ws.addEventListener("open", handler);
+    return () => {
+      ws.removeEventListener("open", handler);
+    };
+  }, [navigate, ws, location, redirect]);
 
   return (
     <div className="flex h-screen items-center justify-center">
