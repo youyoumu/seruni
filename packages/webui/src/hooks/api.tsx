@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import type { TextHistory } from "@repo/shared/db";
+import { keyring } from "#/util/keyring";
 
 const { api, onPayload, bindWS } = createClientApi();
 
@@ -31,12 +32,12 @@ export class Api {
     });
 
     api.handlePush.activeSession((data) => {
-      queryClient.setQueryData(["activeSession"], data);
+      queryClient.setQueryData(keyring.sessions.active.queryKey, data);
     });
 
     api.handlePush.textHistory((data) => {
       queryClient.setQueryData(
-        ["textHistory", { sessionId: data.sessionId }],
+        keyring.textHistory.bySession(data.sessionId).queryKey,
         (old: TextHistory[] = []) => {
           return [...old, data];
         },

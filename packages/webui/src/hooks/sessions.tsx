@@ -1,11 +1,12 @@
 import { useApi } from "./api";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { keyring } from "#/util/keyring";
 
 export function useSessions$() {
   const api = useApi();
 
   return useSuspenseQuery({
-    queryKey: ["sessions"],
+    queryKey: keyring.sessions.all.queryKey,
     queryFn: async () => {
       return await api.request.sessions();
     },
@@ -16,7 +17,7 @@ export function useActiveSession$() {
   const api = useApi();
 
   return useSuspenseQuery({
-    queryKey: ["activeSession"],
+    queryKey: keyring.sessions.active.queryKey,
     queryFn: async () => {
       return await api.request.getActiveSession();
     },
@@ -41,7 +42,7 @@ export function useCreateNewSession() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["sessions"],
+        queryKey: keyring.sessions.all.queryKey,
       });
     },
   });
@@ -55,9 +56,8 @@ export function useDeleteSession() {
       await api.request.deleteSession(id);
     },
     onSuccess: () => {
-      //TODO: use query key factory
       queryClient.invalidateQueries({
-        queryKey: ["sessions"],
+        queryKey: keyring.sessions.all.queryKey,
       });
     },
   });
