@@ -1,5 +1,5 @@
-import { createCentralBus } from "#/ws-bus";
 import { type Session, type TextHistory } from "#/db/schema";
+import { createCentralBus } from "#/ws-bus";
 import type { PushEvent, ReqEvent, ResEvent, CreateSchema } from "#/ws-bus";
 export { WSBusError } from "#/ws-bus";
 

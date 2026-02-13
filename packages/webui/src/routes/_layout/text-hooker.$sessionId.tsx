@@ -1,5 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { TrashIcon } from "lucide-react";
 import { Suspense, useRef } from "react";
 

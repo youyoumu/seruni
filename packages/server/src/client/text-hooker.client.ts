@@ -1,9 +1,9 @@
-import { type Logger } from "pino";
-import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { type DB } from "#/db";
-import { textHistory } from "@repo/shared/db";
-import { type ServerApi } from "@repo/shared/ws";
 import type { State } from "#/state/state";
+import { textHistory } from "@repo/shared/db";
+import { ReconnectingWebsocket } from "@repo/shared/ws";
+import { type ServerApi } from "@repo/shared/ws";
+import { type Logger } from "pino";
 
 export class TextHookerClient extends ReconnectingWebsocket {
   state: State;

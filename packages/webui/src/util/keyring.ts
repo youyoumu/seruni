@@ -1,5 +1,5 @@
-import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 import type { Services } from "#/hooks/api";
+import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 
 export const createKeyring = (api: Services["api"]) =>
   createQueryKeyStore({

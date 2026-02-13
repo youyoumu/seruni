@@ -1,10 +1,10 @@
-import { ReconnectingWebsocket } from "@repo/shared/ws";
-import { createContext, useContext, useEffect, useState } from "react";
-import { createClientApi } from "@repo/shared/ws";
-import type { QueryClient } from "@tanstack/react-query";
-import type { TextHistory } from "@repo/shared/db";
 import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
+import type { TextHistory } from "@repo/shared/db";
+import { ReconnectingWebsocket } from "@repo/shared/ws";
+import { createClientApi } from "@repo/shared/ws";
+import type { QueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const { api: clientApi, onPayload, bindWS } = createClientApi();
 

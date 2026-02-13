@@ -1,13 +1,13 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { TextHookerClient } from "./client/text-hooker.client";
-import { createLogger } from "./util/logger";
-
 import { createNodeWebSocket } from "@hono/node-ws";
-import { createServerApi } from "@repo/shared/ws";
-import { createDb } from "./db";
 import { session } from "@repo/shared/db";
+import { createServerApi } from "@repo/shared/ws";
+import { Hono } from "hono";
+
+import { TextHookerClient } from "./client/text-hooker.client";
+import { createDb } from "./db";
 import { createState } from "./state/state";
+import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 
 async function main() {

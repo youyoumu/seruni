@@ -1,8 +1,4 @@
-import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
-import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
-import { cn, tv } from "@heroui/react";
-import { WSBusError } from "@repo/shared/ws-bus";
-import { Popover } from "@heroui/react";
+import { useAppForm } from "#/hooks/form";
 import {
   useActiveSession$,
   useCreateNewSession,
@@ -10,9 +6,13 @@ import {
   useSessions$,
   useSetActiveSession,
 } from "#/hooks/sessions";
+import { cn, tv } from "@heroui/react";
+import { Popover } from "@heroui/react";
+import { WSBusError } from "@repo/shared/ws-bus";
+import { Link, Outlet, createFileRoute, redirect, useMatchRoute } from "@tanstack/react-router";
+import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import { useAppForm } from "#/hooks/form";
 
 const navLink = tv({
   base: [
