@@ -129,6 +129,7 @@ function TextHistoryList() {
       >
         {virtualizer.getVirtualItems().map((virtualItem) => {
           const item = textHistory[virtualItem.index];
+          if (!item) return null; // never
 
           return (
             <div

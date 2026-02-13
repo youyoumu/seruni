@@ -15,6 +15,7 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
