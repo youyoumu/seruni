@@ -1,8 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": null,
+  "plugins": ["typescript", "unicorn"],
   "categories": {},
-  "rules": {},
+  "rules": {
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "unicorn/prefer-node-protocol": "warn",
+    "unicorn/no-nested-ternary": "warn"
+  },
   "settings": {
     "jsx-a11y": {
       "polymorphicPropName": null,

@@ -1,9 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react"],
+  "plugins": ["react", "typescript", "unicorn"],
   "categories": {},
   "rules": {
-    "react/no-children-prop": "off"
+    "react/no-children-prop": "off",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "unicorn/prefer-node-protocol": "warn",
+    "unicorn/no-nested-ternary": "warn"
   },
   "settings": {
     "jsx-a11y": {
