@@ -1,27 +1,20 @@
+import { useMemo } from "react";
 import { useApi } from "./api";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { keyring } from "#/util/keyring";
+import { createKeyring } from "#/util/keyring";
 
 export function useSessions$() {
   const api = useApi();
+  const queries = useMemo(() => createKeyring(api), [api]);
 
-  return useSuspenseQuery({
-    queryKey: keyring.sessions.all.queryKey,
-    queryFn: async () => {
-      return await api.request.sessions();
-    },
-  });
+  return useSuspenseQuery(queries.sessions.all);
 }
 
 export function useActiveSession$() {
   const api = useApi();
+  const queries = useMemo(() => createKeyring(api), [api]);
 
-  return useSuspenseQuery({
-    queryKey: keyring.sessions.active.queryKey,
-    queryFn: async () => {
-      return await api.request.getActiveSession();
-    },
-  });
+  return useSuspenseQuery(queries.sessions.active);
 }
 
 export function useSetActiveSession() {
@@ -36,13 +29,14 @@ export function useSetActiveSession() {
 export function useCreateNewSession() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const queries = useMemo(() => createKeyring(api), [api]);
   return useMutation({
     mutationFn: async (name: string) => {
       await api.request.createSession(name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: keyring.sessions.all.queryKey,
+        queryKey: queries.sessions.all.queryKey,
       });
     },
   });
@@ -51,13 +45,14 @@ export function useCreateNewSession() {
 export function useDeleteSession() {
   const api = useApi();
   const queryClient = useQueryClient();
+  const queries = useMemo(() => createKeyring(api), [api]);
   return useMutation({
     mutationFn: async (id: number) => {
       await api.request.deleteSession(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: keyring.sessions.all.queryKey,
+        queryKey: queries.sessions.all.queryKey,
       });
     },
   });

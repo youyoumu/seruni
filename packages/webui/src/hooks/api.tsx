@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import type { TextHistory } from "@repo/shared/db";
-import { keyring } from "#/util/keyring";
+import { createKeyring } from "#/util/keyring";
 
 const { api, onPayload, bindWS } = createClientApi();
 
@@ -21,6 +21,8 @@ export class Api {
     this.ws = ws;
 
     bindWS(ws);
+
+    const keyring = createKeyring(api);
 
     ws.addEventListener("message", (e: CustomEventInit) => {
       const payload = JSON.parse(e.detail);
