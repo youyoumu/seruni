@@ -8,6 +8,7 @@ export type ClientPushEventMap = {
 };
 export type ServerPushEventMap = {
   textHistory: PushEvent<TextHistory>;
+  activeSession: PushEvent<Session | null>;
 };
 
 export type ClientReqEventMap = {
@@ -112,13 +113,16 @@ const createApi = () => {
   const createServerPushPair = () => {
     const push = link.server.push;
     const [textHistory, handleTextHistory] = push("textHistory");
+    const [activeSession, handleActiveSession] = push("activeSession");
 
     return {
       push: {
         textHistory,
+        activeSession,
       },
       handlePush: {
         textHistory: handleTextHistory,
+        activeSession: handleActiveSession,
       },
     };
   };

@@ -8,7 +8,7 @@ import { routeTree } from "./routeTree.gen";
 import { ApiProvider } from "./hooks/api";
 
 const queryClient = new QueryClient();
-const api = new Api();
+const api = new Api({ queryClient });
 
 const router = createRouter({
   routeTree,

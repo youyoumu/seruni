@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useTextHistory$, useTextHistoryPush } from "#/hooks/text-history";
+import { useTextHistory$ } from "#/hooks/text-history";
 import { TrashIcon } from "lucide-react";
 import { Suspense, useRef } from "react";
 
@@ -39,7 +39,6 @@ function TextHookerPage() {
 function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
-  useTextHistoryPush();
 
   //TODO: virtual list
   return textHistory.map((item) => (

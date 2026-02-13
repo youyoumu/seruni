@@ -1,13 +1,15 @@
 import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClientApi } from "@repo/shared/ws";
+import type { QueryClient } from "@tanstack/react-query";
+import type { TextHistory } from "@repo/shared/db";
 
 const { api, onPayload, bindWS } = createClientApi();
 
 export class Api {
   api = api;
   ws: ReconnectingWebsocket;
-  constructor() {
+  constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebsocket({
       url: "ws://localhost:45626/ws",
       logger: {
@@ -26,6 +28,19 @@ export class Api {
 
     api.handleRequest.userAgent(() => {
       return navigator.userAgent;
+    });
+
+    api.handlePush.activeSession((data) => {
+      queryClient.setQueryData(["activeSession"], data);
+    });
+
+    api.handlePush.textHistory((data) => {
+      queryClient.setQueryData(
+        ["textHistory", { sessionId: data.sessionId }],
+        (old: TextHistory[] = []) => {
+          return [...old, data];
+        },
+      );
     });
   }
 }

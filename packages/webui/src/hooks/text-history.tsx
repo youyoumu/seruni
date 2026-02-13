@@ -14,19 +14,3 @@ export function useTextHistory$({ sessionId }: { sessionId: number }) {
     },
   });
 }
-
-export function useTextHistoryPush() {
-  const api = useApi();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    return api.handlePush.textHistory((data) => {
-      queryClient.setQueryData(
-        ["textHistory", { sessionId: data.sessionId }],
-        (old: TextHistory[] = []) => {
-          return [...old, data];
-        },
-      );
-    });
-  }, []);
-}

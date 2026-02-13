@@ -2,9 +2,19 @@ import type { DB } from "#/db";
 import type { State } from "#/state/state";
 import { textHistory, session } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
+import { effect } from "alien-signals";
 import { eq } from "drizzle-orm";
 
 export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; state: State }) {
+  effect(async () => {
+    const activeSessionId = state.activeSessionId();
+    if (!activeSessionId) return;
+    const result = await db.query.session.findFirst({
+      where: eq(session.id, activeSessionId),
+    });
+    api.push.activeSession(result ?? null);
+  });
+
   api.handleRequest.textHistoryBySessionId(async (id) => {
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });

@@ -25,17 +25,9 @@ export function useActiveSession$() {
 
 export function useSetActiveSession() {
   const api = useApi();
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
       return await api.request.setActiveSession(id);
-    },
-    onSuccess: (data) => {
-      //TODO: what to do if undefined ?
-      //TODO: use query key factory
-      queryClient.invalidateQueries({
-        queryKey: ["activeSession"],
-      });
     },
   });
 }
@@ -50,9 +42,6 @@ export function useCreateNewSession() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["activeSession"],
       });
     },
   });
@@ -69,9 +58,6 @@ export function useDeleteSession() {
       //TODO: use query key factory
       queryClient.invalidateQueries({
         queryKey: ["sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["activeSession"],
       });
     },
   });
