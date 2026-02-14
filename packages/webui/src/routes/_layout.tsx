@@ -7,9 +7,10 @@ import {
   useSessions$,
   useSetActiveSession,
 } from "#/hooks/sessions";
-import { cn, tv } from "@heroui/react";
+import { Button, cn, tv } from "@heroui/react";
 import { Popover } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
+import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
   Link,
   Outlet,
@@ -18,8 +19,9 @@ import {
   useLocation,
   useMatchRoute,
 } from "@tanstack/react-router";
-import { Terminal, FileText, Settings, TrashIcon, RssIcon } from "lucide-react";
+import { Terminal, FileText, Settings, TrashIcon, RssIcon, BugIcon } from "lucide-react";
 import { Suspense, useEffect } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { z } from "zod";
 
 const navLink = tv({
@@ -76,22 +78,43 @@ function LayoutComponent() {
 
   return (
     <div className="flex h-screen">
-      <aside className="flex w-16 flex-col items-center justify-between border-r border-border bg-surface py-4">
-        <nav className="flex flex-col gap-2">
-          <Link to="/" className={navLink()} title="Home">
-            <Terminal size={20} />
-          </Link>
-          <TextHookerSessionListPopover />
-        </nav>
-        <div className="flex flex-col gap-2">
-          <Link to="/settings" className={navLink()} title="Settings">
-            <Settings size={20} />
-          </Link>
-        </div>
-      </aside>
-      <main className="flex flex-1 flex-col overflow-hidden">
-        <Outlet />
-      </main>
+      <QueryErrorResetBoundary>
+        {({ reset }) => (
+          <ErrorBoundary
+            onReset={reset}
+            fallbackRender={({ resetErrorBoundary, error }) => {
+              return (
+                <div className="flex w-full flex-col items-center justify-center gap-2">
+                  <BugIcon
+                    className="size-64 text-surface-foreground-faint"
+                    strokeWidth={1}
+                  ></BugIcon>
+                  <p className="text-lg">An error occurred</p>
+                  <p className="text-danger">{error instanceof Error && error.message}</p>
+                  <Button onClick={() => resetErrorBoundary()}>Retry</Button>
+                </div>
+              );
+            }}
+          >
+            <aside className="flex w-16 flex-col items-center justify-between border-r border-border bg-surface py-4">
+              <nav className="flex flex-col gap-2">
+                <Link to="/" className={navLink()} title="Home">
+                  <Terminal size={20} />
+                </Link>
+                <TextHookerSessionListPopover />
+              </nav>
+              <div className="flex flex-col gap-2">
+                <Link to="/settings" className={navLink()} title="Settings">
+                  <Settings size={20} />
+                </Link>
+              </div>
+            </aside>
+            <main className="flex flex-1 flex-col overflow-hidden">
+              <Outlet />
+            </main>
+          </ErrorBoundary>
+        )}
+      </QueryErrorResetBoundary>
     </div>
   );
 }
