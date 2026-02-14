@@ -52,6 +52,7 @@ async function main() {
         },
         onClose: (_, ws) => {
           log.warn("Connection closed");
+          state.isListeningTexthooker(false);
           removeWS(ws);
         },
       };
