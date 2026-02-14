@@ -72,3 +72,17 @@ export function useUpdateSessionDuration() {
     },
   });
 }
+
+export function useIsListeningTexthooker$() {
+  const { keyring } = useServices();
+  return useSuspenseQuery(keyring.isListeningTexthooker.isListening);
+}
+
+export function useSetIsListeningTexthooker() {
+  const { api } = useServices();
+  return useMutation({
+    mutationFn: async (isListening: boolean) => {
+      return await api.request.setIsListeningTexthooker(isListening);
+    },
+  });
+}

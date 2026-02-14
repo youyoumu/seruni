@@ -9,6 +9,7 @@ export type ClientPushEventMap = {
 export type ServerPushEventMap = {
   textHistory: PushEvent<TextHistory>;
   activeSession: PushEvent<Session | null>;
+  isListeningTexthooker: PushEvent<boolean>;
 };
 
 export type ClientReqEventMap = {
@@ -21,6 +22,8 @@ export type ClientReqEventMap = {
   reqUpdateSession: ReqEvent<Partial<Session>>;
   reqSetActiveSession: ReqEvent<number>;
   reqGetActiveSession: ReqEvent;
+  reqIsListeningTexthooker: ReqEvent;
+  reqSetIsListeningTexthooker: ReqEvent<boolean>;
   reqCheckHealth: ReqEvent;
 };
 export type ServerResEventMap = {
@@ -33,6 +36,8 @@ export type ServerResEventMap = {
   resUpdateSession: ResEvent<Session | null>;
   resSetActiveSession: ResEvent<Session | null>;
   resGetActiveSession: ResEvent<Session | null>;
+  resIsListeningTexthooker: ResEvent<boolean>;
+  resSetIsListeningTexthooker: ResEvent<boolean>;
   resCheckHealth: ResEvent;
 };
 
@@ -81,6 +86,8 @@ const createApi = () => {
     const [updateSession, handleUpdateSession] = request( "reqUpdateSession", "resUpdateSession",);
     const [setActiveSession, handleSetActiveSession] = request( "reqSetActiveSession", "resSetActiveSession",);
     const [getActiveSession, handleGetActiveSession] = request( "reqGetActiveSession", "resGetActiveSession",);
+    const [isListeningTexthooker, handleIsListeningTexthooker] = request( "reqIsListeningTexthooker", "resIsListeningTexthooker",);
+    const [setIsListeningTexthooker, handleSetIsListeningTexthooker] = request( "reqSetIsListeningTexthooker", "resSetIsListeningTexthooker",);
     const [checkHealth, handleCheckHealth] = request("reqCheckHealth", "resCheckHealth");
 
     return {
@@ -94,6 +101,8 @@ const createApi = () => {
         updateSession,
         setActiveSession,
         getActiveSession,
+        isListeningTexthooker,
+        setIsListeningTexthooker,
         checkHealth,
       },
       handleRequest: {
@@ -106,6 +115,8 @@ const createApi = () => {
         updateSession: handleUpdateSession,
         setActiveSession: handleSetActiveSession,
         getActiveSession: handleGetActiveSession,
+        isListeningTexthooker: handleIsListeningTexthooker,
+        setIsListeningTexthooker: handleSetIsListeningTexthooker,
         checkHealth: handleCheckHealth,
       },
     };
@@ -116,15 +127,18 @@ const createApi = () => {
     const push = link.server.push;
     const [textHistory, handleTextHistory] = push("textHistory");
     const [activeSession, handleActiveSession] = push("activeSession");
+    const [isListeningTexthooker, handleIsListeningTexthooker] = push("isListeningTexthooker");
 
     return {
       push: {
         textHistory,
         activeSession,
+        isListeningTexthooker,
       },
       handlePush: {
         textHistory: handleTextHistory,
         activeSession: handleActiveSession,
+        isListeningTexthooker: handleIsListeningTexthooker,
       },
     };
   };

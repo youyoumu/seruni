@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { intervalToDuration } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useSession$ } from "./sessions";
+import { useSession$, useSetIsListeningTexthooker } from "./sessions";
 
 function formatDuration(totalSeconds: number): string {
   const duration = intervalToDuration({ start: 0, end: totalSeconds * 1000 });
@@ -65,6 +65,7 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
       return await api.request.updateSession({ id: sessionId, duration });
     },
   });
+  const { mutateAsync: setIsListeningTexthooker } = useSetIsListeningTexthooker();
 
   //update when timer.seconds changes
   useEffect(() => {
@@ -86,6 +87,15 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     if (isRunning) return;
     updateDuration(durationRef.current);
   }, [isRunning, sessionId, updateDuration]);
+
+  // when isRunning changes
+  useEffect(() => {
+    if (isRunning) {
+      setIsListeningTexthooker(true);
+    } else {
+      setIsListeningTexthooker(false);
+    }
+  }, [isRunning, setIsListeningTexthooker]);
 
   const forceSync = useCallback(async () => {
     await updateDuration(durationRef.current);

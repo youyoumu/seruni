@@ -27,6 +27,12 @@ export const createKeyring = (api: Services["api"]) =>
         queryFn: () => api.request.textHistoryBySessionId(sessionId),
       }),
     },
+    isListeningTexthooker: {
+      isListening: {
+        queryKey: null,
+        queryFn: () => api.request.isListeningTexthooker(),
+      },
+    },
   });
 
 export type Keyring = ReturnType<typeof createKeyring>;

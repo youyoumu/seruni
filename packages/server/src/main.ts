@@ -36,7 +36,7 @@ async function main() {
     return c.text("Hello Hono!");
   });
 
-  registerHandlers({ api, db, state });
+  registerHandlers({ api, db, state, logger });
 
   app.get(
     "/ws",

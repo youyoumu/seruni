@@ -4,8 +4,21 @@ import { textHistory, session } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
 import { effect } from "alien-signals";
 import { eq } from "drizzle-orm";
+import type { Logger } from "pino";
 
-export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; state: State }) {
+export function registerHandlers({
+  api,
+  db,
+  state,
+  logger,
+}: {
+  api: ServerApi;
+  db: DB;
+  state: State;
+  logger: Logger;
+}) {
+  const logState = logger.child({ name: "state" });
+
   effect(async () => {
     const activeSessionId = state.activeSessionId();
     if (!activeSessionId) return;
@@ -13,6 +26,18 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
       where: eq(session.id, activeSessionId),
     });
     api.push.activeSession(result ?? null);
+  });
+
+  effect(() => {
+    const isListeningTexthooker = state.isListeningTexthooker();
+    logState.info(`isListeningTexthooker: ${isListeningTexthooker}`);
+    api.push.isListeningTexthooker(isListeningTexthooker);
+  });
+
+  api.handleRequest.isListeningTexthooker(() => state.isListeningTexthooker());
+  api.handleRequest.setIsListeningTexthooker(async (isListeningTexthooker) => {
+    state.isListeningTexthooker(isListeningTexthooker);
+    return isListeningTexthooker;
   });
 
   api.handleRequest.textHistoryBySessionId(async (id) => {

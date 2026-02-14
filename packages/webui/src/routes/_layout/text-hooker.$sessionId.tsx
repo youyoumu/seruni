@@ -1,13 +1,14 @@
 import { useServices } from "#/hooks/api";
+import { useIsListeningTexthooker$ } from "#/hooks/sessions";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
-import { Button, Separator, Skeleton } from "@heroui/react";
+import { Button, cn, Separator, Skeleton } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
-import { PauseIcon, PlayIcon, TrashIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, RssIcon, TrashIcon } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
@@ -33,6 +34,10 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
         params: { sessionId: String(lastSession.id) },
       });
     }
+  },
+  async onLeave({ context }) {
+    const { api } = context.services;
+    await api.request.setIsListeningTexthooker(false);
   },
 });
 
@@ -63,6 +68,7 @@ function TextHookerPage() {
 function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+  const { data: isListeningTexthooker } = useIsListeningTexthooker$();
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
 
   const timer = useSessionTimer({
@@ -71,15 +77,25 @@ function TextHistoryPageHeader() {
   const speed = useReadingSpeed(textHistoryCharCount, timer.seconds);
 
   return (
-    <div className="flex items-center justify-end gap-4 border-b p-4">
-      <span className="text-lg font-medium">
-        {textHistoryCharCount} characters in {timer.formattedDuration}
-      </span>
-      <Separator orientation="vertical" />
-      <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
-      <Button isIconOnly onClick={timer.toggle}>
-        {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-      </Button>
+    <div className="flex items-center justify-between gap-4 border-b p-4">
+      <div>
+        <RssIcon
+          size={24}
+          className={cn({
+            "text-surface-foreground-faint": !isListeningTexthooker,
+          })}
+        />
+      </div>
+      <div className="flex items-center justify-end gap-4">
+        <span className="text-lg font-medium">
+          {textHistoryCharCount} characters in {timer.formattedDuration}
+        </span>
+        <Separator orientation="vertical" />
+        <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
+        <Button isIconOnly onClick={timer.toggle}>
+          {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+        </Button>
+      </div>
     </div>
   );
 }

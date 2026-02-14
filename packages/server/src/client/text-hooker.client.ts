@@ -36,6 +36,11 @@ export class TextHookerClient extends ReconnectingWebsocket {
 
     this.addEventListener("message", async (event: CustomEventInit<string>) => {
       if (event.detail) {
+        const isListeningTexthooker = this.state.isListeningTexthooker();
+        if (!isListeningTexthooker) {
+          //TODO: toast to fe
+          return;
+        }
         this.log.info(`Message: ${event.detail}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;

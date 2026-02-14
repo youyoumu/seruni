@@ -47,6 +47,10 @@ export class Services {
       queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
+    this.api.handlePush.isListeningTexthooker((data) => {
+      queryClient.setQueryData(this.keyring.isListeningTexthooker.isListening.queryKey, data);
+    });
+
     this.api.handlePush.textHistory((data) => {
       const old = queryClient.getQueryData(
         this.keyring.textHistory.bySession(data.sessionId).queryKey,
