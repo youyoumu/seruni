@@ -1,11 +1,13 @@
 import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
+import { Skeleton } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
+import { randomInt, range, shuffle } from "es-toolkit";
 import { TrashIcon } from "lucide-react";
-import { Suspense, useCallback, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
@@ -29,11 +31,23 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   },
 });
 
+function FallbackTextHistoryList() {
+  const [widthPool] = useState(shuffle(["w-3/5", "w-4/5", "w-5/5"]));
+  const [skeletonCount] = useState(randomInt(3, 6));
+
+  return (
+    <div className="flex flex-col gap-8 px-4 pt-8 pb-16">
+      {range(skeletonCount).map((_, i) => (
+        <Skeleton key={i} className={`h-6 ${widthPool[i]} rounded-lg`} />
+      ))}
+    </div>
+  );
+}
+
 function TextHookerPage() {
   return (
     <div className="h-screen overflow-auto">
-      {/* //TODO: pretty loading */}
-      <Suspense fallback="loading...">
+      <Suspense fallback={<FallbackTextHistoryList />}>
         <TextHistoryList />
       </Suspense>
     </div>
@@ -91,6 +105,7 @@ function TextHistoryList() {
     estimateSize: () => 80,
     measureElement: (element) => element.getBoundingClientRect().height,
     gap: 32,
+    paddingStart: 32,
     paddingEnd: 128,
     overscan: 5,
     scrollToFn,

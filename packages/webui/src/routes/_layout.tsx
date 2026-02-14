@@ -7,7 +7,7 @@ import {
   useSessions$,
   useSetActiveSession,
 } from "#/hooks/sessions";
-import { Button, cn, tv } from "@heroui/react";
+import { Button, cn, Skeleton, tv } from "@heroui/react";
 import { Popover } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
@@ -140,7 +140,15 @@ export function TextHookerSessionListPopover() {
         <Popover.Dialog className="flex flex-col gap-4">
           <Popover.Heading className="text-lg">Select Session</Popover.Heading>
           <NewSessionForm />
-          <Suspense fallback="loading...">
+          <Suspense
+            fallback={
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-3/5 rounded-lg" />
+                <Skeleton className="h-3 w-4/5 rounded-lg" />
+                <Skeleton className="h-3 w-5/5 rounded-lg" />
+              </div>
+            }
+          >
             <TextHookerSessionList />
           </Suspense>
         </Popover.Dialog>
