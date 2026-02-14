@@ -12,6 +12,14 @@ export const createKeyring = (api: Services["api"]) =>
         queryKey: null,
         queryFn: () => api.request.getActiveSession(),
       },
+      byId: (sessionId: number) => ({
+        queryKey: [{ sessionId }],
+        queryFn: async () => {
+          const result = await api.request.session(sessionId);
+          if (!result) throw Error("Session not found");
+          return result;
+        },
+      }),
     },
     textHistory: {
       bySession: (sessionId: number) => ({

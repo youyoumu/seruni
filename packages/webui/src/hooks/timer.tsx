@@ -1,20 +1,9 @@
+import { useServices } from "#/hooks/api";
+import { useMutation } from "@tanstack/react-query";
 import { intervalToDuration } from "date-fns";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export interface TimerState {
-  seconds: number;
-  isRunning: boolean;
-  formattedDuration: string;
-}
-
-export interface TimerActions {
-  start: () => void;
-  pause: () => void;
-  toggle: () => void;
-  reset: () => void;
-}
-
-export type UseTimerReturn = TimerState & TimerActions;
+import { useSession$ } from "./sessions";
 
 function formatDuration(totalSeconds: number): string {
   const duration = intervalToDuration({ start: 0, end: totalSeconds * 1000 });
@@ -25,9 +14,13 @@ function formatDuration(totalSeconds: number): string {
   return `${h}:${m}:${s}`;
 }
 
-export function useTimer(): UseTimerReturn {
-  const [seconds, setSeconds] = useState(0);
+function useTimer(initialDuration = 0) {
+  const [seconds, setSeconds] = useState(initialDuration);
   const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    setSeconds(initialDuration);
+  }, [initialDuration]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -58,12 +51,59 @@ export function useTimer(): UseTimerReturn {
   };
 }
 
-export interface SpeedState {
-  speed: number;
-  formattedSpeed: string;
+const SYNC_INTERVAL = 5000;
+export function useSessionTimer({ sessionId }: { sessionId: number }) {
+  const { api } = useServices();
+  const { data: session } = useSession$(sessionId);
+  const { formattedDuration, isRunning, pause, reset, seconds, start, toggle } = useTimer(
+    session.duration,
+  );
+  const durationRef = useRef<number>(session.duration);
+
+  const { mutateAsync: updateDuration } = useMutation({
+    mutationFn: async (duration: number) => {
+      return await api.request.updateSession({ id: sessionId, duration });
+    },
+  });
+
+  //update when timer.seconds changes
+  useEffect(() => {
+    durationRef.current = seconds;
+  }, [seconds]);
+
+  // sync every x seconds
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(async () => {
+      await updateDuration(durationRef.current);
+    }, SYNC_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isRunning, sessionId, updateDuration]);
+
+  // sync when timer is stopped
+  useEffect(() => {
+    if (isRunning) return;
+    updateDuration(durationRef.current);
+  }, [isRunning, sessionId, updateDuration]);
+
+  const forceSync = useCallback(async () => {
+    await updateDuration(durationRef.current);
+  }, [updateDuration]);
+
+  return {
+    seconds,
+    isRunning,
+    formattedDuration,
+    start,
+    pause,
+    toggle,
+    reset,
+    forceSync,
+  };
 }
 
-export function useSpeed(charCount: number, seconds: number): SpeedState {
+export function useReadingSpeed(charCount: number, seconds: number) {
   const speed = useMemo(() => {
     if (seconds === 0) return 0;
     return Math.round((charCount / seconds) * 3600);

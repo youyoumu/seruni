@@ -12,6 +12,11 @@ export function useActiveSession$() {
   return useSuspenseQuery(keyring.sessions.active);
 }
 
+export function useSession$(sessionId: number) {
+  const { keyring } = useServices();
+  return useSuspenseQuery(keyring.sessions.byId(sessionId));
+}
+
 export function useSetActiveSession() {
   const { api } = useServices();
   return useMutation({
@@ -47,6 +52,23 @@ export function useDeleteSession() {
       queryClient.invalidateQueries({
         queryKey: keyring.sessions.all.queryKey,
       });
+    },
+  });
+}
+
+export function useUpdateSessionDuration() {
+  const { api, keyring } = useServices();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ sessionId, duration }: { sessionId: number; duration: number }) => {
+      return await api.request.updateSession({ id: sessionId, duration });
+    },
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.invalidateQueries({
+          queryKey: keyring.sessions.byId(data.id).queryKey,
+        });
+      }
     },
   });
 }

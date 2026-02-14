@@ -1,6 +1,6 @@
 import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
-import { useSpeed, useTimer } from "#/hooks/timer";
+import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { Button, Separator, Skeleton } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
@@ -63,9 +63,12 @@ function TextHookerPage() {
 function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
-  const timer = useTimer();
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
-  const speed = useSpeed(textHistoryCharCount, timer.seconds);
+
+  const timer = useSessionTimer({
+    sessionId: Number(sessionId),
+  });
+  const speed = useReadingSpeed(textHistoryCharCount, timer.seconds);
 
   return (
     <div className="flex items-center justify-end gap-4 border-b p-4">
