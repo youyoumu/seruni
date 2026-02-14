@@ -13,13 +13,9 @@ function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
 }
 
-const isNotJapaneseRegex =
-  /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
-
-const getTextHistoryCharCount = (textHistory: TextHistory[]) =>
-  textHistory
-    .map((item) => item.text.replace(isNotJapaneseRegex, "").length)
-    .reduce((a, b) => a + b, 0);
+function getTextHistoryCharCount(textHistory: TextHistory[]) {
+  return textHistory.reduce((sum, item) => sum + item.japaneseCharacterCount, 0);
+}
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,

@@ -1,0 +1,1 @@
+ALTER TABLE `text_history` ADD `japanese_character_count` integer DEFAULT 0 NOT NULL;

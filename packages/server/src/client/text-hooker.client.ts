@@ -5,6 +5,13 @@ import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { type ServerApi } from "@repo/shared/ws";
 import { type Logger } from "pino";
 
+const isNotJapaneseRegex =
+  /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
+
+function calculateJapaneseCharCount(text: string): number {
+  return text.replace(isNotJapaneseRegex, "").length;
+}
+
 export class TextHookerClient extends ReconnectingWebsocket {
   state: State;
   messages: string[] = [];
@@ -34,7 +41,11 @@ export class TextHookerClient extends ReconnectingWebsocket {
         if (!activeSessionId) return;
         const row = await db
           .insert(textHistory)
-          .values({ text: event.detail, sessionId: activeSessionId })
+          .values({
+            text: event.detail,
+            sessionId: activeSessionId,
+            japaneseCharacterCount: calculateJapaneseCharCount(event.detail),
+          })
           .returning()
           .get();
         api.push.textHistory(row);

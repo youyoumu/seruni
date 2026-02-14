@@ -15,6 +15,13 @@
       "when": 1771058837383,
       "tag": "0001_serious_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771061643162,
+      "tag": "0002_striped_bill_hollister",
+      "breakpoints": true
     }
   ]
 }

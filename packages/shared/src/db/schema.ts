@@ -39,6 +39,7 @@ export const textHistory = sqliteTable("text_history", {
     .notNull()
     .references(() => session.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
+  japaneseCharacterCount: integer("japanese_character_count").notNull().default(0),
 });
 export type TextHistory = typeof textHistory.$inferSelect;
 
