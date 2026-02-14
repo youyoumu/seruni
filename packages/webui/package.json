@@ -26,6 +26,7 @@
     "@tanstack/react-router-devtools": "^1.132.0",
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "^1.132.0",
+    "date-fns": "^4.1.0",
     "es-toolkit": "^1.44.0",
     "lucide-react": "^0.561.0",
     "react": "^19.2.0",

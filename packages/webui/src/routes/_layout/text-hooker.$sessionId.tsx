@@ -1,12 +1,13 @@
 import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
-import { Skeleton } from "@heroui/react";
+import { useSpeed, useTimer } from "#/hooks/timer";
+import { Button, Separator, Skeleton } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
-import { TrashIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, TrashIcon } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
@@ -62,10 +63,21 @@ function TextHookerPage() {
 function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
-
+  const timer = useTimer();
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
+  const speed = useSpeed(textHistoryCharCount, timer.seconds);
+
   return (
-    <div className="flex items-center justify-end border-b p-4 text-lg">{textHistoryCharCount}</div>
+    <div className="flex items-center justify-end gap-4 border-b p-4">
+      <span className="text-lg font-medium">
+        {textHistoryCharCount} characters in {timer.formattedDuration}
+      </span>
+      <Separator orientation="vertical" />
+      <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
+      <Button isIconOnly onClick={timer.toggle}>
+        {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+      </Button>
+    </div>
   );
 }
 
