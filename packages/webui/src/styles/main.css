@@ -2,8 +2,12 @@
 @import "@heroui/styles";
 
 @theme {
-  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans:
+    "Nunito", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --color-surface-100: color-mix(in srgb, var(--surface) 10%, var(--background));
   --color-surface-200: color-mix(in srgb, var(--surface) 20%, var(--background));
   --color-surface-300: color-mix(in srgb, var(--surface) 30%, var(--background));
@@ -47,6 +51,34 @@
 @layer base {
   body {
     font-family: var(--font-sans);
+  }
+
+  * {
+    /* scrollbar-width: auto; */
+    /* scrollbar-color: var(--color-foreground-300) var(--color-surface-100); */
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--color-surface-100);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: var(--color-surface-100);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-foreground-300);
+    border-radius: 0px;
+    border: 0px solid var(--color-surface-100);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-foreground-500);
   }
 
   /* prettier-ignore */
