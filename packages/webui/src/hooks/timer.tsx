@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { intervalToDuration } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useSession$, useSetIsListeningTexthooker } from "./sessions";
+import { useIsListeningTexthooker$, useSession$, useSetIsListeningTexthooker } from "./sessions";
 
 function formatDuration(totalSeconds: number): string {
   const duration = intervalToDuration({ start: 0, end: totalSeconds * 1000 });
@@ -14,10 +14,18 @@ function formatDuration(totalSeconds: number): string {
   return `${h}:${m}:${s}`;
 }
 
-function useTimer(initialDuration = 0) {
-  const [seconds, setSeconds] = useState(initialDuration);
-  const [isRunning, setIsRunning] = useState(false);
+const SYNC_INTERVAL = 5000;
 
+export function useSessionTimer({ sessionId }: { sessionId: number }) {
+  const { api } = useServices();
+  const { data: session } = useSession$(sessionId);
+  const { data: isListeningTexthooker } = useIsListeningTexthooker$();
+
+  const isRunning = isListeningTexthooker;
+  const initialDuration = session.duration;
+  const [seconds, setSeconds] = useState(initialDuration);
+
+  // Update seconds when initialDuration changes (e.g., when session data loads)
   useEffect(() => {
     setSeconds(initialDuration);
   }, [initialDuration]);
@@ -30,49 +38,22 @@ function useTimer(initialDuration = 0) {
     return () => clearInterval(interval);
   }, [isRunning]);
 
-  const formattedDuration = useMemo(() => formatDuration(seconds), [seconds]);
-
-  const start = useCallback(() => setIsRunning(true), []);
-  const pause = useCallback(() => setIsRunning(false), []);
-  const toggle = useCallback(() => setIsRunning((prev) => !prev), []);
   const reset = useCallback(() => {
-    setIsRunning(false);
     setSeconds(0);
   }, []);
 
-  return {
-    seconds,
-    isRunning,
-    formattedDuration,
-    start,
-    pause,
-    toggle,
-    reset,
-  };
-}
-
-const SYNC_INTERVAL = 5000;
-export function useSessionTimer({ sessionId }: { sessionId: number }) {
-  const { api } = useServices();
-  const { data: session } = useSession$(sessionId);
-  const { formattedDuration, isRunning, pause, reset, seconds, start, toggle } = useTimer(
-    session.duration,
-  );
-  const durationRef = useRef<number>(session.duration);
+  const durationRef = useRef<number>(initialDuration);
+  useEffect(() => {
+    durationRef.current = seconds;
+  }, [seconds]);
 
   const { mutateAsync: updateDuration } = useMutation({
     mutationFn: async (duration: number) => {
       return await api.request.updateSession({ id: sessionId, duration });
     },
   });
-  const { mutateAsync: setIsListeningTexthooker } = useSetIsListeningTexthooker();
 
-  //update when timer.seconds changes
-  useEffect(() => {
-    durationRef.current = seconds;
-  }, [seconds]);
-
-  // sync every x seconds
+  // Sync duration to server every SYNC_INTERVAL while running
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(async () => {
@@ -82,17 +63,26 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     return () => clearInterval(interval);
   }, [isRunning, sessionId, updateDuration]);
 
-  // sync when timer is stopped
+  // Sync duration when timer stops
   useEffect(() => {
     if (isRunning) return;
     updateDuration(durationRef.current);
   }, [isRunning, sessionId, updateDuration]);
 
-  // when isRunning changes
-  useEffect(() => {
-    if (isRunning) {
+  const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
+
+  const toggle = useCallback(() => {
+    setIsListeningTexthooker(!isRunning);
+  }, [isRunning, setIsListeningTexthooker]);
+
+  const start = useCallback(() => {
+    if (!isRunning) {
       setIsListeningTexthooker(true);
-    } else {
+    }
+  }, [isRunning, setIsListeningTexthooker]);
+
+  const pause = useCallback(() => {
+    if (isRunning) {
       setIsListeningTexthooker(false);
     }
   }, [isRunning, setIsListeningTexthooker]);
@@ -101,9 +91,12 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     await updateDuration(durationRef.current);
   }, [updateDuration]);
 
+  const formattedDuration = useMemo(() => formatDuration(seconds), [seconds]);
+
   return {
     seconds,
     isRunning,
+    isToggling,
     formattedDuration,
     start,
     pause,
