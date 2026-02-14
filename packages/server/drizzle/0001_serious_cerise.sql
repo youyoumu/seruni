@@ -1,0 +1,1 @@
+ALTER TABLE `session` ADD `duration` integer DEFAULT 0 NOT NULL;

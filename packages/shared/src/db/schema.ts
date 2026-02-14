@@ -27,6 +27,7 @@ export const session = sqliteTable("session", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
   name: text("name").notNull(),
+  duration: integer("duration").notNull().default(0),
 });
 export type Session = typeof session.$inferSelect;
 

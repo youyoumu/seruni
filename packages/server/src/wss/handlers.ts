@@ -25,11 +25,10 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
   });
 
   api.handleRequest.session(async (id) => {
-    return (
-      (await db.query.session.findFirst({
-        where: eq(session.id, id),
-      })) ?? null
-    );
+    const result = await db.query.session.findFirst({
+      where: eq(session.id, id),
+    });
+    return result ?? null;
   });
 
   api.handleRequest.sessions(async () => {
@@ -63,11 +62,22 @@ export function registerHandlers({ api, db, state }: { api: ServerApi; db: DB; s
   api.handleRequest.getActiveSession(async () => {
     const activeSessionId = state.activeSessionId();
     if (!activeSessionId) return null;
-    return (
-      (await db.query.session.findFirst({
-        where: eq(session.id, activeSessionId),
-      })) ?? null
-    );
+    const result = await db.query.session.findFirst({
+      where: eq(session.id, activeSessionId),
+    });
+    return result ?? null;
+  });
+
+  api.handleRequest.updateSession(async (payload) => {
+    if (!payload.id) return null;
+    const [result] = await db
+      .update(session)
+      .set({
+        ...payload,
+      })
+      .where(eq(session.id, payload.id))
+      .returning();
+    return result ?? null;
   });
 
   api.handleRequest.checkHealth(() => undefined);

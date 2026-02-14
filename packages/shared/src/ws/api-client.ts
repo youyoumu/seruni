@@ -18,6 +18,7 @@ export type ClientReqEventMap = {
   reqSessions: ReqEvent;
   reqCreateSession: ReqEvent<string>;
   reqDeleteSession: ReqEvent<number>;
+  reqUpdateSession: ReqEvent<Partial<Session>>;
   reqSetActiveSession: ReqEvent<number>;
   reqGetActiveSession: ReqEvent;
   reqCheckHealth: ReqEvent;
@@ -29,6 +30,7 @@ export type ServerResEventMap = {
   resSessions: ResEvent<Session[]>;
   resCreateSession: ResEvent<Session>;
   resDeleteSession: ResEvent<Session | null>;
+  resUpdateSession: ResEvent<Session | null>;
   resSetActiveSession: ResEvent<Session | null>;
   resGetActiveSession: ResEvent<Session | null>;
   resCheckHealth: ResEvent;
@@ -67,28 +69,18 @@ const createApi = () => {
   };
   const clientPushPair = createClientPushPair();
 
+  //oxfmt-ignore
   const createClientRequestPair = () => {
     const request = link.client.request;
-    const [textHistoryBySessionId, handleTextHistoryBySessionId] = request(
-      "reqTextHistoryBySessionId",
-      "resTextHistoryBySessionId",
-    );
-    const [deleteTextHistory, handleDeleteTextHistory] = request(
-      "reqDeleteTextHistory",
-      "resDeleteTextHistory",
-    );
+    const [textHistoryBySessionId, handleTextHistoryBySessionId] = request( "reqTextHistoryBySessionId", "resTextHistoryBySessionId",);
+    const [deleteTextHistory, handleDeleteTextHistory] = request( "reqDeleteTextHistory", "resDeleteTextHistory",);
     const [session, handleSession] = request("reqSession", "resSession");
     const [sessions, handleSessions] = request("reqSessions", "resSessions");
     const [createSession, handleCreateSession] = request("reqCreateSession", "resCreateSession");
     const [deleteSession, handleDeleteSession] = request("reqDeleteSession", "resDeleteSession");
-    const [setActiveSession, handleSetActiveSession] = request(
-      "reqSetActiveSession",
-      "resSetActiveSession",
-    );
-    const [getActiveSession, handleGetActiveSession] = request(
-      "reqGetActiveSession",
-      "resGetActiveSession",
-    );
+    const [updateSession, handleUpdateSession] = request( "reqUpdateSession", "resUpdateSession",);
+    const [setActiveSession, handleSetActiveSession] = request( "reqSetActiveSession", "resSetActiveSession",);
+    const [getActiveSession, handleGetActiveSession] = request( "reqGetActiveSession", "resGetActiveSession",);
     const [checkHealth, handleCheckHealth] = request("reqCheckHealth", "resCheckHealth");
 
     return {
@@ -99,6 +91,7 @@ const createApi = () => {
         sessions,
         createSession,
         deleteSession,
+        updateSession,
         setActiveSession,
         getActiveSession,
         checkHealth,
@@ -110,6 +103,7 @@ const createApi = () => {
         sessions: handleSessions,
         createSession: handleCreateSession,
         deleteSession: handleDeleteSession,
+        updateSession: handleUpdateSession,
         setActiveSession: handleSetActiveSession,
         getActiveSession: handleGetActiveSession,
         checkHealth: handleCheckHealth,
