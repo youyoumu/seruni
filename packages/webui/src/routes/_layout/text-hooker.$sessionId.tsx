@@ -7,11 +7,19 @@ import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
 import { TrashIcon } from "lucide-react";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
 }
+
+const isNotJapaneseRegex =
+  /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
+
+const getTextHistoryCharCount = (textHistory: TextHistory[]) =>
+  textHistory
+    .map((item) => item.text.replace(isNotJapaneseRegex, "").length)
+    .reduce((a, b) => a + b, 0);
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
@@ -46,11 +54,22 @@ function FallbackTextHistoryList() {
 
 function TextHookerPage() {
   return (
-    <div className="h-screen overflow-auto">
+    <div className="flex h-screen flex-col overflow-auto">
       <Suspense fallback={<FallbackTextHistoryList />}>
+        <TextHistoryPageHeader />
         <TextHistoryList />
       </Suspense>
     </div>
+  );
+}
+
+function TextHistoryPageHeader() {
+  const { sessionId } = Route.useParams();
+  const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+
+  const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
+  return (
+    <div className="flex items-center justify-end border-b p-4 text-lg">{textHistoryCharCount}</div>
   );
 }
 
@@ -134,7 +153,7 @@ function TextHistoryList() {
   }, [sessionId, bus, virtualizer, textHistory.length]);
 
   return (
-    <div ref={parentRef} className="h-full overflow-auto">
+    <div ref={parentRef} className="flex-1 overflow-auto">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
