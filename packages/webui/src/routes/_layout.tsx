@@ -19,7 +19,16 @@ import {
   useLocation,
   useMatchRoute,
 } from "@tanstack/react-router";
-import { Terminal, FileText, Settings, TrashIcon, RssIcon, BugIcon } from "lucide-react";
+import {
+  Terminal,
+  FileText,
+  Settings,
+  TrashIcon,
+  RssIcon,
+  BugIcon,
+  DotIcon,
+  CircleIcon,
+} from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { z } from "zod";
@@ -183,7 +192,9 @@ export function TextHookerSessionList() {
           >
             {session.name}
           </Link>
-          {session.id === activeSession?.id && <RssIcon size={16} />}
+          {session.id === activeSession?.id && (
+            <CircleIcon size={8} fill="var(--color-success)" className="text-success" />
+          )}
           <div className="flex-1"></div>
           <DeleteSessionButton sessionId={session.id} />
         </div>

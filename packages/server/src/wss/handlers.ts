@@ -21,6 +21,7 @@ export function registerHandlers({
 
   effect(async () => {
     const activeSessionId = state.activeSessionId();
+    logState.info(`activeSessionId: ${activeSessionId}`);
     if (!activeSessionId) return;
     const result = await db.query.session.findFirst({
       where: eq(session.id, activeSessionId),

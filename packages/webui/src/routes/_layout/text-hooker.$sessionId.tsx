@@ -1,5 +1,5 @@
 import { useServices } from "#/hooks/api";
-import { useIsListeningTexthooker$ } from "#/hooks/sessions";
+import { useActiveSession$, useIsListeningTexthooker$ } from "#/hooks/sessions";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { Button, cn, Separator, Skeleton } from "@heroui/react";
@@ -68,7 +68,6 @@ function TextHookerPage() {
 function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
-  const { data: isListeningTexthooker } = useIsListeningTexthooker$();
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
 
   const timer = useSessionTimer({
@@ -82,11 +81,11 @@ function TextHistoryPageHeader() {
         <RssIcon
           size={24}
           className={cn({
-            "text-surface-foreground-faint": !isListeningTexthooker,
+            "text-surface-foreground-faint": !timer.isRunning,
           })}
         />
       </div>
-      <div className="flex items-center justify-end gap-4">
+      <div className="flex h-full items-center justify-end gap-4">
         <span className="text-lg font-medium">
           {textHistoryCharCount} characters in {timer.formattedDuration}
         </span>

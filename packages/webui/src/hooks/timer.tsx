@@ -1,9 +1,14 @@
-import { useServices } from "#/hooks/api";
-import { useMutation } from "@tanstack/react-query";
 import { intervalToDuration } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useIsListeningTexthooker$, useSession$, useSetIsListeningTexthooker } from "./sessions";
+import {
+  useActiveSession$,
+  useIsListeningTexthooker$,
+  useSession$,
+  useSetActiveSession,
+  useSetIsListeningTexthooker,
+  useUpdateSessionDuration,
+} from "./sessions";
 
 function formatDuration(totalSeconds: number): string {
   const duration = intervalToDuration({ start: 0, end: totalSeconds * 1000 });
@@ -17,11 +22,11 @@ function formatDuration(totalSeconds: number): string {
 const SYNC_INTERVAL = 5000;
 
 export function useSessionTimer({ sessionId }: { sessionId: number }) {
-  const { api } = useServices();
+  const { data: activeSession } = useActiveSession$();
   const { data: session } = useSession$(sessionId);
   const { data: isListeningTexthooker } = useIsListeningTexthooker$();
 
-  const isRunning = isListeningTexthooker;
+  const isRunning = isListeningTexthooker && activeSession?.id === sessionId;
   const initialDuration = session.duration;
   const [seconds, setSeconds] = useState(initialDuration);
 
@@ -47,17 +52,14 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     durationRef.current = seconds;
   }, [seconds]);
 
-  const { mutateAsync: updateDuration } = useMutation({
-    mutationFn: async (duration: number) => {
-      return await api.request.updateSession({ id: sessionId, duration });
-    },
-  });
+  const { mutateAsync: updateDuration } = useUpdateSessionDuration();
+  const { mutate: setActiveSession } = useSetActiveSession();
 
   // Sync duration to server every SYNC_INTERVAL while running
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(async () => {
-      await updateDuration(durationRef.current);
+      await updateDuration({ duration: durationRef.current, sessionId });
     }, SYNC_INTERVAL);
 
     return () => clearInterval(interval);
@@ -66,30 +68,29 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   // Sync duration when timer stops
   useEffect(() => {
     if (isRunning) return;
-    updateDuration(durationRef.current);
+    updateDuration({ duration: durationRef.current, sessionId });
   }, [isRunning, sessionId, updateDuration]);
 
   const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
 
   const toggle = useCallback(() => {
     setIsListeningTexthooker(!isRunning);
-  }, [isRunning, setIsListeningTexthooker]);
+    setActiveSession(sessionId);
+  }, [isRunning, setIsListeningTexthooker, setActiveSession, sessionId]);
 
   const start = useCallback(() => {
     if (!isRunning) {
       setIsListeningTexthooker(true);
     }
-  }, [isRunning, setIsListeningTexthooker]);
+    setActiveSession(sessionId);
+  }, [isRunning, setIsListeningTexthooker, setActiveSession, sessionId]);
 
   const pause = useCallback(() => {
     if (isRunning) {
       setIsListeningTexthooker(false);
     }
-  }, [isRunning, setIsListeningTexthooker]);
-
-  const forceSync = useCallback(async () => {
-    await updateDuration(durationRef.current);
-  }, [updateDuration]);
+    setActiveSession(sessionId);
+  }, [isRunning, setIsListeningTexthooker, setActiveSession, sessionId]);
 
   const formattedDuration = useMemo(() => formatDuration(seconds), [seconds]);
 
@@ -102,7 +103,6 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     pause,
     toggle,
     reset,
-    forceSync,
   };
 }
 

@@ -12,7 +12,7 @@ import { registerHandlers } from "./wss/handlers";
 
 async function main() {
   const logger = createLogger();
-  const log = logger.child({ name: "client" });
+  const logWS = logger.child({ name: "ws-client" });
   const { api, addWS, removeWS, onPayload } = createServerApi();
   const db = createDb();
   const state = createState();
@@ -47,11 +47,11 @@ async function main() {
           onPayload(payload, ws);
         },
         onOpen: (_, ws) => {
-          log.info("Connection opened");
+          logWS.info("Connection opened");
           addWS(ws);
         },
         onClose: (_, ws) => {
-          log.warn("Connection closed");
+          logWS.warn("Connection closed");
           state.isListeningTexthooker(false);
           removeWS(ws);
         },
