@@ -208,7 +208,11 @@ function NewSessionForm() {
       }),
     },
     onSubmit: async ({ value }) => {
-      await createNewSession(value.name);
+      await createNewSession(value.name, {
+        onSuccess() {
+          form.reset();
+        },
+      });
     },
   });
 

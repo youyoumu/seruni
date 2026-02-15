@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 
 import { useServices } from "./api";
 
@@ -29,30 +30,46 @@ export function useSetActiveSession() {
 export function useCreateNewSession() {
   const { api, keyring } = useServices();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   return useMutation({
     mutationFn: async (name: string) => {
-      await api.request.createSession(name);
+      return await api.request.createSession(name);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: keyring.sessions.all.queryKey,
+      });
+      navigate({
+        to: "/text-hooker/$sessionId",
+        params: { sessionId: data.id },
       });
     },
   });
 }
 
-//TODO: invalidate route path
 export function useDeleteSession() {
   const { api, keyring } = useServices();
   const queryClient = useQueryClient();
+  const matchRoute = useMatchRoute();
+  const navigate = useNavigate();
+
+  const active = matchRoute({
+    to: "/text-hooker/$sessionId",
+  });
+
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.request.deleteSession(id);
+      return await api.request.deleteSession(id);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: keyring.sessions.all.queryKey,
       });
+      if (typeof active === "object" && Number(active.sessionId) === data?.id) {
+        navigate({
+          to: "/",
+        });
+      }
     },
   });
 }
