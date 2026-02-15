@@ -26,21 +26,14 @@ type Arg<T1, T2 = undefined> = undefined extends T1
     ? [data1: T1, data2?: T2]
     : [data1: T1, data2: T2];
 
-type AnyPush = { payload: unknown };
-type AnyRequest = { request: unknown; response: unknown };
-
 export type Push<T = undefined> = { payload: T };
 export type Request<TReq = undefined, TRes = undefined> = {
   request: TReq;
   response: TRes;
 };
 
-export type BusSchema = {
-  clientPush?: Record<string, AnyPush>;
-  serverPush?: Record<string, AnyPush>;
-  clientRequest?: Record<string, AnyRequest>;
-  serverRequest?: Record<string, AnyRequest>;
-};
+type UnknownPush = Push<unknown>;
+type UnknownRequest = Request<unknown, unknown>;
 
 export interface WSPayload {
   __wsBus__: true;
@@ -54,11 +47,7 @@ export interface WS {
   readyState: WebSocket["readyState"];
 }
 
-type GetPayload<T> = T extends { payload: infer P } ? P : undefined;
-type GetRequest<T> = T extends { request: infer Q } ? Q : undefined;
-type GetResponse<T> = T extends { response: infer R } ? R : undefined;
-
-class ClientPushBus<CPush extends Record<string, AnyPush>> extends EventTarget {
+class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarget {
   #events = new Set<string>();
   #ws: WS | undefined;
 
@@ -66,7 +55,7 @@ class ClientPushBus<CPush extends Record<string, AnyPush>> extends EventTarget {
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#events.add(clientEvent);
 
-    const push = (...data: Arg<GetPayload<CPush[T]>>) => {
+    const push = (...data: Arg<CPush[T]["payload"]>) => {
       this.dispatchEvent(
         new CustomEvent(clientEvent, {
           detail: { correlationId: uid(), data: data[0] },
@@ -74,21 +63,21 @@ class ClientPushBus<CPush extends Record<string, AnyPush>> extends EventTarget {
       );
     };
 
-    const handle = (handler: (payload: GetPayload<CPush[T]>) => void) => {
-      const handler_ = (e: CustomEventInit) => {
-        handler(e.detail.data);
+    const handle = (handler: (payload: CPush[T]["payload"]) => void) => {
+      const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+        handler(e.detail?.data);
       };
       this.addEventListener(clientEvent, handler_);
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    this.addEventListener(clientEvent, (e: CustomEventInit) => {
+    this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       if (this.#ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "push",
         tag: clientEvent,
-        data: e.detail,
+        data: e.detail as WithCorrelationId<unknown>,
       };
       this.#ws.send(JSON.stringify(payload));
     });
@@ -101,7 +90,7 @@ class ClientPushBus<CPush extends Record<string, AnyPush>> extends EventTarget {
   }
 }
 
-class ServerPushBus<SPush extends Record<string, AnyPush>> extends EventTarget {
+class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarget {
   #events = new Set<string>();
   #ws = new Set<WS>();
 
@@ -109,7 +98,7 @@ class ServerPushBus<SPush extends Record<string, AnyPush>> extends EventTarget {
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#events.add(serverEvent);
 
-    const push = (...data: Arg<GetPayload<SPush[T]>>) => {
+    const push = (...data: Arg<SPush[T]["payload"]>) => {
       this.dispatchEvent(
         new CustomEvent(serverEvent, {
           detail: { correlationId: uid(), data: data[0] },
@@ -117,22 +106,22 @@ class ServerPushBus<SPush extends Record<string, AnyPush>> extends EventTarget {
       );
     };
 
-    const handle = (handler: (payload: GetPayload<SPush[T]>) => void) => {
-      const handler_ = (e: CustomEventInit) => {
-        handler(e.detail.data);
+    const handle = (handler: (payload: SPush[T]["payload"]) => void) => {
+      const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+        handler(e.detail?.data);
       };
       this.addEventListener(serverEvent, handler_);
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    this.addEventListener(serverEvent, (e: CustomEventInit) => {
+    this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       this.#ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: WSPayload = {
           __wsBus__: true,
           type: "push",
           tag: serverEvent,
-          data: e.detail,
+          data: e.detail as WithCorrelationId<unknown>,
         };
         ws.send(JSON.stringify(payload));
       });
@@ -150,6 +139,8 @@ class ServerPushBus<SPush extends Record<string, AnyPush>> extends EventTarget {
   }
 }
 
+const DEFAULT_TIMEOUT = 5 * 60 * 1000;
+const ERROR_EVENT = "__error__";
 type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
@@ -163,7 +154,7 @@ class ServerResBus extends EventTarget {
 }
 
 class ClientReqBus<
-  CReq extends Record<string, AnyRequest>,
+  CReq extends Record<string, UnknownRequest>,
   SResBus extends ServerResBus,
 > extends EventTarget {
   #sResBus: SResBus;
@@ -179,22 +170,22 @@ class ClientReqBus<
     if (this.#reqEvents.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#reqEvents.add(clientEvent);
 
-    type ReqType = GetRequest<CReq[T]>;
-    type ResType = GetResponse<CReq[T]>;
+    type ReqType = CReq[T]["request"];
+    type ResType = CReq[T]["response"];
 
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
       const correlationId = uid();
       let timeoutId: ReturnType<typeof setTimeout>;
-      const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
+      const timeoutDuration = data[1]?.timeout ?? DEFAULT_TIMEOUT;
 
       return new Promise((resolve, reject) => {
         const cleanup = () => {
-          this.#sResBus.removeEventListener("__error__", handleError);
+          this.#sResBus.removeEventListener(ERROR_EVENT, handleError);
           this.#sResBus.removeEventListener(clientEvent, handler);
         };
 
-        const handler = (e: CustomEventInit) => {
-          const detail = e.detail;
+        const handler = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+          const detail = e.detail as WithCorrelationId<unknown>;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
@@ -203,19 +194,19 @@ class ClientReqBus<
         };
         this.#sResBus.addEventListener(clientEvent, handler);
 
-        const handleError = (e: CustomEventInit) => {
-          const detail = e.detail;
+        const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
+          const detail = e.detail as WithCorrelationId<WSBusError>;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
             reject(detail.data);
           }
         };
-        this.#sResBus.addEventListener("__error__", handleError);
+        this.#sResBus.addEventListener(ERROR_EVENT, handleError);
 
         timeoutId = setTimeout(() => {
           cleanup();
-          reject(new Error("Request timed out"));
+          reject(new WSBusError("requestTimeout"));
         }, timeoutDuration);
 
         this.dispatchEvent(
@@ -227,8 +218,8 @@ class ClientReqBus<
     };
 
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
-      const handler_ = async (e: CustomEventInit) => {
-        const detail = e.detail;
+      const handler_ = async (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+        const detail = e.detail as WithCorrelationId<unknown>;
         const result = await handler(detail.data);
         this.#sResBus.dispatchEvent(
           new CustomEvent(clientEvent, {
@@ -240,8 +231,8 @@ class ClientReqBus<
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    this.addEventListener(clientEvent, (e: CustomEventInit) => {
-      const detail = e.detail;
+    this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+      const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "req",
@@ -253,7 +244,7 @@ class ClientReqBus<
         this.#ws?.send(JSON.stringify(payload));
       } else {
         this.#sResBus.dispatchEvent(
-          new ResponseErrorEvent("__error__", {
+          new ResponseErrorEvent(ERROR_EVENT, {
             detail: {
               data: new WSBusError("connectionClosed"),
               correlationId: detail.correlationId,
@@ -263,18 +254,21 @@ class ClientReqBus<
       }
     });
 
-    this.#sResBus.addEventListener(clientEvent, (e: CustomEventInit) => {
-      const detail = e.detail;
-      const payload: WSPayload = {
-        __wsBus__: true,
-        type: "res",
-        tag: clientEvent,
-        data: detail,
-      };
-      this.#sResBus.ws.forEach((ws) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-      });
-    });
+    this.#sResBus.addEventListener(
+      clientEvent,
+      (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+        const detail = e.detail as WithCorrelationId<unknown>;
+        const payload: WSPayload = {
+          __wsBus__: true,
+          type: "res",
+          tag: clientEvent,
+          data: detail,
+        };
+        this.#sResBus.ws.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        });
+      },
+    );
 
     return [request, handle] as const;
   };
@@ -292,7 +286,7 @@ class ClientResBus extends EventTarget {
 }
 
 class ServerReqBus<
-  SReq extends Record<string, AnyRequest>,
+  SReq extends Record<string, UnknownRequest>,
   CResBus extends ClientResBus,
 > extends EventTarget {
   #cResBus: CResBus;
@@ -308,8 +302,8 @@ class ServerReqBus<
     if (this.#reqEvents.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#reqEvents.add(serverEvent);
 
-    type ReqType = GetRequest<SReq[T]>;
-    type ResType = GetResponse<SReq[T]>;
+    type ReqType = SReq[T]["request"];
+    type ResType = SReq[T]["response"];
 
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
       return Array.from(this.#ws).map((ws) => {
@@ -319,12 +313,12 @@ class ServerReqBus<
 
         return new Promise((resolve, reject) => {
           const cleanup = () => {
-            this.#cResBus.removeEventListener("__error__", handleError);
+            this.#cResBus.removeEventListener(ERROR_EVENT, handleError);
             this.#cResBus.removeEventListener(serverEvent, handler);
           };
 
-          const handler = (e: CustomEventInit) => {
-            const detail = e.detail;
+          const handler = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+            const detail = e.detail as WithCorrelationId<unknown>;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
@@ -333,19 +327,19 @@ class ServerReqBus<
           };
           this.#cResBus.addEventListener(serverEvent, handler);
 
-          const handleError = (e: CustomEventInit) => {
-            const detail = e.detail;
+          const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
+            const detail = e.detail as WithCorrelationId<WSBusError>;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
               reject(detail.data);
             }
           };
-          this.#cResBus.addEventListener("__error__", handleError);
+          this.#cResBus.addEventListener(ERROR_EVENT, handleError);
 
           timeoutId = setTimeout(() => {
             cleanup();
-            reject(new Error("Request timed out"));
+            reject(new WSBusError("requestTimeout"));
           }, timeoutDuration);
 
           this.dispatchEvent(
@@ -371,8 +365,8 @@ class ServerReqBus<
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    this.addEventListener(serverEvent, (e: CustomEventInit) => {
-      const detail = e.detail;
+    this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+      const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "req",
@@ -384,7 +378,7 @@ class ServerReqBus<
           ws.send(JSON.stringify(payload));
         } else {
           this.#cResBus.dispatchEvent(
-            new ResponseErrorEvent("__error__", {
+            new ResponseErrorEvent(ERROR_EVENT, {
               detail: {
                 data: new WSBusError("connectionClosed"),
                 correlationId: detail.correlationId,
@@ -396,17 +390,20 @@ class ServerReqBus<
       });
     });
 
-    this.#cResBus.addEventListener(serverEvent, (e: CustomEventInit) => {
-      const detail = e.detail;
-      const payload: WSPayload = {
-        __wsBus__: true,
-        type: "res",
-        tag: serverEvent,
-        data: detail,
-      };
-      const ws = this.#cResBus.ws;
-      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-    });
+    this.#cResBus.addEventListener(
+      serverEvent,
+      (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+        const detail = e.detail as WithCorrelationId<unknown>;
+        const payload: WSPayload = {
+          __wsBus__: true,
+          type: "res",
+          tag: serverEvent,
+          data: detail,
+        };
+        const ws = this.#cResBus.ws;
+        if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+      },
+    );
 
     return [request, handle] as const;
   };
@@ -420,23 +417,29 @@ class ServerReqBus<
   }
 }
 
+export type BusSchema = {
+  clientPush?: Record<string, UnknownPush>;
+  serverPush?: Record<string, UnknownPush>;
+  clientRequest?: Record<string, UnknownRequest>;
+  serverRequest?: Record<string, UnknownRequest>;
+};
 export type CreateSchema<T extends BusSchema> = T;
 
 export function createCentralBus<Schema extends BusSchema>() {
   type CPush =
-    Schema["clientPush"] extends Record<string, AnyPush>
+    Schema["clientPush"] extends Record<string, UnknownPush>
       ? Schema["clientPush"]
       : Record<string, never>;
   type SPush =
-    Schema["serverPush"] extends Record<string, AnyPush>
+    Schema["serverPush"] extends Record<string, UnknownPush>
       ? Schema["serverPush"]
       : Record<string, never>;
   type CReq =
-    Schema["clientRequest"] extends Record<string, AnyRequest>
+    Schema["clientRequest"] extends Record<string, UnknownRequest>
       ? Schema["clientRequest"]
       : Record<string, never>;
   type SReq =
-    Schema["serverRequest"] extends Record<string, AnyRequest>
+    Schema["serverRequest"] extends Record<string, UnknownRequest>
       ? Schema["serverRequest"]
       : Record<string, never>;
 
@@ -465,6 +468,7 @@ export function createCentralBus<Schema extends BusSchema>() {
     }
   };
 
+  //TODO: move to method
   const sOnPayload = (payload: WSPayload, ws: WS) => {
     if (!payload?.__wsBus__) return;
     payload.data.ws = ws;
