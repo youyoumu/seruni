@@ -73,7 +73,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     this.#clientWS = clientWS;
   }
 
-  linkPush = <T extends keyof CPush & string>(clientEvent: T) => {
+  linkPush<T extends keyof CPush & string>(clientEvent: T) {
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#events.add(clientEvent);
 
@@ -111,13 +111,13 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     });
 
     return [push, handle] as const;
-  };
+  }
 
   /** used on server: to forward data from WebSocket through events */
-  onPushPayload = (payload: WSPayload) => {
+  onPushPayload(payload: WSPayload) {
     /** [2] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarget {
@@ -129,7 +129,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     this.#serverWS = serverWS;
   }
 
-  linkPush = <T extends keyof SPush & string>(serverEvent: T) => {
+  linkPush<T extends keyof SPush & string>(serverEvent: T) {
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#events.add(serverEvent);
 
@@ -169,13 +169,13 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     });
 
     return [push, handle] as const;
-  };
+  }
 
   /** used on client: to forward data from WebSocket through events */
-  onPushPayload = (payload: WSPayload) => {
+  onPushPayload(payload: WSPayload) {
     /** [4] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000;
@@ -184,10 +184,10 @@ type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
   /** used on client: to forward response data from WebSocket through events */
-  onResponsePayload = (payload: WSPayload) => {
+  onResponsePayload(payload: WSPayload) {
     /** [7] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 class ClientReqBus<
@@ -206,7 +206,7 @@ class ClientReqBus<
     this.#serverWS = serverWS;
   }
 
-  linkRequest = <T extends keyof CReq & string>(clientEvent: T) => {
+  linkRequest<T extends keyof CReq & string>(clientEvent: T) {
     if (this.#reqEvents.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#reqEvents.add(clientEvent);
 
@@ -323,21 +323,21 @@ class ClientReqBus<
     );
 
     return [request, handle] as const;
-  };
+  }
 
   /** used on server: to forward request data from WebSocket through events */
-  onRequestPayload = (payload: WSPayload) => {
+  onRequestPayload(payload: WSPayload) {
     /** [6] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 class ClientResBus extends EventTarget {
   /** used on client: to forward response data from WebSocket through events */
-  onResponsePayload = (payload: WSPayload) => {
+  onResponsePayload(payload: WSPayload) {
     /** [10] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 class ServerReqBus<
@@ -356,7 +356,7 @@ class ServerReqBus<
     this.#clientWS = clientWS;
   }
 
-  linkRequest = <T extends keyof SReq & string>(serverEvent: T) => {
+  linkRequest<T extends keyof SReq & string>(serverEvent: T) {
     if (this.#reqEvents.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#reqEvents.add(serverEvent);
 
@@ -476,13 +476,13 @@ class ServerReqBus<
     );
 
     return [request, handle] as const;
-  };
+  }
 
   /** used on client: to forward request data from WebSocket through events */
-  onRequestPayload = (payload: WSPayload) => {
+  onRequestPayload(payload: WSPayload) {
     /** [9] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
-  };
+  }
 }
 
 export type BusSchema = {
