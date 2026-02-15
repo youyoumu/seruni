@@ -33,27 +33,27 @@ export type ApiSchema = CreateSchema<{
 
 const createApi = () => {
   return createCentralBus<ApiSchema>({
-    clientPush: { ping: undefined },
+    clientPush: { ping: 0 },
     serverPush: {
-      textHistory: undefined,
-      activeSession: undefined,
-      isListeningTexthooker: undefined,
+      textHistory: 0,
+      activeSession: 0,
+      isListeningTexthooker: 0,
     },
     clientRequest: {
-      textHistoryBySessionId: undefined,
-      deleteTextHistory: undefined,
-      session: undefined,
-      sessions: undefined,
-      createSession: undefined,
-      deleteSession: undefined,
-      updateSession: undefined,
-      setActiveSession: undefined,
-      getActiveSession: undefined,
-      isListeningTexthooker: undefined,
-      setIsListeningTexthooker: undefined,
-      checkHealth: undefined,
+      textHistoryBySessionId: 0,
+      deleteTextHistory: 0,
+      session: 0,
+      sessions: 0,
+      createSession: 0,
+      deleteSession: 0,
+      updateSession: 0,
+      setActiveSession: 0,
+      getActiveSession: 0,
+      isListeningTexthooker: 0,
+      setIsListeningTexthooker: 0,
+      checkHealth: 0,
     },
-    serverRequest: { userAgent: undefined },
+    serverRequest: { userAgent: 0 },
   });
 };
 

@@ -119,7 +119,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   }
 
-  setup(clientPush: Record<keyof CPush, undefined>) {
+  setup(clientPush: Record<keyof CPush, 0>) {
     type ClientPush = { [K in keyof CPush]: (...data: Arg<CPush[K]["payload"]>) => void };
     type ServerHandlePush = {
       [K in keyof CPush]: (handler: (payload: CPush[K]["payload"]) => void) => () => void;
@@ -203,7 +203,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   }
 
-  setup(serverPush: Record<keyof SPush, undefined>) {
+  setup(serverPush: Record<keyof SPush, 0>) {
     type ClientHandlePush = {
       [K in keyof SPush]: (handler: (payload: SPush[K]["payload"]) => void) => () => void;
     };
@@ -383,7 +383,7 @@ class ClientReqBus<
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   }
 
-  setup(clientRequest: Record<keyof CReq, undefined>) {
+  setup(clientRequest: Record<keyof CReq, 0>) {
     type ClientRequest = {
       [K in keyof CReq]: (
         ...data: Arg<CReq[K]["request"], RequestOption>
@@ -570,7 +570,7 @@ class ServerReqBus<
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   }
 
-  setup(serverRequest: Record<keyof SReq, undefined>) {
+  setup(serverRequest: Record<keyof SReq, 0>) {
     type ServerRequest = {
       [K in keyof SReq]: (
         ...data: Arg<SReq[K]["request"], RequestOption>
@@ -614,10 +614,10 @@ export type BusSchema = {
 export type CreateSchema<T extends BusSchema> = T;
 
 export function createCentralBus<Schema extends BusSchema>(schema: {
-  clientPush?: Record<keyof Schema["clientPush"] & string, undefined>;
-  serverPush?: Record<keyof Schema["serverPush"] & string, undefined>;
-  clientRequest?: Record<keyof Schema["clientRequest"] & string, undefined>;
-  serverRequest?: Record<keyof Schema["serverRequest"] & string, undefined>;
+  clientPush?: Record<keyof Schema["clientPush"] & string, 0>;
+  serverPush?: Record<keyof Schema["serverPush"] & string, 0>;
+  clientRequest?: Record<keyof Schema["clientRequest"] & string, 0>;
+  serverRequest?: Record<keyof Schema["serverRequest"] & string, 0>;
 }) {
   type CPush =
     Schema["clientPush"] extends Record<string, UnknownPush>
@@ -673,14 +673,10 @@ export function createCentralBus<Schema extends BusSchema>(schema: {
     }
   };
 
-  const clientPushApi = cPushBus.setup((schema.clientPush ?? {}) as Record<keyof CPush, undefined>);
-  const clientRequestApi = cReqBus.setup(
-    (schema.clientRequest ?? {}) as Record<keyof CReq, undefined>,
-  );
-  const serverPushApi = sPushBus.setup((schema.serverPush ?? {}) as Record<keyof SPush, undefined>);
-  const serverRequestApi = sReqBus.setup(
-    (schema.serverRequest ?? {}) as Record<keyof SReq, undefined>,
-  );
+  const clientPushApi = cPushBus.setup((schema.clientPush ?? {}) as Record<keyof CPush, 0>);
+  const clientRequestApi = cReqBus.setup((schema.clientRequest ?? {}) as Record<keyof CReq, 0>);
+  const serverPushApi = sPushBus.setup((schema.serverPush ?? {}) as Record<keyof SPush, 0>);
+  const serverRequestApi = sReqBus.setup((schema.serverRequest ?? {}) as Record<keyof SReq, 0>);
 
   return {
     client: {
