@@ -493,7 +493,12 @@ export type BusSchema = {
 };
 export type CreateSchema<T extends BusSchema> = T;
 
-export function createCentralBus<Schema extends BusSchema>() {
+export function createCentralBus<Schema extends BusSchema>(schema: {
+  clientPush?: Record<keyof Schema["clientPush"] & string, undefined>;
+  serverPush?: Record<keyof Schema["serverPush"] & string, undefined>;
+  clientRequest?: Record<keyof Schema["clientRequest"] & string, undefined>;
+  serverRequest?: Record<keyof Schema["serverRequest"] & string, undefined>;
+}) {
   type CPush =
     Schema["clientPush"] extends Record<string, UnknownPush>
       ? Schema["clientPush"]
@@ -548,23 +553,123 @@ export function createCentralBus<Schema extends BusSchema>() {
     }
   };
 
+  type ClientPush = { [K in keyof CPush]: (...data: Arg<CPush[K]["payload"]>) => void };
+  type ServerHandlePush = { [K in keyof CPush]: (handler: (payload: CPush[K]["payload"]) => void) => () => void };
+  function setupClientPush(clientPush: Record<keyof CPush, undefined>) {
+    const result: {
+      client: { push: Record<string, unknown> };
+      server: { handlePush: Record<string, unknown> };
+    } = {
+      client: { push: {} },
+      server: { handlePush: {} },
+    };
+    Object.keys(clientPush).forEach((key) => {
+      const api = cPushBus.linkPush(key as CPush & string);
+      result.client.push[key] = api.push;
+      result.server.handlePush[key] = api.handle;
+    });
+    return result as {
+      client: { push: ClientPush };
+      server: { handlePush: ServerHandlePush };
+    };
+  }
+
+  type ClientHandlePush = { [K in keyof SPush]: (handler: (payload: SPush[K]["payload"]) => void) => () => void };
+  type ServerPush = { [K in keyof SPush]: (...data: Arg<SPush[K]["payload"]>) => void };
+  function setupServerPush(serverPush: Record<keyof SPush, undefined>) {
+    const result: {
+      client: { handlePush: Record<string, unknown> };
+      server: { push: Record<string, unknown> };
+    } = {
+      client: { handlePush: {} },
+      server: { push: {} },
+    };
+    Object.keys(serverPush).forEach((key) => {
+      const api = sPushBus.linkPush(key as SPush & string);
+      result.client.handlePush[key] = api.handle;
+      result.server.push[key] = api.push;
+    });
+    return result as {
+      client: { handlePush: ClientHandlePush };
+      server: { push: ServerPush };
+    };
+  }
+
+  type ClientRequest = { [K in keyof CReq]: (...data: Arg<CReq[K]["request"], RequestOption>) => Promise<CReq[K]["response"]> };
+  type ServerHandleRequest = { [K in keyof CReq]: (handler: (payload: CReq[K]["request"]) => CReq[K]["response"] | Promise<CReq[K]["response"]> ) => () => void };
+  function setupClientRequest(clientRequest: Record<keyof CReq, undefined>) {
+    const result: {
+      client: { request: Record<string, unknown> };
+      server: { handleRequest: Record<string, unknown> };
+    } = {
+      client: { request: {} },
+      server: { handleRequest: {} },
+    };
+    Object.keys(clientRequest).forEach((key) => {
+      const api = cReqBus.linkRequest(key as CReq & string);
+      result.client.request[key] = api.request;
+      result.server.handleRequest[key] = api.handle;
+    });
+    return result as {
+      client: { request: ClientRequest };
+      server: { handleRequest: ServerHandleRequest };
+    };
+  }
+
+  type ServerRequest = { [K in keyof SReq]: (...data: Arg<SReq[K]["request"], RequestOption>) => Promise<SReq[K]["response"]>[] };
+  type ClientHandleRequest = { [K in keyof SReq]: (handler: (payload: SReq[K]["request"]) => SReq[K]["response"] | Promise<SReq[K]["response"]> ) => () => void };
+  function setupServerRequest(serverRequest: Record<keyof SReq, undefined>) {
+    const result: {
+      client: { handleRequest: Record<string, unknown> };
+      server: { request: Record<string, unknown> };
+    } = {
+      client: { handleRequest: {} },
+      server: { request: {} },
+    };
+    Object.keys(serverRequest).forEach((key) => {
+      const api = sReqBus.linkRequest(key as SReq & string);
+      result.client.handleRequest[key] = api.handle;
+      result.server.request[key] = api.request;
+    });
+    return result as {
+      client: { handleRequest: ClientHandleRequest };
+      server: { request: ServerRequest };
+    };
+  }
+
+  const clientPushApi = setupClientPush(
+    (schema.clientPush ?? {}) as Record<keyof CPush, undefined>,
+  );
+  const clientRequestApi = setupClientRequest(
+    (schema.clientRequest ?? {}) as Record<keyof CReq, undefined>,
+  );
+  const serverPushApi = setupServerPush(
+    (schema.serverPush ?? {}) as Record<keyof SPush, undefined>,
+  );
+  const serverRequestApi = setupServerRequest(
+    (schema.serverRequest ?? {}) as Record<keyof SReq, undefined>,
+  );
+
   return {
-    bridge: {
-      client: { bindWS: clientWS.bindWS.bind(clientWS), onPayload: cOnPayload },
-      server: {
-        addWS: serverWS.addWS.bind(serverWS),
-        removeWS: serverWS.removeWS.bind(serverWS),
-        onPayload: sOnPayload,
+    client: {
+      onPayload: cOnPayload,
+      bindWS: clientWS.bindWS.bind(clientWS),
+      api: {
+        push: clientPushApi.client.push,
+        request: clientRequestApi.client.request,
+        handlePush: serverPushApi.client.handlePush,
+        handleRequest: serverRequestApi.client.handleRequest,
       },
     },
-    link: {
-      client: {
-        push: cPushBus.linkPush.bind(cPushBus),
-        request: cReqBus.linkRequest.bind(cReqBus),
-      },
-      server: {
-        push: sPushBus.linkPush.bind(sPushBus),
-        request: sReqBus.linkRequest.bind(sReqBus),
+    server: {
+      onPayload: sOnPayload,
+      addWS: serverWS.addWS.bind(serverWS),
+      removeWS: serverWS.removeWS.bind(serverWS),
+      api: {
+        push: serverPushApi.server.push,
+        request: serverRequestApi.server.request,
+        handlePush: clientPushApi.server.handlePush,
+        handleRequest: clientRequestApi.server.handleRequest,
       },
     },
   };
