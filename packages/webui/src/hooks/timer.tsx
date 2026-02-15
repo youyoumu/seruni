@@ -29,10 +29,20 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   const isRunning = isListeningTexthooker && activeSession?.id === sessionId;
   const initialDuration = session.duration;
   const [seconds, setSeconds] = useState(initialDuration);
+  const durationRef = useRef<number>(initialDuration);
+
+  const { mutateAsync: updateDuration } = useUpdateSessionDuration();
+  const { mutate: setActiveSession } = useSetActiveSession();
+  const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
+
+  useEffect(() => {
+    durationRef.current = seconds;
+  }, [seconds]);
 
   // Update seconds when initialDuration changes (e.g., when session data loads)
   useEffect(() => {
     setSeconds(initialDuration);
+    durationRef.current = initialDuration;
   }, [initialDuration]);
 
   useEffect(() => {
@@ -42,18 +52,6 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [isRunning]);
-
-  const reset = useCallback(() => {
-    setSeconds(0);
-  }, []);
-
-  const durationRef = useRef<number>(initialDuration);
-  useEffect(() => {
-    durationRef.current = seconds;
-  }, [seconds]);
-
-  const { mutateAsync: updateDuration } = useUpdateSessionDuration();
-  const { mutate: setActiveSession } = useSetActiveSession();
 
   // Sync duration to server every SYNC_INTERVAL while running
   useEffect(() => {
@@ -71,7 +69,9 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
     updateDuration({ duration: durationRef.current, sessionId });
   }, [isRunning, sessionId, updateDuration]);
 
-  const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
+  const reset = useCallback(() => {
+    setSeconds(0);
+  }, []);
 
   const toggle = useCallback(() => {
     setIsListeningTexthooker(!isRunning);
