@@ -2,22 +2,18 @@ import { useServices } from "#/hooks/api";
 import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { ShellIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
+import z from "zod";
 
-type Search = {
-  redirect: string;
-};
 export const Route = createFileRoute("/_layout/offline")({
   component: RouteComponent,
-  //TODO: use zod
-  validateSearch: (search): Search => {
-    return {
-      redirect: search.redirect as string,
-    };
-  },
+  validateSearch: z.object({
+    redirect: z.string(),
+    search: z.string().optional(),
+  }),
 });
 
 function RouteComponent() {
-  const { redirect } = Route.useSearch();
+  const { redirect, search } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { ws } = useServices();
   const location = useLocation();
@@ -35,10 +31,10 @@ function RouteComponent() {
       ws.removeEventListener("open", handler);
       if (timeoutId.current) clearTimeout(timeoutId.current);
       timeoutId.current = setTimeout(() => {
-        //TODO: search params
-        // @ts-expect-error dynamic
         navigate({
           to: redirectPath,
+          // @ts-expect-error dynamic
+          search: search,
         });
       }, 1000);
     };
@@ -47,7 +43,7 @@ function RouteComponent() {
     return () => {
       ws.removeEventListener("open", handler);
     };
-  }, [navigate, ws, location, redirectPath]);
+  }, [navigate, ws, location, redirectPath, search]);
 
   return (
     <div className="flex h-screen items-center justify-center">

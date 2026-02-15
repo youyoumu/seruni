@@ -1,5 +1,4 @@
 import { useServices } from "#/hooks/api";
-import { useActiveSession$, useIsListeningTexthooker$ } from "#/hooks/sessions";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { Button, cn, Separator, Skeleton } from "@heroui/react";
@@ -21,17 +20,22 @@ function getTextHistoryCharCount(textHistory: TextHistory[]) {
 
 export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   component: TextHookerPage,
+  params: {
+    parse: (params) => ({
+      sessionId: Number(params.sessionId),
+    }),
+  },
   async loader({ params, context }) {
     const { sessionId } = params;
     const { api } = context.services;
-    const session = await api.request.session(Number(sessionId));
+    const session = await api.request.session(sessionId);
     if (!session) {
       const sessions = await api.request.sessions();
       const lastSession = sessions[sessions.length - 1];
       if (!lastSession) throw Error("Last session not found");
       throw redirect({
         to: "/text-hooker/$sessionId",
-        params: { sessionId: String(lastSession.id) },
+        params: { sessionId: lastSession.id },
       });
     }
   },
@@ -67,11 +71,11 @@ function TextHookerPage() {
 
 function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
-  const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+  const { data: textHistory } = useTextHistory$({ sessionId });
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
 
   const timer = useSessionTimer({
-    sessionId: Number(sessionId),
+    sessionId,
   });
   const speed = useReadingSpeed(textHistoryCharCount, timer.seconds);
 
@@ -101,7 +105,7 @@ function TextHistoryPageHeader() {
 
 function TextHistoryList() {
   const { sessionId } = Route.useParams();
-  const { data: textHistory } = useTextHistory$({ sessionId: Number(sessionId) });
+  const { data: textHistory } = useTextHistory$({ sessionId });
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
   const { bus } = useServices();
 
@@ -165,7 +169,7 @@ function TextHistoryList() {
 
   useEffect(() => {
     const handleNewTextHistory = (e: CustomEvent<TextHistory>) => {
-      if (e.detail.sessionId === Number(sessionId)) {
+      if (e.detail.sessionId === sessionId) {
         setTimeout(() => {
           virtualizer.scrollToOffset(virtualizer.getTotalSize());
         }, 0);

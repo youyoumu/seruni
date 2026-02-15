@@ -19,16 +19,7 @@ import {
   useLocation,
   useMatchRoute,
 } from "@tanstack/react-router";
-import {
-  Terminal,
-  FileText,
-  Settings,
-  TrashIcon,
-  RssIcon,
-  BugIcon,
-  DotIcon,
-  CircleIcon,
-} from "lucide-react";
+import { Terminal, FileText, Settings, TrashIcon, BugIcon, CircleIcon } from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { z } from "zod";
@@ -186,7 +177,7 @@ export function TextHookerSessionList() {
             )}
             key={session.id}
             to={`/text-hooker/$sessionId`}
-            params={{ sessionId: String(session.id) }}
+            params={{ sessionId: session.id }}
             onClick={() => {
               setActiveSession(session.id);
             }}
