@@ -21,7 +21,7 @@ export function registerHandlers({
 
   effect(async () => {
     const activeSessionId = state.activeSessionId();
-    logState.info(`activeSessionId: ${activeSessionId}`);
+    logState.debug(`activeSessionId: ${activeSessionId}`);
     if (!activeSessionId) return;
     const result = await db.query.session.findFirst({
       where: eq(session.id, activeSessionId),
@@ -31,7 +31,7 @@ export function registerHandlers({
 
   effect(() => {
     const isListeningTexthooker = state.isListeningTexthooker();
-    logState.info(`isListeningTexthooker: ${isListeningTexthooker}`);
+    logState.debug(`isListeningTexthooker: ${isListeningTexthooker}`);
     api.push.isListeningTexthooker(isListeningTexthooker);
   });
 
