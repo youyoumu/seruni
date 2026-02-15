@@ -47,9 +47,31 @@ export interface WS {
   readyState: WebSocket["readyState"];
 }
 
+class ClientWS {
+  ws: WS | undefined;
+  bindWS(ws: WS) {
+    this.ws = ws;
+  }
+}
+
+class ServerWS {
+  ws = new Set<WS>();
+  addWS(ws: WS) {
+    this.ws.add(ws);
+  }
+  removeWS(ws: WS) {
+    this.ws.delete(ws);
+  }
+}
+
 class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarget {
   #events = new Set<string>();
-  #ws: WS | undefined;
+  #clientWS: ClientWS;
+
+  constructor(clientWS: ClientWS) {
+    super();
+    this.#clientWS = clientWS;
+  }
 
   linkPush = <T extends keyof CPush & string>(clientEvent: T) => {
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
@@ -78,14 +100,14 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     /** [1] */
     /** used on client: to forward events to server through WebSocket */
     this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-      if (this.#ws?.readyState !== WebSocket.OPEN) return;
+      if (this.#clientWS.ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "push",
         tag: clientEvent,
         data: e.detail as WithCorrelationId<unknown>,
       };
-      this.#ws.send(JSON.stringify(payload));
+      this.#clientWS.ws.send(JSON.stringify(payload));
     });
 
     return [push, handle] as const;
@@ -96,16 +118,16 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     /** [2] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on client */
-  bindWS(ws: WS) {
-    this.#ws = ws;
-  }
 }
 
 class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarget {
   #events = new Set<string>();
-  #ws = new Set<WS>();
+  #serverWS: ServerWS;
+
+  constructor(serverWS: ServerWS) {
+    super();
+    this.#serverWS = serverWS;
+  }
 
   linkPush = <T extends keyof SPush & string>(serverEvent: T) => {
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
@@ -134,7 +156,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     /** [3] */
     /** used on server: to forward events to all connected clients through WebSocket */
     this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-      this.#ws.forEach((ws) => {
+      this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: WSPayload = {
           __wsBus__: true,
@@ -154,16 +176,6 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     /** [4] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on server */
-  addWS(ws: WS) {
-    this.#ws.add(ws);
-  }
-
-  /** used on server */
-  removeWS(ws: WS) {
-    this.#ws.delete(ws);
-  }
 }
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000;
@@ -171,23 +183,11 @@ const ERROR_EVENT = "__error__";
 type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
-  ws = new Set<WS>();
-
   /** used on client: to forward response data from WebSocket through events */
   onResponsePayload = (payload: WSPayload) => {
     /** [7] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on server */
-  addWS(ws: WS) {
-    this.ws.add(ws);
-  }
-
-  /** used on server */
-  removeWS(ws: WS) {
-    this.ws.delete(ws);
-  }
 }
 
 class ClientReqBus<
@@ -195,12 +195,15 @@ class ClientReqBus<
   SResBus extends ServerResBus,
 > extends EventTarget {
   #sResBus: SResBus;
-  #ws: WS | undefined;
+  #clientWS: ClientWS;
+  #serverWS: ServerWS;
   #reqEvents = new Set<string>();
 
-  constructor(sResBus: SResBus) {
+  constructor(sResBus: SResBus, clientWS: ClientWS, serverWS: ServerWS) {
     super();
     this.#sResBus = sResBus;
+    this.#clientWS = clientWS;
+    this.#serverWS = serverWS;
   }
 
   linkRequest = <T extends keyof CReq & string>(clientEvent: T) => {
@@ -286,8 +289,8 @@ class ClientReqBus<
         data: detail,
       };
 
-      if (this.#ws?.readyState === WebSocket.OPEN) {
-        this.#ws?.send(JSON.stringify(payload));
+      if (this.#clientWS.ws?.readyState === WebSocket.OPEN) {
+        this.#clientWS.ws?.send(JSON.stringify(payload));
       } else {
         /** [7] */
         this.#sResBus.dispatchEvent(
@@ -313,7 +316,7 @@ class ClientReqBus<
           tag: clientEvent,
           data: detail,
         };
-        this.#sResBus.ws.forEach((ws) => {
+        this.#serverWS.ws.forEach((ws) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
         });
       },
@@ -327,26 +330,14 @@ class ClientReqBus<
     /** [6] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on client */
-  bindWS(ws: WS) {
-    this.#ws = ws;
-  }
 }
 
 class ClientResBus extends EventTarget {
-  ws: WS | undefined;
-
   /** used on client: to forward response data from WebSocket through events */
   onResponsePayload = (payload: WSPayload) => {
     /** [10] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on client */
-  bindWS(ws: WS) {
-    this.ws = ws;
-  }
 }
 
 class ServerReqBus<
@@ -354,12 +345,15 @@ class ServerReqBus<
   CResBus extends ClientResBus,
 > extends EventTarget {
   #cResBus: CResBus;
-  #ws = new Set<WS>();
+  #serverWS: ServerWS;
+  #clientWS: ClientWS;
   #reqEvents = new Set<string>();
 
-  constructor(cResBus: CResBus) {
+  constructor(cResBus: CResBus, serverWS: ServerWS, clientWS: ClientWS) {
     super();
     this.#cResBus = cResBus;
+    this.#serverWS = serverWS;
+    this.#clientWS = clientWS;
   }
 
   linkRequest = <T extends keyof SReq & string>(serverEvent: T) => {
@@ -371,7 +365,7 @@ class ServerReqBus<
 
     /** used on server: to send a request to all connected clients and receive responses */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
-      return Array.from(this.#ws).map((ws) => {
+      return Array.from(this.#serverWS.ws).map((ws) => {
         const correlationId = uid();
         const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
         let timeoutId: ReturnType<typeof setTimeout>;
@@ -446,7 +440,7 @@ class ServerReqBus<
         tag: serverEvent,
         data: detail,
       };
-      this.#ws.forEach((ws) => {
+      this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(payload));
         } else {
@@ -476,7 +470,7 @@ class ServerReqBus<
           tag: serverEvent,
           data: detail,
         };
-        const ws = this.#cResBus.ws;
+        const ws = this.#clientWS.ws;
         if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
       },
     );
@@ -489,16 +483,6 @@ class ServerReqBus<
     /** [9] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
-
-  /** used on server */
-  addWS(ws: WS) {
-    this.#ws.add(ws);
-  }
-
-  /** used on server */
-  removeWS(ws: WS) {
-    this.#ws.delete(ws);
-  }
 }
 
 export type BusSchema = {
@@ -527,14 +511,17 @@ export function createCentralBus<Schema extends BusSchema>() {
       ? Schema["serverRequest"]
       : Record<string, never>;
 
-  const cPushBus = new ClientPushBus<CPush>();
-  const sPushBus = new ServerPushBus<SPush>();
+  const clientWS = new ClientWS();
+  const serverWS = new ServerWS();
+
+  const cPushBus = new ClientPushBus<CPush>(clientWS);
+  const sPushBus = new ServerPushBus<SPush>(serverWS);
 
   const sResBus = new ServerResBus();
-  const cReqBus = new ClientReqBus<CReq, ServerResBus>(sResBus);
+  const cReqBus = new ClientReqBus<CReq, ServerResBus>(sResBus, clientWS, serverWS);
 
   const cResBus = new ClientResBus();
-  const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus);
+  const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus, serverWS, clientWS);
 
   const cOnPayload = (payload: WSPayload) => {
     if (!payload?.__wsBus__) return;
@@ -561,28 +548,14 @@ export function createCentralBus<Schema extends BusSchema>() {
     }
   };
 
-  const cBindWS = (ws: WS) => {
-    cPushBus.bindWS(ws);
-    cResBus.bindWS(ws);
-    cReqBus.bindWS(ws);
-  };
-
-  const sAddWS = (ws: WS) => {
-    sPushBus.addWS(ws);
-    sResBus.addWS(ws);
-    sReqBus.addWS(ws);
-  };
-
-  const sRemoveWS = (ws: WS) => {
-    sPushBus.removeWS(ws);
-    sResBus.removeWS(ws);
-    sReqBus.removeWS(ws);
-  };
-
   return {
     bridge: {
-      client: { bindWS: cBindWS, onPayload: cOnPayload },
-      server: { addWS: sAddWS, removeWS: sRemoveWS, onPayload: sOnPayload },
+      client: { bindWS: clientWS.bindWS.bind(clientWS), onPayload: cOnPayload },
+      server: {
+        addWS: serverWS.addWS.bind(serverWS),
+        removeWS: serverWS.removeWS.bind(serverWS),
+        onPayload: sOnPayload,
+      },
     },
     link: {
       client: {
