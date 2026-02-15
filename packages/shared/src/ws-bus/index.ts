@@ -55,6 +55,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#events.add(clientEvent);
 
+    /** client */
     const push = (...data: Arg<CPush[T]["payload"]>) => {
       this.dispatchEvent(
         new CustomEvent(clientEvent, {
@@ -63,6 +64,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       );
     };
 
+    /** server */
     const handle = (handler: (payload: CPush[T]["payload"]) => void) => {
       const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         handler(e.detail?.data);
@@ -71,6 +73,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
+    /** client */
     this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       if (this.#ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
@@ -85,6 +88,12 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     return [push, handle] as const;
   };
 
+  /** server */
+  onPushPayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** client */
   bindWS(ws: WS) {
     this.#ws = ws;
   }
@@ -98,6 +107,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#events.add(serverEvent);
 
+    /** server */
     const push = (...data: Arg<SPush[T]["payload"]>) => {
       this.dispatchEvent(
         new CustomEvent(serverEvent, {
@@ -106,6 +116,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       );
     };
 
+    /** client */
     const handle = (handler: (payload: SPush[T]["payload"]) => void) => {
       const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         handler(e.detail?.data);
@@ -114,6 +125,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
+    /** server */
     this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       this.#ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
@@ -130,10 +142,17 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     return [push, handle] as const;
   };
 
+  /** client */
+  onPushPayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** server */
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
 
+  /** server */
   removeWS(ws: WS) {
     this.#ws.delete(ws);
   }
@@ -145,9 +164,18 @@ type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
   ws = new Set<WS>();
+
+  /** client */
+  onResponsePayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** server */
   addWS(ws: WS) {
     this.ws.add(ws);
   }
+
+  /** server */
   removeWS(ws: WS) {
     this.ws.delete(ws);
   }
@@ -173,6 +201,7 @@ class ClientReqBus<
     type ReqType = CReq[T]["request"];
     type ResType = CReq[T]["response"];
 
+    /** client */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
       const correlationId = uid();
       let timeoutId: ReturnType<typeof setTimeout>;
@@ -217,6 +246,7 @@ class ClientReqBus<
       });
     };
 
+    /** server */
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
       const handler_ = async (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         const detail = e.detail as WithCorrelationId<unknown>;
@@ -231,6 +261,7 @@ class ClientReqBus<
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
+    /** client */
     this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
@@ -254,6 +285,7 @@ class ClientReqBus<
       }
     });
 
+    /** server */
     this.#sResBus.addEventListener(
       clientEvent,
       (e: CustomEventInit<WithCorrelationId<unknown>>) => {
@@ -273,6 +305,12 @@ class ClientReqBus<
     return [request, handle] as const;
   };
 
+  /** server */
+  onRequestPayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** client */
   bindWS(ws: WS) {
     this.#ws = ws;
   }
@@ -280,6 +318,13 @@ class ClientReqBus<
 
 class ClientResBus extends EventTarget {
   ws: WS | undefined;
+
+  /** server */
+  onResponsePayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** client */
   bindWS(ws: WS) {
     this.ws = ws;
   }
@@ -305,6 +350,7 @@ class ServerReqBus<
     type ReqType = SReq[T]["request"];
     type ResType = SReq[T]["response"];
 
+    /** server */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
       return Array.from(this.#ws).map((ws) => {
         const correlationId = uid();
@@ -351,6 +397,7 @@ class ServerReqBus<
       });
     };
 
+    /** client */
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
       const handler_ = async (e: CustomEventInit) => {
         const detail = e.detail;
@@ -365,6 +412,7 @@ class ServerReqBus<
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
+    /** server */
     this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
@@ -390,6 +438,7 @@ class ServerReqBus<
       });
     });
 
+    /** client */
     this.#cResBus.addEventListener(
       serverEvent,
       (e: CustomEventInit<WithCorrelationId<unknown>>) => {
@@ -408,10 +457,17 @@ class ServerReqBus<
     return [request, handle] as const;
   };
 
+  /** client */
+  onRequestPayload = (payload: WSPayload) => {
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+  };
+
+  /** server */
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
 
+  /** server */
   removeWS(ws: WS) {
     this.#ws.delete(ws);
   }
@@ -452,19 +508,15 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cResBus = new ClientResBus();
   const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus);
 
-  function dispatch(bus: EventTarget, tag: string, data: WithCorrelationId<unknown>) {
-    bus.dispatchEvent(new CustomEvent(tag, { detail: data }));
-  }
-
   const cOnPayload = (payload: WSPayload) => {
     if (!payload?.__wsBus__) return;
     switch (payload.type) {
       case "push":
-        return dispatch(sPushBus, payload.tag, payload.data);
+        return sPushBus.onPushPayload(payload);
       case "req":
-        return dispatch(sReqBus, payload.tag, payload.data);
+        return sReqBus.onRequestPayload(payload);
       case "res":
-        return dispatch(sResBus, payload.tag, payload.data);
+        return sResBus.onResponsePayload(payload);
     }
   };
 
@@ -474,11 +526,11 @@ export function createCentralBus<Schema extends BusSchema>() {
     payload.data.ws = ws;
     switch (payload.type) {
       case "push":
-        return dispatch(cPushBus, payload.tag, payload.data);
+        return cPushBus.onPushPayload(payload);
       case "req":
-        return dispatch(cReqBus, payload.tag, payload.data);
+        return cReqBus.onRequestPayload(payload);
       case "res":
-        return dispatch(cResBus, payload.tag, payload.data);
+        return cResBus.onResponsePayload(payload);
     }
   };
 
