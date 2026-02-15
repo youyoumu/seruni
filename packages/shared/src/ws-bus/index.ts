@@ -127,21 +127,21 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
 
     const result: {
       client: { push: Record<string, unknown> };
-      server: { handlePush: Record<string, unknown> };
+      server: { onPush: Record<string, unknown> };
     } = {
       client: { push: {} },
-      server: { handlePush: {} },
+      server: { onPush: {} },
     };
 
     Object.keys(clientPush).forEach((key) => {
       const api = this.linkPush(key as CPush & string);
       result.client.push[key] = api.push;
-      result.server.handlePush[key] = api.handle;
+      result.server.onPush[key] = api.handle;
     });
 
     return result as {
       client: { push: ClientPush };
-      server: { handlePush: ServerHandlePush };
+      server: { onPush: ServerHandlePush };
     };
   }
 }
@@ -210,21 +210,21 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     type ServerPush = { [K in keyof SPush]: (...data: Arg<SPush[K]["payload"]>) => void };
 
     const result: {
-      client: { handlePush: Record<string, unknown> };
+      client: { onPush: Record<string, unknown> };
       server: { push: Record<string, unknown> };
     } = {
-      client: { handlePush: {} },
+      client: { onPush: {} },
       server: { push: {} },
     };
 
     Object.keys(serverPush).forEach((key) => {
       const api = this.linkPush(key as SPush & string);
-      result.client.handlePush[key] = api.handle;
+      result.client.onPush[key] = api.handle;
       result.server.push[key] = api.push;
     });
 
     return result as {
-      client: { handlePush: ClientHandlePush };
+      client: { onPush: ClientHandlePush };
       server: { push: ServerPush };
     };
   }
@@ -399,27 +399,27 @@ class ClientReqBus<
 
     const result: {
       client: { request: Record<string, unknown> };
-      server: { handleRequest: Record<string, unknown> };
+      server: { onRequest: Record<string, unknown> };
     } = {
       client: { request: {} },
-      server: { handleRequest: {} },
+      server: { onRequest: {} },
     };
 
     Object.keys(clientRequest).forEach((key) => {
       const api = this.linkRequest(key as CReq & string);
       result.client.request[key] = api.request;
-      result.server.handleRequest[key] = api.handle;
+      result.server.onRequest[key] = api.handle;
     });
 
     return result as {
       client: { request: ClientRequest };
-      server: { handleRequest: ServerHandleRequest };
+      server: { onRequest: ServerHandleRequest };
     };
   }
 }
 
 class ClientResBus extends EventTarget {
-  /** used on client: to forward response data from WebSocket through events */
+  /** used on server: to forward response data from WebSocket through events */
   onResponsePayload(payload: WSPayload) {
     /** [10] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
@@ -585,21 +585,21 @@ class ServerReqBus<
     };
 
     const result: {
-      client: { handleRequest: Record<string, unknown> };
+      client: { onRequest: Record<string, unknown> };
       server: { request: Record<string, unknown> };
     } = {
-      client: { handleRequest: {} },
+      client: { onRequest: {} },
       server: { request: {} },
     };
 
     Object.keys(serverRequest).forEach((key) => {
       const api = this.linkRequest(key as SReq & string);
-      result.client.handleRequest[key] = api.handle;
+      result.client.onRequest[key] = api.handle;
       result.server.request[key] = api.request;
     });
 
     return result as {
-      client: { handleRequest: ClientHandleRequest };
+      client: { onRequest: ClientHandleRequest };
       server: { request: ServerRequest };
     };
   }
@@ -685,8 +685,8 @@ export function createCentralBus<Schema extends BusSchema>(schema: {
       api: {
         push: clientPushApi.client.push,
         request: clientRequestApi.client.request,
-        handlePush: serverPushApi.client.handlePush,
-        handleRequest: serverRequestApi.client.handleRequest,
+        onPush: serverPushApi.client.onPush,
+        onRequest: serverRequestApi.client.onRequest,
       },
     },
     server: {
@@ -696,8 +696,8 @@ export function createCentralBus<Schema extends BusSchema>(schema: {
       api: {
         push: serverPushApi.server.push,
         request: serverRequestApi.server.request,
-        handlePush: clientPushApi.server.handlePush,
-        handleRequest: clientRequestApi.server.handleRequest,
+        onPush: clientPushApi.server.onPush,
+        onRequest: clientRequestApi.server.onRequest,
       },
     },
   };

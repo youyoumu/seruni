@@ -39,19 +39,19 @@ export class Services {
       onPayload(payload);
     });
 
-    this.api.handleRequest.userAgent(() => {
+    this.api.onRequest.userAgent(() => {
       return navigator.userAgent;
     });
 
-    this.api.handlePush.activeSession((data) => {
+    this.api.onPush.activeSession((data) => {
       queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
-    this.api.handlePush.isListeningTexthooker((data) => {
+    this.api.onPush.isListeningTexthooker((data) => {
       queryClient.setQueryData(this.keyring.isListeningTexthooker.isListening.queryKey, data);
     });
 
-    this.api.handlePush.textHistory((data) => {
+    this.api.onPush.textHistory((data) => {
       const old = queryClient.getQueryData(
         this.keyring.textHistory.bySession(data.sessionId).queryKey,
       );

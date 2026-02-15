@@ -35,45 +35,45 @@ export function registerHandlers({
     api.push.isListeningTexthooker(isListeningTexthooker);
   });
 
-  api.handleRequest.isListeningTexthooker(() => state.isListeningTexthooker());
-  api.handleRequest.setIsListeningTexthooker(async (isListeningTexthooker) => {
+  api.onRequest.isListeningTexthooker(() => state.isListeningTexthooker());
+  api.onRequest.setIsListeningTexthooker(async (isListeningTexthooker) => {
     state.isListeningTexthooker(isListeningTexthooker);
     return isListeningTexthooker;
   });
 
-  api.handleRequest.textHistoryBySessionId(async (id) => {
+  api.onRequest.textHistoryBySessionId(async (id) => {
     return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
   });
 
-  api.handleRequest.deleteTextHistory(async (id) => {
+  api.onRequest.deleteTextHistory(async (id) => {
     const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
     return result ?? null;
   });
 
-  api.handleRequest.session(async (id) => {
+  api.onRequest.session(async (id) => {
     const result = await db.query.session.findFirst({
       where: eq(session.id, id),
     });
     return result ?? null;
   });
 
-  api.handleRequest.sessions(async () => {
+  api.onRequest.sessions(async () => {
     return await db.select().from(session);
   });
 
-  api.handleRequest.createSession(async (name) => {
+  api.onRequest.createSession(async (name) => {
     const result = await db.insert(session).values({ name }).returning().get();
     state.activeSessionId(result.id);
     return result;
   });
 
-  api.handleRequest.deleteSession(async (id) => {
+  api.onRequest.deleteSession(async (id) => {
     const [result] = await db.delete(session).where(eq(session.id, id)).returning();
     if (result?.id === state.activeSessionId()) state.activeSessionId(null);
     return result ?? null;
   });
 
-  api.handleRequest.setActiveSession(async (id) => {
+  api.onRequest.setActiveSession(async (id) => {
     const result = await db.query.session.findFirst({
       where: eq(session.id, id),
     });
@@ -85,7 +85,7 @@ export function registerHandlers({
     return result ?? null;
   });
 
-  api.handleRequest.getActiveSession(async () => {
+  api.onRequest.getActiveSession(async () => {
     const activeSessionId = state.activeSessionId();
     if (!activeSessionId) return null;
     const result = await db.query.session.findFirst({
@@ -94,7 +94,7 @@ export function registerHandlers({
     return result ?? null;
   });
 
-  api.handleRequest.updateSession(async (payload) => {
+  api.onRequest.updateSession(async (payload) => {
     if (!payload.id) return null;
     const [result] = await db
       .update(session)
@@ -106,5 +106,5 @@ export function registerHandlers({
     return result ?? null;
   });
 
-  api.handleRequest.checkHealth(() => undefined);
+  api.onRequest.checkHealth(() => undefined);
 }
