@@ -41,6 +41,7 @@ export function useCreateNewSession() {
   });
 }
 
+//TODO: invalidate route path
 export function useDeleteSession() {
   const { api, keyring } = useServices();
   const queryClient = useQueryClient();

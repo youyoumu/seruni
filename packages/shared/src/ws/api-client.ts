@@ -1,172 +1,99 @@
 import { type Session, type TextHistory } from "#/db/schema";
 import { createCentralBus } from "#/ws-bus";
-import type { PushEvent, ReqEvent, ResEvent, CreateSchema } from "#/ws-bus";
+import type { Push, Request, CreateSchema } from "#/ws-bus";
 export { WSBusError } from "#/ws-bus";
 
-export type ClientPushEventMap = {
-  ping: PushEvent;
-};
-export type ServerPushEventMap = {
-  textHistory: PushEvent<TextHistory>;
-  activeSession: PushEvent<Session | null>;
-  isListeningTexthooker: PushEvent<boolean>;
-};
-
-export type ClientReqEventMap = {
-  reqTextHistoryBySessionId: ReqEvent<number>;
-  reqDeleteTextHistory: ReqEvent<number>;
-  reqSession: ReqEvent<number>;
-  reqSessions: ReqEvent;
-  reqCreateSession: ReqEvent<string>;
-  reqDeleteSession: ReqEvent<number>;
-  reqUpdateSession: ReqEvent<Partial<Session>>;
-  reqSetActiveSession: ReqEvent<number>;
-  reqGetActiveSession: ReqEvent;
-  reqIsListeningTexthooker: ReqEvent;
-  reqSetIsListeningTexthooker: ReqEvent<boolean>;
-  reqCheckHealth: ReqEvent;
-};
-export type ServerResEventMap = {
-  resTextHistoryBySessionId: ResEvent<TextHistory[]>;
-  resDeleteTextHistory: ResEvent<TextHistory | null>;
-  resSession: ResEvent<Session | null>;
-  resSessions: ResEvent<Session[]>;
-  resCreateSession: ResEvent<Session>;
-  resDeleteSession: ResEvent<Session | null>;
-  resUpdateSession: ResEvent<Session | null>;
-  resSetActiveSession: ResEvent<Session | null>;
-  resGetActiveSession: ResEvent<Session | null>;
-  resIsListeningTexthooker: ResEvent<boolean>;
-  resSetIsListeningTexthooker: ResEvent<boolean>;
-  resCheckHealth: ResEvent;
-};
-
-export type ServerReqEventMap = {
-  reqUserAgent: ReqEvent;
-};
-export type ClientResEventMap = {
-  resUserAgent: ResEvent<string>;
-};
-
-type ApiSchema = CreateSchema<{
-  clientPush: ClientPushEventMap;
-  serverPush: ServerPushEventMap;
-  clientRequest: ClientReqEventMap;
-  serverRespond: ServerResEventMap;
-  serverRequest: ServerReqEventMap;
-  clientRespond: ClientResEventMap;
+// Simplified schema definition with Request pairs
+export type ApiSchema = CreateSchema<{
+  clientPush: {
+    ping: Push;
+  };
+  serverPush: {
+    textHistory: Push<TextHistory>;
+    activeSession: Push<Session | null>;
+    isListeningTexthooker: Push<boolean>;
+  };
+  clientRequest: {
+    // Single definition per request - defines both request and response types
+    textHistoryBySessionId: Request<number, TextHistory[]>;
+    deleteTextHistory: Request<number, TextHistory | null>;
+    session: Request<number, Session | null>;
+    sessions: Request<undefined, Session[]>;
+    createSession: Request<string, Session>;
+    deleteSession: Request<number, Session | null>;
+    updateSession: Request<Partial<Session>, Session | null>;
+    setActiveSession: Request<number, Session | null>;
+    getActiveSession: Request<undefined, Session | null>;
+    isListeningTexthooker: Request<undefined, boolean>;
+    setIsListeningTexthooker: Request<boolean, boolean>;
+    checkHealth: Request<undefined, undefined>;
+  };
+  serverRequest: {
+    userAgent: Request<undefined, string>;
+  };
 }>;
 
 const createApi = () => {
   const { bridge, link } = createCentralBus<ApiSchema>();
 
-  const createClientPushPair = () => {
-    const push = link.client.push;
-    const [ping, handlePing] = push("ping");
-    return {
-      push: {
-        ping,
-      },
-      handlePush: {
-        ping: handlePing,
-      },
-    };
-  };
-  const clientPushPair = createClientPushPair();
+  // Client pushes - simplified
+  const [ping, onPing] = link.client.push("ping");
 
-  //oxfmt-ignore
-  const createClientRequestPair = () => {
-    const request = link.client.request;
-    const [textHistoryBySessionId, handleTextHistoryBySessionId] = request( "reqTextHistoryBySessionId", "resTextHistoryBySessionId",);
-    const [deleteTextHistory, handleDeleteTextHistory] = request( "reqDeleteTextHistory", "resDeleteTextHistory",);
-    const [session, handleSession] = request("reqSession", "resSession");
-    const [sessions, handleSessions] = request("reqSessions", "resSessions");
-    const [createSession, handleCreateSession] = request("reqCreateSession", "resCreateSession");
-    const [deleteSession, handleDeleteSession] = request("reqDeleteSession", "resDeleteSession");
-    const [updateSession, handleUpdateSession] = request( "reqUpdateSession", "resUpdateSession",);
-    const [setActiveSession, handleSetActiveSession] = request( "reqSetActiveSession", "resSetActiveSession",);
-    const [getActiveSession, handleGetActiveSession] = request( "reqGetActiveSession", "resGetActiveSession",);
-    const [isListeningTexthooker, handleIsListeningTexthooker] = request( "reqIsListeningTexthooker", "resIsListeningTexthooker",);
-    const [setIsListeningTexthooker, handleSetIsListeningTexthooker] = request( "reqSetIsListeningTexthooker", "resSetIsListeningTexthooker",);
-    const [checkHealth, handleCheckHealth] = request("reqCheckHealth", "resCheckHealth");
+  // Client requests - single call per endpoint
+  const [textHistoryBySessionId, handleTextHistoryBySessionId] =
+    link.client.request("textHistoryBySessionId");
+  const [deleteTextHistory, handleDeleteTextHistory] = link.client.request("deleteTextHistory");
+  const [session, handleSession] = link.client.request("session");
+  const [sessions, handleSessions] = link.client.request("sessions");
+  const [createSession, handleCreateSession] = link.client.request("createSession");
+  const [deleteSession, handleDeleteSession] = link.client.request("deleteSession");
+  const [updateSession, handleUpdateSession] = link.client.request("updateSession");
+  const [setActiveSession, handleSetActiveSession] = link.client.request("setActiveSession");
+  const [getActiveSession, handleGetActiveSession] = link.client.request("getActiveSession");
+  const [isListeningTexthooker, handleIsListeningTexthooker] =
+    link.client.request("isListeningTexthooker");
+  const [setIsListeningTexthooker, handleSetIsListeningTexthooker] = link.client.request(
+    "setIsListeningTexthooker",
+  );
+  const [checkHealth, handleCheckHealth] = link.client.request("checkHealth");
 
-    return {
-      request: {
-        textHistoryBySessionId,
-        deleteTextHistory,
-        session,
-        sessions,
-        createSession,
-        deleteSession,
-        updateSession,
-        setActiveSession,
-        getActiveSession,
-        isListeningTexthooker,
-        setIsListeningTexthooker,
-        checkHealth,
-      },
-      handleRequest: {
-        textHistoryBySessionId: handleTextHistoryBySessionId,
-        deleteTextHistory: handleDeleteTextHistory,
-        session: handleSession,
-        sessions: handleSessions,
-        createSession: handleCreateSession,
-        deleteSession: handleDeleteSession,
-        updateSession: handleUpdateSession,
-        setActiveSession: handleSetActiveSession,
-        getActiveSession: handleGetActiveSession,
-        isListeningTexthooker: handleIsListeningTexthooker,
-        setIsListeningTexthooker: handleSetIsListeningTexthooker,
-        checkHealth: handleCheckHealth,
-      },
-    };
-  };
-  const clientRequestPair = createClientRequestPair();
+  // Server pushes
+  const [textHistory, onTextHistory] = link.server.push("textHistory");
+  const [activeSession, onActiveSession] = link.server.push("activeSession");
+  const [isListeningTexthookerPush, onIsListeningTexthooker] =
+    link.server.push("isListeningTexthooker");
 
-  const createServerPushPair = () => {
-    const push = link.server.push;
-    const [textHistory, handleTextHistory] = push("textHistory");
-    const [activeSession, handleActiveSession] = push("activeSession");
-    const [isListeningTexthooker, handleIsListeningTexthooker] = push("isListeningTexthooker");
-
-    return {
-      push: {
-        textHistory,
-        activeSession,
-        isListeningTexthooker,
-      },
-      handlePush: {
-        textHistory: handleTextHistory,
-        activeSession: handleActiveSession,
-        isListeningTexthooker: handleIsListeningTexthooker,
-      },
-    };
-  };
-  const serverPushPair = createServerPushPair();
-
-  const createServerRequestPair = () => {
-    const request = link.server.request;
-    const [userAgent, handleUserAgent] = request("reqUserAgent", "resUserAgent");
-    return {
-      request: {
-        userAgent,
-      },
-      handleRequest: {
-        userAgent: handleUserAgent,
-      },
-    };
-  };
-  const serverRequestPair = createServerRequestPair();
+  // Server requests
+  const [userAgent, handleUserAgent] = link.server.request("userAgent");
 
   return {
     client: {
       onPayload: bridge.client.onPayload,
       bindWS: bridge.client.bindWS,
       api: {
-        push: clientPushPair.push,
-        request: clientRequestPair.request,
-        handlePush: serverPushPair.handlePush,
-        handleRequest: serverRequestPair.handleRequest,
+        push: { ping },
+        request: {
+          textHistoryBySessionId,
+          deleteTextHistory,
+          session,
+          sessions,
+          createSession,
+          deleteSession,
+          updateSession,
+          setActiveSession,
+          getActiveSession,
+          isListeningTexthooker,
+          setIsListeningTexthooker,
+          checkHealth,
+        },
+        handlePush: {
+          textHistory: onTextHistory,
+          activeSession: onActiveSession,
+          isListeningTexthooker: onIsListeningTexthooker,
+        },
+        handleRequest: {
+          userAgent: handleUserAgent,
+        },
       },
     },
     server: {
@@ -174,10 +101,27 @@ const createApi = () => {
       addWS: bridge.server.addWS,
       removeWS: bridge.server.removeWS,
       api: {
-        push: serverPushPair.push,
-        request: serverRequestPair.request,
-        handlePush: clientPushPair.handlePush,
-        handleRequest: clientRequestPair.handleRequest,
+        push: {
+          textHistory,
+          activeSession,
+          isListeningTexthooker: isListeningTexthookerPush,
+        },
+        request: { userAgent },
+        handlePush: { ping: onPing },
+        handleRequest: {
+          textHistoryBySessionId: handleTextHistoryBySessionId,
+          deleteTextHistory: handleDeleteTextHistory,
+          session: handleSession,
+          sessions: handleSessions,
+          createSession: handleCreateSession,
+          deleteSession: handleDeleteSession,
+          updateSession: handleUpdateSession,
+          setActiveSession: handleSetActiveSession,
+          getActiveSession: handleGetActiveSession,
+          isListeningTexthooker: handleIsListeningTexthooker,
+          setIsListeningTexthooker: handleSetIsListeningTexthooker,
+          checkHealth: handleCheckHealth,
+        },
       },
     },
   };

@@ -172,6 +172,7 @@ export function TextHookerSessionList() {
   const { mutateAsync: setActiveSession } = useSetActiveSession();
   const reversedSessions = [...sessions].reverse();
 
+  //TODO: rename sessions
   return (
     <div className="flex max-h-[50vh] flex-col gap-2 overflow-auto">
       {reversedSessions.map((session) => (
@@ -212,7 +213,7 @@ function NewSessionForm() {
     },
     validators: {
       onChange: z.object({
-        name: z.string().min(1, "can't be empty"),
+        name: z.string().min(1, "Can't be empty"),
       }),
     },
     onSubmit: async ({ value }) => {
