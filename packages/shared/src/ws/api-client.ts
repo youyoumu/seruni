@@ -34,33 +34,36 @@ export type ApiSchema = CreateSchema<{
 const createApi = () => {
   const { bridge, link } = createCentralBus<ApiSchema>();
 
-  const ping = link.client.push("ping");
+  // ============================================
+  // Client Push (client → server)
+  // ============================================
+  const setupClientPush = () => {
+    const ping = link.client.push("ping");
+    return {
+      client: { push: { ping: ping.push } },
+      server: { handlePush: { ping: ping.handle } },
+    };
+  };
 
-  const textHistoryBySessionId = link.client.request("textHistoryBySessionId");
-  const deleteTextHistory = link.client.request("deleteTextHistory");
-  const session = link.client.request("session");
-  const sessions = link.client.request("sessions");
-  const createSession = link.client.request("createSession");
-  const deleteSession = link.client.request("deleteSession");
-  const updateSession = link.client.request("updateSession");
-  const setActiveSession = link.client.request("setActiveSession");
-  const getActiveSession = link.client.request("getActiveSession");
-  const isListeningTexthooker = link.client.request("isListeningTexthooker");
-  const setIsListeningTexthooker = link.client.request("setIsListeningTexthooker");
-  const checkHealth = link.client.request("checkHealth");
+  // ============================================
+  // Client Request (client → server, request/response)
+  // ============================================
+  const setupClientRequest = () => {
+    const textHistoryBySessionId = link.client.request("textHistoryBySessionId");
+    const deleteTextHistory = link.client.request("deleteTextHistory");
+    const session = link.client.request("session");
+    const sessions = link.client.request("sessions");
+    const createSession = link.client.request("createSession");
+    const deleteSession = link.client.request("deleteSession");
+    const updateSession = link.client.request("updateSession");
+    const setActiveSession = link.client.request("setActiveSession");
+    const getActiveSession = link.client.request("getActiveSession");
+    const isListeningTexthooker = link.client.request("isListeningTexthooker");
+    const setIsListeningTexthooker = link.client.request("setIsListeningTexthooker");
+    const checkHealth = link.client.request("checkHealth");
 
-  const textHistory = link.server.push("textHistory");
-  const activeSession = link.server.push("activeSession");
-  const isListeningTexthookerPush = link.server.push("isListeningTexthooker");
-
-  const userAgent = link.server.request("userAgent");
-
-  return {
-    client: {
-      onPayload: bridge.client.onPayload,
-      bindWS: bridge.client.bindWS,
-      api: {
-        push: { ping: ping.push },
+    return {
+      client: {
         request: {
           textHistoryBySessionId: textHistoryBySessionId.request,
           deleteTextHistory: deleteTextHistory.request,
@@ -75,28 +78,8 @@ const createApi = () => {
           setIsListeningTexthooker: setIsListeningTexthooker.request,
           checkHealth: checkHealth.request,
         },
-        handlePush: {
-          textHistory: textHistory.handle,
-          activeSession: activeSession.handle,
-          isListeningTexthooker: isListeningTexthookerPush.handle,
-        },
-        handleRequest: {
-          userAgent: userAgent.handle,
-        },
       },
-    },
-    server: {
-      onPayload: bridge.server.onPayload,
-      addWS: bridge.server.addWS,
-      removeWS: bridge.server.removeWS,
-      api: {
-        push: {
-          textHistory: textHistory.push,
-          activeSession: activeSession.push,
-          isListeningTexthooker: isListeningTexthookerPush.push,
-        },
-        request: { userAgent: userAgent.request },
-        handlePush: { ping: ping.handle },
+      server: {
         handleRequest: {
           textHistoryBySessionId: textHistoryBySessionId.handle,
           deleteTextHistory: deleteTextHistory.handle,
@@ -111,6 +94,84 @@ const createApi = () => {
           setIsListeningTexthooker: setIsListeningTexthooker.handle,
           checkHealth: checkHealth.handle,
         },
+      },
+    };
+  };
+
+  // ============================================
+  // Server Push (server → client)
+  // ============================================
+  const setupServerPush = () => {
+    const textHistory = link.server.push("textHistory");
+    const activeSession = link.server.push("activeSession");
+    const isListeningTexthooker = link.server.push("isListeningTexthooker");
+
+    return {
+      client: {
+        handlePush: {
+          textHistory: textHistory.handle,
+          activeSession: activeSession.handle,
+          isListeningTexthooker: isListeningTexthooker.handle,
+        },
+      },
+      server: {
+        push: {
+          textHistory: textHistory.push,
+          activeSession: activeSession.push,
+          isListeningTexthooker: isListeningTexthooker.push,
+        },
+      },
+    };
+  };
+
+  // ============================================
+  // Server Request (server → client, request/response)
+  // ============================================
+  const setupServerRequest = () => {
+    const userAgent = link.server.request("userAgent");
+
+    return {
+      client: {
+        handleRequest: {
+          userAgent: userAgent.handle,
+        },
+      },
+      server: {
+        request: {
+          userAgent: userAgent.request,
+        },
+      },
+    };
+  };
+
+  // ============================================
+  // Execute all setups and merge results
+  // ============================================
+  const clientPushApi = setupClientPush();
+  const clientRequestApi = setupClientRequest();
+  const serverPushApi = setupServerPush();
+  const serverRequestApi = setupServerRequest();
+
+  return {
+    client: {
+      onPayload: bridge.client.onPayload,
+      bindWS: bridge.client.bindWS,
+      api: {
+        push: clientPushApi.client.push,
+        request: clientRequestApi.client.request,
+        handlePush: serverPushApi.client.handlePush,
+        handleRequest: serverRequestApi.client.handleRequest,
+      },
+    },
+    server: {
+      onPayload: bridge.server.onPayload,
+      addWS: bridge.server.addWS,
+      removeWS: bridge.server.removeWS,
+      api: {
+        push: serverPushApi.server.push,
+        request: serverRequestApi.server.request,
+        handlePush: clientPushApi.server.handlePush,
+        handleRequest: clientRequestApi.server.handleRequest,
       },
     },
   };
