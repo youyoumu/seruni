@@ -55,8 +55,9 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     if (this.#events.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#events.add(clientEvent);
 
-    /** client */
+    /** used on client: to push data to server */
     const push = (...data: Arg<CPush[T]["payload"]>) => {
+      /** [1] */
       this.dispatchEvent(
         new CustomEvent(clientEvent, {
           detail: { correlationId: uid(), data: data[0] },
@@ -64,16 +65,18 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       );
     };
 
-    /** server */
+    /** used on server: to handle data from client */
     const handle = (handler: (payload: CPush[T]["payload"]) => void) => {
       const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         handler(e.detail?.data);
       };
+      /** [2] */
       this.addEventListener(clientEvent, handler_);
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    /** client */
+    /** [1] */
+    /** used on client: to forward events to server through WebSocket */
     this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       if (this.#ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
@@ -88,12 +91,13 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     return [push, handle] as const;
   };
 
-  /** server */
+  /** used on server: to forward data from WebSocket through events */
   onPushPayload = (payload: WSPayload) => {
+    /** [2] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** client */
+  /** used on client */
   bindWS(ws: WS) {
     this.#ws = ws;
   }
@@ -107,8 +111,9 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     if (this.#events.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#events.add(serverEvent);
 
-    /** server */
+    /** used on server: to push data to all connected clients */
     const push = (...data: Arg<SPush[T]["payload"]>) => {
+      /** [3] */
       this.dispatchEvent(
         new CustomEvent(serverEvent, {
           detail: { correlationId: uid(), data: data[0] },
@@ -116,16 +121,18 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       );
     };
 
-    /** client */
+    /** used on client: to handle data from server */
     const handle = (handler: (payload: SPush[T]["payload"]) => void) => {
       const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         handler(e.detail?.data);
       };
+      /** [4] */
       this.addEventListener(serverEvent, handler_);
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    /** server */
+    /** [3] */
+    /** used on server: to forward events to all connected clients through WebSocket */
     this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       this.#ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
@@ -142,17 +149,18 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     return [push, handle] as const;
   };
 
-  /** client */
+  /** used on client: to forward data from WebSocket through events */
   onPushPayload = (payload: WSPayload) => {
+    /** [4] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** server */
+  /** used on server */
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
 
-  /** server */
+  /** used on server */
   removeWS(ws: WS) {
     this.#ws.delete(ws);
   }
@@ -165,17 +173,18 @@ type RequestOption = { timeout?: number } | undefined;
 class ServerResBus extends EventTarget {
   ws = new Set<WS>();
 
-  /** client */
+  /** used on client: to forward response data from WebSocket through events */
   onResponsePayload = (payload: WSPayload) => {
+    /** [7] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** server */
+  /** used on server */
   addWS(ws: WS) {
     this.ws.add(ws);
   }
 
-  /** server */
+  /** used on server */
   removeWS(ws: WS) {
     this.ws.delete(ws);
   }
@@ -201,7 +210,7 @@ class ClientReqBus<
     type ReqType = CReq[T]["request"];
     type ResType = CReq[T]["response"];
 
-    /** client */
+    /** used on client: to send a request to server and receive response */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
       const correlationId = uid();
       let timeoutId: ReturnType<typeof setTimeout>;
@@ -221,6 +230,7 @@ class ClientReqBus<
             resolve(detail.data);
           }
         };
+        /** [7] */
         this.#sResBus.addEventListener(clientEvent, handler);
 
         const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
@@ -231,6 +241,7 @@ class ClientReqBus<
             reject(detail.data);
           }
         };
+        /** [7] */
         this.#sResBus.addEventListener(ERROR_EVENT, handleError);
 
         timeoutId = setTimeout(() => {
@@ -238,6 +249,7 @@ class ClientReqBus<
           reject(new WSBusError("requestTimeout"));
         }, timeoutDuration);
 
+        /** [5] */
         this.dispatchEvent(
           new CustomEvent(clientEvent, {
             detail: { correlationId, data: data[0] },
@@ -246,22 +258,25 @@ class ClientReqBus<
       });
     };
 
-    /** server */
+    /** used on server: to handle request from client and return response */
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
       const handler_ = async (e: CustomEventInit<WithCorrelationId<unknown>>) => {
         const detail = e.detail as WithCorrelationId<unknown>;
         const result = await handler(detail.data);
+        /** [7] */
         this.#sResBus.dispatchEvent(
           new CustomEvent(clientEvent, {
             detail: { data: result, correlationId: detail.correlationId },
           }),
         );
       };
+      /** [6] */
       this.addEventListener(clientEvent, handler_);
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    /** client */
+    /** [5] */
+    /** used on client: to forward request to server through WebSocket */
     this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
@@ -274,6 +289,7 @@ class ClientReqBus<
       if (this.#ws?.readyState === WebSocket.OPEN) {
         this.#ws?.send(JSON.stringify(payload));
       } else {
+        /** [7] */
         this.#sResBus.dispatchEvent(
           new ResponseErrorEvent(ERROR_EVENT, {
             detail: {
@@ -285,7 +301,8 @@ class ClientReqBus<
       }
     });
 
-    /** server */
+    /** [7] */
+    /** used on server: to forward response to client through WebSocket */
     this.#sResBus.addEventListener(
       clientEvent,
       (e: CustomEventInit<WithCorrelationId<unknown>>) => {
@@ -305,12 +322,13 @@ class ClientReqBus<
     return [request, handle] as const;
   };
 
-  /** server */
+  /** used on server: to forward request data from WebSocket through events */
   onRequestPayload = (payload: WSPayload) => {
+    /** [6] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** client */
+  /** used on client */
   bindWS(ws: WS) {
     this.#ws = ws;
   }
@@ -319,12 +337,13 @@ class ClientReqBus<
 class ClientResBus extends EventTarget {
   ws: WS | undefined;
 
-  /** server */
+  /** used on client: to forward response data from WebSocket through events */
   onResponsePayload = (payload: WSPayload) => {
+    /** [10] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** client */
+  /** used on client */
   bindWS(ws: WS) {
     this.ws = ws;
   }
@@ -350,7 +369,7 @@ class ServerReqBus<
     type ReqType = SReq[T]["request"];
     type ResType = SReq[T]["response"];
 
-    /** server */
+    /** used on server: to send a request to all connected clients and receive responses */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
       return Array.from(this.#ws).map((ws) => {
         const correlationId = uid();
@@ -371,6 +390,7 @@ class ServerReqBus<
               resolve(detail.data);
             }
           };
+          /** [10] */
           this.#cResBus.addEventListener(serverEvent, handler);
 
           const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
@@ -381,6 +401,7 @@ class ServerReqBus<
               reject(detail.data);
             }
           };
+          /** [10] */
           this.#cResBus.addEventListener(ERROR_EVENT, handleError);
 
           timeoutId = setTimeout(() => {
@@ -388,6 +409,7 @@ class ServerReqBus<
             reject(new WSBusError("requestTimeout"));
           }, timeoutDuration);
 
+          /** [8] */
           this.dispatchEvent(
             new CustomEvent(serverEvent, {
               detail: { correlationId, data: data[0] },
@@ -397,22 +419,25 @@ class ServerReqBus<
       });
     };
 
-    /** client */
+    /** used on client**: to handle request from server and return response */
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
       const handler_ = async (e: CustomEventInit) => {
         const detail = e.detail;
         const result = await handler(detail.data);
+        /** [10] */
         this.#cResBus.dispatchEvent(
           new CustomEvent(serverEvent, {
             detail: { data: result, correlationId: detail.correlationId },
           }),
         );
       };
+      /** [9] */
       this.addEventListener(serverEvent, handler_);
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    /** server */
+    /** [8] */
+    /** used on server: to forward request to all connected clients through WebSocket */
     this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
       const detail = e.detail as WithCorrelationId<unknown>;
       const payload: WSPayload = {
@@ -425,6 +450,7 @@ class ServerReqBus<
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(payload));
         } else {
+          /** [10] */
           this.#cResBus.dispatchEvent(
             new ResponseErrorEvent(ERROR_EVENT, {
               detail: {
@@ -438,7 +464,8 @@ class ServerReqBus<
       });
     });
 
-    /** client */
+    /** [10] */
+    /** used on client**: to forward response to server through WebSocket */
     this.#cResBus.addEventListener(
       serverEvent,
       (e: CustomEventInit<WithCorrelationId<unknown>>) => {
@@ -457,17 +484,18 @@ class ServerReqBus<
     return [request, handle] as const;
   };
 
-  /** client */
+  /** used on client: to forward request data from WebSocket through events */
   onRequestPayload = (payload: WSPayload) => {
+    /** [9] */
     this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
   };
 
-  /** server */
+  /** used on server */
   addWS(ws: WS) {
     this.#ws.add(ws);
   }
 
-  /** server */
+  /** used on server */
   removeWS(ws: WS) {
     this.#ws.delete(ws);
   }
@@ -520,7 +548,6 @@ export function createCentralBus<Schema extends BusSchema>() {
     }
   };
 
-  //TODO: move to method
   const sOnPayload = (payload: WSPayload, ws: WS) => {
     if (!payload?.__wsBus__) return;
     payload.data.ws = ws;
