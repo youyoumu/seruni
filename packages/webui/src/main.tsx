@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { BirdIcon } from "lucide-react";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
@@ -19,9 +20,13 @@ const router = createRouter({
   Wrap: ({ children }) => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   },
-  // TODO: style
   defaultNotFoundComponent: () => {
-    return <div>404</div>;
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-2">
+        <BirdIcon className="size-64 text-surface-foreground-faint" strokeWidth={1}></BirdIcon>
+        <p className="text-2xl">404</p>
+      </div>
+    );
   },
 });
 
