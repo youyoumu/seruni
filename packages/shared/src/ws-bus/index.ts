@@ -110,7 +110,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       this.#clientWS.ws.send(JSON.stringify(payload));
     });
 
-    return [push, handle] as const;
+    return { push, handle };
   }
 
   /** used on server: to forward data from WebSocket through events */
@@ -168,7 +168,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       });
     });
 
-    return [push, handle] as const;
+    return { push, handle };
   }
 
   /** used on client: to forward data from WebSocket through events */
@@ -322,7 +322,7 @@ class ClientReqBus<
       },
     );
 
-    return [request, handle] as const;
+    return { request, handle };
   }
 
   /** used on server: to forward request data from WebSocket through events */
@@ -475,7 +475,7 @@ class ServerReqBus<
       },
     );
 
-    return [request, handle] as const;
+    return { request, handle };
   }
 
   /** used on client: to forward request data from WebSocket through events */
