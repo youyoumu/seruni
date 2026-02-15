@@ -29,20 +29,24 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   const isRunning = isListeningTexthooker && activeSession?.id === sessionId;
   const initialDuration = session.duration;
   const [seconds, setSeconds] = useState(initialDuration);
-  const durationRef = useRef<number>(initialDuration);
+  const seconds$ = useRef<number>(initialDuration);
+  const lastAutoSync$ = useRef<number>(Date.now());
 
   const { mutateAsync: updateDuration } = useUpdateSessionDuration();
   const { mutate: setActiveSession } = useSetActiveSession();
   const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
 
   useEffect(() => {
-    durationRef.current = seconds;
+    seconds$.current = seconds;
   }, [seconds]);
 
   // Update seconds when initialDuration changes (e.g., when session data loads)
   useEffect(() => {
+    const secondsSinceLastSync = Math.ceil((Date.now() - lastAutoSync$.current) / 1000);
+    const durationGap = seconds$.current - initialDuration;
+    if (durationGap === secondsSinceLastSync && durationGap < 5) return;
     setSeconds(initialDuration);
-    durationRef.current = initialDuration;
+    seconds$.current = initialDuration;
   }, [initialDuration]);
 
   useEffect(() => {
@@ -57,7 +61,8 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(async () => {
-      await updateDuration({ duration: durationRef.current, sessionId });
+      lastAutoSync$.current = Date.now();
+      await updateDuration({ duration: seconds$.current, sessionId });
     }, SYNC_INTERVAL);
 
     return () => clearInterval(interval);
@@ -66,7 +71,7 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   // Sync duration when timer stops
   useEffect(() => {
     if (isRunning) return;
-    updateDuration({ duration: durationRef.current, sessionId });
+    updateDuration({ duration: seconds$.current, sessionId });
   }, [isRunning, sessionId, updateDuration]);
 
   const reset = useCallback(() => {
