@@ -1,5 +1,3 @@
-// TODO: remove this dependency
-import { TypedEventTarget } from "typescript-event-target";
 import { uid } from "uid";
 
 export class WSBusError extends Error {
@@ -60,9 +58,7 @@ type GetPayload<T> = T extends { payload: infer P } ? P : undefined;
 type GetRequest<T> = T extends { request: infer Q } ? Q : undefined;
 type GetResponse<T> = T extends { response: infer R } ? R : undefined;
 
-class ClientPushBus<CPush extends Record<string, AnyPush>> extends TypedEventTarget<{
-  [K in keyof CPush]: CustomEvent<WithCorrelationId<GetPayload<CPush[K]>>>;
-}> {
+class ClientPushBus<CPush extends Record<string, AnyPush>> extends EventTarget {
   #events = new Set<string>();
   #ws: WS | undefined;
 
@@ -71,29 +67,28 @@ class ClientPushBus<CPush extends Record<string, AnyPush>> extends TypedEventTar
     this.#events.add(clientEvent);
 
     const push = (...data: Arg<GetPayload<CPush[T]>>) => {
-      this.dispatchTypedEvent(
-        clientEvent,
+      this.dispatchEvent(
         new CustomEvent(clientEvent, {
-          detail: { correlationId: uid(), data: data[0] as GetPayload<CPush[T]> },
+          detail: { correlationId: uid(), data: data[0] },
         }),
       );
     };
 
     const handle = (handler: (payload: GetPayload<CPush[T]>) => void) => {
-      const handler_ = (e: Event) => {
-        handler((e as CustomEvent<WithCorrelationId>).detail.data as GetPayload<CPush[T]>);
+      const handler_ = (e: CustomEventInit) => {
+        handler(e.detail.data);
       };
       this.addEventListener(clientEvent, handler_);
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    this.addEventListener(clientEvent, (e) => {
+    this.addEventListener(clientEvent, (e: CustomEventInit) => {
       if (this.#ws?.readyState !== WebSocket.OPEN) return;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "push",
         tag: clientEvent,
-        data: (e as CustomEvent<WithCorrelationId>).detail,
+        data: e.detail,
       };
       this.#ws.send(JSON.stringify(payload));
     });
@@ -106,9 +101,7 @@ class ClientPushBus<CPush extends Record<string, AnyPush>> extends TypedEventTar
   }
 }
 
-class ServerPushBus<SPush extends Record<string, AnyPush>> extends TypedEventTarget<{
-  [K in keyof SPush]: CustomEvent<WithCorrelationId<GetPayload<SPush[K]>>>;
-}> {
+class ServerPushBus<SPush extends Record<string, AnyPush>> extends EventTarget {
   #events = new Set<string>();
   #ws = new Set<WS>();
 
@@ -119,27 +112,27 @@ class ServerPushBus<SPush extends Record<string, AnyPush>> extends TypedEventTar
     const push = (...data: Arg<GetPayload<SPush[T]>>) => {
       this.dispatchEvent(
         new CustomEvent(serverEvent, {
-          detail: { correlationId: uid(), data: data[0] as GetPayload<SPush[T]> },
+          detail: { correlationId: uid(), data: data[0] },
         }),
       );
     };
 
     const handle = (handler: (payload: GetPayload<SPush[T]>) => void) => {
-      const handler_ = (e: Event) => {
-        handler((e as CustomEvent<WithCorrelationId>).detail.data as GetPayload<SPush[T]>);
+      const handler_ = (e: CustomEventInit) => {
+        handler(e.detail.data);
       };
       this.addEventListener(serverEvent, handler_);
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    this.addEventListener(serverEvent, (e) => {
+    this.addEventListener(serverEvent, (e: CustomEventInit) => {
       this.#ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: WSPayload = {
           __wsBus__: true,
           type: "push",
           tag: serverEvent,
-          data: (e as CustomEvent<WithCorrelationId>).detail,
+          data: e.detail,
         };
         ws.send(JSON.stringify(payload));
       });
@@ -159,11 +152,7 @@ class ServerPushBus<SPush extends Record<string, AnyPush>> extends TypedEventTar
 
 type RequestOption = { timeout?: number } | undefined;
 
-class ServerResBus<CReq extends Record<string, AnyRequest>> extends TypedEventTarget<
-  {
-    [K in keyof CReq]: CustomEvent<WithCorrelationId<GetResponse<CReq[K]>>>;
-  } & { __error__: ResponseErrorEvent }
-> {
+class ServerResBus extends EventTarget {
   ws = new Set<WS>();
   addWS(ws: WS) {
     this.ws.add(ws);
@@ -175,10 +164,8 @@ class ServerResBus<CReq extends Record<string, AnyRequest>> extends TypedEventTa
 
 class ClientReqBus<
   CReq extends Record<string, AnyRequest>,
-  SResBus extends ServerResBus<CReq>,
-> extends TypedEventTarget<{
-  [K in keyof CReq]: CustomEvent<WithCorrelationId<GetRequest<CReq[K]>>>;
-}> {
+  SResBus extends ServerResBus,
+> extends EventTarget {
   #sResBus: SResBus;
   #ws: WS | undefined;
   #reqEvents = new Set<string>();
@@ -206,18 +193,18 @@ class ClientReqBus<
           this.#sResBus.removeEventListener(clientEvent, handler);
         };
 
-        const handler = (e: Event) => {
-          const detail = (e as CustomEvent<WithCorrelationId>).detail;
+        const handler = (e: CustomEventInit) => {
+          const detail = e.detail;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
-            resolve(detail.data as ResType);
+            resolve(detail.data);
           }
         };
         this.#sResBus.addEventListener(clientEvent, handler);
 
-        const handleError = (e: Event) => {
-          const detail = (e as ResponseErrorEvent).detail;
+        const handleError = (e: CustomEventInit) => {
+          const detail = e.detail;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
@@ -233,16 +220,16 @@ class ClientReqBus<
 
         this.dispatchEvent(
           new CustomEvent(clientEvent, {
-            detail: { correlationId, data: data[0] as ReqType },
+            detail: { correlationId, data: data[0] },
           }),
         );
       });
     };
 
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
-      const handler_ = async (e: Event) => {
-        const detail = (e as CustomEvent<WithCorrelationId>).detail;
-        const result = await handler(detail.data as ReqType);
+      const handler_ = async (e: CustomEventInit) => {
+        const detail = e.detail;
+        const result = await handler(detail.data);
         this.#sResBus.dispatchEvent(
           new CustomEvent(clientEvent, {
             detail: { data: result, correlationId: detail.correlationId },
@@ -253,8 +240,8 @@ class ClientReqBus<
       return () => this.removeEventListener(clientEvent, handler_);
     };
 
-    this.addEventListener(clientEvent, (e) => {
-      const detail = (e as CustomEvent<WithCorrelationId>).detail;
+    this.addEventListener(clientEvent, (e: CustomEventInit) => {
+      const detail = e.detail;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "req",
@@ -276,8 +263,8 @@ class ClientReqBus<
       }
     });
 
-    this.#sResBus.addEventListener(clientEvent, (e) => {
-      const detail = (e as CustomEvent<WithCorrelationId>).detail;
+    this.#sResBus.addEventListener(clientEvent, (e: CustomEventInit) => {
+      const detail = e.detail;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "res",
@@ -297,11 +284,7 @@ class ClientReqBus<
   }
 }
 
-class ClientResBus<SReq extends Record<string, AnyRequest>> extends TypedEventTarget<
-  {
-    [K in keyof SReq]: CustomEvent<WithCorrelationId<GetResponse<SReq[K]>>>;
-  } & { __error__: ResponseErrorEvent }
-> {
+class ClientResBus extends EventTarget {
   ws: WS | undefined;
   bindWS(ws: WS) {
     this.ws = ws;
@@ -310,10 +293,8 @@ class ClientResBus<SReq extends Record<string, AnyRequest>> extends TypedEventTa
 
 class ServerReqBus<
   SReq extends Record<string, AnyRequest>,
-  CResBus extends ClientResBus<SReq>,
-> extends TypedEventTarget<{
-  [K in keyof SReq]: CustomEvent<WithCorrelationId<GetRequest<SReq[K]>>>;
-}> {
+  CResBus extends ClientResBus,
+> extends EventTarget {
   #cResBus: CResBus;
   #ws = new Set<WS>();
   #reqEvents = new Set<string>();
@@ -342,18 +323,18 @@ class ServerReqBus<
             this.#cResBus.removeEventListener(serverEvent, handler);
           };
 
-          const handler = (e: Event) => {
-            const detail = (e as CustomEvent<WithCorrelationId>).detail;
+          const handler = (e: CustomEventInit) => {
+            const detail = e.detail;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
-              resolve(detail.data as ResType);
+              resolve(detail.data);
             }
           };
           this.#cResBus.addEventListener(serverEvent, handler);
 
-          const handleError = (e: Event) => {
-            const detail = (e as ResponseErrorEvent).detail;
+          const handleError = (e: CustomEventInit) => {
+            const detail = e.detail;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
@@ -369,7 +350,7 @@ class ServerReqBus<
 
           this.dispatchEvent(
             new CustomEvent(serverEvent, {
-              detail: { correlationId, data: data[0] as ReqType },
+              detail: { correlationId, data: data[0] },
             }),
           );
         });
@@ -377,9 +358,9 @@ class ServerReqBus<
     };
 
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
-      const handler_ = async (e: Event) => {
-        const detail = (e as CustomEvent<WithCorrelationId>).detail;
-        const result = await handler(detail.data as ReqType);
+      const handler_ = async (e: CustomEventInit) => {
+        const detail = e.detail;
+        const result = await handler(detail.data);
         this.#cResBus.dispatchEvent(
           new CustomEvent(serverEvent, {
             detail: { data: result, correlationId: detail.correlationId },
@@ -390,8 +371,8 @@ class ServerReqBus<
       return () => this.removeEventListener(serverEvent, handler_);
     };
 
-    this.addEventListener(serverEvent, (e) => {
-      const detail = (e as CustomEvent<WithCorrelationId>).detail;
+    this.addEventListener(serverEvent, (e: CustomEventInit) => {
+      const detail = e.detail;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "req",
@@ -415,8 +396,8 @@ class ServerReqBus<
       });
     });
 
-    this.#cResBus.addEventListener(serverEvent, (e) => {
-      const detail = (e as CustomEvent<WithCorrelationId>).detail;
+    this.#cResBus.addEventListener(serverEvent, (e: CustomEventInit) => {
+      const detail = e.detail;
       const payload: WSPayload = {
         __wsBus__: true,
         type: "res",
@@ -462,11 +443,11 @@ export function createCentralBus<Schema extends BusSchema>() {
   const cPushBus = new ClientPushBus<CPush>();
   const sPushBus = new ServerPushBus<SPush>();
 
-  const sResBus = new ServerResBus<CReq>();
-  const cReqBus = new ClientReqBus<CReq, ServerResBus<CReq>>(sResBus);
+  const sResBus = new ServerResBus();
+  const cReqBus = new ClientReqBus<CReq, ServerResBus>(sResBus);
 
-  const cResBus = new ClientResBus<SReq>();
-  const sReqBus = new ServerReqBus<SReq, ClientResBus<SReq>>(cResBus);
+  const cResBus = new ClientResBus();
+  const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus);
 
   function dispatch(bus: EventTarget, tag: string, data: WithCorrelationId<unknown>) {
     bus.dispatchEvent(new CustomEvent(tag, { detail: data }));
