@@ -20,6 +20,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   #reconnectAttempts: number;
   #pollIntervalId: ReturnType<typeof setInterval> | null = null;
   #isConnected = false;
+  #abortController: AbortController | null = null;
   #manualClose = false;
   #pollInterval: number;
 
@@ -63,13 +64,20 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
 
   async #startPolling() {
     const checkAndNotify = async () => {
+      if (this.#abortController?.signal.aborted) return;
+      this.#abortController?.abort();
+      const abortController = new AbortController();
+      this.#abortController = abortController;
+
       if (this.#manualClose) {
         this.#stopPolling();
         return;
       }
 
+      if (abortController.signal.aborted) return;
       const wasConnected = this.#isConnected;
       const nowConnected = await this.#checkConnection();
+      if (abortController.signal.aborted) return;
 
       if (nowConnected && !wasConnected) {
         this.log.info(`Connected to Anki Connect`);
@@ -81,15 +89,22 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
         this.#isConnected = false;
         this.dispatch("close");
         this.#attemptReconnect();
+      } else if (!nowConnected) {
+        this.#isConnected = false;
+        this.dispatch("close");
+        this.log.warn(`Unable to connect to Anki Connect`);
+        this.#attemptReconnect();
       }
     };
 
-    await checkAndNotify();
+    checkAndNotify();
 
     this.#pollIntervalId = setInterval(checkAndNotify, this.#pollInterval);
   }
 
   #stopPolling() {
+    this.#abortController?.abort();
+    this.#abortController = null;
     if (this.#pollIntervalId) {
       clearInterval(this.#pollIntervalId);
       this.#pollIntervalId = null;
