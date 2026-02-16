@@ -5,6 +5,7 @@ interface Logger {
   warn: (log: string) => void;
 }
 
+//TODO: rename to WebSocket
 export type ReconnectingWebsocketEventMap = {
   open: undefined;
   close: undefined;
