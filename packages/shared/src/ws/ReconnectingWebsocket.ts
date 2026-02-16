@@ -5,12 +5,16 @@ interface Logger {
   warn: (log: string) => void;
 }
 
-export class ReconnectingWebsocket extends TypesafeEventTarget<{
+export type ReconnectingWebsocketEventMap = {
   open: undefined;
   close: undefined;
   message: unknown;
   error: Event;
-}> {
+};
+
+export class ReconnectingWebsocket<
+  T extends ReconnectingWebsocketEventMap = ReconnectingWebsocketEventMap,
+> extends TypesafeEventTarget<T> {
   log: Logger;
   #url: string;
   #baseReconnectInterval: number;
@@ -54,7 +58,7 @@ export class ReconnectingWebsocket extends TypesafeEventTarget<{
       this.log.info(`Connected to ${this.#url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
-      this.dispatch("open");
+      this.dispatch("open", undefined);
     };
 
     this.#ws.onmessage = (event) => {
@@ -67,7 +71,7 @@ export class ReconnectingWebsocket extends TypesafeEventTarget<{
       }
       this.#ws = null;
       this.#readyState = WebSocket.CLOSED;
-      this.dispatch("close");
+      this.dispatch("close", undefined);
       this.#attemptReconnect();
     };
 
