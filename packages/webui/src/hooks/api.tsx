@@ -2,7 +2,7 @@ import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
 import type { TextHistory } from "@repo/shared/db";
 import { TypesafeEventTarget } from "@repo/shared/util";
-import { ReconnectingWebsocket } from "@repo/shared/ws";
+import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -16,11 +16,11 @@ const { api: clientApi, onPayload, bindWS } = createClientApi();
 export class Services {
   api: typeof clientApi;
   keyring: Keyring;
-  ws: ReconnectingWebsocket;
+  ws: ReconnectingWebSocket;
   bus = new TypesafeEventTarget<ServicesEventMap>();
 
   constructor({ queryClient }: { queryClient: QueryClient }) {
-    const ws = new ReconnectingWebsocket({
+    const ws = new ReconnectingWebSocket({
       url: "ws://localhost:45626/ws",
       logger: {
         info: console.log,
@@ -92,7 +92,7 @@ export const OnlineProvider = ({
   ws,
 }: {
   children: React.ReactNode;
-  ws: ReconnectingWebsocket;
+  ws: ReconnectingWebSocket;
 }) => {
   const [online, setOnline] = useState(false);
 

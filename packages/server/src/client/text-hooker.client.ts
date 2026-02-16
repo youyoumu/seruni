@@ -1,7 +1,7 @@
 import { type DB } from "#/db";
 import type { State } from "#/state/state";
 import { textHistory } from "@repo/shared/db";
-import { ReconnectingWebsocket } from "@repo/shared/ws";
+import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { type ServerApi } from "@repo/shared/ws";
 import { type Logger } from "pino";
 
@@ -12,7 +12,7 @@ function calculateJapaneseCharCount(text: string): number {
   return text.replace(isNotJapaneseRegex, "").length;
 }
 
-export class TextHookerClient extends ReconnectingWebsocket {
+export class TextHookerClient extends ReconnectingWebSocket {
   state: State;
   messages: string[] = [];
   constructor({

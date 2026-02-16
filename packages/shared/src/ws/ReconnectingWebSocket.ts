@@ -5,16 +5,15 @@ interface Logger {
   warn: (log: string) => void;
 }
 
-//TODO: rename to WebSocket
-export type ReconnectingWebsocketEventMap = {
+export type ReconnectingWebSocketEventMap = {
   open: undefined;
   close: undefined;
   message: unknown;
   error: Event;
 };
 
-export class ReconnectingWebsocket<
-  T extends ReconnectingWebsocketEventMap = ReconnectingWebsocketEventMap,
+export class ReconnectingWebSocket<
+  T extends ReconnectingWebSocketEventMap = ReconnectingWebSocketEventMap,
 > extends TypesafeEventTarget<T> {
   log: Logger;
   #url: string;
