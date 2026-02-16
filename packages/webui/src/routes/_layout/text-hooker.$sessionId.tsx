@@ -168,8 +168,8 @@ function TextHistoryList() {
   }, [textHistory.length, virtualizer]);
 
   useEffect(() => {
-    const handleNewTextHistory = (e: CustomEvent<TextHistory>) => {
-      if (e.detail.sessionId === sessionId) {
+    const handleNewTextHistory = (e: CustomEventInit<TextHistory>) => {
+      if (e.detail?.sessionId === sessionId) {
         setTimeout(() => {
           virtualizer.scrollToOffset(virtualizer.getTotalSize());
         }, 0);

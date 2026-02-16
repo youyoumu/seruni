@@ -1,15 +1,15 @@
 import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
 import type { TextHistory } from "@repo/shared/db";
+import { TypesafeEventTarget } from "@repo/shared/util";
 import { ReconnectingWebsocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
-import { TypedEventTarget } from "typescript-event-target";
 
-interface ServicesEventMap {
+type ServicesEventMap = {
   "textHistory:new": CustomEvent<TextHistory>;
-}
+};
 
 const { api: clientApi, onPayload, bindWS } = createClientApi();
 
@@ -17,7 +17,7 @@ export class Services {
   api: typeof clientApi;
   keyring: Keyring;
   ws: ReconnectingWebsocket;
-  bus: TypedEventTarget<ServicesEventMap>;
+  bus = new TypesafeEventTarget<ServicesEventMap>();
 
   constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebsocket({
@@ -30,10 +30,10 @@ export class Services {
     this.ws = ws;
     this.api = clientApi;
     this.keyring = createKeyring(clientApi);
-    this.bus = new TypedEventTarget<ServicesEventMap>();
 
     bindWS(ws);
 
+    //TODO: use addListener
     ws.addEventListener("message", (e: CustomEventInit) => {
       const payload = JSON.parse(e.detail);
       onPayload(payload);
@@ -62,10 +62,7 @@ export class Services {
             return [...old, data];
           },
         );
-        this.bus.dispatchTypedEvent(
-          "textHistory:new",
-          new CustomEvent("textHistory:new", { detail: data }),
-        );
+        this.bus.dispatchEvent(new CustomEvent("textHistory:new", { detail: data }));
       }
     });
   }
