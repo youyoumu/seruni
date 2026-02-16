@@ -1,5 +1,5 @@
 import { TypesafeEventTarget } from "@repo/shared/util";
-import { YankiConnect, type YankiConnectOptions } from "yanki-connect";
+import { YankiConnect } from "yanki-connect";
 
 interface Logger {
   info: (log: string) => void;
@@ -14,18 +14,20 @@ export type ReconnectingAnkiConnectEventMap = {
 export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnkiConnectEventMap> {
   log: Logger;
   #yankiConnect: YankiConnect;
+  #url: string;
   #baseReconnectInterval: number;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
   #pollIntervalId: ReturnType<typeof setInterval> | null = null;
+  #attemptReconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
   #isConnected = false;
-  #abortController: AbortController | null = null;
   #manualClose = false;
   #pollInterval: number;
 
   constructor(options: {
-    yankiConnectOptions?: Partial<YankiConnectOptions>;
+    host: string;
+    port: number;
     logger: Logger;
     baseReconnectInterval?: number;
     maxReconnectDelay?: number;
@@ -34,12 +36,16 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   }) {
     super();
     this.log = options.logger;
-    this.#yankiConnect = new YankiConnect(options.yankiConnectOptions);
+    this.#yankiConnect = new YankiConnect({
+      host: options.host,
+      port: options.port,
+    });
+    this.#url = `${options.host}:${options.port}`;
     this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
-    this.#pollInterval = options.pollInterval ?? 5000;
+    this.#pollInterval = options.pollInterval ?? 4000;
     this.connect();
   }
 
@@ -63,48 +69,38 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   }
 
   async #startPolling() {
+    if (this.#pollIntervalId) return;
     const checkAndNotify = async () => {
-      if (this.#abortController?.signal.aborted) return;
-      this.#abortController?.abort();
-      const abortController = new AbortController();
-      this.#abortController = abortController;
-
       if (this.#manualClose) {
         this.#stopPolling();
         return;
       }
 
-      if (abortController.signal.aborted) return;
       const wasConnected = this.#isConnected;
       const nowConnected = await this.#checkConnection();
-      if (abortController.signal.aborted) return;
 
       if (nowConnected && !wasConnected) {
-        this.log.info(`Connected to Anki Connect`);
+        this.log.info(`Connected to ${this.#url}`);
         this.#isConnected = true;
         this.#reconnectAttempts = 0;
         this.dispatch("open");
       } else if (!nowConnected && wasConnected) {
-        this.log.warn(`Disconnected from Anki Connect`);
+        this.log.warn(`Disconnected from ${this.#url}`);
         this.#isConnected = false;
         this.dispatch("close");
         this.#attemptReconnect();
       } else if (!nowConnected) {
         this.#isConnected = false;
         this.dispatch("close");
-        this.log.warn(`Unable to connect to Anki Connect`);
         this.#attemptReconnect();
       }
     };
 
-    checkAndNotify();
-
     this.#pollIntervalId = setInterval(checkAndNotify, this.#pollInterval);
+    await checkAndNotify();
   }
 
   #stopPolling() {
-    this.#abortController?.abort();
-    this.#abortController = null;
     if (this.#pollIntervalId) {
       clearInterval(this.#pollIntervalId);
       this.#pollIntervalId = null;
@@ -115,6 +111,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     this.#stopPolling();
 
     if (this.#manualClose) return;
+    if (this.#attemptReconnectTimeoutId) return;
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
       this.#reconnectAttempts++;
       const delay = Math.min(
@@ -122,9 +119,12 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
         this.#maxReconnectDelay,
       );
       this.log.info(
-        `Reconnecting to Anki Connect in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
+        `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
-      setTimeout(() => this.#startPolling(), delay);
+      this.#attemptReconnectTimeoutId = setTimeout(() => {
+        this.#attemptReconnectTimeoutId = null;
+        this.#startPolling();
+      }, delay);
     }
   }
 
