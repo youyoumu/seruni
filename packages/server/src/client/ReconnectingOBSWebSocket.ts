@@ -60,23 +60,22 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
 
   #setupEventListeners() {
     this.#obs.on("Identified", () => {
-      this.log.info(`Connected to OBS WebSocket at ${this.#url}`);
+      this.log.info(`Connected to ${this.#url}`);
       this.#isConnected = true;
       this.#reconnectAttempts = 0;
       this.dispatch("open");
     });
 
-    this.#obs.on("ConnectionClosed", (event: OBSWebSocketError) => {
-      this.#isConnected = false;
-      if (!this.#manualClose) {
-        this.log.warn(`Disconnected from OBS WebSocket: ${event.message}`);
+    this.#obs.on("ConnectionClosed", () => {
+      if (this.#isConnected) {
+        this.log.warn(`Disconnected from ${this.#url}`);
       }
+      this.#isConnected = false;
       this.dispatch("close", undefined);
       this.#attemptReconnect();
     });
 
     this.#obs.on("ConnectionError", (event: OBSWebSocketError) => {
-      this.log.warn(`OBS WebSocket error: ${event.message}`);
       this.dispatch("error", event);
     });
   }
@@ -89,7 +88,6 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
       await this.#obs.connect(this.#url, this.#password);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.log.warn(`Failed to connect to OBS WebSocket: ${message}`);
       this.dispatch("error", error instanceof Error ? error : new Error(message));
       this.#attemptReconnect();
     }
@@ -105,7 +103,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
         this.#maxReconnectDelay,
       );
       this.log.info(
-        `Reconnecting to OBS WebSocket in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
+        `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#attemptReconnectTimeoutId = setTimeout(() => {
         this.#attemptReconnectTimeoutId = null;

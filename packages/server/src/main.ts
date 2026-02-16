@@ -5,6 +5,7 @@ import { createServerApi } from "@repo/shared/ws";
 import { Hono } from "hono";
 
 import { AnkiConnectClient } from "./client/anki-connect.client";
+import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
 import { createState } from "./state/state";
@@ -73,6 +74,7 @@ async function main() {
 
   new TextHookerClient({ logger, api, db, state });
   new AnkiConnectClient({ logger });
+  new OBSClient({ logger });
 }
 
 main();
