@@ -1,9 +1,16 @@
+import { TypesafeEventTarget } from "#/util/TypesafeEventTarget";
+
 interface Logger {
   info: (log: string) => void;
   warn: (log: string) => void;
 }
 
-export class ReconnectingWebsocket extends EventTarget {
+export class ReconnectingWebsocket extends TypesafeEventTarget<{
+  open: undefined;
+  close: undefined;
+  message: unknown;
+  error: Event;
+}> {
   log: Logger;
   #url: string;
   #baseReconnectInterval: number;
@@ -47,11 +54,11 @@ export class ReconnectingWebsocket extends EventTarget {
       this.log.info(`Connected to ${this.#url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
-      this.dispatchEvent(new CustomEvent("open"));
+      this.dispatch("open");
     };
 
     this.#ws.onmessage = (event) => {
-      this.dispatchEvent(new CustomEvent("message", { detail: event.data }));
+      this.dispatch("message", event.data);
     };
 
     this.#ws.onclose = () => {
@@ -60,12 +67,12 @@ export class ReconnectingWebsocket extends EventTarget {
       }
       this.#ws = null;
       this.#readyState = WebSocket.CLOSED;
-      this.dispatchEvent(new CustomEvent("close"));
+      this.dispatch("close");
       this.#attemptReconnect();
     };
 
     this.#ws.onerror = (error) => {
-      this.dispatchEvent(new CustomEvent("error", { detail: error }));
+      this.dispatch("error", error);
     };
   }
 
