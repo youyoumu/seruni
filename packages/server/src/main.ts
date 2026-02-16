@@ -4,6 +4,7 @@ import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
 import { Hono } from "hono";
 
+import { AnkiConnectClient } from "./client/anki-connect.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
 import { createState } from "./state/state";
@@ -71,6 +72,7 @@ async function main() {
   injectWebSocket(server);
 
   new TextHookerClient({ logger, api, db, state });
+  new AnkiConnectClient({ logger });
 }
 
 main();
