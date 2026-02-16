@@ -27,8 +27,7 @@ function RouteComponent() {
   const redirectPath = getRedirectPath();
 
   useEffect(() => {
-    const handler = () => {
-      ws.removeEventListener("open", handler);
+    return ws.addListener("open", () => {
       if (timeoutId.current) clearTimeout(timeoutId.current);
       timeoutId.current = setTimeout(() => {
         navigate({
@@ -37,12 +36,7 @@ function RouteComponent() {
           search: search,
         });
       }, 1000);
-    };
-    ws.addEventListener("open", handler);
-
-    return () => {
-      ws.removeEventListener("open", handler);
-    };
+    });
   }, [navigate, ws, location, redirectPath, search]);
 
   return (

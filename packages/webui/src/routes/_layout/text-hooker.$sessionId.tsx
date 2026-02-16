@@ -168,18 +168,13 @@ function TextHistoryList() {
   }, [textHistory.length, virtualizer]);
 
   useEffect(() => {
-    const handleNewTextHistory = (e: CustomEventInit<TextHistory>) => {
-      if (e.detail?.sessionId === sessionId) {
+    return bus.addListener("textHistory:new", (detail) => {
+      if (detail.sessionId === sessionId) {
         setTimeout(() => {
           virtualizer.scrollToOffset(virtualizer.getTotalSize());
         }, 0);
       }
-    };
-
-    bus.addEventListener("textHistory:new", handleNewTextHistory);
-    return () => {
-      bus.removeEventListener("textHistory:new", handleNewTextHistory);
-    };
+    });
   }, [sessionId, bus, virtualizer, textHistory.length]);
 
   return (

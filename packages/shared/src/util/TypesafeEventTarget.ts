@@ -40,6 +40,10 @@ export class TypesafeEventTarget<EMap extends Record<string, unknown>> extends E
   }
 
   /** @deprecated
+   * use dispatch instead
+   * */
+  dispatchEvent = super.dispatchEvent;
+  /** @deprecated
    * use addListener instead
    * */
   addEventListener = super.addEventListener;

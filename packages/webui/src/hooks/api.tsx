@@ -8,7 +8,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 
 type ServicesEventMap = {
-  "textHistory:new": CustomEvent<TextHistory>;
+  "textHistory:new": TextHistory;
 };
 
 const { api: clientApi, onPayload, bindWS } = createClientApi();
@@ -33,9 +33,9 @@ export class Services {
 
     bindWS(ws);
 
-    //TODO: use addListener
-    ws.addEventListener("message", (e: CustomEventInit) => {
-      const payload = JSON.parse(e.detail);
+    ws.addListener("message", (detail) => {
+      if (typeof detail !== "string") return;
+      const payload = JSON.parse(detail);
       onPayload(payload);
     });
 
@@ -62,7 +62,7 @@ export class Services {
             return [...old, data];
           },
         );
-        this.bus.dispatchEvent(new CustomEvent("textHistory:new", { detail: data }));
+        this.bus.dispatch("textHistory:new", data);
       }
     });
   }
@@ -97,19 +97,17 @@ export const OnlineProvider = ({
   const [online, setOnline] = useState(false);
 
   useEffect(() => {
-    const openHandler = () => {
+    const cleanOpen = ws.addListener("open", () => {
       setOnline(true);
-    };
-    ws.addEventListener("open", openHandler);
+    });
 
-    const closeHandler = () => {
+    const cleanClose = ws.addListener("close", () => {
       setOnline(false);
-    };
-    ws.addEventListener("close", closeHandler);
+    });
 
     return () => {
-      ws.removeEventListener("open", openHandler);
-      ws.removeEventListener("close", closeHandler);
+      cleanOpen();
+      cleanClose();
     };
   }, [ws]);
 

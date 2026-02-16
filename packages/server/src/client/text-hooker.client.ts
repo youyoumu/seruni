@@ -34,22 +34,22 @@ export class TextHookerClient extends ReconnectingWebsocket {
     });
     this.state = state;
 
-    this.addEventListener("message", async (event: CustomEventInit<string>) => {
-      if (event.detail) {
+    this.addListener("message", async (detail) => {
+      if (typeof detail === "string") {
         const isListeningTexthooker = this.state.isListeningTexthooker();
         if (!isListeningTexthooker) {
           //TODO: toast to fe
           return;
         }
-        this.log.info(`Message: ${event.detail}`);
+        this.log.info(`Message: ${detail}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
         const row = await db
           .insert(textHistory)
           .values({
-            text: event.detail,
+            text: detail,
             sessionId: activeSessionId,
-            japaneseCharacterCount: calculateJapaneseCharCount(event.detail),
+            japaneseCharacterCount: calculateJapaneseCharCount(detail),
           })
           .returning()
           .get();

@@ -63,17 +63,12 @@ function LayoutComponent() {
   const location = useLocation();
 
   useEffect(() => {
-    const handler = () => {
-      ws.removeEventListener("close", handler);
+    return ws.addListener("close", () => {
       navigate({
         to: "/offline",
         search: { redirect: location.pathname },
       });
-    };
-    ws.addEventListener("close", handler);
-    return () => {
-      ws.removeEventListener("close", handler);
-    };
+    });
   }, [navigate, ws, location]);
 
   return (
