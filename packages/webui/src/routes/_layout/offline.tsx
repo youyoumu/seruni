@@ -27,7 +27,7 @@ function RouteComponent() {
   const redirectPath = getRedirectPath();
 
   useEffect(() => {
-    return ws.addListener("open", () => {
+    const redirectBack = () => {
       if (timeoutId.current) clearTimeout(timeoutId.current);
       timeoutId.current = setTimeout(() => {
         navigate({
@@ -36,7 +36,11 @@ function RouteComponent() {
           search: search,
         });
       }, 1000);
-    });
+    };
+    if (ws.readyState === WebSocket.OPEN) redirectBack();
+    else {
+      return ws.addListener("open", redirectBack);
+    }
   }, [navigate, ws, location, redirectPath, search]);
 
   return (
