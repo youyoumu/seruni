@@ -24,16 +24,16 @@ import type { AppContext } from "./types/types";
 import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 
-function validateDebugLevel(level: string): pino.Level | Error {
+function validateLogLevel(level: string): pino.Level | Error {
   const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
   if (!levels.includes(level as pino.Level)) {
-    return new Error(`Invalid log level: ${level}`);
+    return new Error(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
   }
   return level as pino.Level;
 }
 
-async function start(options: { workdir: string; debug: pino.Level }) {
-  const logger = createLogger({ level: options.debug });
+async function start(options: { workdir: string; logLevel: pino.Level }) {
+  const logger = createLogger({ level: options.logLevel });
   const log = logger.child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
   const state = await createState({ workdir: options.workdir });
@@ -87,9 +87,9 @@ async function start(options: { workdir: string; debug: pino.Level }) {
   new OBSClient({ logger, state });
 }
 
-async function doctor(options: { workdir: string; debug: pino.Level }) {
+async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   const state = await createState({ workdir: options.workdir });
-  const logger = createLogger({ level: options.debug });
+  const logger = createLogger({ level: options.logLevel });
 
   const ffmpeg = new FFmpegExec({ logger, state });
   const uv = new UvExec({ logger, state });
@@ -120,39 +120,39 @@ function main() {
     .command("start")
     .description("Start the Seruni server")
     .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
-    .action(async (workdir: string, options: { debug: string }) => {
-      const debug = validateDebugLevel(options.debug);
-      if (debug instanceof Error) {
-        console.error(debug.message);
+    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
+    .action(async (workdir: string, options: { logLevel: string }) => {
+      const logLevel = validateLogLevel(options.logLevel);
+      if (logLevel instanceof Error) {
+        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
         return;
       }
-      await start({ workdir, debug });
+      await start({ workdir, logLevel });
     });
 
   program
     .command("doctor")
     .description("Check dependencies")
     .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "info")
-    .action(async (workdir: string, options: { debug: string }) => {
-      const debug = validateDebugLevel(options.debug);
-      if (debug instanceof Error) {
-        console.error(debug.message);
+    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "info")
+    .action(async (workdir: string, options: { logLevel: string }) => {
+      const logLevel = validateLogLevel(options.logLevel);
+      if (logLevel instanceof Error) {
+        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
         return;
       }
-      await doctor({ workdir, debug });
+      await doctor({ workdir, logLevel });
     });
 
   program
     .command("venv")
     .description("Setup a Python virtual environment")
     .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
-    .action(async (workdir: string, options: { debug: string }) => {
-      const debug = validateDebugLevel(options.debug);
-      if (debug instanceof Error) {
-        console.error(debug.message);
+    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
+    .action(async (workdir: string, options: { logLevel: string }) => {
+      const logLevel = validateLogLevel(options.logLevel);
+      if (logLevel instanceof Error) {
+        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
         return;
       }
     });
