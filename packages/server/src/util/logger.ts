@@ -1,10 +1,14 @@
 import pino from "pino";
 import pretty from "pino-pretty";
 
-export function createLogger() {
+export function createLogger(
+  options: {
+    level?: pino.Level;
+  } = {},
+) {
   return pino(
     {
-      level: "trace",
+      level: options.level ?? "trace",
     },
     pretty({
       ignore: "pid,hostname",

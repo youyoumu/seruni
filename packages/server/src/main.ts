@@ -2,8 +2,10 @@ import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
+import { Command } from "commander";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import pino from "pino";
 
 import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
@@ -18,11 +20,19 @@ import type { AppContext } from "./types/types";
 import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 
-async function main() {
-  const logger = createLogger();
+function validateDebugLevel(level: string): pino.Level | Error {
+  const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
+  if (!levels.includes(level as pino.Level)) {
+    return new Error(`Invalid log level: ${level}`);
+  }
+  return level as pino.Level;
+}
+
+async function start(options: { workdir: string; debug: pino.Level }) {
+  const logger = createLogger({ level: options.debug });
   const log = logger.child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const state = createState();
+  const state = createState({ workdir: options.workdir });
   log.info(serializeState(state), "Starting with state");
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
@@ -71,6 +81,28 @@ async function main() {
   new TextHookerClient({ logger, api, db, state });
   new AnkiConnectClient({ logger, state });
   new OBSClient({ logger, state });
+}
+
+function main() {
+  const program = new Command();
+
+  program.name("seruni").description("TODO").version("0.0.1");
+
+  program
+    .command("start")
+    .description("Start the Seruni server")
+    .argument("[workdir]", "Working directory for the server", process.cwd())
+    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
+    .action(async (workdir: string, options: { debug: string }) => {
+      const debug = validateDebugLevel(options.debug);
+      if (debug instanceof Error) {
+        console.error(debug.message);
+        return;
+      }
+      await start({ workdir, debug });
+    });
+
+  program.parse();
 }
 
 main();
