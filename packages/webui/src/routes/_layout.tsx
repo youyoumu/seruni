@@ -1,4 +1,9 @@
 import { useServices } from "#/hooks/api";
+import {
+  useAnkiConnectConnected$,
+  useObsConnected$,
+  useTextHookerConnected$,
+} from "#/hooks/client";
 import { useAppForm } from "#/hooks/form";
 import {
   useActiveSession$,
@@ -7,7 +12,7 @@ import {
   useSessions$,
   useSetActiveSession,
 } from "#/hooks/sessions";
-import { Button, cn, Skeleton, tv } from "@heroui/react";
+import { Button, cn, Skeleton, Spinner, tv } from "@heroui/react";
 import { Popover } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
@@ -19,7 +24,16 @@ import {
   useLocation,
   useMatchRoute,
 } from "@tanstack/react-router";
-import { Terminal, FileText, Settings, TrashIcon, BugIcon, CircleIcon } from "lucide-react";
+import {
+  Terminal,
+  FileText,
+  Settings,
+  TrashIcon,
+  BugIcon,
+  CircleIcon,
+  ZapIcon,
+  ZapOffIcon,
+} from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { z } from "zod";
@@ -106,12 +120,47 @@ function LayoutComponent() {
             </aside>
             <main className="flex flex-1 flex-col overflow-hidden">
               <Outlet />
+              <StatusBar />
             </main>
           </ErrorBoundary>
         )}
       </QueryErrorResetBoundary>
     </div>
   );
+}
+
+function StatusBar() {
+  const { data: textHookerConnected } = useTextHookerConnected$();
+  const { data: ankiConnectConnected } = useAnkiConnectConnected$();
+  const { data: obsConnected } = useObsConnected$();
+
+  return (
+    <div className="flex justify-end gap-2 border-t border-border bg-surface-calm px-2 py-1">
+      <div className="flex items-center gap-2">
+        <StatusIcon status={textHookerConnected ? "connected" : "connecting"} />
+        <div className="text-sm">Text Hooker</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <StatusIcon status={ankiConnectConnected ? "connected" : "connecting"} />
+        <div className="text-sm">Anki Connect</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <StatusIcon status={obsConnected ? "connected" : "connecting"} />
+        <div className="text-sm">OBS</div>
+      </div>
+    </div>
+  );
+}
+
+function StatusIcon({ status }: { status: "connected" | "disconnected" | "connecting" }) {
+  switch (status) {
+    case "connected":
+      return <ZapIcon size={16} className="text-success" />;
+    case "disconnected":
+      return <ZapOffIcon size={16} className="text-danger" />;
+    case "connecting":
+      return <Spinner className="size-4 text-surface-foreground-calm" />;
+  }
 }
 
 export function TextHookerSessionListPopover() {
