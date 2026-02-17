@@ -86,25 +86,24 @@ async function start(options: { workdir: string; debug: pino.Level }) {
   new OBSClient({ logger, state });
 }
 
-async function doctor(options: { workdir: string }) {
+async function doctor(options: { workdir: string; debug: pino.Level }) {
   const state = await createState({ workdir: options.workdir });
-  const logger = createLogger({ level: "trace" });
+  const logger = createLogger({ level: options.debug });
 
-  const ffmpeg = new FFmpegExec();
-  const uv = new UvExec();
+  const ffmpeg = new FFmpegExec({ logger, state });
+  const uv = new UvExec({ logger, state });
   const python = new PythonExec({ logger, state });
 
   const ffmpegResult = await ffmpeg.version();
-  console.log(
-    `[FFmpeg] [${typeof ffmpegResult === "string" ? "OK" : "ERROR"}]: ${typeof ffmpegResult === "string" ? ffmpegResult : ffmpegResult.message}`,
-  );
-
   const uvResult = await uv.version();
+  const pythonResult = await python.version();
+
   console.log(
     `[uv] [${typeof uvResult === "string" ? "OK" : "ERROR"}]: ${typeof uvResult === "string" ? uvResult : uvResult.message}`,
   );
-
-  const pythonResult = await python.version();
+  console.log(
+    `[FFmpeg] [${typeof ffmpegResult === "string" ? "OK" : "ERROR"}]: ${typeof ffmpegResult === "string" ? ffmpegResult : ffmpegResult.message}`,
+  );
   console.log(
     `[Python] [${typeof pythonResult === "string" ? "OK" : "ERROR"}]: ${typeof pythonResult === "string" ? pythonResult : pythonResult.message}`,
   );
@@ -133,8 +132,27 @@ function main() {
     .command("doctor")
     .description("Check dependencies")
     .argument("[workdir]", "Working directory for the server", process.cwd())
-    .action(async (workdir: string) => {
-      await doctor({ workdir });
+    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "info")
+    .action(async (workdir: string, options: { debug: string }) => {
+      const debug = validateDebugLevel(options.debug);
+      if (debug instanceof Error) {
+        console.error(debug.message);
+        return;
+      }
+      await doctor({ workdir, debug });
+    });
+
+  program
+    .command("venv")
+    .description("Setup a Python virtual environment")
+    .argument("[workdir]", "Working directory for the server", process.cwd())
+    .option("-d, --debug <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
+    .action(async (workdir: string, options: { debug: string }) => {
+      const debug = validateDebugLevel(options.debug);
+      if (debug instanceof Error) {
+        console.error(debug.message);
+        return;
+      }
     });
 
   program.parse();

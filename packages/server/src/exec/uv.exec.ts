@@ -1,9 +1,21 @@
-import { execa } from "execa";
+import type { State } from "#/state/state";
+import type { Logger } from "pino";
 
-export class UvExec {
+import { Exec } from "./Exec";
+
+export class UvExec extends Exec {
+  constructor({ logger, state }: { logger: Logger; state: State }) {
+    super({
+      name: "uv",
+      logger,
+      state,
+      bin: "uv",
+    });
+  }
+
   async version() {
     try {
-      const { stdout } = await execa({ all: true })`uv --version`;
+      const { stdout } = await this.run(["--version"]);
       return stdout;
     } catch (e) {
       return e instanceof Error ? e : new Error("Error when checking uv version");
