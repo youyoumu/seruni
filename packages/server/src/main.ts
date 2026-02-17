@@ -73,8 +73,8 @@ async function main() {
   injectWebSocket(server);
 
   new TextHookerClient({ logger, api, db, state });
-  new AnkiConnectClient({ logger });
-  new OBSClient({ logger });
+  new AnkiConnectClient({ logger, state });
+  new OBSClient({ logger, state });
 }
 
 main();

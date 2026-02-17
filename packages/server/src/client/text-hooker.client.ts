@@ -15,6 +15,7 @@ function calculateJapaneseCharCount(text: string): number {
 export class TextHookerClient extends ReconnectingWebSocket {
   state: State;
   messages: string[] = [];
+
   constructor({
     url = "ws://localhost:6677",
     logger,
@@ -55,6 +56,14 @@ export class TextHookerClient extends ReconnectingWebSocket {
           .get();
         api.push.textHistory(row);
       }
+    });
+
+    this.addListener("open", () => {
+      this.state.textHookerConnected(true);
+    });
+
+    this.addListener("close", () => {
+      this.state.textHookerConnected(false);
     });
   }
 

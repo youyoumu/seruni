@@ -35,6 +35,28 @@ export function registerHandlers({
     api.push.isListeningTexthooker(isListeningTexthooker);
   });
 
+  effect(() => {
+    const textHookerConnected = state.textHookerConnected();
+    logState.debug(`textHookerConnected: ${textHookerConnected}`);
+    api.push.textHookerConnected(textHookerConnected);
+  });
+
+  effect(() => {
+    const ankiConnectConnected = state.ankiConnectConnected();
+    logState.debug(`ankiConnectConnected: ${ankiConnectConnected}`);
+    api.push.ankiConnectConnected(ankiConnectConnected);
+  });
+
+  effect(() => {
+    const obsConnected = state.obsConnected();
+    logState.debug(`obsConnected: ${obsConnected}`);
+    api.push.obsConnected(obsConnected);
+  });
+
+  api.onRequest.textHookerConnected(() => state.textHookerConnected());
+  api.onRequest.ankiConnectConnected(() => state.ankiConnectConnected());
+  api.onRequest.obsConnected(() => state.obsConnected());
+
   api.onRequest.isListeningTexthooker(() => state.isListeningTexthooker());
   api.onRequest.setIsListeningTexthooker(async (isListeningTexthooker) => {
     state.isListeningTexthooker(isListeningTexthooker);

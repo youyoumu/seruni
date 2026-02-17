@@ -33,6 +33,20 @@ export const createKeyring = (api: Services["api"]) =>
         queryFn: () => api.request.isListeningTexthooker(),
       },
     },
+    client: {
+      textHookerConnected: {
+        queryKey: null,
+        queryFn: () => api.request.textHookerConnected(),
+      },
+      ankiConnectConnected: {
+        queryKey: null,
+        queryFn: () => api.request.ankiConnectConnected(),
+      },
+      obsConnected: {
+        queryKey: null,
+        queryFn: () => api.request.obsConnected(),
+      },
+    },
   });
 
 export type Keyring = ReturnType<typeof createKeyring>;

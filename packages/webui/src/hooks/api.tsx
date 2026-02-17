@@ -65,6 +65,18 @@ export class Services {
         this.bus.dispatch("textHistory:new", data);
       }
     });
+
+    this.api.onPush.textHookerConnected((data) => {
+      queryClient.setQueryData(this.keyring.client.textHookerConnected.queryKey, data);
+    });
+
+    this.api.onPush.ankiConnectConnected((data) => {
+      queryClient.setQueryData(this.keyring.client.ankiConnectConnected.queryKey, data);
+    });
+
+    this.api.onPush.obsConnected((data) => {
+      queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
+    });
   }
 }
 

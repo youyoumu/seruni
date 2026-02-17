@@ -11,6 +11,9 @@ export type ApiSchema = CreateSchema<{
     textHistory: Push<TextHistory>;
     activeSession: Push<Session | null>;
     isListeningTexthooker: Push<boolean>;
+    textHookerConnected: Push<boolean>;
+    ankiConnectConnected: Push<boolean>;
+    obsConnected: Push<boolean>;
   };
   clientRequest: {
     textHistoryBySessionId: Request<number, TextHistory[]>;
@@ -24,6 +27,9 @@ export type ApiSchema = CreateSchema<{
     getActiveSession: Request<undefined, Session | null>;
     isListeningTexthooker: Request<undefined, boolean>;
     setIsListeningTexthooker: Request<boolean, boolean>;
+    textHookerConnected: Request<undefined, boolean>;
+    ankiConnectConnected: Request<undefined, boolean>;
+    obsConnected: Request<undefined, boolean>;
     checkHealth: Request<undefined, undefined>;
   };
   serverRequest: {
@@ -38,6 +44,9 @@ const createApi = () => {
       textHistory: 0,
       activeSession: 0,
       isListeningTexthooker: 0,
+      textHookerConnected: 0,
+      ankiConnectConnected: 0,
+      obsConnected: 0,
     },
     clientRequest: {
       textHistoryBySessionId: 0,
@@ -51,6 +60,9 @@ const createApi = () => {
       getActiveSession: 0,
       isListeningTexthooker: 0,
       setIsListeningTexthooker: 0,
+      textHookerConnected: 0,
+      ankiConnectConnected: 0,
+      obsConnected: 0,
       checkHealth: 0,
     },
     serverRequest: { userAgent: 0 },
