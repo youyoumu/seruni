@@ -1,8 +1,4 @@
-// import {
-//   interceptedRequest,
-//   proxyAnkiConnectAddNoteRequest,
-//   yomitanAnkiConnectSettings,
-// } from "#/hono/_util";
+import type { State } from "#/state/state";
 import type { AppContext } from "#/types/types";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 import { Hono, type HonoRequest } from "hono";
@@ -11,12 +7,11 @@ import z from "zod";
 const app = new Hono<{ Variables: { ctx: AppContext } }>();
 
 app.post("/", async (c) => {
-  const { logger } = c.get("ctx");
+  const { logger, state } = c.get("ctx");
   const log = logger.child({ name: "anki-connect-proxy" });
   const url = new URL(c.req.url);
-  // const target = `http://localhost:${config.store.anki.ankiConnectPort}${url.pathname}${url.search}`;
-  // TODO: use config
-  const target = `http://localhost:8765${url.pathname}${url.search}`;
+  const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
+  const expressionField = state.config().ankiExpressionField;
 
   let body: ArrayBuffer | undefined;
   let bodyText: string | undefined;
@@ -38,7 +33,7 @@ app.post("/", async (c) => {
   );
 
   // intercept and handle canAddNotes
-  const ankiConnectCanAddNote = zAnkiConnectCanAddNotes().safeParse(bodyJson);
+  const ankiConnectCanAddNote = zAnkiConnectCanAddNotes(expressionField).safeParse(bodyJson);
   if (ankiConnectCanAddNote.success) {
     log.trace("AnkiConnect proxy received CanAddNotes request, tracking duplicate note");
     const deckName = ankiConnectCanAddNote.data.params.notes[0]?.deckName;
@@ -46,8 +41,7 @@ app.post("/", async (c) => {
     //TODO:
     // if (deckName) yomitanAnkiConnectSettings.deckName = deckName;
     const expressions = ankiConnectCanAddNote.data.params.notes.map(
-      //TODO: use config
-      (item) => item.fields["Expression"],
+      (item) => item.fields[expressionField],
     );
     if (expressions.some((item) => item === undefined)) {
       throw new Error(
@@ -84,8 +78,7 @@ app.post("/", async (c) => {
   const ankiConnectAddNote = zAnkiConnectAddNote.safeParse(bodyJson);
   if (ankiConnectAddNote.success) {
     log.debug("AnkiConnect proxy received AddNote request, processing new note");
-    //TODO: use config
-    const expression = ankiConnectAddNote.data.params.note.fields["Expression"];
+    const expression = ankiConnectAddNote.data.params.note.fields[expressionField];
     if (expression === undefined) throw new Error("Expression field is missing, invalid config?");
     // intercept and duplicate notes
     // TODO: duplicate intercept
@@ -105,7 +98,7 @@ app.post("/", async (c) => {
     //   });
     // }
 
-    const res = await proxyAnkiConnectAddNoteRequest(c.req, log);
+    const res = await proxyAnkiConnectAddNoteRequest(c.req, log, state);
 
     return new Response(res.body, {
       status: res.status,
@@ -135,12 +128,12 @@ export const proxyAnkiConnectAddNoteRequest = async (
     error: (log: string) => void;
     trace: (log: string) => void;
   },
+  state: State,
 ) => {
   const url = new URL(req.url);
-  // TODO: use config
-  const target = `http://localhost:8765${url.pathname}${url.search}`;
+  const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
 
-  const { id, body } = await parseAddNoteRequest(req, log);
+  const { id, body } = await parseAddNoteRequest(req, log, state);
   console.log("DEBUG[854]: body=", body);
 
   const headers = new Headers(req.raw.headers);
@@ -192,14 +185,16 @@ export async function parseAddNoteRequest(
   log: {
     trace: (log: string) => void;
   },
+  state: State,
 ) {
   const body = await req.arrayBuffer();
   const bodyText = new TextDecoder().decode(body);
   const bodyJson = JSON.parse(bodyText);
 
+  const sentenceField = state.config().ankiSentenceField;
+
   const ankiConnectAddNote = zAnkiConnectAddNote.parse(bodyJson);
-  //TODO: use config
-  const sentence = ankiConnectAddNote.params.note.fields["Sentence"];
+  const sentence = ankiConnectAddNote.params.note.fields[sentenceField];
   if (sentence === undefined) throw new Error("Sentence field is missing, invalid config?");
   const id = extractId(sentence);
   if (id === null) throw new Error("ID not found");

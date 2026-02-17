@@ -1,3 +1,4 @@
+import type { State } from "#/state/state";
 import z from "zod";
 
 export const zVadData = z.array(
@@ -17,15 +18,14 @@ export const zAnkiConnectAddNote = z.looseObject({
   }),
 });
 
-export const zAnkiConnectCanAddNotes = () =>
+export const zAnkiConnectCanAddNotes = (expression: string) =>
   z.looseObject({
     action: z.literal("canAddNotes"),
     params: z.looseObject({
       notes: z.array(
         z.looseObject({
           fields: z.looseObject({
-            //TODO: use config
-            ["Expression"]: z.string(),
+            [expression]: z.string(),
           }),
           tags: z.array(z.string()),
           deckName: z.string(),

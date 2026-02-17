@@ -13,16 +13,18 @@ import { ankiAnkiConnectProxyRoute } from "./routes/anki.anki-connect-proxy";
 import { ankiCollectionMediaRoute } from "./routes/anki.collection.media";
 import { indexRoute } from "./routes/index";
 import { wsRoute } from "./routes/ws";
-import { createState } from "./state/state";
+import { createState, serializeState } from "./state/state";
 import type { AppContext } from "./types/types";
 import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 
 async function main() {
   const logger = createLogger();
+  const log = logger.child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const db = createDb();
   const state = createState();
+  log.info(serializeState(state), "Starting with state");
+  const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 

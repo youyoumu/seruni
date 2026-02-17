@@ -1,6 +1,8 @@
+import type { State } from "#/state/state";
 import * as schema from "@repo/shared/db";
 import { drizzle } from "drizzle-orm/libsql";
 
-//TODO: from config
-export const createDb = () => drizzle("file:db.sqlite", { schema });
+export const createDb = (state: State) => {
+  return drizzle(`file:${state.path().db}`, { schema });
+};
 export type DB = ReturnType<typeof createDb>;
