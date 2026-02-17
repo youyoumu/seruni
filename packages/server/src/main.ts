@@ -11,6 +11,9 @@ import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
+import { FFmpegExec } from "./exec/ffmpeg.exec";
+import { PythonExec } from "./exec/python.exec";
+import { UvExec } from "./exec/uv.exec";
 import { ankiAnkiConnectProxyRoute } from "./routes/anki.anki-connect-proxy";
 import { ankiCollectionMediaRoute } from "./routes/anki.collection.media";
 import { indexRoute } from "./routes/index";
@@ -83,6 +86,30 @@ async function start(options: { workdir: string; debug: pino.Level }) {
   new OBSClient({ logger, state });
 }
 
+async function doctor(options: { workdir: string }) {
+  const state = await createState({ workdir: options.workdir });
+  const logger = createLogger({ level: "trace" });
+
+  const ffmpeg = new FFmpegExec();
+  const uv = new UvExec();
+  const python = new PythonExec({ logger, state });
+
+  const ffmpegResult = await ffmpeg.version();
+  console.log(
+    `[FFmpeg] [${typeof ffmpegResult === "string" ? "OK" : "ERROR"}]: ${typeof ffmpegResult === "string" ? ffmpegResult : ffmpegResult.message}`,
+  );
+
+  const uvResult = await uv.version();
+  console.log(
+    `[uv] [${typeof uvResult === "string" ? "OK" : "ERROR"}]: ${typeof uvResult === "string" ? uvResult : uvResult.message}`,
+  );
+
+  const pythonResult = await python.version();
+  console.log(
+    `[Python] [${typeof pythonResult === "string" ? "OK" : "ERROR"}]: ${typeof pythonResult === "string" ? pythonResult : pythonResult.message}`,
+  );
+}
+
 function main() {
   const program = new Command();
 
@@ -100,6 +127,14 @@ function main() {
         return;
       }
       await start({ workdir, debug });
+    });
+
+  program
+    .command("doctor")
+    .description("Check dependencies")
+    .argument("[workdir]", "Working directory for the server", process.cwd())
+    .action(async (workdir: string) => {
+      await doctor({ workdir });
     });
 
   program.parse();

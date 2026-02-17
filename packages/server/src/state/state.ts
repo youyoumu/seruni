@@ -15,6 +15,11 @@ export async function createState(
   const path_ = {
     config: path.join(workdir, "./config.json"),
     db: path.join(workdir, "./db.sqlite"),
+    venv: path.join(workdir, "./venv"),
+    python:
+      process.platform === "win32"
+        ? path.join(workdir, "./venv/Scripts/python.exe")
+        : path.join(workdir, "./venv/bin/python"),
   };
 
   const config = await getConfigFromFile(path_.config);
