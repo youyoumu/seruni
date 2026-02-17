@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
+import chalk from "chalk";
 import { Command } from "commander";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -98,15 +99,16 @@ async function doctor(options: { workdir: string; debug: pino.Level }) {
   const uvResult = await uv.version();
   const pythonResult = await python.version();
 
-  console.log(
-    `[uv] [${typeof uvResult === "string" ? "OK" : "ERROR"}]: ${typeof uvResult === "string" ? uvResult : uvResult.message}`,
-  );
-  console.log(
-    `[FFmpeg] [${typeof ffmpegResult === "string" ? "OK" : "ERROR"}]: ${typeof ffmpegResult === "string" ? ffmpegResult : ffmpegResult.message}`,
-  );
-  console.log(
-    `[Python] [${typeof pythonResult === "string" ? "OK" : "ERROR"}]: ${typeof pythonResult === "string" ? pythonResult : pythonResult.message}`,
-  );
+  const logResult = (name: string, result: string | Error) => {
+    const isOk = typeof result === "string";
+    const label = isOk ? chalk.green("OK") : chalk.red("ERROR");
+    const message = isOk ? result : chalk.yellow(result.message.split("\n")[0]);
+    console.log(`[${chalk.cyan(name)}] [${label}]: ${message}`);
+  };
+
+  logResult("uv", uvResult);
+  logResult("FFmpeg", ffmpegResult);
+  logResult("Python", pythonResult);
 }
 
 function main() {
