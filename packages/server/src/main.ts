@@ -8,6 +8,7 @@ import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
+import { ankiCollectionMediaRoute } from "./routes/anki.collection.media";
 import { indexRoute } from "./routes/index";
 import { wsRoute } from "./routes/ws";
 import { createState } from "./state/state";
@@ -47,6 +48,7 @@ async function main() {
 
   app.route("/", indexRoute);
   app.route("/ws", wsRoute);
+  app.route("/anki/collection.media", ankiCollectionMediaRoute);
 
   const server = serve(
     {
