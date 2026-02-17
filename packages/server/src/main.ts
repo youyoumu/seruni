@@ -11,7 +11,7 @@ import { createDb } from "./db";
 import { indexRoute } from "./routes/index";
 import { wsRoute } from "./routes/ws";
 import { createState } from "./state/state";
-import type { AppContext } from "./types";
+import type { AppContext } from "./types/types";
 import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 

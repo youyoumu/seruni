@@ -1,6 +1,5 @@
+import type { AppContext } from "#/types/types";
 import { Hono } from "hono";
-
-import type { AppContext } from "../types";
 
 const app = new Hono<{ Variables: { ctx: AppContext } }>();
 
