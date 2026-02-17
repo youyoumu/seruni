@@ -32,7 +32,7 @@ async function start(options: { workdir: string; debug: pino.Level }) {
   const logger = createLogger({ level: options.debug });
   const log = logger.child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const state = createState({ workdir: options.workdir });
+  const state = await createState({ workdir: options.workdir });
   log.info(serializeState(state), "Starting with state");
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();

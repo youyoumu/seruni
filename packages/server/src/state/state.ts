@@ -1,20 +1,25 @@
+import { readFile } from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import { zConfig } from "@repo/shared/schema";
-import { signal } from "alien-signals";
+import { effect, signal } from "alien-signals";
 
-export type State = ReturnType<typeof createState>;
-export function createState({
-  workdir = process.cwd(),
-}: {
-  workdir?: string;
-} = {}) {
-  const config = zConfig.parse({});
+export type State = Awaited<ReturnType<typeof createState>>;
+export async function createState(
+  options: {
+    workdir?: string;
+  } = {},
+) {
+  const workdir = path.resolve(options.workdir ?? process.cwd());
   const path_ = {
-    db: path.join(path.resolve(workdir), "./db.sqlite"),
+    config: path.join(workdir, "./config.json"),
+    db: path.join(workdir, "./db.sqlite"),
   };
 
-  return {
+  const config = await getConfigFromFile(path_.config);
+
+  const state = {
     activeSessionId: signal<number | null>(null),
     isListeningTexthooker: signal<boolean>(false),
     textHookerConnected: signal<boolean>(false),
@@ -23,6 +28,21 @@ export function createState({
     config: signal(config),
     path: signal(path_),
   };
+
+  let isWritingConfig = false;
+  effect(async () => {
+    try {
+      if (isWritingConfig) return;
+      isWritingConfig = true;
+      const config = state.config();
+      const configPath = state.path().config;
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+    } finally {
+      isWritingConfig = false;
+    }
+  });
+
+  return state;
 }
 
 export function serializeState(state: State) {
@@ -36,4 +56,18 @@ export function serializeState(state: State) {
     }
   }
   return result;
+}
+
+async function getConfigFromFile(configFilePath: string) {
+  await fs.mkdir(path.join(configFilePath, ".."), { recursive: true });
+  let parsedConfig: unknown;
+  try {
+    const configFile = await readFile(configFilePath, "utf-8");
+    parsedConfig = JSON.parse(configFile);
+  } catch {
+    parsedConfig = {};
+  }
+  const defaultConfig = zConfig.parse({});
+  const configResult = zConfig.safeParse(parsedConfig);
+  return configResult.success ? configResult.data : defaultConfig;
 }
