@@ -56,6 +56,9 @@ importers:
       yanki-connect:
         specifier: ^3.2.3
         version: 3.2.3
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: ^20.11.17

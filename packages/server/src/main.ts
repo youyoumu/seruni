@@ -3,11 +3,13 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
+import { ankiAnkiConnectProxyRoute } from "./routes/anki.anki-connect-proxy";
 import { ankiCollectionMediaRoute } from "./routes/anki.collection.media";
 import { indexRoute } from "./routes/index";
 import { wsRoute } from "./routes/ws";
@@ -26,6 +28,8 @@ async function main() {
 
   const ctx: AppContext = { db, state, logger, api, onPayload, addWS, removeWS, upgradeWebSocket };
 
+  //TODO: whitelist
+  app.use("*", cors());
   app.use(async (c, next) => {
     c.set("ctx", ctx);
     await next();
@@ -49,6 +53,7 @@ async function main() {
   app.route("/", indexRoute);
   app.route("/ws", wsRoute);
   app.route("/anki/collection.media", ankiCollectionMediaRoute);
+  app.route("/anki/anki-connect-proxy", ankiAnkiConnectProxyRoute);
 
   const server = serve(
     {
