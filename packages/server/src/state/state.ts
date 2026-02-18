@@ -12,14 +12,18 @@ export async function createState(
   } = {},
 ) {
   const workdir = path.resolve(options.workdir ?? process.cwd());
+  //TODO: dev/prod
+  const pythonWorkdir = path.join(import.meta.dirname, "../../../python");
+  const pythonEntry = path.join(pythonWorkdir, "src/main.py");
+  const venv = path.join(pythonWorkdir, ".venv") ?? path.join(workdir, "./venv");
   const path_ = {
     config: path.join(workdir, "./config.json"),
     db: path.join(workdir, "./db.sqlite"),
-    venv: path.join(workdir, "./venv"),
     python:
       process.platform === "win32"
-        ? path.join(workdir, "./venv/Scripts/python.exe")
-        : path.join(workdir, "./venv/bin/python"),
+        ? path.join(venv, "Scripts/python.exe")
+        : path.join(venv, "bin/python"),
+    pythonEntry,
   };
 
   const config = await getConfigFromFile(path_.config);

@@ -90,6 +90,9 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   const state = await createState({ workdir: options.workdir });
   const logger = createLogger({ level: options.logLevel });
+  const log = logger.child({ name: "doctor" });
+
+  log.info(serializeState(state), "Starting with state");
 
   const ffmpeg = new FFmpegExec({ logger, state });
   const uv = new UvExec({ logger, state });
