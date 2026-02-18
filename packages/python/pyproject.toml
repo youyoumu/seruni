@@ -5,8 +5,9 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
   "pip>=25.2",
-  "silero-vad>=6.0.0",
+  "silero-vad>=6.2.0",
   "soundfile>=0.13.1",
+  #TODO: update torch 
   "torch==2.8.0",
   "torchaudio==2.8.0",
 ]
