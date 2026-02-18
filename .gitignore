@@ -18,3 +18,5 @@ AGENTS.md
 
 *.sqlite
 *.sqlite-journal
+
+*.sample.wav

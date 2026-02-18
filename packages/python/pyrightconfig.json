@@ -1,0 +1,6 @@
+{
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.13",
+  "include": ["main.py"],
+  "exclude": ["**/__pycache__", ".venv"]
+}
