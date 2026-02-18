@@ -11,9 +11,14 @@ export async function createState(
     workdir?: string;
   } = {},
 ) {
+  //@ts-expect-error injected during build
+  const DEV = typeof __DEV__ === "undefined";
+
   const workdir = path.resolve(options.workdir ?? process.cwd());
   //TODO: dev/prod
-  const pythonWorkdir = path.join(import.meta.dirname, "../../../python");
+  const pythonWorkdir = DEV
+    ? path.join(import.meta.dirname, "../../../python")
+    : path.join(workdir, "./python");
   const pythonEntry = path.join(pythonWorkdir, "src/main.py");
   const venv = path.join(pythonWorkdir, ".venv") ?? path.join(workdir, "./venv");
   const path_ = {
