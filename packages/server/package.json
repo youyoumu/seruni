@@ -25,6 +25,7 @@
     "commander": "^14.0.3",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
+    "es-toolkit": "^1.44.0",
     "execa": "^9.6.1",
     "hono": "^4.11.8",
     "mime": "^4.1.0",

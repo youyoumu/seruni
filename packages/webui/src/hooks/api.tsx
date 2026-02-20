@@ -1,6 +1,8 @@
 import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
+import { toast } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
+import type { ToastPayload } from "@repo/shared/ws";
 import { TypesafeEventTarget } from "@repo/shared/util";
 import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
@@ -68,6 +70,17 @@ export class Services {
 
     this.api.onPush.textHookerConnected((data) => {
       queryClient.setQueryData(this.keyring.client.textHookerConnected.queryKey, data);
+    });
+
+    this.api.onPush.obsConnected((data) => {
+      queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
+    });
+
+    this.api.onPush.toast((data: ToastPayload) => {
+      toast(data.title ?? "", {
+        description: data.description,
+        variant: data.variant,
+      });
     });
 
     this.api.onPush.ankiConnectConnected((data) => {

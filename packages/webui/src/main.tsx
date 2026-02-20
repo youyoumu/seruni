@@ -1,3 +1,4 @@
+import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { BirdIcon } from "lucide-react";
@@ -41,6 +42,7 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
+      <ToastProvider placement="bottom end"></ToastProvider>
       <ServicesProvider value={services}>
         <OnlineProvider ws={services.ws}>
           <RouterProvider router={router} />

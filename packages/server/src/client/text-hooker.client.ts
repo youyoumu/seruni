@@ -3,6 +3,7 @@ import type { State } from "#/state/state";
 import { textHistory } from "@repo/shared/db";
 import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { type ServerApi } from "@repo/shared/ws";
+import { debounce } from "es-toolkit";
 import { type Logger } from "pino";
 
 const isNotJapaneseRegex =
@@ -35,11 +36,18 @@ export class TextHookerClient extends ReconnectingWebSocket {
     });
     this.state = state;
 
+    const textHookerToastD = debounce(() => {
+      api.push.toast({
+        title: "Text Hooker",
+        description: "Received a message but timer is paused.",
+      });
+    }, 1000);
+
     this.addListener("message", async (detail) => {
       if (typeof detail === "string") {
         const isListeningTexthooker = this.state.isListeningTexthooker();
         if (!isListeningTexthooker) {
-          //TODO: toast to fe
+          textHookerToastD();
           return;
         }
         this.log.info(`Message: ${detail}`);

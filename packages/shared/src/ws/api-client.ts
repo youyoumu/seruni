@@ -3,11 +3,18 @@ import { createCentralBus } from "#/ws-bus";
 import type { Push, Request, CreateSchema } from "#/ws-bus";
 export { WSBusError } from "#/ws-bus";
 
+export type ToastPayload = {
+  title?: string;
+  description?: string;
+  variant?: "default" | "accent" | "success" | "warning" | "danger";
+};
+
 export type ApiSchema = CreateSchema<{
   clientPush: {
     ping: Push;
   };
   serverPush: {
+    toast: Push<ToastPayload>;
     textHistory: Push<TextHistory>;
     activeSession: Push<Session | null>;
     isListeningTexthooker: Push<boolean>;
@@ -41,6 +48,7 @@ const createApi = () => {
   return createCentralBus<ApiSchema>({
     clientPush: { ping: 0 },
     serverPush: {
+      toast: 0,
       textHistory: 0,
       activeSession: 0,
       isListeningTexthooker: 0,
