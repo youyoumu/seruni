@@ -2,8 +2,13 @@ import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
 import { toast } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
-import type { ToastPayload } from "@repo/shared/ws";
 import { TypesafeEventTarget } from "@repo/shared/util";
+import type {
+  ToastPayload,
+  ToastPromiseConfig,
+  ToastPromiseResolvePayload,
+  ToastPromiseRejectPayload,
+} from "@repo/shared/ws";
 import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
@@ -20,6 +25,15 @@ export class Services {
   keyring: Keyring;
   ws: ReconnectingWebSocket;
   bus = new TypesafeEventTarget<ServicesEventMap>();
+  #deferredPromises = new Map<
+    string,
+    {
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+      successMessage?: string;
+      errorMessage?: string;
+    }
+  >();
 
   constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebSocket({
@@ -81,6 +95,56 @@ export class Services {
         description: data.description,
         variant: data.variant,
       });
+    });
+
+    this.api.onPush.toastPromise((data: ToastPromiseConfig) => {
+      const { promise, resolve, reject } = Promise.withResolvers<unknown>();
+      this.#deferredPromises.set(data.id, {
+        resolve,
+        reject,
+        successMessage: data.success,
+        errorMessage: data.error,
+      });
+
+      toast.promise(promise, {
+        loading: data.loading,
+        success: (resolvedData) => {
+          const deferred = this.#deferredPromises.get(data.id);
+          const msg = deferred?.successMessage;
+          this.#deferredPromises.delete(data.id);
+          if (msg && msg !== "__fn__") return msg;
+          return typeof resolvedData === "object"
+            ? JSON.stringify(resolvedData)
+            : String(resolvedData);
+        },
+        error: (err) => {
+          const deferred = this.#deferredPromises.get(data.id);
+          const msg = deferred?.errorMessage;
+          this.#deferredPromises.delete(data.id);
+          if (msg && msg !== "__fn__") return msg;
+          return err.message;
+        },
+      });
+    });
+
+    this.api.onPush.toastPromiseResolve((data: ToastPromiseResolvePayload) => {
+      const deferred = this.#deferredPromises.get(data.id);
+      if (deferred) {
+        if (data.message) {
+          deferred.successMessage = data.message;
+        }
+        deferred.resolve(data.data);
+      }
+    });
+
+    this.api.onPush.toastPromiseReject((data: ToastPromiseRejectPayload) => {
+      const deferred = this.#deferredPromises.get(data.id);
+      if (deferred) {
+        if (data.message) {
+          deferred.errorMessage = data.message;
+        }
+        deferred.reject(new Error(data.error));
+      }
     });
 
     this.api.onPush.ankiConnectConnected((data) => {

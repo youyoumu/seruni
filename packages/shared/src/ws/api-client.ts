@@ -1,6 +1,7 @@
 import { type Session, type TextHistory } from "#/db/schema";
 import { createCentralBus } from "#/ws-bus";
 import type { Push, Request, CreateSchema } from "#/ws-bus";
+import { uid } from "uid";
 export { WSBusError } from "#/ws-bus";
 
 export type ToastPayload = {
@@ -9,12 +10,56 @@ export type ToastPayload = {
   variant?: "default" | "accent" | "success" | "warning" | "danger";
 };
 
+export type ToastLoadingPayload = {
+  id: string;
+  title: string;
+  description?: string;
+  timeout?: number;
+};
+
+export type ToastSuccessPayload = {
+  id: string;
+  title: string;
+  description?: string;
+};
+
+export type ToastErrorPayload = {
+  id: string;
+  title: string;
+  description?: string;
+};
+
+export type ToastPromiseConfig = {
+  id: string;
+  loading: string;
+  success: string;
+  error: string;
+};
+
+export type ToastPromiseResolvePayload = {
+  id: string;
+  data: unknown;
+  message?: string;
+};
+
+export type ToastPromiseRejectPayload = {
+  id: string;
+  error: string;
+  message?: string;
+};
+
 export type ApiSchema = CreateSchema<{
   clientPush: {
     ping: Push;
   };
   serverPush: {
     toast: Push<ToastPayload>;
+    toastLoading: Push<ToastLoadingPayload>;
+    toastSuccess: Push<ToastSuccessPayload>;
+    toastError: Push<ToastErrorPayload>;
+    toastPromise: Push<ToastPromiseConfig>;
+    toastPromiseResolve: Push<ToastPromiseResolvePayload>;
+    toastPromiseReject: Push<ToastPromiseRejectPayload>;
     textHistory: Push<TextHistory>;
     activeSession: Push<Session | null>;
     isListeningTexthooker: Push<boolean>;
@@ -49,6 +94,12 @@ const createApi = () => {
     clientPush: { ping: 0 },
     serverPush: {
       toast: 0,
+      toastLoading: 0,
+      toastSuccess: 0,
+      toastError: 0,
+      toastPromise: 0,
+      toastPromiseResolve: 0,
+      toastPromiseReject: 0,
       textHistory: 0,
       activeSession: 0,
       isListeningTexthooker: 0,
@@ -83,8 +134,59 @@ export function createClientApi() {
   return api.client;
 }
 
-export type ServerApi = ReturnType<typeof createApi>["server"]["api"];
+export type ServerApi = ReturnType<typeof createApi>["server"]["api"] & {
+  toastPromise: <T>(
+    promise: () => Promise<T>,
+    options: {
+      loading: string;
+      success: string | ((data: T) => string);
+      error: string | ((error: Error) => string);
+    },
+  ) => Promise<T>;
+};
 export function createServerApi() {
   const api = createApi();
-  return api.server;
+  const push = api.server.api.push;
+
+  const toastPromise = async <T>(
+    promise: () => Promise<T>,
+    options: {
+      loading: string;
+      success: string | ((data: T) => string);
+      error: string | ((error: Error) => string);
+    },
+  ): Promise<T> => {
+    const id = uid();
+    const successMessage = typeof options.success === "function" ? "__fn__" : options.success;
+    const errorMessage = typeof options.error === "function" ? "__fn__" : options.error;
+
+    push.toastPromise({
+      id,
+      loading: options.loading,
+      success: successMessage,
+      error: errorMessage,
+    });
+
+    try {
+      const data = await promise();
+      const computedSuccessMsg =
+        typeof options.success === "function" ? options.success(data) : options.success;
+      push.toastPromiseResolve({ id, data, message: computedSuccessMsg });
+      return data;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error("Unknown error");
+      const computedErrorMsg =
+        typeof options.error === "function" ? options.error(err) : options.error;
+      push.toastPromiseReject({ id, error: err.message, message: computedErrorMsg });
+      throw error;
+    }
+  };
+
+  return {
+    ...api.server,
+    api: {
+      ...api.server.api,
+      toastPromise,
+    },
+  };
 }
