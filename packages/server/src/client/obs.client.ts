@@ -5,6 +5,7 @@ import { ReconnectingOBSWebSocket } from "./ReconnectingOBSWebSocket";
 
 export class OBSClient extends ReconnectingOBSWebSocket {
   state: State;
+  #replayBufferActive = false;
 
   constructor({ logger, state }: { logger: Logger; state: State }) {
     super({
@@ -15,10 +16,55 @@ export class OBSClient extends ReconnectingOBSWebSocket {
 
     this.addListener("open", () => {
       this.state.obsConnected(true);
+      this.#startReplayBuffer();
     });
 
     this.addListener("close", () => {
       this.state.obsConnected(false);
+      this.#replayBufferActive = false;
     });
+
+    this.#listenToReplayBufferEvents();
+  }
+
+  #listenToReplayBufferEvents() {
+    const handler = (event: { outputActive: boolean; outputState: string }) => {
+      if (!this.#replayBufferActive && event.outputActive) {
+        this.log.info("Replay buffer started");
+      }
+      this.#replayBufferActive = event.outputActive;
+      if (event.outputState !== "OBS_WEBSOCKET_OUTPUT_STOPPED") return;
+      if (!this.#isStartingReplayBuffer) {
+        this.log.warn("Replay buffer stopped, restarting...");
+        this.#startReplayBuffer();
+      }
+    };
+    this.client.on("ReplayBufferStateChanged", handler);
+    return () => {
+      this.client.off("ReplayBufferStateChanged", handler);
+    };
+  }
+
+  #isStartingReplayBuffer = false;
+  async #startReplayBuffer() {
+    if (this.#isStartingReplayBuffer) return;
+    this.#isStartingReplayBuffer = true;
+    try {
+      const status = await this.call("GetReplayBufferStatus");
+      if (!status.outputActive) {
+        await this.call("StartReplayBuffer");
+      } else {
+        this.#replayBufferActive = true;
+      }
+    } catch (error) {
+      this.log.warn(`Failed to start replay buffer: ${error}`);
+      setTimeout(() => this.#startReplayBuffer(), 5000);
+    } finally {
+      this.#isStartingReplayBuffer = false;
+    }
+  }
+
+  get replayBufferActive() {
+    return this.#replayBufferActive;
   }
 }
