@@ -1,3 +1,6 @@
+import { mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+
 import type { State } from "#/state/state";
 import { format as formatDate } from "date-fns";
 import { execa } from "execa";
@@ -5,6 +8,22 @@ import type { Logger } from "pino";
 import { uid } from "uid";
 
 import { Exec } from "./Exec";
+
+interface SelectionData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+type ProcessFormat =
+  | "wav"
+  | "opus"
+  | "webp"
+  | "webp:crop"
+  | "webp:multiple"
+  | "webp:animated"
+  | "png:multiple";
 
 export class FFmpegExec extends Exec {
   constructor({ logger, state }: { logger: Logger; state: State }) {
@@ -40,5 +59,193 @@ export class FFmpegExec extends Exec {
     } catch (e) {
       return e instanceof Error ? e : new Error("Error when checking ffmpeg version");
     }
+  }
+
+  async process({
+    inputPath,
+    seek = 0,
+    duration,
+    format,
+    selectionData,
+  }: {
+    inputPath: string;
+    seek?: number;
+    duration?: number;
+    selectionData?: SelectionData;
+    format: ProcessFormat;
+  }): Promise<string> {
+    const timestamp = this.createTimestamp();
+    const actualFormat = (() => {
+      if (format === "png:multiple") return "png";
+      if (format === "webp:crop") return "webp";
+      if (format === "webp:multiple") return "webp";
+      if (format === "webp:animated") return "webp";
+      return format;
+    })();
+
+    // TODO: use ./temp
+    const tempPath = tmpdir();
+    const outputPath = `${tempPath}/${timestamp}.${actualFormat}`;
+    const outputDir = `${tempPath}/${timestamp}`;
+    if (format.endsWith("multiple")) {
+      await mkdir(outputDir, { recursive: true });
+    }
+    const outputPattern = `${outputDir}/${timestamp}_%03d.${actualFormat}`;
+
+    // TODO: configurable from state
+    const maxResolution = 720;
+    const scaleFilter = `scale='if(gt(iw,ih),-1,${maxResolution}):if(gt(ih,iw),-1,${maxResolution})':force_original_aspect_ratio=decrease`;
+
+    //TODO: configurable
+    const defaultDuration = 1000;
+    const numberOfFrames = 6;
+    const fps = numberOfFrames / ((duration ?? defaultDuration) / 1000);
+    let { x, y, width, height } = selectionData ?? {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    };
+    x = Math.floor(x);
+    y = Math.floor(y);
+    width = Math.floor(width);
+    height = Math.floor(height);
+    seek = Math.floor(seek);
+    duration = duration === undefined ? undefined : Math.floor(duration);
+
+    const params: Record<ProcessFormat, string[]> = {
+      wav: [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        ...(duration !== undefined ? ["-t", `${duration}ms`] : []),
+        "-vn", // no video
+        "-acodec",
+        "pcm_s16le", // WAV codec
+        "-ar",
+        "44100", // sample rate
+        "-ac",
+        "2", // stereo
+        outputPath,
+      ],
+
+      opus: [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        ...(duration !== undefined ? ["-t", `${duration}ms`] : []),
+        "-vn", // no video
+        "-ac",
+        "2", // 1 = mono, 2 = stereo
+        "-ar",
+        "48000", // Opus requires 48kHz input
+        "-c:a",
+        "libopus", // use the Opus codec
+        "-b:a",
+        "64k", // bitrate (32 kbps is great for speech)
+        outputPath,
+      ],
+
+      webp: [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        "-frames:v",
+        "1", // only 1 frame
+        "-vf",
+        scaleFilter, // max resolution
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPath,
+      ],
+
+      "webp:crop": [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        "-frames:v",
+        "1", // only 1 frame
+        "-vf",
+        `crop=${width}:${height}:${x}:${y}`, // crop to selection
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPath,
+      ],
+
+      "webp:multiple": [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        "-t",
+        `${duration ?? defaultDuration}ms`, // duration
+        "-r",
+        `${fps}`, // frame rate
+        "-c:v",
+        "libwebp", // WebP codec
+        "-vf",
+        scaleFilter, // max resolution
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPattern,
+      ],
+
+      "png:multiple": [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        "-t",
+        `${duration ?? defaultDuration}ms`, // duration
+        "-r",
+        `${fps}`, // frame rate
+        "-vf",
+        scaleFilter, // max resolution
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPattern,
+      ],
+
+      "webp:animated": [
+        "-y", // overwrite existing
+        "-ss",
+        `${seek}ms`,
+        "-i",
+        inputPath, // input file
+        "-t",
+        `${duration ?? defaultDuration}ms`, // duration
+        "-r",
+        "24", // frame rate
+        "-c:v",
+        "libwebp_anim", // animated WebP codec
+        "-vf",
+        scaleFilter, // max resolution
+        "-q:v",
+        "75", // quality (1-100, worst to best)
+        outputPath,
+      ],
+    };
+
+    const { stdout, stderr } = await execa("ffmpeg", params[format]);
+    this.log.debug(
+      {
+        params: params[format],
+        stdout,
+        stderr,
+      },
+      "ffmpeg",
+    );
+
+    return format.endsWith("multiple") ? outputDir : outputPath;
   }
 }
