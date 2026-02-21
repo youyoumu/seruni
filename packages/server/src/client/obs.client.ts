@@ -67,4 +67,21 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   get replayBufferActive() {
     return this.#replayBufferActive;
   }
+
+  saveReplayBuffer(): Promise<string> {
+    const { promise, resolve, reject } = Promise.withResolvers<string>();
+    const handler = (event: { savedReplayPath: string }) => {
+      cleanup();
+      resolve(event.savedReplayPath);
+    };
+    const cleanup = () => {
+      this.client.off("ReplayBufferSaved", handler);
+    };
+    this.client.on("ReplayBufferSaved", handler);
+    this.call("SaveReplayBuffer").catch((error) => {
+      cleanup();
+      reject(error);
+    });
+    return promise;
+  }
 }
