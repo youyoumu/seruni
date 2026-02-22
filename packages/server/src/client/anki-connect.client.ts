@@ -6,6 +6,7 @@ import type { DBClient } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
 import type { State } from "#/state/state";
+import type { VadData } from "#/util/schema";
 import { textHistory } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
 import { format } from "date-fns";
@@ -191,14 +192,14 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     });
 
     // TODO: configurable
-    const imageFormat = "webp" as const;
+    const pictureFormat = "webp" as const;
     // generate image file
     const imageDirPromise = this.ffmpeg.process({
       inputPath: savedReplayPath,
       seek: offset,
       //TODO: configurable
       duration: lastEnd ?? 3000,
-      format: `${imageFormat}:multiple`,
+      format: `${pictureFormat}:multiple`,
     });
 
     const [audioStage3Path, imageDir] = await Promise.all([
@@ -208,49 +209,15 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (audioStage3Path instanceof Error) return error(audioStage3Path);
     if (imageDir instanceof Error) return error(imageDir);
 
-    // TODO:
-    //
-    // Promise.all([audioStage3PathPromise, imageDirPromise]).then(
-    //   async ([audioStage3Path, imageDir]) => {
-    //     const insertNoteAndMedia = mainDB().insertNoteAndMedia;
-    //     const mediaEntries: Parameters<typeof insertNoteAndMedia>[0]["media"] = [];
-    //
-    //     if (audioStage3Path) {
-    //       mediaEntries.push({
-    //         filePath: audioStage3Path,
-    //         type: "sentenceAudio",
-    //         vadData: audioStage1VadData,
-    //       });
-    //     }
-    //
-    //     if (imageDir) {
-    //       try {
-    //         const files = await readdir(imageDir);
-    //         const imageFiles = files
-    //           .filter((f) => f.endsWith(`.${imageFormat}`))
-    //           .map((file) => ({
-    //             filePath: join(imageDir, file),
-    //             type: "picture" as const,
-    //             vadData: undefined,
-    //           }));
-    //         mediaEntries.push(...imageFiles);
-    //       } catch (e) {
-    //         this.log.error({ error: e }, "Failed to read images from directory:");
-    //       }
-    //     }
-    //
-    //     if (mediaEntries.length > 0) {
-    //       try {
-    //         await mainDB().insertNoteAndMedia({
-    //           noteId: note.noteId,
-    //           media: mediaEntries,
-    //         });
-    //       } catch (e) {
-    //         this.log.error({ error: e }, "Failed to insert note and media");
-    //       }
-    //     }
-    //   },
-    // );
+    Promise.all([audioStage3PathPromise, imageDirPromise]).then(([audioStage3Path, imageDir]) => {
+      this.insertNoteAndMedia({
+        note,
+        sentenceAudioPath: audioStage3Path instanceof Error ? undefined : audioStage3Path,
+        sentenceAudioVadData: audioStage1VadData,
+        pictureDir: imageDir instanceof Error ? undefined : imageDir,
+        pictureFormat,
+      });
+    });
 
     const [audioStage2Path, imagePath] = await Promise.all([
       audioStage2PathPromise,
@@ -271,6 +238,49 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       picturePath: imagePath,
       filesToDelete,
     });
+  }
+
+  async insertNoteAndMedia({
+    note,
+    sentenceAudioPath,
+    sentenceAudioVadData,
+    pictureDir,
+    pictureFormat,
+  }: {
+    note: AnkiNote;
+    sentenceAudioPath?: string;
+    sentenceAudioVadData: VadData;
+    pictureDir?: string;
+    pictureFormat: string;
+  }) {
+    const mediaEntries: Parameters<typeof this.dbClient.insertNoteAndMedia>[0]["media"] = [];
+
+    if (sentenceAudioPath) {
+      mediaEntries.push({
+        filePath: sentenceAudioPath,
+        type: "sentenceAudio",
+        vadData: sentenceAudioVadData,
+      });
+    }
+
+    if (pictureDir) {
+      const files = await fs.readdir(pictureDir);
+      const imageFiles = files
+        .filter((f) => f.endsWith(`.${pictureFormat}`))
+        .map((file) => ({
+          filePath: path.join(pictureDir, file),
+          type: "picture" as const,
+          vadData: undefined,
+        }));
+      mediaEntries.push(...imageFiles);
+    }
+
+    if (mediaEntries.length > 0) {
+      await this.dbClient.insertNoteAndMedia({
+        noteId: note.noteId,
+        media: mediaEntries,
+      });
+    }
   }
 
   async updateNote({
