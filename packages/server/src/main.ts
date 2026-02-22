@@ -45,8 +45,16 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
 
   const ctx: AppContext = { db, state, logger, api, onPayload, addWS, removeWS, upgradeWebSocket };
 
-  //TODO: whitelist
-  app.use("*", cors());
+  app.use(
+    "*",
+    cors({
+      origin(origin) {
+        // Matches http://localhost:ANY_PORT or http://127.0.0.1:ANY_PORT
+        const isLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        return isLocal ? origin : null;
+      },
+    }),
+  );
   app.use(async (c, next) => {
     c.set("ctx", ctx);
     await next();
