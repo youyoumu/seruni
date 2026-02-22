@@ -12,6 +12,7 @@ import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
 import { createDb } from "./db";
+import { DBClient } from "./db/db.client";
 import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { UvExec } from "./exec/uv.exec";
@@ -82,12 +83,14 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   );
   injectWebSocket(server);
 
+  const dbClient = new DBClient({ db, logger, state });
+
   const ffmpeg = new FFmpegExec({ logger, state });
   const python = new PythonExec({ logger, state });
 
   new TextHookerClient({ logger, api, db, state });
   const obsClient = new OBSClient({ logger, state });
-  new AnkiConnectClient({ logger, api, db, state, obsClient, ffmpeg, python });
+  new AnkiConnectClient({ logger, api, db, dbClient, state, obsClient, ffmpeg, python });
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {

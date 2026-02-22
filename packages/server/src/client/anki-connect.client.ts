@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { DB } from "#/db";
+import type { DBClient } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
 import type { State } from "#/state/state";
@@ -35,6 +36,7 @@ type ProcessQueueResult =
 export class AnkiConnectClient extends ReconnectingAnkiConnect {
   state: State;
   db: DB;
+  dbClient: DBClient;
   api: ServerApi;
   processQueue = new Map<number, Promise<ProcessQueueResult>>();
   obsClient: OBSClient;
@@ -45,6 +47,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     logger: Logger;
     state: State;
     db: DB;
+    dbClient: DBClient;
     api: ServerApi;
     obsClient: OBSClient;
     ffmpeg: FFmpegExec;
@@ -57,6 +60,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     });
     this.state = opts.state;
     this.db = opts.db;
+    this.dbClient = opts.dbClient;
     this.api = opts.api;
     this.obsClient = opts.obsClient;
     this.ffmpeg = opts.ffmpeg;
