@@ -82,9 +82,12 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   );
   injectWebSocket(server);
 
+  const ffmpeg = new FFmpegExec({ logger, state });
+  const python = new PythonExec({ logger, state });
+
   new TextHookerClient({ logger, api, db, state });
-  new AnkiConnectClient({ logger, state });
-  new OBSClient({ logger, state });
+  const obsClient = new OBSClient({ logger, state });
+  new AnkiConnectClient({ logger, api, db, state, obsClient, ffmpeg, python });
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {

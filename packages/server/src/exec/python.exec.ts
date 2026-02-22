@@ -34,13 +34,17 @@ export class PythonExec extends Exec {
   }
 
   async runSilero(filePath: string) {
-    return zVadData
-      .parse(JSON.parse((await this.runMain(["silero", filePath])).stdout))
-      .map((item) => {
-        item.start = item.start * 1000;
-        item.end = item.end * 1000;
-        return item;
-      });
+    try {
+      return zVadData
+        .parse(JSON.parse((await this.runMain(["silero", filePath])).stdout))
+        .map((item) => {
+          item.start = item.start * 1000;
+          item.end = item.end * 1000;
+          return item;
+        });
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Error when running silero");
+    }
   }
 
   async runMainHealthcheck() {

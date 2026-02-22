@@ -45,11 +45,23 @@ export class FFmpegExec extends Exec {
     return timestamp;
   }
 
-  async getFileDuration(filePath: string): Promise<number> {
-    const params = ["-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", filePath];
-    const { stdout, stderr } = await execa("ffprobe", params);
-    this.log.trace({ params, stdout, stderr }, "ffprobe");
-    return parseFloat(stdout.trim()) * 1000;
+  async getFileDuration(filePath: string): Promise<number | Error> {
+    try {
+      const params = [
+        "-v",
+        "quiet",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "csv=p=0",
+        filePath,
+      ];
+      const { stdout, stderr } = await execa("ffprobe", params);
+      this.log.trace({ params, stdout, stderr }, "ffprobe");
+      return parseFloat(stdout.trim()) * 1000;
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Error when checking ffmpeg version");
+    }
   }
 
   async version() {
@@ -73,7 +85,7 @@ export class FFmpegExec extends Exec {
     duration?: number;
     selectionData?: SelectionData;
     format: ProcessFormat;
-  }): Promise<string> {
+  }): Promise<string | Error> {
     const timestamp = this.createTimestamp();
     const actualFormat = (() => {
       if (format === "png:multiple") return "png";
@@ -236,16 +248,19 @@ export class FFmpegExec extends Exec {
       ],
     };
 
-    const { stdout, stderr } = await execa("ffmpeg", params[format]);
-    this.log.debug(
-      {
-        params: params[format],
-        stdout,
-        stderr,
-      },
-      "ffmpeg",
-    );
-
-    return format.endsWith("multiple") ? outputDir : outputPath;
+    try {
+      const { stdout, stderr } = await execa("ffmpeg", params[format]);
+      this.log.debug(
+        {
+          params: params[format],
+          stdout,
+          stderr,
+        },
+        "ffmpeg",
+      );
+      return format.endsWith("multiple") ? outputDir : outputPath;
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Error when running ffmpeg");
+    }
   }
 }

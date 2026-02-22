@@ -1,10 +1,6 @@
 import { TypesafeEventTarget } from "@repo/shared/util";
+import type { Logger } from "pino";
 import { YankiConnect } from "yanki-connect";
-
-interface Logger {
-  info: (log: string) => void;
-  warn: (log: string) => void;
-}
 
 export type ReconnectingAnkiConnectEventMap = {
   open: undefined;
