@@ -102,13 +102,11 @@ export class FFmpegExec extends Exec {
     }
     const outputPattern = `${outputDir}/${timestamp}_%03d.${actualFormat}`;
 
-    // TODO: configurable from state
-    const maxResolution = 720;
+    const maxResolution = this.state.config().ffmpegMaxPictureResolution;
     const scaleFilter = `scale='if(gt(iw,ih),-1,${maxResolution}):if(gt(ih,iw),-1,${maxResolution})':force_original_aspect_ratio=decrease`;
 
-    //TODO: configurable
     const defaultDuration = 1000;
-    const numberOfFrames = 6;
+    const numberOfFrames = this.state.config().ffmpegPictureFrameCount;
     const fps = numberOfFrames / ((duration ?? defaultDuration) / 1000);
     let { x, y, width, height } = selectionData ?? {
       x: 0,

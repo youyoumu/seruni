@@ -84,14 +84,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     textHistoryId: number;
   }): Promise<ProcessQueueResult> {
     //get history
-    // TODO: configurable
-    const REPLAY_BUFFER_DURATION = 5 * 60 * 1000;
     const now = new Date();
     const history = await this.db.query.textHistory.findFirst({
       where: eq(textHistory.id, textHistoryId),
     });
     if (!history) return new UpdateError("Failed to find text history");
-    if (history.createdAt.getTime() < now.getTime() - REPLAY_BUFFER_DURATION) {
+    if (history.createdAt.getTime() < now.getTime() - this.state.config().obsReplayBufferDuration) {
       return new UpdateError("Text history already pass the replay buffer duration");
     }
 
@@ -160,13 +158,13 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (audioStage1VadData instanceof Error) return error(audioStage1VadData);
 
     // generate audio file
-    let lastEnd = audioStage1VadData[audioStage1VadData.length - 1]?.end;
-    if (audioStage1VadData.length === 1 && (lastEnd ?? 0) < 1000) {
-      lastEnd = undefined;
+    let audioStage1Duration = audioStage1VadData[audioStage1VadData.length - 1]?.end;
+    if (audioStage1VadData.length === 1 && (audioStage1Duration ?? 0) < 1000) {
+      audioStage1Duration = undefined;
     }
     const audioStage2PathPromise = this.ffmpeg.process({
       inputPath: audioStage1Path,
-      duration: lastEnd,
+      duration: audioStage1Duration,
       format: "opus",
     });
 
@@ -180,25 +178,23 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     // generate audio file for editing
     const recordDurationFallbackSecond = 10;
-    const lastEnd2 =
+    const audioStage3Duration =
       audioStage1VadData[audioStage1VadData.length - 1]?.end ?? recordDurationFallbackSecond;
     const offsetToLeft = 5000;
     const offsetToRight = 5000;
     const audioStage3PathPromise = this.ffmpeg.process({
       inputPath: savedReplayPath,
       seek: offset - offsetToLeft,
-      duration: lastEnd2 + offsetToLeft + offsetToRight,
+      duration: audioStage3Duration + offsetToLeft + offsetToRight,
       format: "opus",
     });
 
-    // TODO: configurable
-    const pictureFormat = "webp" as const;
+    const pictureFormat = this.state.config().ffmpegPictureFormat;
     // generate image file
     const imageDirPromise = this.ffmpeg.process({
       inputPath: savedReplayPath,
       seek: offset,
-      //TODO: configurable
-      duration: lastEnd ?? 3000,
+      duration: audioStage1Duration ?? 3000,
       format: `${pictureFormat}:multiple`,
     });
 

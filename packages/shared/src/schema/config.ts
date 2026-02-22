@@ -7,5 +7,9 @@ export const zConfig = z.object({
   ankiSentenceAudioField: z.string().default("SentenceAudio"),
   ankiConnectAddress: z.string().default("http://127.0.0.1:8765"),
   obsWebSocketAddress: z.string().default("ws://127.0.0.1:4455"),
+  obsReplayBufferDuration: z.number().default(5 * 60 * 1000),
   textHookerWebSocketAddress: z.string().default("ws://127.0.0.1:6677"),
+  ffmpegPictureFormat: z.union([z.literal("webp")]).default("webp"),
+  ffmpegMaxPictureResolution: z.number().default(720),
+  ffmpegPictureFrameCount: z.number().default(6),
 });
