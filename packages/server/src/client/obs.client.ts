@@ -7,12 +7,12 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   state: State;
   #replayBufferActive = false;
 
-  constructor({ logger, state }: { logger: Logger; state: State }) {
+  constructor(opts: { logger: Logger; state: State }) {
     super({
-      logger: logger.child({ name: "obs-client" }),
+      logger: opts.logger.child({ name: "obs-client" }),
       url: "ws://127.0.0.1:4455",
     });
-    this.state = state;
+    this.state = opts.state;
 
     this.addListener("open", () => {
       this.state.obsConnected(true);

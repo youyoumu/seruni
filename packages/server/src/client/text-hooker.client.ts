@@ -17,27 +17,15 @@ export class TextHookerClient extends ReconnectingWebSocket {
   state: State;
   messages: string[] = [];
 
-  constructor({
-    url = "ws://localhost:6677",
-    logger,
-    api,
-    db,
-    state,
-  }: {
-    url?: string;
-    logger: Logger;
-    api: ServerApi;
-    db: DB;
-    state: State;
-  }) {
+  constructor(opts: { url?: string; logger: Logger; api: ServerApi; db: DB; state: State }) {
     super({
-      url,
-      logger: logger.child({ name: "text-hooker-client" }),
+      url: opts.url ?? "ws://localhost:6677",
+      logger: opts.logger.child({ name: "text-hooker-client" }),
     });
-    this.state = state;
+    this.state = opts.state;
 
     const textHookerToastD = debounce(() => {
-      api.push.toast({
+      opts.api.push.toast({
         title: "Text Hooker",
         description: "Received a message but timer is paused.",
       });
@@ -53,7 +41,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
         this.log.info(`Message: ${detail}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
-        const row = await db
+        const row = await opts.db
           .insert(textHistory)
           .values({
             text: detail,
@@ -62,7 +50,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
           })
           .returning()
           .get();
-        api.push.textHistory(row);
+        opts.api.push.textHistory(row);
       }
     });
 

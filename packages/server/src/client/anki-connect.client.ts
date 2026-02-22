@@ -29,15 +29,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   ffmpeg: FFmpegExec;
   python: PythonExec;
 
-  constructor({
-    logger,
-    state,
-    db,
-    api,
-    obsClient,
-    ffmpeg,
-    python,
-  }: {
+  constructor(opts: {
     logger: Logger;
     state: State;
     db: DB;
@@ -49,14 +41,14 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     super({
       host: "http://127.0.0.1",
       port: 8765,
-      logger: logger.child({ name: "anki-connect-client" }),
+      logger: opts.logger.child({ name: "anki-connect-client" }),
     });
-    this.state = state;
-    this.db = db;
-    this.api = api;
-    this.obsClient = obsClient;
-    this.ffmpeg = ffmpeg;
-    this.python = python;
+    this.state = opts.state;
+    this.db = opts.db;
+    this.api = opts.api;
+    this.obsClient = opts.obsClient;
+    this.ffmpeg = opts.ffmpeg;
+    this.python = opts.python;
 
     this.addListener("open", () => {
       this.state.ankiConnectConnected(true);
