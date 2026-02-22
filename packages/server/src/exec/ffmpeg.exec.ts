@@ -1,5 +1,4 @@
 import { mkdir } from "node:fs/promises";
-import { tmpdir } from "node:os";
 
 import type { State } from "#/state/state";
 import { format as formatDate } from "date-fns";
@@ -95,8 +94,7 @@ export class FFmpegExec extends Exec {
       return format;
     })();
 
-    // TODO: use ./temp
-    const tempPath = tmpdir();
+    const tempPath = this.state.path().tempDir;
     const outputPath = `${tempPath}/${timestamp}.${actualFormat}`;
     const outputDir = `${tempPath}/${timestamp}`;
     if (format.endsWith("multiple")) {

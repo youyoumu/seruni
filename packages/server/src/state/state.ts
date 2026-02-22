@@ -15,7 +15,6 @@ export async function createState(
   const DEV = typeof __DEV__ === "undefined";
 
   const workdir = path.resolve(options.workdir ?? process.cwd());
-  //TODO: dev/prod
   const pythonWorkdir = DEV
     ? path.join(import.meta.dirname, "../../../python")
     : path.join(workdir, "./python");
@@ -24,6 +23,8 @@ export async function createState(
   const path_ = {
     config: path.join(workdir, "./config.json"),
     db: path.join(workdir, "./db.sqlite"),
+    tempDir: path.join(workdir, "./temp"),
+    storageDir: path.join(workdir, "./storage"),
     python:
       process.platform === "win32"
         ? path.join(venv, "Scripts/python.exe")
@@ -31,9 +32,12 @@ export async function createState(
     pythonEntry,
   };
 
+  await fs.mkdir(path_.tempDir, { recursive: true });
+  await fs.mkdir(path_.storageDir, { recursive: true });
   const config = await getConfigFromFile(path_.config);
 
   const state = {
+    appName: "Seruni",
     activeSessionId: signal<number | null>(null),
     isListeningTexthooker: signal<boolean>(false),
     textHookerConnected: signal<boolean>(false),

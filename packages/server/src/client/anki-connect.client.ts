@@ -284,8 +284,8 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }) {
     nsfw = nsfw ?? isNsfw(note);
     let tags = [...note.tags];
-    //TODO: configurable
-    if (!tags.includes("Seruni")) tags.push("Seruni");
+    const appName = this.state.appName;
+    if (!tags.includes(appName)) tags.push(appName);
     if (!isNsfw(note) && nsfw) tags.push("NSFW");
     if (isNsfw(note) && !nsfw) {
       tags = tags.filter((tag) => tag.toLowerCase() !== "nsfw");
