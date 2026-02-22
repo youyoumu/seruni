@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { DB } from "#/db";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
@@ -60,7 +62,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }
 
   // TODO: clean savedReplayPath and audioStage1Path
-  async handleUpdateNoteMedia({
+  async updateNoteMedia({
     note,
     textHistoryId,
   }: {
@@ -103,12 +105,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       if (result instanceof Error) return result;
       if (result) {
         this.log.trace({ ...result }, "Reusing media files");
-        //TODO: update note
-        // await this.updateNote({
-        //   note,
-        //   picturePath: result.picturePath,
-        //   sentenceAudioPath: result.sentenceAudioPath,
-        // });
+        const updateResult = await this.updateNote({
+          note,
+          picturePath: result.picturePath,
+          sentenceAudioPath: result.sentenceAudioPath,
+        });
+        if (updateResult instanceof Error) return updateResult;
         return { ...result, reuseMedia: true };
       }
     }
@@ -237,18 +239,90 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (audioStage2Path instanceof Error) return resolve(audioStage2Path);
     if (imagePath instanceof Error) return resolve(imagePath);
 
-    //TODO: update note
-    // await this.updateNote({
-    //   note,
-    //   picturePath: imagePath,
-    //   sentenceAudioPath: audioStage2Path,
-    // });
+    const updateResult = await this.updateNote({
+      note,
+      picturePath: imagePath,
+      sentenceAudioPath: audioStage2Path,
+    });
+    if (updateResult instanceof Error) return resolve(updateResult);
 
     return resolve({
       sentenceAudioPath: audioStage2Path,
       picturePath: imagePath,
     });
   }
+
+  async updateNote({
+    note,
+    picturePath,
+    sentenceAudioPath,
+    overwrite = false,
+    nsfw,
+  }: {
+    note: AnkiNote;
+    picturePath: string | undefined | null;
+    sentenceAudioPath: string | undefined | null;
+    overwrite?: boolean;
+    nsfw?: boolean;
+  }) {
+    nsfw = nsfw ?? isNsfw(note);
+    let tags = [...note.tags];
+    //TODO: configurable
+    if (!tags.includes("Seruni")) tags.push("Seruni");
+    if (!isNsfw(note) && nsfw) tags.push("NSFW");
+    if (isNsfw(note) && !nsfw) {
+      tags = tags.filter((tag) => tag.toLowerCase() !== "nsfw");
+    }
+
+    this.log.debug({ noteId: note.noteId, picturePath, sentenceAudioPath, tags }, "Updating note");
+
+    //TODO:
+    // await this.backupNoteMedia(note, {
+    //   isBackupPicture: !!picturePath,
+    //   isBackupSentenceAudio: !!sentenceAudioPath,
+    // });
+
+    try {
+      await this.client?.note.updateNote({
+        note: {
+          id: note.noteId,
+          fields: {
+            ...(picturePath && overwrite && { [this.state.config().ankiPictureField]: "" }),
+            ...(sentenceAudioPath &&
+              overwrite && {
+                [this.state.config().ankiSentenceAudioField]: "",
+              }),
+          },
+          ...(picturePath && {
+            picture: [
+              {
+                path: picturePath,
+                filename: path.basename(picturePath),
+                fields: [this.state.config().ankiPictureField],
+              },
+            ],
+          }),
+          ...(sentenceAudioPath && {
+            audio: [
+              {
+                path: sentenceAudioPath,
+                filename: path.basename(sentenceAudioPath),
+                fields: [this.state.config().ankiSentenceAudioField],
+              },
+            ],
+          }),
+          tags,
+        },
+      });
+      return note;
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Error when updating note");
+    }
+  }
+}
+
+function isNsfw(note: AnkiNote) {
+  return note.tags.map((t) => t.toLowerCase()).includes("nsfw");
 }
 
 export const zAnkiNote = z.object({
