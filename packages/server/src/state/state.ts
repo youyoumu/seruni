@@ -38,13 +38,14 @@ export async function createState(
 
   const state = {
     appName: "Seruni",
+    config: signal(config),
+    path: signal(path_),
     activeSessionId: signal<number | null>(null),
     isListeningTexthooker: signal<boolean>(false),
     textHookerConnected: signal<boolean>(false),
     ankiConnectConnected: signal<boolean>(false),
     obsConnected: signal<boolean>(false),
-    config: signal(config),
-    path: signal(path_),
+    yomitanAnkiConnectDeckName: signal<string>(),
   };
 
   let isWritingConfig = false;

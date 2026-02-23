@@ -38,8 +38,7 @@ app.post("/", async (c) => {
     log.trace("AnkiConnect proxy received CanAddNotes request, tracking duplicate note");
     const deckName = ankiConnectCanAddNote.data.params.notes[0]?.deckName;
     log.trace({ deckName }, "Detected deckName");
-    //TODO:
-    // if (deckName) yomitanAnkiConnectSettings.deckName = deckName;
+    if (deckName) state.yomitanAnkiConnectDeckName(deckName);
     const expressions = ankiConnectCanAddNote.data.params.notes.map(
       (item) => item.fields[expressionField],
     );
