@@ -96,6 +96,33 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     return new Error("Failed to get media dir after retries");
   }
 
+  async preUpdateNoteMedia({ noteId, textHistoryId }: { noteId: number; textHistoryId: number }) {
+    const note = await this.getNote(noteId);
+    if (note instanceof Error) return note;
+    this.log.debug({ noteInfo: note }, "Note Info");
+    const expression = this.getExpression(note);
+    const validateResult = this.validateField(note);
+    if (validateResult instanceof Error) return validateResult;
+
+    //TODO: title description action etc
+    this.api.toastPromise(
+      async () => {
+        const updateResult = await this.updateNoteMedia({
+          note,
+          textHistoryId,
+        });
+        if (updateResult instanceof Error) throw updateResult;
+        return updateResult;
+      },
+      {
+        loading: `Processing new note: ${expression}`,
+        //TODO: open note in anki with uid toast action
+        success: (r) => `Note has been updated: ${expression}${r.reuseMedia ? " (♻  media)" : ""}`,
+        error: (e) => `Failed to process new note: ${e.message}`,
+      },
+    );
+  }
+
   async updateNoteMedia({
     note,
     textHistoryId,
@@ -418,6 +445,36 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (media.length > 0) {
       await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media });
     }
+  }
+
+  async getNote(noteId: number) {
+    try {
+      const result = (
+        await this.client.note.notesInfo({
+          notes: [noteId],
+        })
+      )[0];
+      if (!result) return new Error("Note not found");
+      return result;
+    } catch {
+      return new Error("Failed to get note");
+    }
+  }
+
+  getExpression(note: AnkiNote | undefined) {
+    const word = note?.fields[this.state.config().ankiExpressionField]?.value ?? "";
+    return word;
+  }
+
+  validateField(note: AnkiNote) {
+    const expressionField = note.fields[this.state.config().ankiExpressionField];
+    const pictureField = note.fields[this.state.config().ankiPictureField];
+    const sentenceAudioField = note.fields[this.state.config().ankiSentenceAudioField];
+
+    if (!expressionField) return new Error("Invalid Expression field");
+    if (!pictureField) return new Error("Invalid Picture field");
+    if (!sentenceAudioField) return new Error("Invalid Sentence Audio field");
+    return { expressionField, pictureField, sentenceAudioField };
   }
 }
 
