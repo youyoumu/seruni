@@ -28,6 +28,9 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../shared
+      '@repo/webui':
+        specifier: workspace:*
+        version: link:../webui
       alien-signals:
         specifier: ^3.1.2
         version: 3.1.2

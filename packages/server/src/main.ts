@@ -19,9 +19,10 @@ import { DBClient } from "./db/db.client";
 import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { UvExec } from "./exec/uv.exec";
+import { indexRoute } from "./routes";
 import { ankiAnkiConnectProxyRoute } from "./routes/anki.anki-connect-proxy";
 import { ankiCollectionMediaRoute } from "./routes/anki.collection.media";
-import { indexRoute } from "./routes/index";
+import { assetsRoute } from "./routes/assets";
 import { wsRoute } from "./routes/ws";
 import { createState, serializeState } from "./state/state";
 import type { AppContext } from "./types/types";
@@ -117,7 +118,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
 
   registerHandlers({ api, db, state, logger });
   app.route("/", indexRoute);
-
+  app.route("/assets", assetsRoute);
   app.route("/ws", wsRoute);
   app.route("/anki/collection.media", ankiCollectionMediaRoute);
   app.route("/anki/anki-connect-proxy", ankiAnkiConnectProxyRoute);

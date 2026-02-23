@@ -5,4 +5,12 @@ export default defineConfig({
   define: {
     __DEV__: "false",
   },
+  copy: [
+    "./drizzle/",
+    {
+      from: "../webui/dist",
+      to: "./dist",
+      rename: "webui",
+    },
+  ],
 });

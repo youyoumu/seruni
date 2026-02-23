@@ -28,6 +28,9 @@ export async function createState(
     drizzleDir: DEV
       ? path.join(import.meta.dirname, "../../drizzle")
       : path.join(workdir, "./drizzle"),
+    webuiDir: DEV
+      ? path.join(import.meta.dirname, "../../../webui/dist")
+      : path.join(workdir, "./webui"),
     python:
       process.platform === "win32"
         ? path.join(venv, "Scripts/python.exe")
