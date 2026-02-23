@@ -6,6 +6,7 @@ import type { DBClient, MediaList } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
 import type { State } from "#/state/state";
+import { errFrom, toErr } from "#/util/err";
 import { safeAccess, safeRm } from "#/util/fs";
 import type { VadData } from "#/util/schema";
 import { textHistory as textHistoryTable } from "@repo/shared/db";
@@ -99,16 +100,17 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (this.#mediaDirCache) return ok(this.#mediaDirCache);
     const maxRetries = 3;
     const retryDelay = 1000;
-    const getMediaDirPath = ResultAsync.fromThrowable(this.client.media.getMediaDirPath, (e) => {
-      return e instanceof Error ? e : Error("Failed to get media dir");
-    });
+    const getMediaDirPath = ResultAsync.fromThrowable(
+      this.client.media.getMediaDirPath,
+      toErr("Failed to get media dir"),
+    );
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const result = await getMediaDirPath();
       if (result.isOk()) return ok((this.#mediaDirCache = result.value));
       if (attempt === maxRetries) return err(result.error);
       await delay(retryDelay * attempt);
     }
-    return err(Error("Failed to get media dir after retries"));
+    return errFrom("Failed to get media dir after retries");
   }
 
   async preUpdateNoteMedia({
@@ -374,9 +376,10 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     this.log.debug({ noteId: note.noteId, picturePath, sentenceAudioPath, tags }, "Updating note");
     const backupResult = await this.backupNoteMedia(note);
     if (backupResult.isErr()) return err(backupResult.error);
-    const updateNote = ResultAsync.fromThrowable(this.client.note.updateNote, (e) => {
-      return e instanceof Error ? e : Error("Error when updating note");
-    });
+    const updateNote = ResultAsync.fromThrowable(
+      this.client.note.updateNote,
+      toErr("Error when updating note"),
+    );
 
     return await updateNote({
       note: {
@@ -439,13 +442,14 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }
 
   async getNote(noteId: number): Promise<Result<AnkiNote, Error>> {
-    const notesInfo = ResultAsync.fromThrowable(this.client.note.notesInfo, (e) => {
-      return e instanceof Error ? e : Error("Failed to get note with notesInfo");
-    });
+    const notesInfo = ResultAsync.fromThrowable(
+      this.client.note.notesInfo,
+      toErr("Failed to get note with notesInfo"),
+    );
     const notes = await notesInfo({ notes: [noteId] });
     if (notes.isErr()) return err(notes.error);
     const note = notes.value[0];
-    if (!note) return err(Error("Can't find note with index 0"));
+    if (!note) return errFrom("Can't find note with index 0");
     return ok(note);
   }
 
@@ -459,9 +463,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const pictureField = note.fields[this.state.config().ankiPictureField];
     const sentenceAudioField = note.fields[this.state.config().ankiSentenceAudioField];
 
-    if (!expressionField) return err(Error("Invalid Expression field"));
-    if (!pictureField) return err(Error("Invalid Picture field"));
-    if (!sentenceAudioField) return err(Error("Invalid Sentence Audio field"));
+    if (!expressionField) return errFrom("Invalid Expression field");
+    if (!pictureField) return errFrom("Invalid Picture field");
+    if (!sentenceAudioField) return errFrom("Invalid Sentence Audio field");
     return ok({ expressionField, pictureField, sentenceAudioField });
   }
 
@@ -479,7 +483,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (imageMatch?.[1]) return ok(path.join(ankiMediaDir.value, imageMatch?.[1]));
     if (soundMatch?.[1]) return ok(path.join(ankiMediaDir.value, soundMatch?.[1]));
 
-    return err(Error("Can't find media path from field value"));
+    return errFrom("Can't find media path from field value");
   }
 }
 
