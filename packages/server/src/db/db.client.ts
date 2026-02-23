@@ -10,6 +10,12 @@ import type { Logger } from "pino";
 
 import type { DB } from ".";
 
+export type MediaList = Array<{
+  type: "picture" | "sentenceAudio";
+  filePath: string;
+  vadData?: VadData;
+}>;
+
 export class DBClient {
   db: DB;
   log: Logger;
@@ -28,17 +34,7 @@ export class DBClient {
     });
   }
 
-  async insertNoteAndMedia({
-    noteId,
-    media,
-  }: {
-    noteId: number;
-    media: Array<{
-      type: "picture" | "sentenceAudio";
-      filePath: string;
-      vadData?: VadData;
-    }>;
-  }) {
+  async insertNoteAndMedia({ noteId, media }: { noteId: number; media: MediaList }) {
     media.forEach((m) => {
       this.log.trace(`Copying ${m.filePath} to ${this.state.path().storageDir}`);
       fs.cp(m.filePath, path.join(this.state.path().storageDir, path.basename(m.filePath)));

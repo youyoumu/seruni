@@ -61,6 +61,9 @@ importers:
       mime:
         specifier: ^4.1.0
         version: 4.1.0
+      neverthrow:
+        specifier: ^7.2.0
+        version: 7.2.0
       obs-websocket-js:
         specifier: ^5.0.7
         version: 5.0.7
@@ -3055,6 +3058,10 @@ packages:
 
   napi-build-utils@2.0.0:
     resolution: {integrity: sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==}
+
+  neverthrow@7.2.0:
+    resolution: {integrity: sha512-iGBUfFB7yPczHHtA8dksKTJ9E8TESNTAx1UQWW6TzMF280vo9jdPYpLUXrMN1BCkPdHFdNG3fxOt2CUad8KhAw==}
+    engines: {node: '>=18'}
 
   node-abi@3.87.0:
     resolution: {integrity: sha512-+CGM1L1CgmtheLcBuleyYOn7NWPVu0s0EJH2C4puxgEZb9h8QpR9G2dBfZJOAUhi7VQxuBPMd0hiISWcTyiYyQ==}
@@ -6648,6 +6655,8 @@ snapshots:
 
   napi-build-utils@2.0.0:
     optional: true
+
+  neverthrow@7.2.0: {}
 
   node-abi@3.87.0:
     dependencies:

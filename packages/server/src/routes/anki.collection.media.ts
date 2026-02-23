@@ -14,9 +14,9 @@ app.get(`/:filename`, async (c) => {
   const { logger, ankiConnectClient } = c.get("ctx");
   const log = logger.child({ name: "anki-collection-media" });
   const filename = c.req.param("filename");
-  const mediaDir = await ankiConnectClient.getMediaDir();
-  if (!mediaDir || mediaDir instanceof Error) return c.notFound();
-  const filePath = join(mediaDir, filename);
+  const mediaDirResult = await ankiConnectClient.getMediaDir();
+  if (mediaDirResult.isErr()) return c.notFound();
+  const filePath = join(mediaDirResult.value, filename);
   return handleMediaRequest(c, { filePath, log });
 });
 
