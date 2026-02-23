@@ -43,7 +43,48 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
-  const ctx: AppContext = { db, state, logger, api, onPayload, addWS, removeWS, upgradeWebSocket };
+  const sessions = await db.select().from(session);
+  let lastSession = sessions[sessions.length - 1];
+  if (!lastSession) {
+    lastSession = await db
+      .insert(session)
+      .values({
+        name: "Default Session",
+      })
+      .returning()
+      .get();
+  }
+  state.activeSessionId(lastSession.id);
+
+  const dbClient = new DBClient({ db, logger, state });
+
+  const ffmpeg = new FFmpegExec({ logger, state });
+  const python = new PythonExec({ logger, state });
+
+  const textHookerClient = new TextHookerClient({ logger, api, db, state });
+  const obsClient = new OBSClient({ logger, state });
+  const ankiConnectClient = new AnkiConnectClient({
+    logger,
+    api,
+    db,
+    dbClient,
+    state,
+    obsClient,
+    ffmpeg,
+    python,
+  });
+
+  const ctx: AppContext = {
+    db,
+    state,
+    logger,
+    api,
+    onPayload,
+    addWS,
+    removeWS,
+    upgradeWebSocket,
+    ankiConnectClient,
+  };
 
   app.use(
     "*",
@@ -60,22 +101,9 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
     await next();
   });
 
-  const sessions = await db.select().from(session);
-  let lastSession = sessions[sessions.length - 1];
-  if (!lastSession) {
-    lastSession = await db
-      .insert(session)
-      .values({
-        name: "Default Session",
-      })
-      .returning()
-      .get();
-  }
-  state.activeSessionId(lastSession.id);
-
   registerHandlers({ api, db, state, logger });
-
   app.route("/", indexRoute);
+
   app.route("/ws", wsRoute);
   app.route("/anki/collection.media", ankiCollectionMediaRoute);
   app.route("/anki/anki-connect-proxy", ankiAnkiConnectProxyRoute);
@@ -90,15 +118,6 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
     },
   );
   injectWebSocket(server);
-
-  const dbClient = new DBClient({ db, logger, state });
-
-  const ffmpeg = new FFmpegExec({ logger, state });
-  const python = new PythonExec({ logger, state });
-
-  new TextHookerClient({ logger, api, db, state });
-  const obsClient = new OBSClient({ logger, state });
-  new AnkiConnectClient({ logger, api, db, dbClient, state, obsClient, ffmpeg, python });
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {

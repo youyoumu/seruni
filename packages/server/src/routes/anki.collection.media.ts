@@ -6,18 +6,16 @@ import type { Context } from "node:vm";
 import type { AppContext } from "#/types/types";
 import { Hono } from "hono";
 import mime from "mime";
+import type { Logger } from "pino";
 
 const app = new Hono<{ Variables: { ctx: AppContext } }>();
 
 app.get(`/:filename`, async (c) => {
-  const { logger } = c.get("ctx");
+  const { logger, ankiConnectClient } = c.get("ctx");
   const log = logger.child({ name: "anki-collection-media" });
   const filename = c.req.param("filename");
-  //TODO:
-  const mediaDir = "/home/yym/.local/share/Anki2/yym/collection.media";
-  if (!mediaDir) {
-    return c.notFound();
-  }
+  const mediaDir = await ankiConnectClient.getMediaDir();
+  if (!mediaDir || mediaDir instanceof Error) return c.notFound();
   const filePath = join(mediaDir, filename);
   return handleMediaRequest(c, { filePath, log });
 });
@@ -29,9 +27,7 @@ export async function handleMediaRequest(
     log,
   }: {
     filePath: string;
-    log?: {
-      error: (str: string) => void;
-    };
+    log?: Logger;
   },
 ) {
   try {

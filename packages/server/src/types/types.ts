@@ -1,3 +1,4 @@
+import type { AnkiConnectClient } from "#/client/anki-connect.client";
 import type { DB } from "#/db";
 import type { State } from "#/state/state";
 import { createServerApi } from "@repo/shared/ws";
@@ -14,4 +15,5 @@ export interface AppContext {
   addWS: ReturnType<typeof createServerApi>["addWS"];
   removeWS: ReturnType<typeof createServerApi>["removeWS"];
   upgradeWebSocket: UpgradeWebSocket;
+  ankiConnectClient: AnkiConnectClient;
 }
