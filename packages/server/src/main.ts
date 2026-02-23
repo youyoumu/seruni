@@ -1,3 +1,6 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { session } from "@repo/shared/db";
@@ -43,6 +46,14 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
+  // remove temp files
+  fs.readdir(state.path().tempDir).then((files) => {
+    files.forEach((file) => {
+      fs.rm(path.join(state.path().tempDir, file), { recursive: true });
+    });
+  });
+
+  // make at least one session exists
   const sessions = await db.select().from(session);
   let lastSession = sessions[sessions.length - 1];
   if (!lastSession) {
