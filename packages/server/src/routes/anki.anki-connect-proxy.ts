@@ -192,4 +192,4 @@ export async function parseAddNoteRequest(req: HonoRequest, log: Logger, state: 
   return { textHistoryId, body: newBody };
 }
 
-export { app as ankiAnkiConnectProxyRoute };
+export { app as ankiAnkiConnectProxy };

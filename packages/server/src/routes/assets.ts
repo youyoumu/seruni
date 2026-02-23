@@ -17,4 +17,4 @@ app.get("*", (c, next) => {
   })(c, next);
 });
 
-export { app as assetsRoute };
+export { app as assets };

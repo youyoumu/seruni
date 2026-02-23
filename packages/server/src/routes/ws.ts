@@ -28,4 +28,4 @@ app.get("/", (c, next) => {
   })(c, next);
 });
 
-export { app as wsRoute };
+export { app as ws };

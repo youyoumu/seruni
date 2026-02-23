@@ -96,4 +96,4 @@ export async function handleMediaRequest(
   }
 }
 
-export { app as ankiCollectionMediaRoute };
+export { app as ankiCollectionMedia };
