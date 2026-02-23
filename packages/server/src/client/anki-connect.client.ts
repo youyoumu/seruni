@@ -13,18 +13,29 @@ import type { ServerApi } from "@repo/shared/ws";
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
 import { delay, uniq } from "es-toolkit";
-import { Result, ok, err, ResultAsync } from "neverthrow";
+import { Result, ok, err, ResultAsync, Err } from "neverthrow";
 import type { Logger } from "pino";
 import z from "zod";
 
 import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
 
-class UpdateError extends Error {
+class QueueError extends Error {
   filesToDelete: string[];
-  constructor(message: string, filesToDelete: string[] = []) {
-    super(message);
+  constructor(message: string, filesToDelete: string[] = [], options: ErrorOptions = {}) {
+    super(message, options);
     this.filesToDelete = filesToDelete;
+  }
+
+  static from<T = unknown>(
+    error: Error | Err<unknown, Error> | string,
+    filesToDelete: string[] = [],
+  ): Result<T, QueueError> {
+    if (error instanceof Error)
+      return err(new QueueError(error.message, filesToDelete, { cause: error }));
+    if (error instanceof Err)
+      return err(new QueueError(error.error.message, filesToDelete, { cause: error }));
+    return err(new QueueError(String(error), filesToDelete));
   }
 }
 
@@ -44,7 +55,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   db: DB;
   dbClient: DBClient;
   api: ServerApi;
-  processQueue = new Map<number, Promise<Result<ProcessQueueResult, UpdateError>>>();
+  processQueue = new Map<number, Promise<Result<ProcessQueueResult, QueueError>>>();
   obsClient: OBSClient;
   ffmpeg: FFmpegExec;
   python: PythonExec;
@@ -143,15 +154,15 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }: {
     note: AnkiNote;
     textHistoryId: number;
-  }): Promise<Result<ProcessQueueResult, UpdateError>> {
+  }): Promise<Result<ProcessQueueResult, QueueError>> {
     // get history
     const now = new Date();
     const text = await this.db.query.textHistory.findFirst({
       where: eq(textHistoryTable.id, textHistoryId),
     });
-    if (!text) return err(new UpdateError("Failed to find text history"));
+    if (!text) return QueueError.from("Failed to find text history");
     if (text.createdAt.getTime() < now.getTime() - this.state.config().obsReplayBufferDuration) {
-      return err(new UpdateError("Text history already pass the replay buffer duration"));
+      return QueueError.from("Text history already pass the replay buffer duration");
     }
 
     this.log.debug(
@@ -161,13 +172,13 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     const filesToDelete: string[] = [];
     const { promise, resolve: resolve_ } =
-      Promise.withResolvers<Result<ProcessQueueResult, UpdateError>>();
-    const resolve = (result: Result<ProcessQueueResult, UpdateError>) => {
+      Promise.withResolvers<Result<ProcessQueueResult, QueueError>>();
+    const resolve = (result: Result<ProcessQueueResult, QueueError>) => {
       resolve_(result);
       return result;
     };
     const resolveErr = (error: Error) => {
-      return resolve(err(new UpdateError(error.message, filesToDelete)));
+      return resolve(QueueError.from(error, filesToDelete));
     };
     const alreadyProcessed = this.processQueue.has(text.id);
     if (!alreadyProcessed) this.processQueue.set(text.id, promise);
@@ -176,7 +187,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (alreadyProcessed) {
       this.log.info("Trying to reuse media files");
       const result = await this.processQueue.get(text.id);
-      if (!result) return err(new UpdateError(`Can't find process queue with id ${text.id}`));
+      if (!result) return QueueError.from(`Can't find process queue with id ${text.id}`);
       if (result.isErr()) return err(result.error);
       if (result.isOk()) {
         this.log.debug({ ...result.value }, "Reusing media files");
@@ -185,7 +196,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           picturePath: result.value.picturePath,
           sentenceAudioPath: result.value.sentenceAudioPath,
         });
-        if (updateResult.isErr()) return err(new UpdateError(updateResult.error.message));
+        if (updateResult.isErr()) return QueueError.from(updateResult);
         return ok({ ...result.value, reuseMedia: true });
       }
     }
