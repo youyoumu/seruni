@@ -322,11 +322,11 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     this.log.debug({ noteId: note.noteId, picturePath, sentenceAudioPath, tags }, "Updating note");
 
-    //TODO:
-    // await this.backupNoteMedia(note, {
-    //   isBackupPicture: !!picturePath,
-    //   isBackupSentenceAudio: !!sentenceAudioPath,
-    // });
+    const backupResult = await this.backupNoteMedia(note, {
+      isBackupPicture: !!picturePath,
+      isBackupSentenceAudio: !!sentenceAudioPath,
+    });
+    if (backupResult instanceof Error) return backupResult;
 
     try {
       await this.client?.note.updateNote({
@@ -365,6 +365,70 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       return e instanceof Error ? e : new Error("Error when updating note");
     }
   }
+
+  async backupNoteMedia(
+    note: AnkiNote,
+    { isBackupPicture = true, isBackupSentenceAudio = true } = {},
+  ) {
+    const ankiMediaDir = await this.getMediaDir();
+    if (!ankiMediaDir || ankiMediaDir instanceof Error) return new Error("Failed to get media dir");
+
+    const pictureFieldValue = note.fields[this.state.config().ankiPictureField]?.value ?? "";
+    const sentenceAudioFieldValue =
+      note.fields[this.state.config().ankiSentenceAudioField]?.value ?? "";
+    const backupPicture = parseAnkiMediaPath(pictureFieldValue);
+    const backupSentenceAudio = parseAnkiMediaPath(sentenceAudioFieldValue);
+    const backupPictureFilePath = backupPicture
+      ? path.join(ankiMediaDir, backupPicture)
+      : undefined;
+    const backupSentenceAudioFilePath = backupSentenceAudio
+      ? path.join(ankiMediaDir, backupSentenceAudio)
+      : undefined;
+
+    const media: Array<{
+      type: "picture" | "sentenceAudio";
+      filePath: string;
+      vadData?: VadData;
+    }> = [];
+    try {
+      if (!backupPictureFilePath || !isBackupPicture) {
+        this.log.debug("No Picture to backup");
+      } else {
+        await fs.access(backupPictureFilePath);
+        media.push({ filePath: backupPictureFilePath, type: "picture" });
+      }
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Failed to access backupPictureFilePath");
+    }
+    try {
+      if (!backupSentenceAudioFilePath || !isBackupSentenceAudio) {
+        this.log.debug("No SentenceAudio to backup");
+      } else {
+        await fs.access(backupSentenceAudioFilePath);
+        media.push({
+          filePath: backupSentenceAudioFilePath,
+          type: "sentenceAudio",
+        });
+      }
+    } catch (e) {
+      return e instanceof Error ? e : new Error("Failed to access backupSentenceAudioFilePath");
+    }
+
+    if (media.length > 0) {
+      await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media });
+    }
+  }
+}
+
+//TODO: handle multiple media
+function parseAnkiMediaPath(fieldValue: string) {
+  const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/i;
+  const soundRegex = /\[sound:([^\]]+)\]/i;
+
+  const imageMatch = fieldValue.match(imageRegex);
+  const soundMatch = fieldValue.match(soundRegex);
+
+  return imageMatch?.[1] ?? soundMatch?.[1] ?? "";
 }
 
 function isNsfw(note: AnkiNote) {
