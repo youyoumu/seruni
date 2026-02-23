@@ -157,14 +157,14 @@ export const proxyAnkiConnectAddNoteRequest = async (
 };
 
 function extractTextHistoryId(sentence: string) {
-  const match = sentence.match(/‹id:([0-9a-f-]{36})›/);
+  const match = sentence.match(/‹id:(\d+)›/);
   const id = Number(match?.[1]);
   if (isNaN(id)) return new Error("ID not found");
   return id;
 }
 
-function stripUuid(sentence: string) {
-  return sentence.replace(/‹id:[0-9a-f-]{36}›/, "");
+function stripTextHistoryId(sentence: string) {
+  return sentence.replace(/‹id:(\d+)›/, "");
 }
 
 export async function parseAddNoteRequest(req: HonoRequest, log: Logger, state: State) {
@@ -184,7 +184,7 @@ export async function parseAddNoteRequest(req: HonoRequest, log: Logger, state: 
   for (const key of Object.keys(ankiConnectAddNote.params.note.fields)) {
     const value = ankiConnectAddNote.params.note.fields[key];
     if (!value) continue;
-    const strippedValue = stripUuid(value);
+    const strippedValue = stripTextHistoryId(value);
     ankiConnectAddNote.params.note.fields[key] = strippedValue;
   }
   const newBody = JSON.stringify(ankiConnectAddNote);
