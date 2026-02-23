@@ -33,6 +33,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
 
     this.addListener("message", async (detail) => {
       if (typeof detail === "string") {
+        const text = detail.replaceAll("\n", " ").trim();
         const isListeningTexthooker = this.state.isListeningTexthooker();
         if (!isListeningTexthooker) {
           textHookerToastD();
@@ -44,9 +45,9 @@ export class TextHookerClient extends ReconnectingWebSocket {
         const row = await opts.db
           .insert(textHistory)
           .values({
-            text: detail,
+            text: text,
             sessionId: activeSessionId,
-            japaneseCharacterCount: calculateJapaneseCharCount(detail),
+            japaneseCharacterCount: calculateJapaneseCharCount(text),
           })
           .returning()
           .get();
