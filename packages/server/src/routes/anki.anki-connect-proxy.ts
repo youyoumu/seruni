@@ -7,7 +7,7 @@ import z from "zod";
 const app = new Hono<{ Variables: { ctx: AppContext } }>();
 
 app.post("/", async (c) => {
-  const { logger, state } = c.get("ctx");
+  const { logger, state, ankiConnectClient } = c.get("ctx");
   const log = logger.child({ name: "anki-connect-proxy" });
   const url = new URL(c.req.url);
   const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
@@ -60,11 +60,10 @@ app.post("/", async (c) => {
     for (let i = 0; i < expressions.length; i++) {
       const expression = expressions[i];
       const isDuplicate = parsed[i] === false;
-      //TODO: duplicate list
-      // if (isDuplicate && expression) ankiClient().duplicateList.add(expression);
+      if (isDuplicate && expression) ankiConnectClient.duplicateList.add(expression);
     }
 
-    // log.trace({ duplicateList: Array.from(ankiClient().duplicateList) }, "Updated duplicate list");
+    log.trace(Array.from(ankiConnectClient.duplicateList), "Updated duplicate list");
 
     return new Response(res.body, {
       status: res.status,

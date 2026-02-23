@@ -44,6 +44,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   ffmpeg: FFmpegExec;
   python: PythonExec;
   mediaDir: string | undefined;
+  duplicateList = new Set<string>();
 
   constructor(opts: {
     logger: Logger;
