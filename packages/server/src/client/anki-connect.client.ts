@@ -43,6 +43,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   obsClient: OBSClient;
   ffmpeg: FFmpegExec;
   python: PythonExec;
+  mediaDir: string | undefined;
 
   constructor(opts: {
     logger: Logger;
@@ -74,6 +75,24 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     this.addListener("close", () => {
       this.state.ankiConnectConnected(false);
     });
+  }
+
+  #mediaDirCache = "";
+  async getMediaDir(): Promise<string | Error> {
+    if (this.#mediaDirCache) return this.#mediaDirCache;
+    const maxRetries = 3;
+    const retryDelay = 1000;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return (this.#mediaDirCache = await this.client.media.getMediaDirPath());
+      } catch (e) {
+        if (attempt === maxRetries) {
+          return e instanceof Error ? e : new Error("Failed to get media dir");
+        }
+        await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
+      }
+    }
+    return new Error("Failed to get media dir after retries");
   }
 
   async updateNoteMedia({
