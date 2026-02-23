@@ -111,6 +111,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           note,
           textHistoryId,
         });
+        updateResult.filesToDelete.forEach((file) => rm(file));
         if (updateResult instanceof Error) throw updateResult;
         return updateResult;
       },
