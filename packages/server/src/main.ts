@@ -46,6 +46,27 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
+  const dbClient = new DBClient({ db, logger, state });
+
+  const ffmpeg = new FFmpegExec({ logger, state });
+  const python = new PythonExec({ logger, state });
+
+  const textHookerClient = new TextHookerClient({ logger, api, db, state });
+  const obsClient = new OBSClient({ logger, state });
+  const ankiConnectClient = new AnkiConnectClient({
+    logger,
+    api,
+    db,
+    dbClient,
+    state,
+    obsClient,
+    ffmpeg,
+    python,
+  });
+
+  // migrate database
+  await dbClient.migrate();
+
   // remove temp files
   fs.readdir(state.path().tempDir).then((files) => {
     files.forEach((file) => {
@@ -66,24 +87,6 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
       .get();
   }
   state.activeSessionId(lastSession.id);
-
-  const dbClient = new DBClient({ db, logger, state });
-
-  const ffmpeg = new FFmpegExec({ logger, state });
-  const python = new PythonExec({ logger, state });
-
-  const textHookerClient = new TextHookerClient({ logger, api, db, state });
-  const obsClient = new OBSClient({ logger, state });
-  const ankiConnectClient = new AnkiConnectClient({
-    logger,
-    api,
-    db,
-    dbClient,
-    state,
-    obsClient,
-    ffmpeg,
-    python,
-  });
 
   const ctx: AppContext = {
     db,

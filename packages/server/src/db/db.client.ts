@@ -5,6 +5,7 @@ import type { State } from "#/state/state";
 import type { VadData } from "#/util/schema";
 import { notes as notesTable, media as mediaTable } from "@repo/shared/db";
 import { eq, inArray } from "drizzle-orm";
+import { migrate } from "drizzle-orm/libsql/migrator";
 import type { Logger } from "pino";
 
 import type { DB } from ".";
@@ -18,6 +19,13 @@ export class DBClient {
     this.db = opts.db;
     this.log = opts.logger.child({ name: "db-client" });
     this.state = opts.state;
+  }
+
+  async migrate() {
+    this.log.debug("Migrating database");
+    await migrate(this.db, {
+      migrationsFolder: this.state.path().drizzleDir,
+    });
   }
 
   async insertNoteAndMedia({

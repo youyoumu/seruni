@@ -25,6 +25,9 @@ export async function createState(
     db: path.join(workdir, "./db.sqlite"),
     tempDir: path.join(workdir, "./temp"),
     storageDir: path.join(workdir, "./storage"),
+    drizzleDir: DEV
+      ? path.join(import.meta.dirname, "../../drizzle")
+      : path.join(workdir, "./drizzle"),
     python:
       process.platform === "win32"
         ? path.join(venv, "Scripts/python.exe")
@@ -32,8 +35,8 @@ export async function createState(
     pythonEntry,
   };
 
-  await fs.mkdir(path_.tempDir, { recursive: true });
-  await fs.mkdir(path_.storageDir, { recursive: true });
+  const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir];
+  await Promise.all(dirToCreate.map((dir) => fs.mkdir(dir, { recursive: true })));
   const config = await getConfigFromFile(path_.config);
 
   const state = {
