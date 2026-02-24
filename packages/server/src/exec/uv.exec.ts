@@ -1,4 +1,5 @@
 import type { State } from "#/state/state";
+import { err, ok, Result } from "neverthrow";
 import type { Logger } from "pino";
 
 import { Exec } from "./Exec";
@@ -13,12 +14,9 @@ export class UvExec extends Exec {
     });
   }
 
-  async version() {
-    try {
-      const { stdout } = await this.run(["--version"]);
-      return stdout;
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when checking uv version");
-    }
+  async version(): Promise<Result<string, Error>> {
+    const result = await this.run(["--version"]);
+    if (result.isErr()) return err(result.error);
+    return ok(result.value.stdout);
   }
 }

@@ -9,6 +9,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ok, type Result } from "neverthrow";
 import pino from "pino";
 
 import { AnkiConnectClient } from "./client/anki-connect.client";
@@ -22,15 +23,16 @@ import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
 import { createState, serializeState } from "./state/state";
 import type { AppContext } from "./types/types";
+import { errFrom } from "./util/err";
 import { createLogger } from "./util/logger";
 import { registerHandlers } from "./wss/handlers";
 
-function validateLogLevel(level: string): pino.Level | Error {
+function validateLogLevel(level: string): Result<pino.Level, Error> {
   const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
   if (!levels.includes(level as pino.Level)) {
-    return new Error(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
+    return errFrom(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
   }
-  return level as pino.Level;
+  return ok(level as pino.Level);
 }
 
 async function start(options: { workdir: string; logLevel: pino.Level }) {
@@ -146,10 +148,9 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   const uvResult = await uv.version();
   const pythonResult = await python.version();
 
-  const logResult = (name: string, result: string | Error) => {
-    const isOk = typeof result === "string";
-    const label = isOk ? chalk.green("OK") : chalk.red("ERROR");
-    const message = isOk ? result : chalk.yellow(result.message.split("\n")[0]);
+  const logResult = (name: string, result: Result<string, Error>) => {
+    const label = result.isOk() ? chalk.green("OK") : chalk.red("ERROR");
+    const message = result.isOk() ? result : chalk.yellow(result.error.message.split("\n")[0]);
     console.log(`[${chalk.cyan(name)}] [${label}]: ${message}`);
   };
 
@@ -170,11 +171,10 @@ function main() {
     .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
     .action(async (workdir: string, options: { logLevel: string }) => {
       const logLevel = validateLogLevel(options.logLevel);
-      if (logLevel instanceof Error) {
-        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
-        return;
+      if (logLevel.isErr()) {
+        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
       }
-      await start({ workdir, logLevel });
+      await start({ workdir, logLevel: logLevel.value });
     });
 
   program
@@ -184,11 +184,10 @@ function main() {
     .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "info")
     .action(async (workdir: string, options: { logLevel: string }) => {
       const logLevel = validateLogLevel(options.logLevel);
-      if (logLevel instanceof Error) {
-        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
-        return;
+      if (logLevel.isErr()) {
+        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
       }
-      await doctor({ workdir, logLevel });
+      await doctor({ workdir, logLevel: logLevel.value });
     });
 
   program
@@ -198,9 +197,8 @@ function main() {
     .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
     .action(async (workdir: string, options: { logLevel: string }) => {
       const logLevel = validateLogLevel(options.logLevel);
-      if (logLevel instanceof Error) {
-        console.error(chalk.red(`[ERROR] ${logLevel.message}`));
-        return;
+      if (logLevel.isErr()) {
+        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
       }
     });
 

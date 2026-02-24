@@ -1,5 +1,6 @@
 import type { State } from "#/state/state";
-import { zVadData } from "#/util/schema";
+import { zVadData, type VadData } from "#/util/schema";
+import { err, ok, Result } from "neverthrow";
 import type { Logger } from "pino";
 
 import { Exec } from "./Exec";
@@ -8,7 +9,7 @@ type SileroCommand = ["silero", string];
 type HealthcheckCommand = ["healthcheck"];
 type HealthcheckVenvCommand = ["healthcheck_venv"];
 type PipListCommand = ["pip_list"];
-type MainCommand = SileroCommand | HealthcheckCommand | HealthcheckVenvCommand | PipListCommand;
+type EntryCommand = SileroCommand | HealthcheckCommand | HealthcheckVenvCommand | PipListCommand;
 
 export class PythonExec extends Exec {
   constructor({ logger, state }: { logger: Logger; state: State }) {
@@ -20,38 +21,37 @@ export class PythonExec extends Exec {
     });
   }
 
-  async runMain(command: MainCommand) {
+  async runEntry(command: EntryCommand) {
     return await this.run([this.state.path().pythonEntry, ...command]);
   }
 
-  async version() {
-    try {
-      const { stdout } = await this.run(["--version"]);
-      return stdout;
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when checking python version");
-    }
+  async version(): Promise<Result<string, Error>> {
+    const result = await this.run(["--version"]);
+    if (result.isErr()) return err(result.error);
+    return ok(result.value.stdout);
   }
 
-  async runSilero(filePath: string) {
-    try {
-      return zVadData
-        .parse(JSON.parse((await this.runMain(["silero", filePath])).stdout))
-        .map((item) => {
-          item.start = item.start * 1000;
-          item.end = item.end * 1000;
-          return item;
-        });
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when running silero");
-    }
+  async runSilero(filePath: string): Promise<Result<VadData, Error>> {
+    const result = await this.runEntry(["silero", filePath]);
+    if (result.isErr()) return err(result.error);
+    const { stdout } = result.value;
+    const vadData = zVadData.parse(JSON.parse(stdout)).map((item) => {
+      item.start = item.start * 1000;
+      item.end = item.end * 1000;
+      return item;
+    });
+    return ok(vadData);
   }
 
   async runMainHealthcheck() {
-    return JSON.parse((await this.runMain(["healthcheck_venv"])).stdout);
+    const result = await this.runEntry(["healthcheck_venv"]);
+    if (result.isErr()) return err(result.error);
+    return JSON.parse(result.value.stdout);
   }
 
   async runHealthcheck() {
-    return JSON.parse((await this.runMain(["healthcheck"])).stdout);
+    const result = await this.run(["healthcheck"]);
+    if (result.isErr()) return err(result.error);
+    return JSON.parse(result.value.stdout);
   }
 }

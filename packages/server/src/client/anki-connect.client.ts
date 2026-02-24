@@ -40,10 +40,6 @@ class QueueError extends Error {
   }
 }
 
-function toResult<T>(result: T | Error): Result<T, Error> {
-  return result instanceof Error ? err(result) : ok(result);
-}
-
 type ProcessQueueResult = {
   picturePath: string;
   sentenceAudioPath: string;
@@ -204,31 +200,30 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     }
 
     // save replay buffer
-    const savedReplayPath = toResult(await this.obsClient.saveReplayBuffer());
+    const savedReplayPath = await this.obsClient.saveReplayBuffer();
     if (savedReplayPath.isErr()) return resolveErr(savedReplayPath.error);
     filesToDelete.push(savedReplayPath.value);
 
     // calculate offset
     const fileEnd = new Date();
-    const duration = toResult(await this.ffmpeg.getFileDuration(savedReplayPath.value));
+    const duration = await this.ffmpeg.getFileDuration(savedReplayPath.value);
     if (duration.isErr()) return resolveErr(duration.error);
 
     const fileStart = new Date(fileEnd.getTime() - duration.value);
     const offset = Math.max(0, Math.floor(text.createdAt.getTime() - fileStart.getTime()));
 
     // create wav file for vad
-    const audioStage1Path = toResult(
-      await this.ffmpeg.process({
-        inputPath: savedReplayPath.value,
-        seek: offset,
-        format: "wav",
-      }),
-    );
+    const audioStage1Path = await this.ffmpeg.process({
+      inputPath: savedReplayPath.value,
+      seek: offset,
+      format: "wav",
+    });
+
     if (audioStage1Path.isErr()) return resolveErr(audioStage1Path.error);
     filesToDelete.push(audioStage1Path.value);
 
     // generate vad data
-    const audioStage1VadData = toResult(await this.python.runSilero(audioStage1Path.value));
+    const audioStage1VadData = await this.python.runSilero(audioStage1Path.value);
     if (audioStage1VadData.isErr()) return resolveErr(audioStage1VadData.error);
     let audioStage1Duration = audioStage1VadData.value[audioStage1VadData.value.length - 1]?.end;
     if (audioStage1VadData.value.length === 1 && (audioStage1Duration ?? 0) < 1000) {
@@ -273,9 +268,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       format: `${pictureFormat}:multiple`,
     });
 
-    Promise.all([audioStage3PathPromise, imageDirPromise]).then(([audioStage3Path_, imageDir_]) => {
-      const audioStage3Path = toResult(audioStage3Path_);
-      const imageDir = toResult(imageDir_);
+    Promise.all([audioStage3PathPromise, imageDirPromise]).then(([audioStage3Path, imageDir]) => {
       this.insertNoteAndMedia({
         note,
         sentenceAudioPath: audioStage3Path.isOk() ? audioStage3Path.value : undefined,
@@ -285,12 +278,10 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       });
     });
 
-    const [audioStage2Path_, imagePath_] = await Promise.all([
+    const [audioStage2Path, imagePath] = await Promise.all([
       audioStage2PathPromise,
       imagePathPromise,
     ]);
-    const audioStage2Path = toResult(audioStage2Path_);
-    const imagePath = toResult(imagePath_);
     if (audioStage2Path.isErr()) return resolveErr(audioStage2Path.error);
     if (imagePath.isErr()) return resolveErr(imagePath.error);
 
@@ -414,7 +405,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     });
   }
 
-  async backupNoteMedia(note: AnkiNote): Promise<Result<void, Error>> {
+  async backupNoteMedia(note: AnkiNote): Promise<Result<null, Error>> {
     const ankiMediaDir = await this.getMediaDir();
     if (ankiMediaDir.isErr()) return err(ankiMediaDir.error);
 
@@ -436,9 +427,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     }
 
     if (media.length > 0) {
-      return toResult(await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media }));
+      return await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media });
     }
-    return ok(undefined);
+    return ok(null);
   }
 
   async getNote(noteId: number): Promise<Result<AnkiNote, Error>> {

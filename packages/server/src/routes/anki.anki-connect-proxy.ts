@@ -1,8 +1,10 @@
 import type { AnkiConnectClient } from "#/client/anki-connect.client";
 import type { State } from "#/state/state";
 import type { AppContext } from "#/types/types";
+import { errFrom } from "#/util/err";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 import { Hono, type HonoRequest } from "hono";
+import { ok, type Result } from "neverthrow";
 import type { Logger } from "pino";
 import z from "zod";
 
@@ -131,6 +133,7 @@ export const proxyAnkiConnectAddNoteRequest = async (
   const url = new URL(req.url);
   const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
   const { textHistoryId, body } = await parseAddNoteRequest(req, log, state);
+  if (textHistoryId.isErr()) throw textHistoryId.error;
 
   const headers = new Headers(req.raw.headers);
   headers.set("content-length", Buffer.byteLength(body, "utf-8").toString());
@@ -147,7 +150,7 @@ export const proxyAnkiConnectAddNoteRequest = async (
   const noteId = typeof noteId_ === "number" ? noteId_ : noteId_.result;
   const updateResult = ankiConnectClient.preUpdateNoteMedia({
     noteId,
-    textHistoryId,
+    textHistoryId: textHistoryId.value,
   });
   if (updateResult instanceof Error) {
     log.error(updateResult.message);
@@ -156,11 +159,11 @@ export const proxyAnkiConnectAddNoteRequest = async (
   return res;
 };
 
-function extractTextHistoryId(sentence: string) {
+function extractTextHistoryId(sentence: string): Result<number, Error> {
   const match = sentence.match(/‹id:(\d+)›/);
   const id = Number(match?.[1]);
-  if (isNaN(id)) return new Error("ID not found");
-  return id;
+  if (isNaN(id)) return errFrom("Can't find textHistoryId in sentence");
+  return ok(id);
 }
 
 function stripTextHistoryId(sentence: string) {

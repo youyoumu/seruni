@@ -20,3 +20,5 @@ AGENTS.md
 *.sqlite-journal
 
 *.sample.wav
+
+TODO.txt

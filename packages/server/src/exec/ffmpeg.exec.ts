@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 
 import type { State } from "#/state/state";
 import { format as formatDate } from "date-fns";
-import { execa } from "execa";
+import { err, ok, Result } from "neverthrow";
 import type { Logger } from "pino";
 import { uid } from "uid";
 
@@ -44,32 +44,19 @@ export class FFmpegExec extends Exec {
     return timestamp;
   }
 
-  async getFileDuration(filePath: string): Promise<number | Error> {
-    try {
-      const params = [
-        "-v",
-        "quiet",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "csv=p=0",
-        filePath,
-      ];
-      const { stdout, stderr } = await execa("ffprobe", params);
-      this.log.trace({ params, stdout, stderr }, "ffprobe");
-      return parseFloat(stdout.trim()) * 1000;
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when checking ffmpeg version");
-    }
+  async getFileDuration(filePath: string): Promise<Result<number, Error>> {
+    const params = ["-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", filePath];
+    const result = await this.safeExeca("ffprobe", params);
+    if (result.isErr()) return err(result.error);
+    const { stdout, stderr } = result.value;
+    this.log.trace({ params, stdout, stderr }, "ffprobe");
+    return ok(parseFloat(stdout.trim()) * 1000);
   }
 
-  async version() {
-    try {
-      const { stdout } = await this.run(["-version"]);
-      return stdout.split("\n")[0] ?? "";
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when checking ffmpeg version");
-    }
+  async version(): Promise<Result<string, Error>> {
+    const result = await this.run(["-version"]);
+    if (result.isErr()) return err(result.error);
+    return ok(result.value.stdout.split("\n")[0] ?? "");
   }
 
   async process({
@@ -84,7 +71,7 @@ export class FFmpegExec extends Exec {
     duration?: number;
     selectionData?: SelectionData;
     format: ProcessFormat;
-  }): Promise<string | Error> {
+  }): Promise<Result<string, Error>> {
     const timestamp = this.createTimestamp();
     const actualFormat = (() => {
       if (format === "png:multiple") return "png";
@@ -244,19 +231,8 @@ export class FFmpegExec extends Exec {
       ],
     };
 
-    try {
-      const { stdout, stderr } = await execa("ffmpeg", params[format]);
-      this.log.debug(
-        {
-          params: params[format],
-          stdout,
-          stderr,
-        },
-        "ffmpeg",
-      );
-      return format.endsWith("multiple") ? outputDir : outputPath;
-    } catch (e) {
-      return e instanceof Error ? e : new Error("Error when running ffmpeg");
-    }
+    const result = await this.run(params[format]);
+    if (result.isErr()) return err(result.error);
+    return format.endsWith("multiple") ? ok(outputDir) : ok(outputPath);
   }
 }

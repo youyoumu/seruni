@@ -1,5 +1,7 @@
 import type { State } from "#/state/state";
+import { errFrom } from "#/util/err";
 import { execa } from "execa";
+import { err, ok, Result, ResultAsync } from "neverthrow";
 import type { Logger } from "pino";
 
 export class Exec {
@@ -24,7 +26,7 @@ export class Exec {
     this.name = name;
   }
 
-  async run(params: string[]) {
+  async run(params: string[]): Promise<Result<{ stdout: string; stderr: string }, Error>> {
     this.log.debug(`Exec ${params.join(" ")}`);
     const subprocess = execa(this.bin, params);
 
@@ -37,7 +39,16 @@ export class Exec {
       logStderr.trace(`${data.toString().trim()}`);
     });
 
-    const { stdout, stderr } = await subprocess;
-    return { stdout, stderr };
+    try {
+      const { stdout, stderr } = await subprocess;
+      return ok({ stdout, stderr });
+    } catch (e) {
+      return e instanceof Error ? err(e) : errFrom(`Error when running ${this.name}`);
+    }
   }
+
+  safeExeca = ResultAsync.fromThrowable(
+    (file: string, args: string[] = []) => execa(file, args),
+    (e) => (e instanceof Error ? e : new Error(`Error when running ${this.name}`)),
+  );
 }

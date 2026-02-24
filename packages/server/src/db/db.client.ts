@@ -2,10 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { State } from "#/state/state";
+import { errFrom } from "#/util/err";
 import type { VadData } from "#/util/schema";
 import { notes as notesTable, media as mediaTable } from "@repo/shared/db";
 import { eq, inArray } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
+import { ok, type Result } from "neverthrow";
 import type { Logger } from "pino";
 
 import type { DB } from ".";
@@ -34,7 +36,13 @@ export class DBClient {
     });
   }
 
-  async insertNoteAndMedia({ noteId, media }: { noteId: number; media: MediaList }) {
+  async insertNoteAndMedia({
+    noteId,
+    media,
+  }: {
+    noteId: number;
+    media: MediaList;
+  }): Promise<Result<null, Error>> {
     media.forEach((m) => {
       this.log.trace(`Copying ${m.filePath} to ${this.state.path().storageDir}`);
       fs.cp(m.filePath, path.join(this.state.path().storageDir, path.basename(m.filePath)));
@@ -52,7 +60,7 @@ export class DBClient {
         .from(notesTable)
         .where(eq(notesTable.noteId, noteId))
         .then((result) => result[0]?.id);
-      if (!noteRowId) return new Error("Note ID not found");
+      if (!noteRowId) return errFrom(`Can't find note with nodeId ${noteId}`);
     }
 
     this.log.debug({ noteId, media }, "Saving note and media to database");
@@ -64,6 +72,7 @@ export class DBClient {
         vadData: m.vadData,
       })),
     );
+    return ok(null);
   }
 
   async getNoteMedia(noteId: number) {
