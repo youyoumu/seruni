@@ -1,163 +1,164 @@
-import type { AnkiConnectClient } from "#/client/anki-connect.client";
-import type { State } from "#/state/state";
 import type { AppContext } from "#/types/types";
-import { errFrom } from "#/util/err";
+import { errFrom, safeJSONParse } from "#/util/err";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
-import { Hono, type HonoRequest } from "hono";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { ok, type Result } from "neverthrow";
 import type { Logger } from "pino";
 import z from "zod";
 
-const app = new Hono<{ Variables: { ctx: AppContext } }>();
+type ProxyContext = {
+  bodyJson: ReturnType<typeof JSON.parse> | undefined;
+  log: Logger;
+  forward: (overwrite?: {
+    headers?: Headers;
+    body?: BodyInit | null | undefined;
+  }) => Promise<{ response: Response; json: ReturnType<typeof JSON.parse> }>;
+};
 
-app.post("/", async (c) => {
-  const { logger, state, ankiConnectClient } = c.get("ctx");
+const app = new Hono<{ Variables: { ctx: AppContext; proxyCtx: ProxyContext } }>();
+
+// setup first middleware
+app.post("/", async (c, next) => {
+  const { logger, state } = c.get("ctx");
   const log = logger.child({ name: "anki-connect-proxy" });
   const url = new URL(c.req.url);
-  const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
-  const expressionField = state.config().ankiExpressionField;
-
+  const targetUrl = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
   let body: ArrayBuffer | undefined;
   let bodyText: string | undefined;
   let bodyJson: ReturnType<typeof JSON.parse> | undefined;
-
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     body = await c.req.arrayBuffer();
     bodyText = new TextDecoder().decode(body);
   }
-
   if (bodyText) {
-    try {
-      bodyJson = JSON.parse(bodyText);
-    } catch {}
+    const result = safeJSONParse(bodyText);
+    if (result.isOk()) bodyJson = result.value;
   }
   log.trace(
-    { URL: url.toString(), METHOD: c.req.method, BODY: bodyJson ?? bodyText },
+    { URL: targetUrl, METHOD: c.req.method, BODY: bodyJson ?? bodyText },
     "AnkiConnect proxy received a request",
   );
 
-  // intercept and handle canAddNotes
-  const ankiConnectCanAddNote = zAnkiConnectCanAddNotes(expressionField).safeParse(bodyJson);
-  if (ankiConnectCanAddNote.success) {
-    log.trace("AnkiConnect proxy received CanAddNotes request, tracking duplicate note");
-    const deckName = ankiConnectCanAddNote.data.params.notes[0]?.deckName;
-    log.trace({ deckName }, "Detected deckName");
-    if (deckName) state.yomitanAnkiConnectDeckName(deckName);
-    const expressions = ankiConnectCanAddNote.data.params.notes.map(
-      (item) => item.fields[expressionField],
-    );
-    if (expressions.some((item) => item === undefined)) {
-      throw new Error(
-        "AnkiConnect request uses Expression field that is different from configured field",
-      );
-    }
-
-    const res = await fetch(target, {
+  const forward = async (
+    overwrite: { headers?: Headers; body?: BodyInit | null | undefined } = {},
+  ) => {
+    const response = await fetch(targetUrl, {
       method: c.req.method,
-      headers: c.req.raw.headers,
-      body,
+      headers: overwrite.headers ?? c.req.raw.headers,
+      body: overwrite.body ?? body,
     });
-
-    const resClone = res.clone();
-    const result = await resClone.json();
-    const parsed = z.array(z.boolean()).parse(result);
-    for (let i = 0; i < expressions.length; i++) {
-      const expression = expressions[i];
-      const isDuplicate = parsed[i] === false;
-      if (isDuplicate && expression) ankiConnectClient.duplicateList.add(expression);
-    }
-
-    log.trace(Array.from(ankiConnectClient.duplicateList), "Updated duplicate list");
-
-    return new Response(res.body, {
-      status: res.status,
-      headers: res.headers,
-    });
-  }
-
-  //TODO: inject payload instead of listening
-  //intercept and handle addNote
-  const ankiConnectAddNote = zAnkiConnectAddNote.safeParse(bodyJson);
-  if (ankiConnectAddNote.success) {
-    log.debug("AnkiConnect proxy received AddNote request, processing new note");
-    const expression = ankiConnectAddNote.data.params.note.fields[expressionField];
-    if (expression === undefined) throw new Error("Expression field is missing, invalid config?");
-    // intercept and duplicate notes
-    // TODO: duplicate intercept
-    // if (ankiClient().duplicateList.has(expression)) {
-    //   const uuid = crypto.randomUUID();
-    //   interceptedRequest.set(uuid, c.req);
-    //
-    //   const noteIds = await ankiClient().client?.note.findNotes({
-    //     query: `"deck:${yomitanAnkiConnectSettings.deckName}" "expression:${expression}"`,
-    //   });
-    //   if (!noteIds) throw new Error("Note not found");
-    //   log.debug({ noteIds }, "Found duplicate notes");
-    //   miningIPC().send("mining:duplicateNoteConfirmation", { uuid, noteIds });
-    //
-    //   return new Response("Intercepted", {
-    //     status: 500,
-    //   });
-    // }
-
-    const res = await proxyAnkiConnectAddNoteRequest(c.req, log, state, ankiConnectClient);
-
-    return new Response(res.body, {
-      status: res.status,
-      headers: res.headers,
-    });
-  }
-
-  const res = await fetch(target, {
-    method: c.req.method,
-    headers: c.req.raw.headers,
-    body,
-  });
-
-  const resClone = res.clone();
-  const result = await resClone.json();
-  log.trace({ result }, "AnkiConnect proxy received response");
-
-  return new Response(res.body, {
-    status: res.status,
-    headers: res.headers,
-  });
+    const json = await response.clone().json();
+    log.trace({ json }, "AnkiConnect proxy received response");
+    return {
+      response: new Response(response.body, {
+        status: response.status,
+        headers: response.headers,
+      }),
+      json,
+    };
+  };
+  c.set("proxyCtx", { bodyJson, log, forward });
+  await next();
 });
 
-export const proxyAnkiConnectAddNoteRequest = async (
-  req: HonoRequest,
-  log: Logger,
-  state: State,
-  ankiConnectClient: AnkiConnectClient,
-) => {
-  const url = new URL(req.url);
-  const target = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
-  const { textHistoryId, body } = await parseAddNoteRequest(req, log, state);
-  if (textHistoryId.isErr()) throw textHistoryId.error;
+// intercept canAddNotes
+app.post("/", async (c, next) => {
+  const { state, ankiConnectClient } = c.get("ctx");
+  const { bodyJson, log, forward } = c.get("proxyCtx");
+  const expressionField = state.config().ankiExpressionField;
+  const { success, data } = zAnkiConnectCanAddNotes(expressionField).safeParse(bodyJson);
+  if (!success) return await next();
+  log.trace("AnkiConnect proxy received CanAddNotes request, tracking duplicate note");
 
-  const headers = new Headers(req.raw.headers);
+  const deckName = data.params.notes[0]?.deckName;
+  log.trace(`Detected deckName: ${deckName}`);
+  if (deckName) state.yomitanAnkiConnectDeckName(deckName);
+  const expressions = data.params.notes.map((item) => item.fields[expressionField]);
+  if (expressions.includes(undefined)) {
+    throw new HTTPException(500, { message: "Invalid expressionField" });
+  }
+
+  const { response, json } = await forward();
+  const parsed = z.array(z.boolean()).parse(json);
+  for (let i = 0; i < expressions.length; i++) {
+    const expression = expressions[i];
+    const isDuplicate = parsed[i] === false;
+    if (isDuplicate && expression) ankiConnectClient.duplicateList.add(expression);
+  }
+  log.trace(Array.from(ankiConnectClient.duplicateList), "Updated duplicate list");
+
+  return response;
+});
+
+// intercept addNote
+app.post("/", async (c, next) => {
+  const { state, ankiConnectClient } = c.get("ctx");
+  const { bodyJson, log, forward } = c.get("proxyCtx");
+  const expressionField = state.config().ankiExpressionField;
+  const sentenceField = state.config().ankiSentenceField;
+  const { success, data } = zAnkiConnectAddNote.safeParse(bodyJson);
+  if (!success) return await next();
+
+  //TODO: inject payload instead of listening
+  log.debug("AnkiConnect proxy received AddNote request, processing new note");
+  const expression = data.params.note.fields[expressionField];
+  const sentence = data.params.note.fields[sentenceField];
+  if (expression === undefined) {
+    throw new HTTPException(500, { message: "Invalid expressionField" });
+  }
+  if (sentence === undefined) {
+    throw new HTTPException(500, { message: "Invalid sentenxtField" });
+  }
+
+  // TODO: intercept duplicate note
+  //
+  // if (ankiClient().duplicateList.has(expression)) {
+  //   const uuid = crypto.randomUUID();
+  //   interceptedRequest.set(uuid, c.req);
+  //
+  //   const noteIds = await ankiClient().client?.note.findNotes({
+  //     query: `"deck:${yomitanAnkiConnectSettings.deckName}" "expression:${expression}"`,
+  //   });
+  //   if (!noteIds) throw new Error("Note not found");
+  //   log.debug({ noteIds }, "Found duplicate notes");
+  //   miningIPC().send("mining:duplicateNoteConfirmation", { uuid, noteIds });
+  //
+  //   return new Response("Intercepted", {
+  //     status: 500,
+  //   });
+  // }
+
+  const textHistoryId = extractTextHistoryId(sentence);
+  if (textHistoryId.isErr()) throw new HTTPException(500, { message: textHistoryId.error.message });
+  log.debug(`Extracted textHistoryId from sentence: ${textHistoryId.value}`);
+  for (const key of Object.keys(data.params.note.fields)) {
+    const value = data.params.note.fields[key];
+    if (!value) continue;
+    data.params.note.fields[key] = stripTextHistoryId(value);
+  }
+  const body = JSON.stringify(data);
+  const headers = new Headers(c.req.raw.headers);
   headers.set("content-length", Buffer.byteLength(body, "utf-8").toString());
 
-  const res = await fetch(target, {
-    method: req.method,
-    headers,
-    body,
-  });
-  const resClone = res.clone();
-  const resJson = await resClone.json();
-
-  const noteId_ = z.union([z.number(), z.object({ result: z.number() })]).parse(resJson);
+  const { response, json } = await forward({ headers, body });
+  const noteId_ = z.union([z.number(), z.object({ result: z.number() })]).parse(json);
   const noteId = typeof noteId_ === "number" ? noteId_ : noteId_.result;
-  const updateResult = ankiConnectClient.preUpdateNoteMedia({
+
+  await ankiConnectClient.preUpdateNoteMedia({
     noteId,
     textHistoryId: textHistoryId.value,
   });
-  if (updateResult instanceof Error) {
-    log.error(updateResult.message);
-  }
 
-  return res;
-};
+  return response;
+});
+
+// forward request
+app.post("/", async (c) => {
+  const { forward } = c.get("proxyCtx");
+  const { response } = await forward();
+  return response;
+});
 
 function extractTextHistoryId(sentence: string): Result<number, Error> {
   const match = sentence.match(/‹id:(\d+)›/);
@@ -168,31 +169,6 @@ function extractTextHistoryId(sentence: string): Result<number, Error> {
 
 function stripTextHistoryId(sentence: string) {
   return sentence.replace(/‹id:(\d+)›/, "");
-}
-
-export async function parseAddNoteRequest(req: HonoRequest, log: Logger, state: State) {
-  const body = await req.arrayBuffer();
-  const bodyText = new TextDecoder().decode(body);
-  const bodyJson = JSON.parse(bodyText);
-
-  const sentenceField = state.config().ankiSentenceField;
-
-  const ankiConnectAddNote = zAnkiConnectAddNote.parse(bodyJson);
-  const sentence = ankiConnectAddNote.params.note.fields[sentenceField];
-  if (sentence === undefined) throw new Error("Sentence field is missing, invalid config?");
-  const textHistoryId = extractTextHistoryId(sentence);
-  if (textHistoryId instanceof Error) throw textHistoryId;
-  log.trace(`Extracted ID from sentence: ${textHistoryId}`);
-
-  for (const key of Object.keys(ankiConnectAddNote.params.note.fields)) {
-    const value = ankiConnectAddNote.params.note.fields[key];
-    if (!value) continue;
-    const strippedValue = stripTextHistoryId(value);
-    ankiConnectAddNote.params.note.fields[key] = strippedValue;
-  }
-  const newBody = JSON.stringify(ankiConnectAddNote);
-
-  return { textHistoryId, body: newBody };
 }
 
 export { app as ankiAnkiConnectProxy };
