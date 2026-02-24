@@ -19,4 +19,12 @@ export class UvExec extends Exec {
     if (result.isErr()) return err(result.error);
     return ok(result.value.stdout);
   }
+
+  async setupVenv() {
+    return await this.run(["sync", "--directory", this.state.path().pythonWorkdir], {
+      env: {
+        UV_PROJECT_ENVIRONMENT: this.state.path().venvDir,
+      },
+    });
+  }
 }

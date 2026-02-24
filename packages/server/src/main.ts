@@ -50,7 +50,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const ffmpeg = new FFmpegExec({ logger, state });
   const python = new PythonExec({ logger, state });
 
-  const textHookerClient = new TextHookerClient({ logger, api, db, state });
+  new TextHookerClient({ logger, api, db, state });
   const obsClient = new OBSClient({ logger, state });
   const ankiConnectClient = new AnkiConnectClient({
     logger,
@@ -150,13 +150,29 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
 
   const logResult = (name: string, result: Result<string, Error>) => {
     const label = result.isOk() ? chalk.green("OK") : chalk.red("ERROR");
-    const message = result.isOk() ? result : chalk.yellow(result.error.message.split("\n")[0]);
+    const message = result.isOk()
+      ? result.value
+      : chalk.yellow(result.error.message.split("\n")[0]);
     console.log(`[${chalk.cyan(name)}] [${label}]: ${message}`);
   };
 
   logResult("uv", uvResult);
   logResult("FFmpeg", ffmpegResult);
   logResult("Python", pythonResult);
+}
+
+async function venv(options: { workdir: string; logLevel: pino.Level }) {
+  const state = await createState({ workdir: options.workdir });
+  const logger = createLogger({ level: options.logLevel });
+  const log = logger.child({ name: "venv" });
+
+  log.info(serializeState(state), "Starting with state");
+
+  const uv = new UvExec({ logger, state });
+
+  const result = await uv.setupVenv();
+  if (result.isErr()) return console.error(chalk.red(`[ERROR] ${result.error.message}`));
+  return console.log(chalk.green(`[OK] ${state.path().venvDir}`));
 }
 
 function main() {
@@ -200,6 +216,7 @@ function main() {
       if (logLevel.isErr()) {
         return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
       }
+      await venv({ workdir, logLevel: logLevel.value });
     });
 
   program.parse();

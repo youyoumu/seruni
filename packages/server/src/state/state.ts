@@ -19,7 +19,7 @@ export async function createState(
     ? path.join(import.meta.dirname, "../../../python")
     : path.join(workdir, "./python");
   const pythonEntry = path.join(pythonWorkdir, "src/main.py");
-  const venv = path.join(pythonWorkdir, ".venv") ?? path.join(workdir, "./venv");
+  const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(workdir, "./venv");
   const path_ = {
     config: path.join(workdir, "./config.json"),
     db: path.join(workdir, "./db.sqlite"),
@@ -31,14 +31,16 @@ export async function createState(
     webuiDir: DEV
       ? path.join(import.meta.dirname, "../../../webui/dist")
       : path.join(workdir, "./webui"),
+    venvDir,
     python:
       process.platform === "win32"
-        ? path.join(venv, "Scripts/python.exe")
-        : path.join(venv, "bin/python"),
+        ? path.join(venvDir, "Scripts/python.exe")
+        : path.join(venvDir, "bin/python"),
     pythonEntry,
+    pythonWorkdir,
   };
 
-  const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir];
+  const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir, path_.venvDir];
   await Promise.all(dirToCreate.map((dir) => fs.mkdir(dir, { recursive: true })));
   const config = await getConfigFromFile(path_.config);
 

@@ -12,5 +12,9 @@ export default defineConfig({
       to: "./dist",
       rename: "webui",
     },
+    {
+      from: ["../python/pyproject.toml", "../python/uv.lock", "../python/src"],
+      to: "./dist/python",
+    },
   ],
 });
