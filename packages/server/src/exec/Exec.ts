@@ -1,5 +1,5 @@
 import type { State } from "#/state/state";
-import { errFrom } from "#/util/err";
+import { anyFail } from "#/util/result";
 import { R } from "@praha/byethrow";
 import { execa } from "execa";
 import type { Logger } from "pino";
@@ -50,7 +50,7 @@ export class Exec {
       const { stdout, stderr } = await subprocess;
       return R.succeed({ stdout, stderr });
     } catch (e) {
-      return e instanceof Error ? R.fail(e) : errFrom(`Error when running ${this.name}`);
+      return e instanceof Error ? R.fail(e) : anyFail(`Error when running ${this.name}`);
     }
   }
 

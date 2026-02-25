@@ -1,5 +1,5 @@
 import type { AppContext } from "#/types/types";
-import { errFrom, safeJSONParse } from "#/util/err";
+import { anyFail, safeJSONParse } from "#/util/result";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { Hono } from "hono";
@@ -164,7 +164,7 @@ app.post("/", async (c) => {
 function extractTextHistoryId(sentence: string): R.Result<number, Error> {
   const match = sentence.match(/‹id:(\d+)›/);
   const id = Number(match?.[1]);
-  if (isNaN(id)) return errFrom("Can't find textHistoryId in sentence");
+  if (isNaN(id)) return anyFail("Can't find textHistoryId in sentence");
   return R.succeed(id);
 }
 

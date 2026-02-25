@@ -23,14 +23,14 @@ import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
 import { createState, serializeState } from "./state/state";
 import type { AppContext } from "./types/types";
-import { errFrom } from "./util/err";
 import { createLogger } from "./util/logger";
+import { anyFail } from "./util/result";
 import { registerHandlers } from "./wss/handlers";
 
 function validateLogLevel(level: string): R.Result<pino.Level, Error> {
   const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
   if (!levels.includes(level as pino.Level)) {
-    return errFrom(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
+    return anyFail(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
   }
   return R.succeed(level as pino.Level);
 }

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import { errFrom } from "#/util/err";
+import { anyFail } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { notes as notesTable, media as mediaTable } from "@repo/shared/db";
@@ -60,7 +60,7 @@ export class DBClient {
         .from(notesTable)
         .where(eq(notesTable.noteId, noteId))
         .then((result) => result[0]?.id);
-      if (!noteRowId) return errFrom(`Can't find note with nodeId ${noteId}`);
+      if (!noteRowId) return anyFail(`Can't find note with nodeId ${noteId}`);
     }
 
     this.log.debug({ noteId, media }, "Saving note and media to database");

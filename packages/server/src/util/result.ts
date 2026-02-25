@@ -1,10 +1,10 @@
 import { R } from "@praha/byethrow";
 
-export function errFrom(message: string, cause?: Error) {
+export function anyFail(message: string, cause?: Error) {
   return R.fail(new Error(message, { cause }));
 }
 
-export function toErr(fallbackMessage: string) {
+export function anyCatch(fallbackMessage: string) {
   return (e: unknown) => {
     return e instanceof Error ? e : Error(fallbackMessage, { cause: e });
   };

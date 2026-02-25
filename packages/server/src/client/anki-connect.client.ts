@@ -6,8 +6,8 @@ import type { DBClient, MediaList } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
 import type { State } from "#/state/state";
-import { errFrom, toErr } from "#/util/err";
 import { safeAccess, safeRm } from "#/util/fs";
+import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { textHistory as textHistoryTable } from "@repo/shared/db";
@@ -28,7 +28,7 @@ class QueueError extends Error {
     this.filesToDelete = filesToDelete;
   }
 
-  static from(error: Error | R.Result<unknown, Error> | string, filesToDelete: string[] = []) {
+  static fail(error: Error | R.Result<unknown, Error> | string, filesToDelete: string[] = []) {
     if (error instanceof Error)
       return R.fail(new QueueError(error.message, filesToDelete, { cause: error }));
     if (typeof error !== "string" && R.isFailure(error))
@@ -95,7 +95,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const retryDelay = 1000;
     const getMediaDirPath = R.fn({
       try: () => this.client.media.getMediaDirPath(),
-      catch: toErr("Failed to get media dir"),
+      catch: anyCatch("Failed to get media dir"),
     });
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const result = await getMediaDirPath();
@@ -103,7 +103,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       if (attempt === maxRetries) return R.fail(result.error);
       await delay(retryDelay * attempt);
     }
-    return errFrom("Failed to get media dir after retries");
+    return anyFail("Failed to get media dir after retries");
   }
 
   async preUpdateNoteMedia({
@@ -155,9 +155,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const text = await this.db.query.textHistory.findFirst({
       where: eq(textHistoryTable.id, textHistoryId),
     });
-    if (!text) return QueueError.from("Failed to find text history");
+    if (!text) return QueueError.fail("Failed to find text history");
     if (text.createdAt.getTime() < now.getTime() - this.state.config().obsReplayBufferDuration) {
-      return QueueError.from("Text history already pass the replay buffer duration");
+      return QueueError.fail("Text history already pass the replay buffer duration");
     }
 
     this.log.debug(
@@ -173,7 +173,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       return result;
     };
     const resolveErr = (error: Error) => {
-      return resolve(QueueError.from(error, filesToDelete));
+      return resolve(QueueError.fail(error, filesToDelete));
     };
     const alreadyProcessed = this.processQueue.has(text.id);
     if (!alreadyProcessed) this.processQueue.set(text.id, promise);
@@ -182,7 +182,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (alreadyProcessed) {
       this.log.info("Trying to reuse media files");
       const result = await this.processQueue.get(text.id);
-      if (!result) return QueueError.from(`Can't find process queue with id ${text.id}`);
+      if (!result) return QueueError.fail(`Can't find process queue with id ${text.id}`);
       if (R.isFailure(result)) return R.fail(result.error);
       if (R.isSuccess(result)) {
         this.log.debug({ ...result.value }, "Reusing media files");
@@ -191,7 +191,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           picturePath: result.value.picturePath,
           sentenceAudioPath: result.value.sentenceAudioPath,
         });
-        if (R.isFailure(updateResult)) return QueueError.from(updateResult);
+        if (R.isFailure(updateResult)) return QueueError.fail(updateResult);
         return R.succeed({ ...result.value, reuseMedia: true });
       }
     }
@@ -397,7 +397,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
             tags,
           },
         }),
-      catch: toErr("Error when updating note"),
+      catch: anyCatch("Error when updating note"),
     });
 
     return updateNote;
@@ -433,12 +433,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   async getNote(noteId: number): Promise<R.Result<AnkiNote, Error>> {
     const notesInfo = R.try({
       try: () => this.client.note.notesInfo({ notes: [noteId] }),
-      catch: toErr("Failed to get note with notesInfo"),
+      catch: anyCatch("Failed to get note with notesInfo"),
     });
     const notes = await notesInfo;
     if (R.isFailure(notes)) return R.fail(notes.error);
     const note = notes.value[0];
-    if (!note) return errFrom("Can't find note with index 0");
+    if (!note) return anyFail("Can't find note with index 0");
     return R.succeed(note);
   }
 
@@ -452,9 +452,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const pictureField = note.fields[this.state.config().ankiPictureField];
     const sentenceAudioField = note.fields[this.state.config().ankiSentenceAudioField];
 
-    if (!expressionField) return errFrom("Invalid Expression field");
-    if (!pictureField) return errFrom("Invalid Picture field");
-    if (!sentenceAudioField) return errFrom("Invalid Sentence Audio field");
+    if (!expressionField) return anyFail("Invalid Expression field");
+    if (!pictureField) return anyFail("Invalid Picture field");
+    if (!sentenceAudioField) return anyFail("Invalid Sentence Audio field");
     return R.succeed({ expressionField, pictureField, sentenceAudioField });
   }
 
@@ -472,7 +472,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (imageMatch?.[1]) return R.succeed(path.join(ankiMediaDir.value, imageMatch?.[1]));
     if (soundMatch?.[1]) return R.succeed(path.join(ankiMediaDir.value, soundMatch?.[1]));
 
-    return errFrom("Can't find media path from field value");
+    return anyFail("Can't find media path from field value");
   }
 }
 
