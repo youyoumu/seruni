@@ -9,6 +9,7 @@
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@praha/byethrow-docs": "^0.10.0",
     "turbo": "^2.8.2",
     "typescript": "5.9.2"
   },
