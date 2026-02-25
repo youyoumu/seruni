@@ -1,7 +1,7 @@
-import { err, Result } from "neverthrow";
+import { R } from "@praha/byethrow";
 
 export function errFrom(message: string, cause?: Error) {
-  return err(new Error(message, { cause }));
+  return R.fail(new Error(message, { cause }));
 }
 
 export function toErr(fallbackMessage: string) {
@@ -10,6 +10,7 @@ export function toErr(fallbackMessage: string) {
   };
 }
 
-export const safeJSONParse = Result.fromThrowable(JSON.parse, (e) =>
-  e instanceof Error ? e : new Error("Error when parsing JSON"),
-);
+export const safeJSONParse = R.fn({
+  try: (text: string) => JSON.parse(text) as unknown,
+  catch: (e) => (e instanceof Error ? e : new Error("Error when parsing JSON")),
+});

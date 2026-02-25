@@ -1,7 +1,7 @@
 import type { State } from "#/state/state";
 import { errFrom } from "#/util/err";
-import { execa, type Options } from "execa";
-import { err, ok, Result, ResultAsync } from "neverthrow";
+import { R } from "@praha/byethrow";
+import { execa } from "execa";
 import type { Logger } from "pino";
 
 export class Exec {
@@ -29,7 +29,7 @@ export class Exec {
   async run(
     params: string[],
     options: { env?: Record<string, string> } = {},
-  ): Promise<Result<{ stdout: string; stderr: string }, Error>> {
+  ): Promise<R.Result<{ stdout: string; stderr: string }, Error>> {
     this.log.debug(`Exec ${params.join(" ")}`);
     const subprocess = execa({
       env: options.env,
@@ -48,14 +48,14 @@ export class Exec {
 
     try {
       const { stdout, stderr } = await subprocess;
-      return ok({ stdout, stderr });
+      return R.succeed({ stdout, stderr });
     } catch (e) {
-      return e instanceof Error ? err(e) : errFrom(`Error when running ${this.name}`);
+      return e instanceof Error ? R.fail(e) : errFrom(`Error when running ${this.name}`);
     }
   }
 
-  safeExeca = ResultAsync.fromThrowable(
-    (file: string, args: string[] = []) => execa(file, args),
-    (e) => (e instanceof Error ? e : new Error(`Error when running ${this.name}`)),
-  );
+  safeExeca = R.fn({
+    try: (file: string, args: string[] = []) => execa(file, args),
+    catch: (e) => (e instanceof Error ? e : new Error(`Error when running ${this.name}`)),
+  });
 }

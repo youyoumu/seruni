@@ -32,7 +32,6 @@
     "execa": "^9.6.1",
     "hono": "^4.11.8",
     "mime": "^4.1.0",
-    "neverthrow": "^7.2.0",
     "obs-websocket-js": "^5.0.7",
     "pino": "^10.3.0",
     "pino-pretty": "^13.1.3",

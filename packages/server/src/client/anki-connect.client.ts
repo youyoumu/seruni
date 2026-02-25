@@ -9,12 +9,12 @@ import type { State } from "#/state/state";
 import { errFrom, toErr } from "#/util/err";
 import { safeAccess, safeRm } from "#/util/fs";
 import type { VadData } from "#/util/schema";
+import { R } from "@praha/byethrow";
 import { textHistory as textHistoryTable } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
 import { delay, uniq } from "es-toolkit";
-import { Result, ok, err, ResultAsync, Err } from "neverthrow";
 import type { Logger } from "pino";
 import z from "zod";
 
@@ -28,15 +28,12 @@ class QueueError extends Error {
     this.filesToDelete = filesToDelete;
   }
 
-  static from<T = unknown>(
-    error: Error | Err<unknown, Error> | string,
-    filesToDelete: string[] = [],
-  ): Result<T, QueueError> {
+  static from(error: Error | R.Result<unknown, Error> | string, filesToDelete: string[] = []) {
     if (error instanceof Error)
-      return err(new QueueError(error.message, filesToDelete, { cause: error }));
-    if (error instanceof Err)
-      return err(new QueueError(error.error.message, filesToDelete, { cause: error }));
-    return err(new QueueError(String(error), filesToDelete));
+      return R.fail(new QueueError(error.message, filesToDelete, { cause: error }));
+    if (typeof error !== "string" && R.isFailure(error))
+      return R.fail(new QueueError(error.error.message, filesToDelete, { cause: error }));
+    return R.fail(new QueueError(String(error), filesToDelete));
   }
 }
 
@@ -52,7 +49,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   db: DB;
   dbClient: DBClient;
   api: ServerApi;
-  processQueue = new Map<number, Promise<Result<ProcessQueueResult, QueueError>>>();
+  processQueue = new Map<number, Promise<R.Result<ProcessQueueResult, QueueError>>>();
   obsClient: OBSClient;
   ffmpeg: FFmpegExec;
   python: PythonExec;
@@ -92,18 +89,18 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }
 
   #mediaDirCache = "";
-  async getMediaDir(): Promise<Result<string, Error>> {
-    if (this.#mediaDirCache) return ok(this.#mediaDirCache);
+  async getMediaDir(): Promise<R.Result<string, Error>> {
+    if (this.#mediaDirCache) return R.succeed(this.#mediaDirCache);
     const maxRetries = 3;
     const retryDelay = 1000;
-    const getMediaDirPath = ResultAsync.fromThrowable(
-      this.client.media.getMediaDirPath,
-      toErr("Failed to get media dir"),
-    );
+    const getMediaDirPath = R.fn({
+      try: () => this.client.media.getMediaDirPath(),
+      catch: toErr("Failed to get media dir"),
+    });
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const result = await getMediaDirPath();
-      if (result.isOk()) return ok((this.#mediaDirCache = result.value));
-      if (attempt === maxRetries) return err(result.error);
+      if (R.isSuccess(result)) return R.succeed((this.#mediaDirCache = result.value));
+      if (attempt === maxRetries) return R.fail(result.error);
       await delay(retryDelay * attempt);
     }
     return errFrom("Failed to get media dir after retries");
@@ -115,12 +112,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }: {
     noteId: number;
     textHistoryId: number;
-  }): Promise<Result<undefined, Error>> {
+  }): Promise<R.Result<undefined, Error>> {
     const note = await this.getNote(noteId);
-    if (note.isErr()) return err(note.error);
+    if (R.isFailure(note)) return R.fail(note.error);
     const expression = this.getExpression(note.value);
     const validated = this.validateField(note.value);
-    if (validated.isErr()) return err(validated.error);
+    if (R.isFailure(validated)) return R.fail(validated.error);
 
     //TODO: title description action etc
     this.api.toastPromise(
@@ -129,11 +126,11 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           note: note.value,
           textHistoryId,
         });
-        if (updateResult.isErr()) {
-          updateResult.error.filesToDelete.forEach((file) => safeRm(file));
+        if (R.isFailure(updateResult)) {
+          updateResult.error.filesToDelete.forEach((file: string) => safeRm(file));
           throw updateResult.error;
         }
-        updateResult.value.filesToDelete.forEach((file) => safeRm(file));
+        updateResult.value.filesToDelete.forEach((file: string) => safeRm(file));
         return updateResult.value;
       },
       {
@@ -143,7 +140,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
         error: (e) => `Failed to process new note: ${e.message}`,
       },
     );
-    return ok(undefined);
+    return R.succeed(undefined);
   }
 
   async updateNoteMedia({
@@ -152,7 +149,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   }: {
     note: AnkiNote;
     textHistoryId: number;
-  }): Promise<Result<ProcessQueueResult, QueueError>> {
+  }): Promise<R.Result<ProcessQueueResult, QueueError>> {
     // get history
     const now = new Date();
     const text = await this.db.query.textHistory.findFirst({
@@ -170,8 +167,8 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     const filesToDelete: string[] = [];
     const { promise, resolve: resolve_ } =
-      Promise.withResolvers<Result<ProcessQueueResult, QueueError>>();
-    const resolve = (result: Result<ProcessQueueResult, QueueError>) => {
+      Promise.withResolvers<R.Result<ProcessQueueResult, QueueError>>();
+    const resolve = (result: R.Result<ProcessQueueResult, QueueError>) => {
       resolve_(result);
       return result;
     };
@@ -186,28 +183,28 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       this.log.info("Trying to reuse media files");
       const result = await this.processQueue.get(text.id);
       if (!result) return QueueError.from(`Can't find process queue with id ${text.id}`);
-      if (result.isErr()) return err(result.error);
-      if (result.isOk()) {
+      if (R.isFailure(result)) return R.fail(result.error);
+      if (R.isSuccess(result)) {
         this.log.debug({ ...result.value }, "Reusing media files");
         const updateResult = await this.updateNote({
           note,
           picturePath: result.value.picturePath,
           sentenceAudioPath: result.value.sentenceAudioPath,
         });
-        if (updateResult.isErr()) return QueueError.from(updateResult);
-        return ok({ ...result.value, reuseMedia: true });
+        if (R.isFailure(updateResult)) return QueueError.from(updateResult);
+        return R.succeed({ ...result.value, reuseMedia: true });
       }
     }
 
     // save replay buffer
     const savedReplayPath = await this.obsClient.saveReplayBuffer();
-    if (savedReplayPath.isErr()) return resolveErr(savedReplayPath.error);
+    if (R.isFailure(savedReplayPath)) return resolveErr(savedReplayPath.error);
     filesToDelete.push(savedReplayPath.value);
 
     // calculate offset
     const fileEnd = new Date();
     const duration = await this.ffmpeg.getFileDuration(savedReplayPath.value);
-    if (duration.isErr()) return resolveErr(duration.error);
+    if (R.isFailure(duration)) return resolveErr(duration.error);
 
     const fileStart = new Date(fileEnd.getTime() - duration.value);
     const offset = Math.max(0, Math.floor(text.createdAt.getTime() - fileStart.getTime()));
@@ -219,12 +216,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       format: "wav",
     });
 
-    if (audioStage1Path.isErr()) return resolveErr(audioStage1Path.error);
+    if (R.isFailure(audioStage1Path)) return resolveErr(audioStage1Path.error);
     filesToDelete.push(audioStage1Path.value);
 
     // generate vad data
     const audioStage1VadData = await this.python.runSilero(audioStage1Path.value);
-    if (audioStage1VadData.isErr()) return resolveErr(audioStage1VadData.error);
+    if (R.isFailure(audioStage1VadData)) return resolveErr(audioStage1VadData.error);
     let audioStage1Duration = audioStage1VadData.value[audioStage1VadData.value.length - 1]?.end;
     if (audioStage1VadData.value.length === 1 && (audioStage1Duration ?? 0) < 1000) {
       audioStage1Duration = undefined;
@@ -271,9 +268,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     Promise.all([audioStage3PathPromise, imageDirPromise]).then(([audioStage3Path, imageDir]) => {
       this.insertNoteAndMedia({
         note,
-        sentenceAudioPath: audioStage3Path.isOk() ? audioStage3Path.value : undefined,
+        sentenceAudioPath: R.isSuccess(audioStage3Path) ? audioStage3Path.value : undefined,
         sentenceAudioVadData: audioStage1VadData.value,
-        pictureDir: imageDir.isOk() ? imageDir.value : undefined,
+        pictureDir: R.isSuccess(imageDir) ? imageDir.value : undefined,
         pictureFormat,
       });
     });
@@ -282,18 +279,18 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       audioStage2PathPromise,
       imagePathPromise,
     ]);
-    if (audioStage2Path.isErr()) return resolveErr(audioStage2Path.error);
-    if (imagePath.isErr()) return resolveErr(imagePath.error);
+    if (R.isFailure(audioStage2Path)) return resolveErr(audioStage2Path.error);
+    if (R.isFailure(imagePath)) return resolveErr(imagePath.error);
 
     const updateResult = await this.updateNote({
       note,
       picturePath: imagePath.value,
       sentenceAudioPath: audioStage2Path.value,
     });
-    if (updateResult.isErr()) return resolveErr(updateResult.error);
+    if (R.isFailure(updateResult)) return resolveErr(updateResult.error);
 
     return resolve(
-      ok({
+      R.succeed({
         sentenceAudioPath: audioStage2Path.value,
         picturePath: imagePath.value,
         filesToDelete,
@@ -356,7 +353,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     sentenceAudioPath: string | undefined | null;
     overwrite?: boolean;
     nsfw?: boolean;
-  }): Promise<Result<null, Error>> {
+  }): Promise<R.Result<null, Error>> {
     nsfw = nsfw ?? isNoteNsfw(note);
     let tags = [...note.tags];
     tags.push(this.state.appName);
@@ -366,48 +363,49 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     this.log.debug({ noteId: note.noteId, picturePath, sentenceAudioPath, tags }, "Updating note");
     const backupResult = await this.backupNoteMedia(note);
-    if (backupResult.isErr()) return err(backupResult.error);
-    const updateNote = ResultAsync.fromThrowable(
-      this.client.note.updateNote,
-      toErr("Error when updating note"),
-    );
-
-    return await updateNote({
-      note: {
-        id: note.noteId,
-        fields: {
-          ...(picturePath && overwrite && { [this.state.config().ankiPictureField]: "" }),
-          ...(sentenceAudioPath &&
-            overwrite && {
-              [this.state.config().ankiSentenceAudioField]: "",
+    if (R.isFailure(backupResult)) return R.fail(backupResult.error);
+    const updateNote = R.try({
+      try: () =>
+        this.client.note.updateNote({
+          note: {
+            id: note.noteId,
+            fields: {
+              ...(picturePath && overwrite && { [this.state.config().ankiPictureField]: "" }),
+              ...(sentenceAudioPath &&
+                overwrite && {
+                  [this.state.config().ankiSentenceAudioField]: "",
+                }),
+            },
+            ...(picturePath && {
+              picture: [
+                {
+                  path: picturePath,
+                  filename: path.basename(picturePath),
+                  fields: [this.state.config().ankiPictureField],
+                },
+              ],
             }),
-        },
-        ...(picturePath && {
-          picture: [
-            {
-              path: picturePath,
-              filename: path.basename(picturePath),
-              fields: [this.state.config().ankiPictureField],
-            },
-          ],
+            ...(sentenceAudioPath && {
+              audio: [
+                {
+                  path: sentenceAudioPath,
+                  filename: path.basename(sentenceAudioPath),
+                  fields: [this.state.config().ankiSentenceAudioField],
+                },
+              ],
+            }),
+            tags,
+          },
         }),
-        ...(sentenceAudioPath && {
-          audio: [
-            {
-              path: sentenceAudioPath,
-              filename: path.basename(sentenceAudioPath),
-              fields: [this.state.config().ankiSentenceAudioField],
-            },
-          ],
-        }),
-        tags,
-      },
+      catch: toErr("Error when updating note"),
     });
+
+    return updateNote;
   }
 
-  async backupNoteMedia(note: AnkiNote): Promise<Result<null, Error>> {
+  async backupNoteMedia(note: AnkiNote): Promise<R.Result<null, Error>> {
     const ankiMediaDir = await this.getMediaDir();
-    if (ankiMediaDir.isErr()) return err(ankiMediaDir.error);
+    if (R.isFailure(ankiMediaDir)) return R.fail(ankiMediaDir.error);
 
     const pictureFieldValue = note.fields[this.state.config().ankiPictureField]?.value ?? "";
     const sentenceAudioFieldValue =
@@ -416,10 +414,10 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const sentenceAudioPath = await this.getAnkiMediaPath(sentenceAudioFieldValue);
 
     const media: MediaList = [];
-    if (picturePath.isOk() && (await safeAccess(picturePath.value)).isOk()) {
+    if (R.isSuccess(picturePath) && R.isSuccess(await safeAccess(picturePath.value))) {
       media.push({ filePath: picturePath.value, type: "picture" });
     }
-    if (sentenceAudioPath.isOk() && (await safeAccess(sentenceAudioPath.value)).isOk()) {
+    if (R.isSuccess(sentenceAudioPath) && R.isSuccess(await safeAccess(sentenceAudioPath.value))) {
       media.push({
         filePath: sentenceAudioPath.value,
         type: "sentenceAudio",
@@ -429,19 +427,19 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (media.length > 0) {
       return await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media });
     }
-    return ok(null);
+    return R.succeed(null);
   }
 
-  async getNote(noteId: number): Promise<Result<AnkiNote, Error>> {
-    const notesInfo = ResultAsync.fromThrowable(
-      this.client.note.notesInfo,
-      toErr("Failed to get note with notesInfo"),
-    );
-    const notes = await notesInfo({ notes: [noteId] });
-    if (notes.isErr()) return err(notes.error);
+  async getNote(noteId: number): Promise<R.Result<AnkiNote, Error>> {
+    const notesInfo = R.try({
+      try: () => this.client.note.notesInfo({ notes: [noteId] }),
+      catch: toErr("Failed to get note with notesInfo"),
+    });
+    const notes = await notesInfo;
+    if (R.isFailure(notes)) return R.fail(notes.error);
     const note = notes.value[0];
     if (!note) return errFrom("Can't find note with index 0");
-    return ok(note);
+    return R.succeed(note);
   }
 
   getExpression(note: AnkiNote | undefined) {
@@ -457,13 +455,13 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (!expressionField) return errFrom("Invalid Expression field");
     if (!pictureField) return errFrom("Invalid Picture field");
     if (!sentenceAudioField) return errFrom("Invalid Sentence Audio field");
-    return ok({ expressionField, pictureField, sentenceAudioField });
+    return R.succeed({ expressionField, pictureField, sentenceAudioField });
   }
 
   //TODO: handle multiple media
-  async getAnkiMediaPath(fieldValue: string): Promise<Result<string, Error>> {
+  async getAnkiMediaPath(fieldValue: string): Promise<R.Result<string, Error>> {
     const ankiMediaDir = await this.getMediaDir();
-    if (ankiMediaDir.isErr()) return err(ankiMediaDir.error);
+    if (R.isFailure(ankiMediaDir)) return R.fail(ankiMediaDir.error);
 
     const imageRegex = /<img\s+[^>]*src=["']([^"']+)["']/i;
     const soundRegex = /\[sound:([^\]]+)\]/i;
@@ -471,8 +469,8 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const imageMatch = fieldValue.match(imageRegex);
     const soundMatch = fieldValue.match(soundRegex);
 
-    if (imageMatch?.[1]) return ok(path.join(ankiMediaDir.value, imageMatch?.[1]));
-    if (soundMatch?.[1]) return ok(path.join(ankiMediaDir.value, soundMatch?.[1]));
+    if (imageMatch?.[1]) return R.succeed(path.join(ankiMediaDir.value, imageMatch?.[1]));
+    if (soundMatch?.[1]) return R.succeed(path.join(ankiMediaDir.value, soundMatch?.[1]));
 
     return errFrom("Can't find media path from field value");
   }

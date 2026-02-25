@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { join } from "node:path";
 
 import type { AppContext } from "#/types/types";
+import { R } from "@praha/byethrow";
 import { Hono } from "hono";
 import { serveStatic } from "hono/serve-static";
 
@@ -11,7 +12,7 @@ app.get(`/:filename`, async (c, next) => {
   const { ankiConnectClient } = c.get("ctx");
   const filename = c.req.param("filename");
   const mediaDirResult = await ankiConnectClient.getMediaDir();
-  if (mediaDirResult.isErr()) return c.notFound();
+  if (R.isFailure(mediaDirResult)) return c.notFound();
   const filePath = join(mediaDirResult.value, filename);
 
   return serveStatic({

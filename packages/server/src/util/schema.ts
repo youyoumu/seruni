@@ -1,4 +1,3 @@
-import type { State } from "#/state/state";
 import z from "zod";
 
 export const zVadData = z.array(

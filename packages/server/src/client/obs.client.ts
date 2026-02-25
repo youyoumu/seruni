@@ -1,5 +1,5 @@
 import type { State } from "#/state/state";
-import { ok, type Result } from "neverthrow";
+import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
 import { ReconnectingOBSWebSocket } from "./ReconnectingOBSWebSocket";
@@ -69,7 +69,7 @@ export class OBSClient extends ReconnectingOBSWebSocket {
     return this.#replayBufferActive;
   }
 
-  async saveReplayBuffer(): Promise<Result<string, Error>> {
+  async saveReplayBuffer(): Promise<R.Result<string, Error>> {
     const { promise, resolve } = Promise.withResolvers<string>();
     const handler = (event: { savedReplayPath: string }) => {
       cleanup();
@@ -83,6 +83,6 @@ export class OBSClient extends ReconnectingOBSWebSocket {
       cleanup();
       resolve(error);
     });
-    return ok(await promise);
+    return R.succeed(await promise);
   }
 }

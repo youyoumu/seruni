@@ -4,10 +4,10 @@ import path from "node:path";
 import type { State } from "#/state/state";
 import { errFrom } from "#/util/err";
 import type { VadData } from "#/util/schema";
+import { R } from "@praha/byethrow";
 import { notes as notesTable, media as mediaTable } from "@repo/shared/db";
 import { eq, inArray } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { ok, type Result } from "neverthrow";
 import type { Logger } from "pino";
 
 import type { DB } from ".";
@@ -42,7 +42,7 @@ export class DBClient {
   }: {
     noteId: number;
     media: MediaList;
-  }): Promise<Result<null, Error>> {
+  }): Promise<R.Result<null, Error>> {
     media.forEach((m) => {
       this.log.trace(`Copying ${m.filePath} to ${this.state.path().storageDir}`);
       fs.cp(m.filePath, path.join(this.state.path().storageDir, path.basename(m.filePath)));
@@ -72,7 +72,7 @@ export class DBClient {
         vadData: m.vadData,
       })),
     );
-    return ok(null);
+    return R.succeed(null);
   }
 
   async getNoteMedia(noteId: number) {

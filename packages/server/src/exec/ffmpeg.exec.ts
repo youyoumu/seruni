@@ -1,8 +1,8 @@
 import { mkdir } from "node:fs/promises";
 
 import type { State } from "#/state/state";
+import { R } from "@praha/byethrow";
 import { format as formatDate } from "date-fns";
-import { err, ok, Result } from "neverthrow";
 import type { Logger } from "pino";
 import { uid } from "uid";
 
@@ -44,19 +44,19 @@ export class FFmpegExec extends Exec {
     return timestamp;
   }
 
-  async getFileDuration(filePath: string): Promise<Result<number, Error>> {
+  async getFileDuration(filePath: string): Promise<R.Result<number, Error>> {
     const params = ["-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", filePath];
     const result = await this.safeExeca("ffprobe", params);
-    if (result.isErr()) return err(result.error);
+    if (R.isFailure(result)) return R.fail(result.error);
     const { stdout, stderr } = result.value;
     this.log.trace({ params, stdout, stderr }, "ffprobe");
-    return ok(parseFloat(stdout.trim()) * 1000);
+    return R.succeed(parseFloat(stdout.trim()) * 1000);
   }
 
-  async version(): Promise<Result<string, Error>> {
+  async version(): Promise<R.Result<string, Error>> {
     const result = await this.run(["-version"]);
-    if (result.isErr()) return err(result.error);
-    return ok(result.value.stdout.split("\n")[0] ?? "");
+    if (R.isFailure(result)) return R.fail(result.error);
+    return R.succeed(result.value.stdout.split("\n")[0] ?? "");
   }
 
   async process({
@@ -71,7 +71,7 @@ export class FFmpegExec extends Exec {
     duration?: number;
     selectionData?: SelectionData;
     format: ProcessFormat;
-  }): Promise<Result<string, Error>> {
+  }): Promise<R.Result<string, Error>> {
     const timestamp = this.createTimestamp();
     const actualFormat = (() => {
       if (format === "png:multiple") return "png";
@@ -232,7 +232,7 @@ export class FFmpegExec extends Exec {
     };
 
     const result = await this.run(params[format]);
-    if (result.isErr()) return err(result.error);
-    return format.endsWith("multiple") ? ok(outputDir) : ok(outputPath);
+    if (R.isFailure(result)) return R.fail(result.error);
+    return format.endsWith("multiple") ? R.succeed(outputDir) : R.succeed(outputPath);
   }
 }

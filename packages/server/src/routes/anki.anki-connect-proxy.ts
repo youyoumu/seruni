@@ -1,9 +1,9 @@
 import type { AppContext } from "#/types/types";
 import { errFrom, safeJSONParse } from "#/util/err";
 import { zAnkiConnectAddNote, zAnkiConnectCanAddNotes } from "#/util/schema";
+import { R } from "@praha/byethrow";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { ok, type Result } from "neverthrow";
 import type { Logger } from "pino";
 import z from "zod";
 
@@ -33,7 +33,7 @@ app.post("/", async (c, next) => {
   }
   if (bodyText) {
     const result = safeJSONParse(bodyText);
-    if (result.isOk()) bodyJson = result.value;
+    if (R.isSuccess(result)) bodyJson = result.value;
   }
   log.trace(
     { URL: targetUrl, METHOD: c.req.method, BODY: bodyJson ?? bodyText },
@@ -130,7 +130,8 @@ app.post("/", async (c, next) => {
   // }
 
   const textHistoryId = extractTextHistoryId(sentence);
-  if (textHistoryId.isErr()) throw new HTTPException(500, { message: textHistoryId.error.message });
+  if (R.isFailure(textHistoryId))
+    throw new HTTPException(500, { message: textHistoryId.error.message });
   log.debug(`Extracted textHistoryId from sentence: ${textHistoryId.value}`);
   for (const key of Object.keys(data.params.note.fields)) {
     const value = data.params.note.fields[key];
@@ -160,11 +161,11 @@ app.post("/", async (c) => {
   return response;
 });
 
-function extractTextHistoryId(sentence: string): Result<number, Error> {
+function extractTextHistoryId(sentence: string): R.Result<number, Error> {
   const match = sentence.match(/‹id:(\d+)›/);
   const id = Number(match?.[1]);
   if (isNaN(id)) return errFrom("Can't find textHistoryId in sentence");
-  return ok(id);
+  return R.succeed(id);
 }
 
 function stripTextHistoryId(sentence: string) {

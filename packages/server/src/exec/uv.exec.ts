@@ -1,5 +1,5 @@
 import type { State } from "#/state/state";
-import { err, ok, Result } from "neverthrow";
+import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
 import { Exec } from "./Exec";
@@ -14,10 +14,10 @@ export class UvExec extends Exec {
     });
   }
 
-  async version(): Promise<Result<string, Error>> {
+  async version(): Promise<R.Result<string, Error>> {
     const result = await this.run(["--version"]);
-    if (result.isErr()) return err(result.error);
-    return ok(result.value.stdout);
+    if (R.isFailure(result)) return R.fail(result.error);
+    return R.succeed(result.value.stdout);
   }
 
   async setupVenv() {

@@ -1,6 +1,6 @@
 import type { State } from "#/state/state";
 import { zVadData, type VadData } from "#/util/schema";
-import { err, ok, Result } from "neverthrow";
+import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
 import { Exec } from "./Exec";
@@ -25,33 +25,33 @@ export class PythonExec extends Exec {
     return await this.run([this.state.path().pythonEntry, ...command]);
   }
 
-  async version(): Promise<Result<string, Error>> {
+  async version(): Promise<R.Result<string, Error>> {
     const result = await this.run(["--version"]);
-    if (result.isErr()) return err(result.error);
-    return ok(result.value.stdout);
+    if (R.isFailure(result)) return R.fail(result.error);
+    return R.succeed(result.value.stdout);
   }
 
-  async runSilero(filePath: string): Promise<Result<VadData, Error>> {
+  async runSilero(filePath: string): Promise<R.Result<VadData, Error>> {
     const result = await this.runEntry(["silero", filePath]);
-    if (result.isErr()) return err(result.error);
+    if (R.isFailure(result)) return R.fail(result.error);
     const { stdout } = result.value;
     const vadData = zVadData.parse(JSON.parse(stdout)).map((item) => {
       item.start = item.start * 1000;
       item.end = item.end * 1000;
       return item;
     });
-    return ok(vadData);
+    return R.succeed(vadData);
   }
 
   async runMainHealthcheck() {
     const result = await this.runEntry(["healthcheck_venv"]);
-    if (result.isErr()) return err(result.error);
+    if (R.isFailure(result)) return R.fail(result.error);
     return JSON.parse(result.value.stdout);
   }
 
   async runHealthcheck() {
     const result = await this.run(["healthcheck"]);
-    if (result.isErr()) return err(result.error);
+    if (R.isFailure(result)) return R.fail(result.error);
     return JSON.parse(result.value.stdout);
   }
 }
