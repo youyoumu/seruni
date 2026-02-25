@@ -10,6 +10,7 @@ import { safeAccess, safeRm } from "#/util/fs";
 import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
+import { ErrorFactory } from "@praha/error-factory";
 import { textHistory as textHistoryTable } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
 import { format } from "date-fns";
@@ -21,19 +22,18 @@ import z from "zod";
 import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
 
-class QueueError extends Error {
-  filesToDelete: string[];
-  constructor(message: string, filesToDelete: string[] = [], options: ErrorOptions = {}) {
-    super(message, options);
-    this.filesToDelete = filesToDelete;
-  }
-
-  static fail(error: Error | R.Result<unknown, Error> | string, filesToDelete: string[] = []) {
-    if (error instanceof Error)
-      return R.fail(new QueueError(error.message, filesToDelete, { cause: error }));
+class QueueError extends ErrorFactory({
+  name: "QueueError",
+  message: "Error when processing queue",
+  fields: ErrorFactory.fields<{
+    filesToDelete: string[];
+  }>(),
+}) {
+  static fail(error: Error | R.Failure<Error> | string, filesToDelete: string[] = []) {
+    if (error instanceof Error) return R.fail(new QueueError({ filesToDelete, cause: error }));
     if (typeof error !== "string" && R.isFailure(error))
-      return R.fail(new QueueError(error.error.message, filesToDelete, { cause: error }));
-    return R.fail(new QueueError(String(error), filesToDelete));
+      return R.fail(new QueueError({ filesToDelete, cause: error }));
+    return R.fail(new QueueError({ filesToDelete, cause: new Error(error) }));
   }
 }
 
