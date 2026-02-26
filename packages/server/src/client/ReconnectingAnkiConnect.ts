@@ -1,3 +1,4 @@
+import { R } from "@praha/byethrow";
 import { TypesafeEventTarget } from "@repo/shared/util";
 import type { Logger } from "pino";
 import { YankiConnect } from "yanki-connect";
@@ -11,7 +12,6 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   log: Logger;
   #yankiConnect: YankiConnect;
   #url: string;
-  #baseReconnectInterval: number;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -25,7 +25,6 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     host: string;
     port: number;
     logger: Logger;
-    baseReconnectInterval?: number;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
     pollInterval?: number;
@@ -37,7 +36,6 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
       port: options.port,
     });
     this.#url = `${options.host}:${options.port}`;
-    this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -50,12 +48,12 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   }
 
   async #checkConnection(): Promise<boolean> {
-    try {
-      const version = await this.#yankiConnect.miscellaneous.version();
-      return typeof version === "number";
-    } catch {
-      return false;
-    }
+    const result = await R.try({
+      try: () => this.#yankiConnect.miscellaneous.version(),
+      catch: () => new Error("Failed to connect"),
+    });
+    if (R.isSuccess(result)) return typeof result.value === "number";
+    return false;
   }
 
   async connect() {
@@ -67,10 +65,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   async #startPolling() {
     if (this.#pollIntervalId) return;
     const checkAndNotify = async () => {
-      if (this.#manualClose) {
-        this.#stopPolling();
-        return;
-      }
+      if (this.#manualClose) return this.#stopPolling();
 
       const wasConnected = this.#isConnected;
       const nowConnected = await this.#checkConnection();
@@ -111,7 +106,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
       this.#reconnectAttempts++;
       const delay = Math.min(
-        this.#baseReconnectInterval * Math.pow(2, this.#reconnectAttempts - 1),
+        1000 * Math.pow(2, this.#reconnectAttempts - 1),
         this.#maxReconnectDelay,
       );
       this.log.info(

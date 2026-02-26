@@ -17,7 +17,6 @@ export class ReconnectingWebSocket<
 > extends TypesafeEventTarget<T> {
   log: Logger;
   #url: string;
-  #baseReconnectInterval: number;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -28,14 +27,12 @@ export class ReconnectingWebSocket<
   constructor(options: {
     url: string;
     logger: Logger;
-    baseReconnectInterval?: number;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
   }) {
     super();
     this.log = options.logger;
     this.#url = options.url;
-    this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -85,7 +82,7 @@ export class ReconnectingWebSocket<
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
       this.#reconnectAttempts++;
       const delay = Math.min(
-        this.#baseReconnectInterval * Math.pow(2, this.#reconnectAttempts - 1),
+        1000 * Math.pow(2, this.#reconnectAttempts - 1),
         this.#maxReconnectDelay,
       );
       this.log.info(

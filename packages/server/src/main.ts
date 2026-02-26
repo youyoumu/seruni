@@ -45,23 +45,23 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
-  const dbClient = new DBClient({ db, logger, state });
+  const dbClient = new DBClient(db, logger, state);
 
-  const ffmpeg = new FFmpegExec({ logger, state });
-  const python = new PythonExec({ logger, state });
+  const ffmpeg = new FFmpegExec(logger, state);
+  const python = new PythonExec(logger, state);
 
-  new TextHookerClient({ logger, api, db, state });
-  const obsClient = new OBSClient({ logger, state });
-  const ankiConnectClient = new AnkiConnectClient({
+  new TextHookerClient(logger, api, db, state);
+  const obsClient = new OBSClient(logger, state);
+  const ankiConnectClient = new AnkiConnectClient(
     logger,
-    api,
+    state,
     db,
     dbClient,
-    state,
+    api,
     obsClient,
     ffmpeg,
     python,
-  });
+  );
 
   // migrate database
   await dbClient.migrate();
@@ -143,9 +143,9 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
 
   log.info(serializeState(state), "Starting with state");
 
-  const ffmpeg = new FFmpegExec({ logger, state });
-  const uv = new UvExec({ logger, state });
-  const python = new PythonExec({ logger, state });
+  const ffmpeg = new FFmpegExec(logger, state);
+  const uv = new UvExec(logger, state);
+  const python = new PythonExec(logger, state);
 
   const ffmpegResult = await ffmpeg.version();
   const uvResult = await uv.version();
@@ -171,7 +171,7 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
 
   log.info(serializeState(state), "Starting with state");
 
-  const uv = new UvExec({ logger, state });
+  const uv = new UvExec(logger, state);
 
   const result = await uv.setupVenv();
   if (R.isFailure(result)) return console.error(chalk.red(`[ERROR] ${result.error.message}`));

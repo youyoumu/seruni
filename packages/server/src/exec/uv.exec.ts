@@ -5,13 +5,8 @@ import type { Logger } from "pino";
 import { Exec } from "./Exec";
 
 export class UvExec extends Exec {
-  constructor({ logger, state }: { logger: Logger; state: State }) {
-    super({
-      name: "uv",
-      logger,
-      state,
-      bin: "uv",
-    });
+  constructor(public logger: Logger, public state: State) {
+    super(logger, state, "uv", "uv");
   }
 
   async version(): Promise<R.Result<string, Error>> {

@@ -25,7 +25,6 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
   #obs: OBSWebSocket;
   #url: string;
   #password: string | undefined;
-  #baseReconnectInterval: number;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -46,7 +45,6 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     this.#obs = new OBSWebSocket();
     this.#url = options.url;
     this.#password = options.password;
-    this.#baseReconnectInterval = options.baseReconnectInterval ?? 1000;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -99,7 +97,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     if (this.#reconnectAttempts < this.#maxReconnectAttempts) {
       this.#reconnectAttempts++;
       const delay = Math.min(
-        this.#baseReconnectInterval * Math.pow(2, this.#reconnectAttempts - 1),
+        1000 * Math.pow(2, this.#reconnectAttempts - 1),
         this.#maxReconnectDelay,
       );
       this.log.info(

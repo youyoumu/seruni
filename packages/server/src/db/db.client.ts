@@ -20,14 +20,14 @@ export type MediaList = Array<{
 }>;
 
 export class DBClient {
-  db: DB;
   log: Logger;
-  state: State;
 
-  constructor(opts: { db: DB; logger: Logger; state: State }) {
-    this.db = opts.db;
-    this.log = opts.logger.child({ name: "db-client" });
-    this.state = opts.state;
+  constructor(
+    public db: DB,
+    public logger: Logger,
+    public state: State,
+  ) {
+    this.log = logger.child({ name: "db-client" });
   }
 
   async migrate() {

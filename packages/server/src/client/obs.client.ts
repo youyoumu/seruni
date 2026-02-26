@@ -5,15 +5,13 @@ import type { Logger } from "pino";
 import { ReconnectingOBSWebSocket } from "./ReconnectingOBSWebSocket";
 
 export class OBSClient extends ReconnectingOBSWebSocket {
-  state: State;
   #replayBufferActive = false;
 
-  constructor(opts: { logger: Logger; state: State }) {
+  constructor(public logger: Logger, public state: State) {
     super({
-      logger: opts.logger.child({ name: "obs-client" }),
-      url: opts.state.config().obsWebSocketAddress,
+      logger: logger.child({ name: "obs-client" }),
+      url: state.config().obsWebSocketAddress,
     });
-    this.state = opts.state;
 
     this.addListener("open", async () => {
       this.state.obsConnected(true);

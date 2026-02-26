@@ -25,13 +25,8 @@ type ProcessFormat =
   | "png:multiple";
 
 export class FFmpegExec extends Exec {
-  constructor({ logger, state }: { logger: Logger; state: State }) {
-    super({
-      name: "ffmpeg",
-      logger,
-      state,
-      bin: "ffmpeg",
-    });
+  constructor(public logger: Logger, public state: State) {
+    super(logger, state, "ffmpeg", "ffmpeg");
   }
 
   timestamps = new Set<string>();

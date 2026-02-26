@@ -21,42 +21,28 @@ import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
 
 export class AnkiConnectClient extends ReconnectingAnkiConnect {
-  state: State;
-  db: DB;
-  dbClient: DBClient;
-  api: ServerApi;
-  obsClient: OBSClient;
-  ffmpeg: FFmpegExec;
-  python: PythonExec;
   mediaDir: string | undefined;
   duplicateList = new Set<string>();
   #createMediaCache = new Map();
 
-  constructor(opts: {
-    logger: Logger;
-    state: State;
-    db: DB;
-    dbClient: DBClient;
-    api: ServerApi;
-    obsClient: OBSClient;
-    ffmpeg: FFmpegExec;
-    python: PythonExec;
-  }) {
-    const url = new URL(opts.state.config().ankiConnectAddress);
+  constructor(
+    public logger: Logger,
+    public state: State,
+    public db: DB,
+    public dbClient: DBClient,
+    public api: ServerApi,
+    public obsClient: OBSClient,
+    public ffmpeg: FFmpegExec,
+    public python: PythonExec,
+  ) {
+    const url = new URL(state.config().ankiConnectAddress);
     const port = parseInt(url.port);
     url.port = "";
     super({
       host: url.origin,
       port: port,
-      logger: opts.logger.child({ name: "anki-connect-client" }),
+      logger: logger.child({ name: "anki-connect-client" }),
     });
-    this.state = opts.state;
-    this.db = opts.db;
-    this.dbClient = opts.dbClient;
-    this.api = opts.api;
-    this.obsClient = opts.obsClient;
-    this.ffmpeg = opts.ffmpeg;
-    this.python = opts.python;
 
     this.addListener("open", () => {
       this.state.ankiConnectConnected(true);

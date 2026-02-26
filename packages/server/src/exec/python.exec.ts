@@ -12,13 +12,8 @@ type PipListCommand = ["pip_list"];
 type EntryCommand = SileroCommand | HealthcheckCommand | HealthcheckVenvCommand | PipListCommand;
 
 export class PythonExec extends Exec {
-  constructor({ logger, state }: { logger: Logger; state: State }) {
-    super({
-      name: "python",
-      logger,
-      state,
-      bin: state.path().python,
-    });
+  constructor(public logger: Logger, public state: State) {
+    super(logger, state, state.path().python, "python");
   }
 
   async runEntry(command: EntryCommand) {

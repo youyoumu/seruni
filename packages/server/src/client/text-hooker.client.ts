@@ -14,18 +14,21 @@ function calculateJapaneseCharCount(text: string): number {
 }
 
 export class TextHookerClient extends ReconnectingWebSocket {
-  state: State;
   messages: string[] = [];
 
-  constructor(opts: { logger: Logger; api: ServerApi; db: DB; state: State }) {
+  constructor(
+    public logger: Logger,
+    public api: ServerApi,
+    public db: DB,
+    public state: State,
+  ) {
     super({
-      url: opts.state.config().textHookerWebSocketAddress,
-      logger: opts.logger.child({ name: "text-hooker-client" }),
+      url: state.config().textHookerWebSocketAddress,
+      logger: logger.child({ name: "text-hooker-client" }),
     });
-    this.state = opts.state;
 
     const textHookerToastD = debounce(() => {
-      opts.api.push.toast({
+      this.api.push.toast({
         title: "Text Hooker",
         description: "Received a message but timer is paused.",
       });
@@ -42,7 +45,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
         this.log.info(`Message: ${detail}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
-        const row = await opts.db
+        const row = await this.db
           .insert(textHistory)
           .values({
             text: text,
@@ -51,7 +54,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
           })
           .returning()
           .get();
-        opts.api.push.textHistory(row);
+        this.api.push.textHistory(row);
       }
     });
 

@@ -6,24 +6,14 @@ import type { Logger } from "pino";
 
 export class Exec {
   log: Logger;
-  state: State;
-  bin: string;
-  name: string;
-  constructor({
-    logger,
-    state,
-    bin,
-    name,
-  }: {
-    logger: Logger;
-    state: State;
-    bin: string;
-    name: string;
-  }) {
+  
+  constructor(
+    public logger: Logger,
+    public state: State,
+    public bin: string,
+    public name: string,
+  ) {
     this.log = logger.child({ name });
-    this.state = state;
-    this.bin = bin;
-    this.name = name;
   }
 
   async run(
