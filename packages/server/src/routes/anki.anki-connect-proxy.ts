@@ -53,7 +53,8 @@ app.post("/", async (c, next) => {
     return {
       response: new Response(response.body, {
         status: response.status,
-        headers: response.headers,
+        statusText: response.statusText,
+        headers: new Headers(response.headers),
       }),
       json,
     };
