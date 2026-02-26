@@ -173,12 +173,12 @@ export function createServerApi() {
         typeof options.success === "function" ? options.success(data) : options.success;
       push.toastPromiseResolve({ id, data, message: computedSuccessMsg });
       return data;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error("Unknown error");
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error("Unknown error", { cause: e });
       const computedErrorMsg =
-        typeof options.error === "function" ? options.error(err) : options.error;
-      push.toastPromiseReject({ id, error: err.message, message: computedErrorMsg });
-      throw error;
+        typeof options.error === "function" ? options.error(error) : options.error;
+      push.toastPromiseReject({ id, error: error.message, message: computedErrorMsg });
+      throw e;
     }
   };
 
