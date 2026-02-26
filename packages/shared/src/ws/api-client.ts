@@ -1,6 +1,7 @@
 import { type Session, type TextHistory } from "#/db/schema";
 import { createCentralBus } from "#/ws-bus";
 import type { Push, Request, CreateSchema } from "#/ws-bus";
+import { R } from "@praha/byethrow";
 import { uid } from "uid";
 export { WSBusError } from "#/ws-bus";
 
@@ -32,19 +33,15 @@ export type ToastErrorPayload = {
 export type ToastPromiseConfig = {
   id: string;
   loading: string;
-  success: string;
-  error: string;
 };
 
 export type ToastPromiseResolvePayload = {
   id: string;
-  data: unknown;
   message?: string;
 };
 
 export type ToastPromiseRejectPayload = {
   id: string;
-  error: string;
   message?: string;
 };
 
@@ -135,51 +132,37 @@ export function createClientApi() {
 }
 
 export type ServerApi = ReturnType<typeof createApi>["server"]["api"] & {
-  toastPromise: <T>(
-    promise: () => Promise<T>,
-    options: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: Error) => string);
-    },
-  ) => Promise<T>;
+  toastPromise: ToastPromiseFn;
 };
+
+type ToastPromiseFn = <TData, TError>(
+  promise: () => Promise<R.Result<TData, TError>>,
+  options: {
+    loading: string;
+    success: string | ((data: TData) => string);
+    error: string | ((error: TError) => string);
+  },
+) => Promise<R.Result<TData, TError>>;
+
 export function createServerApi() {
   const api = createApi();
   const push = api.server.api.push;
 
-  const toastPromise = async <T>(
-    promise: () => Promise<T>,
-    options: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: Error) => string);
-    },
-  ): Promise<T> => {
+  const toastPromise: ToastPromiseFn = async (promise, options) => {
+    const { loading, success, error } = options;
     const id = uid();
-    const successMessage = typeof options.success === "function" ? "__fn__" : options.success;
-    const errorMessage = typeof options.error === "function" ? "__fn__" : options.error;
+    push.toastPromise({ id, loading });
 
-    push.toastPromise({
-      id,
-      loading: options.loading,
-      success: successMessage,
-      error: errorMessage,
-    });
-
-    try {
-      const data = await promise();
-      const computedSuccessMsg =
-        typeof options.success === "function" ? options.success(data) : options.success;
-      push.toastPromiseResolve({ id, data, message: computedSuccessMsg });
-      return data;
-    } catch (e) {
-      const error = e instanceof Error ? e : new Error("Unknown error", { cause: e });
-      const computedErrorMsg =
-        typeof options.error === "function" ? options.error(error) : options.error;
-      push.toastPromiseReject({ id, error: error.message, message: computedErrorMsg });
-      throw e;
+    const data = await promise();
+    if (R.isSuccess(data)) {
+      const computedSuccessMsg = typeof success === "function" ? success(data.value) : success;
+      push.toastPromiseResolve({ id, message: computedSuccessMsg });
     }
+    if (R.isFailure(data)) {
+      const computedErrorMsg = typeof error === "function" ? error(data.error) : error;
+      push.toastPromiseReject({ id, message: computedErrorMsg });
+    }
+    return data;
   };
 
   return {

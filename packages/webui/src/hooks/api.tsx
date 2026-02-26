@@ -28,8 +28,8 @@ export class Services {
   #deferredPromises = new Map<
     string,
     {
-      resolve: (value: unknown) => void;
-      reject: (error: Error) => void;
+      resolve: () => void;
+      reject: () => void;
       successMessage?: string;
       errorMessage?: string;
     }
@@ -98,28 +98,16 @@ export class Services {
     });
 
     this.api.onPush.toastPromise((data: ToastPromiseConfig) => {
-      const { promise, resolve, reject } = Promise.withResolvers<unknown>();
-      this.#deferredPromises.set(data.id, {
-        resolve,
-        reject,
-        successMessage: data.success,
-        errorMessage: data.error,
-      });
+      const { promise, resolve, reject } = Promise.withResolvers<void>();
+      this.#deferredPromises.set(data.id, { resolve, reject });
 
       toast.promise(promise, {
         loading: data.loading,
         success: () => {
-          const deferred = this.#deferredPromises.get(data.id);
-          const msg = deferred?.successMessage;
-          this.#deferredPromises.delete(data.id);
-          if (msg && msg !== "__fn__") return msg;
+          return this.#deferredPromises.get(data.id)?.successMessage;
         },
-        error: (err) => {
-          const deferred = this.#deferredPromises.get(data.id);
-          const msg = deferred?.errorMessage;
-          this.#deferredPromises.delete(data.id);
-          if (msg && msg !== "__fn__") return msg;
-          return err.message;
+        error: () => {
+          return this.#deferredPromises.get(data.id)?.errorMessage;
         },
       });
     });
@@ -127,20 +115,16 @@ export class Services {
     this.api.onPush.toastPromiseResolve((data: ToastPromiseResolvePayload) => {
       const deferred = this.#deferredPromises.get(data.id);
       if (deferred) {
-        if (data.message) {
-          deferred.successMessage = data.message;
-        }
-        deferred.resolve(data.data);
+        if (data.message) deferred.successMessage = data.message;
+        deferred.resolve();
       }
     });
 
     this.api.onPush.toastPromiseReject((data: ToastPromiseRejectPayload) => {
       const deferred = this.#deferredPromises.get(data.id);
       if (deferred) {
-        if (data.message) {
-          deferred.errorMessage = data.message;
-        }
-        deferred.reject(new Error(data.error));
+        if (data.message) deferred.errorMessage = data.message;
+        deferred.reject();
       }
     });
 

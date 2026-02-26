@@ -113,6 +113,9 @@ importers:
 
   packages/shared:
     dependencies:
+      '@praha/byethrow':
+        specifier: ^0.10.0
+        version: 0.10.0(typescript@5.9.3)
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@libsql/client@0.17.0(encoding@0.1.13))(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)

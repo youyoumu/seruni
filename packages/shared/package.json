@@ -20,6 +20,7 @@
     "lint:fix": "oxlint --fix --type-aware"
   },
   "dependencies": {
+    "@praha/byethrow": "^0.10.0",
     "drizzle-orm": "^0.45.1",
     "uid": "^2.0.2",
     "zod": "^4.3.6"

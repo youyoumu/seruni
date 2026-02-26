@@ -42,10 +42,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     ffmpeg: FFmpegExec;
     python: PythonExec;
   }) {
-    const ankiConnectAddress = opts.state.config().ankiConnectAddress;
+    const url = new URL(opts.state.config().ankiConnectAddress);
+    const port = parseInt(url.port);
+    url.port = "";
     super({
-      host: new URL(ankiConnectAddress).origin,
-      port: parseInt(new URL(ankiConnectAddress).port),
+      host: url.origin,
+      port: port,
       logger: opts.logger.child({ name: "anki-connect-client" }),
     });
     this.state = opts.state;
@@ -73,38 +75,34 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     });
   }
 
-  async preUpdateNoteMedia({
-    noteId,
-    textHistoryId,
-  }: {
-    noteId: number;
-    textHistoryId: number;
-  }): Promise<R.Result<undefined, Error>> {
-    const note = await this.getNote(noteId);
-    if (R.isFailure(note)) return R.fail(note.error);
-    const expression = this.getExpression(note.value);
-    const validated = this.validateField(note.value);
-    if (R.isFailure(validated)) return R.fail(validated.error);
-    const reuseMedia = this.#createMediaCache.has(textHistoryId);
-
-    //TODO: title description action etc
-    void this.api.toastPromise(
-      async () => {
-        const updateResult = await this.updateNoteMedia({
-          note: note.value,
-          textHistoryId,
+  async preUpdateNoteMedia({ noteId, textHistoryId }: { noteId: number; textHistoryId: number }) {
+    return await R.pipe(
+      this.getNote(noteId),
+      R.andThrough((note) => this.validateField(note)),
+      R.inspectError((e) => {
+        this.api.push.toast({
+          title: "Error when updating note",
+          description: e.message,
+          variant: "danger",
         });
-        if (R.isFailure(updateResult)) throw updateResult.error;
-        return updateResult.value;
-      },
-      {
-        loading: `Processing new note: ${expression}`,
-        //TODO: open note in anki with uid toast action
-        success: () => `Note has been updated: ${expression}${reuseMedia ? " (♻  media)" : ""}`,
-        error: (e) => `Failed to process new note: ${e.message}`,
-      },
+      }),
+      R.andThen((note) => {
+        const expression = this.getExpression(note);
+        const reuseMedia = this.#createMediaCache.has(textHistoryId);
+        //TODO: desc action etc
+        return this.api.toastPromise(() => this.updateNoteMedia({ note, textHistoryId }), {
+          loading: `Processing new note: ${expression}`,
+          //TODO: open note in anki with uid toast action
+          success: () => {
+            return `Note has been updated: ${expression}${reuseMedia ? " (♻  media)" : ""}`;
+          },
+          error: (e) => {
+            const error = Array.isArray(e) ? (e[0] ?? new Error("Unknown Error")) : e;
+            return `Failed to process new note: ${error.message}`;
+          },
+        });
+      }),
     );
-    return R.succeed(undefined);
   }
 
   async updateNoteMedia({ note, textHistoryId }: { note: AnkiNote; textHistoryId: number }) {
