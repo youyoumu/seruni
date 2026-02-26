@@ -1,4 +1,3 @@
-import { error } from "node:console";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -134,7 +133,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     now: Date;
     textHistory: TextHistory;
     note: AnkiNote;
-  }): Promise<R.Result<{ picture: string; sentenceAudio: string }, Error | Error[]>> {
+  }): Promise<R.Result<{ picture: string; sentenceAudio: string | null }, Error | Error[]>> {
     const { textHistory, now, note } = params;
     const filesToDelete: string[] = [];
     const pictureFormat = this.state.config().ffmpegPictureFormat;
@@ -147,9 +146,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       R.andThrough(({ replay }) => R.succeed(filesToDelete.push(replay.path))),
 
       // calculate seek
-      R.bind("duration", ({ replay }) => this.ffmpeg.getFileDuration(replay.path)),
-      R.bind("seek", ({ duration, replay }) => {
-        const offset = new Date(replay.savedAt.getTime() - duration);
+      R.bind("replayDuration", ({ replay }) => this.ffmpeg.getFileDuration(replay.path)),
+      R.bind("seek", ({ replayDuration, replay }) => {
+        const offset = new Date(replay.savedAt.getTime() - replayDuration);
         const seek = Math.max(0, textHistory.createdAt.getTime() - offset.getTime());
         return R.succeed(seek);
       }),
@@ -173,11 +172,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
       R.bind("media", ({ audioWav, audioDuration, replay, seek }) => {
         // generate sentence audio
-        const sentenceAudio = this.ffmpeg.process({
-          inputPath: audioWav,
-          duration: audioDuration,
-          format: "opus",
-        });
+        const sentenceAudio = audioDuration
+          ? this.ffmpeg.process({ inputPath: audioWav, duration: audioDuration, format: "opus" })
+          : R.succeed(null);
 
         // generate picture
         const extraSeek = Math.max(0, Math.floor(now.getTime() - textHistory.createdAt.getTime()));
