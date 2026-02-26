@@ -20,10 +20,14 @@ const app = new Hono<{ Variables: { ctx: AppContext; proxyCtx: ProxyContext } }>
 
 // setup first middleware
 app.post("/", async (c, next) => {
-  const { logger, state } = c.get("ctx");
+  const { logger, state, ankiConnectClient } = c.get("ctx");
   const log = logger.child({ name: "anki-connect-proxy" });
   const url = new URL(c.req.url);
   const targetUrl = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
+  if (!ankiConnectClient.isConnected) {
+    throw new HTTPException(503, { message: "AnkiConnect is not running" });
+  }
+
   let body: ArrayBuffer | undefined;
   let bodyText: string | undefined;
   let bodyJson: unknown;
@@ -49,7 +53,7 @@ app.post("/", async (c, next) => {
       body: overwrite.body ?? body,
     });
     const json = await response.clone().json();
-    log.trace({ json }, "AnkiConnect proxy received response");
+    log.trace(json, "AnkiConnect proxy received response");
     return {
       response: new Response(response.body, {
         status: response.status,

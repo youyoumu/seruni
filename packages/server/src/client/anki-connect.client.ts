@@ -1,3 +1,4 @@
+import { error } from "node:console";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -101,6 +102,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
             return `Failed to process new note: ${error.message}`;
           },
         });
+      }),
+      R.inspectError((e) => {
+        this.log.error(e);
       }),
     );
   }
@@ -309,9 +313,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
             fields: {
               ...(picture && overwrite && { [this.state.config().ankiPictureField]: "" }),
               ...(sentenceAudio &&
-                overwrite && {
-                  [this.state.config().ankiSentenceAudioField]: "",
-                }),
+                overwrite && { [this.state.config().ankiSentenceAudioField]: "" }),
             },
             ...(picture && {
               picture: [
@@ -356,10 +358,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       media.push({ filePath: picturePath.value, type: "picture" });
     }
     if (R.isSuccess(sentenceAudioPath) && R.isSuccess(await safeAccess(sentenceAudioPath.value))) {
-      media.push({
-        filePath: sentenceAudioPath.value,
-        type: "sentenceAudio",
-      });
+      media.push({ filePath: sentenceAudioPath.value, type: "sentenceAudio" });
     }
 
     if (media.length > 0) {
