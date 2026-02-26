@@ -17,9 +17,9 @@ export class TextHookerClient extends ReconnectingWebSocket {
   state: State;
   messages: string[] = [];
 
-  constructor(opts: { url?: string; logger: Logger; api: ServerApi; db: DB; state: State }) {
+  constructor(opts: { logger: Logger; api: ServerApi; db: DB; state: State }) {
     super({
-      url: opts.url ?? "ws://localhost:6677",
+      url: opts.state.config().textHookerWebSocketAddress,
       logger: opts.logger.child({ name: "text-hooker-client" }),
     });
     this.state = opts.state;

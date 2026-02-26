@@ -42,9 +42,11 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     ffmpeg: FFmpegExec;
     python: PythonExec;
   }) {
+    const ankiConnectAddress = opts.state.config().ankiConnectAddress;
+    const url = new URL(ankiConnectAddress);
     super({
-      host: "http://127.0.0.1",
-      port: 8765,
+      host: `${url.protocol}//${url.hostname}`,
+      port: parseInt(url.port),
       logger: opts.logger.child({ name: "anki-connect-client" }),
     });
     this.state = opts.state;

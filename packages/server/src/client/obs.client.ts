@@ -11,7 +11,7 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   constructor(opts: { logger: Logger; state: State }) {
     super({
       logger: opts.logger.child({ name: "obs-client" }),
-      url: "ws://127.0.0.1:4455",
+      url: opts.state.config().obsWebSocketAddress,
     });
     this.state = opts.state;
 
