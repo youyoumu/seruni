@@ -10,7 +10,6 @@ import { safeAccess, safeRm } from "#/util/fs";
 import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
-import { ErrorFactory } from "@praha/error-factory";
 import { textHistory as textHistoryTable, type TextHistory } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
 import { eq } from "drizzle-orm";
@@ -21,35 +20,11 @@ import z from "zod";
 import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
 
-class QueueError extends ErrorFactory({
-  name: "QueueError",
-  message: "Error when processing queue",
-  fields: ErrorFactory.fields<{
-    filesToDelete: string[];
-  }>(),
-}) {
-  static fail(error: Error | Error[] | R.Failure<Error> | string, filesToDelete: string[] = []) {
-    if (Array.isArray(error)) return R.fail(new QueueError({ filesToDelete, cause: error }));
-    if (error instanceof Error) return R.fail(new QueueError({ filesToDelete, cause: error }));
-    if (typeof error !== "string" && R.isFailure(error))
-      return R.fail(new QueueError({ filesToDelete, cause: error }));
-    return R.fail(new QueueError({ filesToDelete, cause: new Error(error) }));
-  }
-}
-
-type ProcessQueueResult = {
-  picture: string;
-  sentenceAudio: string;
-  reuseMedia?: true;
-  filesToDelete: string[];
-};
-
 export class AnkiConnectClient extends ReconnectingAnkiConnect {
   state: State;
   db: DB;
   dbClient: DBClient;
   api: ServerApi;
-  processQueue = new Map<number, Promise<R.Result<ProcessQueueResult, QueueError>>>();
   obsClient: OBSClient;
   ffmpeg: FFmpegExec;
   python: PythonExec;
