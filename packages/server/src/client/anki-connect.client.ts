@@ -11,11 +11,10 @@ import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { ErrorFactory } from "@praha/error-factory";
-import { textHistory as textHistoryTable } from "@repo/shared/db";
+import { textHistory as textHistoryTable, type TextHistory } from "@repo/shared/db";
 import type { ServerApi } from "@repo/shared/ws";
-import { format } from "date-fns";
 import { eq } from "drizzle-orm";
-import { delay, uniq } from "es-toolkit";
+import { delay, last, memoize, uniq } from "es-toolkit";
 import type { Logger } from "pino";
 import z from "zod";
 
@@ -29,7 +28,8 @@ class QueueError extends ErrorFactory({
     filesToDelete: string[];
   }>(),
 }) {
-  static fail(error: Error | R.Failure<Error> | string, filesToDelete: string[] = []) {
+  static fail(error: Error | Error[] | R.Failure<Error> | string, filesToDelete: string[] = []) {
+    if (Array.isArray(error)) return R.fail(new QueueError({ filesToDelete, cause: error }));
     if (error instanceof Error) return R.fail(new QueueError({ filesToDelete, cause: error }));
     if (typeof error !== "string" && R.isFailure(error))
       return R.fail(new QueueError({ filesToDelete, cause: error }));
@@ -38,8 +38,8 @@ class QueueError extends ErrorFactory({
 }
 
 type ProcessQueueResult = {
-  picturePath: string;
-  sentenceAudioPath: string;
+  picture: string;
+  sentenceAudio: string;
   reuseMedia?: true;
   filesToDelete: string[];
 };
@@ -55,6 +55,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   python: PythonExec;
   mediaDir: string | undefined;
   duplicateList = new Set<string>();
+  #createMediaCache = new Map();
 
   constructor(opts: {
     logger: Logger;
@@ -118,6 +119,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const expression = this.getExpression(note.value);
     const validated = this.validateField(note.value);
     if (R.isFailure(validated)) return R.fail(validated.error);
+    const reuseMedia = this.#createMediaCache.has(textHistoryId);
 
     //TODO: title description action etc
     this.api.toastPromise(
@@ -126,174 +128,142 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           note: note.value,
           textHistoryId,
         });
-        if (R.isFailure(updateResult)) {
-          updateResult.error.filesToDelete.forEach((file: string) => safeRm(file));
-          throw updateResult.error;
-        }
-        updateResult.value.filesToDelete.forEach((file: string) => safeRm(file));
+        if (R.isFailure(updateResult)) throw updateResult.error;
         return updateResult.value;
       },
       {
         loading: `Processing new note: ${expression}`,
         //TODO: open note in anki with uid toast action
-        success: (r) => `Note has been updated: ${expression}${r.reuseMedia ? " (♻  media)" : ""}`,
+        success: () => `Note has been updated: ${expression}${reuseMedia ? " (♻  media)" : ""}`,
         error: (e) => `Failed to process new note: ${e.message}`,
       },
     );
     return R.succeed(undefined);
   }
 
-  async updateNoteMedia({
-    note,
-    textHistoryId,
-  }: {
-    note: AnkiNote;
-    textHistoryId: number;
-  }): Promise<R.Result<ProcessQueueResult, QueueError>> {
-    // get history
+  async updateNoteMedia({ note, textHistoryId }: { note: AnkiNote; textHistoryId: number }) {
     const now = new Date();
     const text = await this.db.query.textHistory.findFirst({
       where: eq(textHistoryTable.id, textHistoryId),
     });
-    if (!text) return QueueError.fail("Failed to find text history");
+    if (!text) return anyFail("Failed to find text history");
     if (text.createdAt.getTime() < now.getTime() - this.state.config().obsReplayBufferDuration) {
-      return QueueError.fail("Text history already pass the replay buffer duration");
+      return anyFail("Text history already pass the replay buffer duration");
     }
 
-    this.log.debug(
-      { text: text.text, time: format(text.createdAt, "yyyy-MM-dd HH:mm:ss") },
-      "Using history",
+    return R.pipe(
+      this.createMedia({ textHistory: text, now, note }),
+      R.andThen(({ picture, sentenceAudio }) => this.updateNote({ note, picture, sentenceAudio })),
     );
+  }
 
+  createMedia = memoize(this.#createMedia, {
+    getCacheKey: ({ textHistory }) => textHistory.id,
+    cache: this.#createMediaCache,
+  });
+
+  async #createMedia(params: {
+    now: Date;
+    textHistory: TextHistory;
+    note: AnkiNote;
+  }): Promise<R.Result<{ picture: string; sentenceAudio: string }, Error | Error[]>> {
+    const { textHistory, now, note } = params;
     const filesToDelete: string[] = [];
-    const { promise, resolve: resolve_ } =
-      Promise.withResolvers<R.Result<ProcessQueueResult, QueueError>>();
-    const resolve = (result: R.Result<ProcessQueueResult, QueueError>) => {
-      resolve_(result);
-      return result;
-    };
-    const resolveErr = (error: Error) => {
-      return resolve(QueueError.fail(error, filesToDelete));
-    };
-    const alreadyProcessed = this.processQueue.has(text.id);
-    if (!alreadyProcessed) this.processQueue.set(text.id, promise);
-
-    // if text is already processed, reuse the media file
-    if (alreadyProcessed) {
-      this.log.info("Trying to reuse media files");
-      const result = await this.processQueue.get(text.id);
-      if (!result) return QueueError.fail(`Can't find process queue with id ${text.id}`);
-      if (R.isFailure(result)) return R.fail(result.error);
-      if (R.isSuccess(result)) {
-        this.log.debug({ ...result.value }, "Reusing media files");
-        const updateResult = await this.updateNote({
-          note,
-          picturePath: result.value.picturePath,
-          sentenceAudioPath: result.value.sentenceAudioPath,
-        });
-        if (R.isFailure(updateResult)) return QueueError.fail(updateResult);
-        return R.succeed({ ...result.value, reuseMedia: true });
-      }
-    }
-
-    // save replay buffer
-    const savedReplayPath = await this.obsClient.saveReplayBuffer();
-    if (R.isFailure(savedReplayPath)) return resolveErr(savedReplayPath.error);
-    filesToDelete.push(savedReplayPath.value);
-
-    // calculate offset
-    const fileEnd = new Date();
-    const duration = await this.ffmpeg.getFileDuration(savedReplayPath.value);
-    if (R.isFailure(duration)) return resolveErr(duration.error);
-
-    const fileStart = new Date(fileEnd.getTime() - duration.value);
-    const offset = Math.max(0, Math.floor(text.createdAt.getTime() - fileStart.getTime()));
-
-    // create wav file for vad
-    const audioStage1Path = await this.ffmpeg.process({
-      inputPath: savedReplayPath.value,
-      seek: offset,
-      format: "wav",
-    });
-
-    if (R.isFailure(audioStage1Path)) return resolveErr(audioStage1Path.error);
-    filesToDelete.push(audioStage1Path.value);
-
-    // generate vad data
-    const audioStage1VadData = await this.python.runSilero(audioStage1Path.value);
-    if (R.isFailure(audioStage1VadData)) return resolveErr(audioStage1VadData.error);
-    let audioStage1Duration = audioStage1VadData.value[audioStage1VadData.value.length - 1]?.end;
-    if (audioStage1VadData.value.length === 1 && (audioStage1Duration ?? 0) < 1000) {
-      audioStage1Duration = undefined;
-    }
-
-    // generate audio file
-    const audioStage2PathPromise = this.ffmpeg.process({
-      inputPath: audioStage1Path.value,
-      duration: audioStage1Duration,
-      format: "opus",
-    });
-
-    // generate picture file
-    const extraSeek = Math.max(0, Math.floor(now.getTime() - text.createdAt.getTime()));
-    const imagePathPromise = this.ffmpeg.process({
-      inputPath: savedReplayPath.value,
-      seek: offset + extraSeek,
-      format: "webp",
-    });
-
-    // generate audio file for editing
-    const recordDurationFallbackSecond = 10;
-    const audioStage3Duration =
-      audioStage1VadData.value[audioStage1VadData.value.length - 1]?.end ??
-      recordDurationFallbackSecond;
-    const offsetToLeft = 5000;
-    const offsetToRight = 5000;
-    const audioStage3PathPromise = this.ffmpeg.process({
-      inputPath: savedReplayPath.value,
-      seek: offset - offsetToLeft,
-      duration: audioStage3Duration + offsetToLeft + offsetToRight,
-      format: "opus",
-    });
-
     const pictureFormat = this.state.config().ffmpegPictureFormat;
-    // generate picture file
-    const imageDirPromise = this.ffmpeg.process({
-      inputPath: savedReplayPath.value,
-      seek: offset,
-      duration: audioStage1Duration ?? 3000,
-      format: `${pictureFormat}:multiple`,
-    });
 
-    Promise.all([audioStage3PathPromise, imageDirPromise]).then(([audioStage3Path, imageDir]) => {
-      this.insertNoteAndMedia({
-        note,
-        sentenceAudioPath: R.isSuccess(audioStage3Path) ? audioStage3Path.value : undefined,
-        sentenceAudioVadData: audioStage1VadData.value,
-        pictureDir: R.isSuccess(imageDir) ? imageDir.value : undefined,
-        pictureFormat,
-      });
-    });
+    return await R.pipe(
+      R.do(),
+      // save replay buffer
+      R.bind("replay", this.obsClient.saveReplayBuffer),
+      R.map(({ replay }) => ({ replay: { path: replay, savedAt: new Date() } })),
+      R.andThrough(({ replay }) => R.succeed(filesToDelete.push(replay.path))),
 
-    const [audioStage2Path, imagePath] = await Promise.all([
-      audioStage2PathPromise,
-      imagePathPromise,
-    ]);
-    if (R.isFailure(audioStage2Path)) return resolveErr(audioStage2Path.error);
-    if (R.isFailure(imagePath)) return resolveErr(imagePath.error);
+      // calculate seek
+      R.bind("duration", ({ replay }) => this.ffmpeg.getFileDuration(replay.path)),
+      R.bind("seek", ({ duration, replay }) => {
+        const offset = new Date(replay.savedAt.getTime() - duration);
+        const seek = Math.max(0, textHistory.createdAt.getTime() - offset.getTime());
+        return R.succeed(seek);
+      }),
 
-    const updateResult = await this.updateNote({
-      note,
-      picturePath: imagePath.value,
-      sentenceAudioPath: audioStage2Path.value,
-    });
-    if (R.isFailure(updateResult)) return resolveErr(updateResult.error);
+      // create wav file for vad
+      R.bind("audioWav", ({ seek, replay }) => {
+        return this.ffmpeg.process({
+          inputPath: replay.path,
+          seek: seek,
+          format: "wav",
+        });
+      }),
 
-    return resolve(
-      R.succeed({
-        sentenceAudioPath: audioStage2Path.value,
-        picturePath: imagePath.value,
-        filesToDelete,
+      // generate vad data
+      R.bind("audioVadData", ({ audioWav }) => this.python.runSilero(audioWav)),
+      R.bind("audioDuration", ({ audioVadData }) => {
+        let audioDuration = last(audioVadData)?.end;
+        if (audioVadData.length === 1 && (audioDuration ?? 0) < 1000) audioDuration = undefined;
+        return R.succeed(audioDuration);
+      }),
+
+      R.bind("media", ({ audioWav, audioDuration, replay, seek }) => {
+        // generate sentence audio
+        const sentenceAudio = this.ffmpeg.process({
+          inputPath: audioWav,
+          duration: audioDuration,
+          format: "opus",
+        });
+
+        // generate picture
+        const extraSeek = Math.max(0, Math.floor(now.getTime() - textHistory.createdAt.getTime()));
+        const picture = this.ffmpeg.process({
+          inputPath: replay.path,
+          // get screenshot of when addNote happen instead of textHistory createdAt
+          seek: seek + extraSeek,
+          format: "webp",
+        });
+
+        return R.collect({ sentenceAudio, picture });
+      }),
+
+      R.inspectError(() => filesToDelete.forEach((file) => safeRm(file))),
+      R.inspect(({ audioVadData, replay, seek, audioDuration }) => {
+        // generate audio file for editing
+        const durationFallback = 10;
+        const duration = last(audioVadData)?.end ?? durationFallback;
+        const offsetToLeft = 5000;
+        const offsetToRight = 5000;
+        const sentenceAudioEdit = this.ffmpeg.process({
+          inputPath: replay.path,
+          seek: seek - offsetToLeft,
+          duration: duration + offsetToLeft + offsetToRight,
+          format: "opus",
+        });
+
+        // generate picture files for editing
+        const pictureEditDir = this.ffmpeg.process({
+          inputPath: replay.path,
+          seek: seek,
+          duration: audioDuration ?? 3000,
+          format: `${pictureFormat}:multiple`,
+        });
+
+        R.pipe(
+          R.collect({ sentenceAudioEdit, pictureEditDir }),
+          R.andThrough(({ pictureEditDir, sentenceAudioEdit }) => {
+            const result = this.insertNoteAndMedia({
+              note,
+              sentenceAudioPath: sentenceAudioEdit,
+              sentenceAudioVadData: audioVadData,
+              pictureDir: pictureEditDir,
+              pictureFormat,
+            });
+            return R.succeed(result);
+          }),
+          R.inspect(() => filesToDelete.forEach((file) => safeRm(file))),
+          R.inspectError(() => filesToDelete.forEach((file) => safeRm(file))),
+        );
+      }),
+
+      R.andThen(({ media: { sentenceAudio, picture } }) => {
+        return R.succeed({ sentenceAudio, picture });
       }),
     );
   }
@@ -343,14 +313,14 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
   async updateNote({
     note,
-    picturePath,
-    sentenceAudioPath,
+    picture,
+    sentenceAudio,
     overwrite = false,
     nsfw,
   }: {
     note: AnkiNote;
-    picturePath: string | undefined | null;
-    sentenceAudioPath: string | undefined | null;
+    picture: string | undefined | null;
+    sentenceAudio: string | undefined | null;
     overwrite?: boolean;
     nsfw?: boolean;
   }): Promise<R.Result<null, Error>> {
@@ -361,42 +331,46 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (!nsfw) tags = tags.filter((tag) => tag.toLowerCase() !== "nsfw");
     tags = uniq(tags);
 
-    this.log.debug({ noteId: note.noteId, picturePath, sentenceAudioPath, tags }, "Updating note");
+    this.log.debug(
+      { noteId: note.noteId, picturePath: picture, sentenceAudio, tags },
+      "Updating note",
+    );
     const backupResult = await this.backupNoteMedia(note);
     if (R.isFailure(backupResult)) return R.fail(backupResult.error);
     const updateNote = R.try({
-      try: () =>
-        this.client.note.updateNote({
+      try: () => {
+        return this.client.note.updateNote({
           note: {
             id: note.noteId,
             fields: {
-              ...(picturePath && overwrite && { [this.state.config().ankiPictureField]: "" }),
-              ...(sentenceAudioPath &&
+              ...(picture && overwrite && { [this.state.config().ankiPictureField]: "" }),
+              ...(sentenceAudio &&
                 overwrite && {
                   [this.state.config().ankiSentenceAudioField]: "",
                 }),
             },
-            ...(picturePath && {
+            ...(picture && {
               picture: [
                 {
-                  path: picturePath,
-                  filename: path.basename(picturePath),
+                  path: picture,
+                  filename: path.basename(picture),
                   fields: [this.state.config().ankiPictureField],
                 },
               ],
             }),
-            ...(sentenceAudioPath && {
+            ...(sentenceAudio && {
               audio: [
                 {
-                  path: sentenceAudioPath,
-                  filename: path.basename(sentenceAudioPath),
+                  path: sentenceAudio,
+                  filename: path.basename(sentenceAudio),
                   fields: [this.state.config().ankiSentenceAudioField],
                 },
               ],
             }),
             tags,
           },
-        }),
+        });
+      },
       catch: anyCatch("Error when updating note"),
     });
 
