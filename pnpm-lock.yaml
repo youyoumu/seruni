@@ -3,6 +3,10 @@ lockfileVersion: '9.0'
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
+  injectWorkspacePackages: true
+
+overrides:
+  node-fetch: ^3.0.0
 
 importers:
 
@@ -28,6 +32,12 @@ importers:
       '@hono/node-ws':
         specifier: ^1.3.0
         version: 1.3.0(@hono/node-server@1.19.9(hono@4.11.8))(hono@4.11.8)
+      '@libsql/linux-x64-gnu':
+        specifier: ^0.5.22
+        version: 0.5.22
+      '@libsql/win32-x64-msvc':
+        specifier: ^0.5.22
+        version: 0.5.22
       '@praha/byethrow':
         specifier: ^0.10.0
         version: 0.10.0(typescript@5.9.3)
@@ -37,9 +47,6 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../shared
-      '@repo/webui':
-        specifier: workspace:*
-        version: link:../webui
       alien-signals:
         specifier: ^3.1.2
         version: 3.1.2
@@ -52,12 +59,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
-      drizzle-kit:
-        specifier: ^0.31.8
-        version: 0.31.8
       drizzle-orm:
         specifier: ^0.45.1
-        version: 0.45.1(@libsql/client@0.17.0(encoding@0.1.13))(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
+        version: 0.45.1(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
       es-toolkit:
         specifier: ^1.44.0
         version: 1.44.0
@@ -89,9 +93,15 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@repo/webui':
+        specifier: workspace:*
+        version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@types/node':
         specifier: ^20.11.17
         version: 20.19.32
+      drizzle-kit:
+        specifier: ^0.31.8
+        version: 0.31.8
       oxfmt:
         specifier: ^0.28.0
         version: 0.28.0
@@ -118,7 +128,7 @@ importers:
         version: 0.10.0(typescript@5.9.3)
       drizzle-orm:
         specifier: ^0.45.1
-        version: 0.45.1(@libsql/client@0.17.0(encoding@0.1.13))(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
+        version: 0.45.1(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
       uid:
         specifier: ^2.0.2
         version: 2.0.2
@@ -1829,6 +1839,12 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
 
+  '@repo/shared@file:packages/shared':
+    resolution: {directory: packages/shared, type: directory}
+
+  '@repo/webui@file:packages/webui':
+    resolution: {directory: packages/webui, type: directory}
+
   '@rolldown/binding-android-arm64@1.0.0-rc.3':
     resolution: {integrity: sha512-0T1k9FinuBZ/t7rZ8jN6OpUKPnUjNdYHoj/cESWrQ3ZraAJ4OMm6z7QjSfCxqj8mOp9kTKc1zHK3kGz5vMu+nQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -3445,15 +3461,6 @@ packages:
     engines: {node: '>=10.5.0'}
     deprecated: Use your platform's native DOMException instead
 
-  node-fetch@2.7.0:
-    resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
-    engines: {node: 4.x || >=6.0.0}
-    peerDependencies:
-      encoding: ^0.1.0
-    peerDependenciesMeta:
-      encoding:
-        optional: true
-
   node-fetch@3.3.2:
     resolution: {integrity: sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -3914,9 +3921,6 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
-  tr46@0.0.3:
-    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
-
   tree-kill@1.2.2:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
     hasBin: true
@@ -4114,14 +4118,8 @@ packages:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
     engines: {node: '>= 8'}
 
-  webidl-conversions@3.0.1:
-    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
-
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
-
-  whatwg-url@5.0.0:
-    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -4700,16 +4698,15 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@libsql/client@0.17.0(encoding@0.1.13)':
+  '@libsql/client@0.17.0':
     dependencies:
       '@libsql/core': 0.17.0
-      '@libsql/hrana-client': 0.9.0(encoding@0.1.13)
+      '@libsql/hrana-client': 0.9.0
       js-base64: 3.7.8
       libsql: 0.5.22
       promise-limit: 2.7.0
     transitivePeerDependencies:
       - bufferutil
-      - encoding
       - utf-8-validate
     optional: true
 
@@ -4724,15 +4721,14 @@ snapshots:
   '@libsql/darwin-x64@0.5.22':
     optional: true
 
-  '@libsql/hrana-client@0.9.0(encoding@0.1.13)':
+  '@libsql/hrana-client@0.9.0':
     dependencies:
       '@libsql/isomorphic-ws': 0.1.5
-      cross-fetch: 4.1.0(encoding@0.1.13)
+      cross-fetch: 4.1.0
       js-base64: 3.7.8
       node-fetch: 3.3.2
     transitivePeerDependencies:
       - bufferutil
-      - encoding
       - utf-8-validate
     optional: true
 
@@ -4757,14 +4753,12 @@ snapshots:
   '@libsql/linux-arm64-musl@0.5.22':
     optional: true
 
-  '@libsql/linux-x64-gnu@0.5.22':
-    optional: true
+  '@libsql/linux-x64-gnu@0.5.22': {}
 
   '@libsql/linux-x64-musl@0.5.22':
     optional: true
 
-  '@libsql/win32-x64-msvc@0.5.22':
-    optional: true
+  '@libsql/win32-x64-msvc@0.5.22': {}
 
   '@lukeed/csprng@1.1.0': {}
 
@@ -6029,6 +6023,114 @@ snapshots:
       '@react-types/shared': 3.33.0(react@19.2.4)
       react: 19.2.4
 
+  '@repo/shared@file:packages/shared(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)(typescript@5.9.3)':
+    dependencies:
+      '@praha/byethrow': 0.10.0(typescript@5.9.3)
+      drizzle-orm: 0.45.1(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
+      uid: 2.0.2
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/pg'
+      - '@types/sql.js'
+      - '@upstash/redis'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - better-sqlite3
+      - bun-types
+      - expo-sqlite
+      - gel
+      - knex
+      - kysely
+      - mysql2
+      - pg
+      - postgres
+      - prisma
+      - sql.js
+      - sqlite3
+      - typescript
+
+  '@repo/webui@file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+    dependencies:
+      '@heroui/react': 3.0.0-beta.6(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.1.18)
+      '@heroui/styles': 3.0.0-beta.6(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
+      '@lukemorales/query-key-factory': 1.3.4(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))
+      '@repo/shared': file:packages/shared(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)(typescript@5.9.3)
+      '@tailwindcss/vite': 4.1.18(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      '@tanstack/react-devtools': 0.7.11(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(csstype@3.2.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(solid-js@1.9.11)
+      '@tanstack/react-form': 1.28.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-query': 5.90.20(react@19.2.4)
+      '@tanstack/react-router': 1.158.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-router-devtools': 1.158.0(@tanstack/react-router@1.158.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@tanstack/router-core@1.158.0)(csstype@3.2.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-virtual': 3.13.18(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/router-plugin': 1.158.0(@tanstack/react-router@1.158.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      date-fns: 4.1.0
+      es-toolkit: 1.44.0
+      lucide-react: 0.561.0(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-error-boundary: 6.1.1(react@19.2.4)
+      tailwindcss: 4.1.18
+      uid: 2.0.2
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@rsbuild/core'
+      - '@tanstack/query-core'
+      - '@tanstack/react-start'
+      - '@tanstack/router-core'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/pg'
+      - '@types/react'
+      - '@types/react-dom'
+      - '@types/sql.js'
+      - '@upstash/redis'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - better-sqlite3
+      - bufferutil
+      - bun-types
+      - csstype
+      - expo-sqlite
+      - gel
+      - knex
+      - kysely
+      - mysql2
+      - pg
+      - postgres
+      - prisma
+      - solid-js
+      - sql.js
+      - sqlite3
+      - supports-color
+      - tailwind-merge
+      - typescript
+      - utf-8-validate
+      - vite
+      - vite-plugin-solid
+      - webpack
+
   '@rolldown/binding-android-arm64@1.0.0-rc.3':
     optional: true
 
@@ -6254,6 +6356,13 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.1.18
       '@tailwindcss/oxide-win32-x64-msvc': 4.1.18
 
+  '@tailwindcss/vite@4.1.18(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+    dependencies:
+      '@tailwindcss/node': 4.1.18
+      '@tailwindcss/oxide': 4.1.18
+      tailwindcss: 4.1.18
+      vite: 7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+
   '@tailwindcss/vite@4.1.18(vite@7.3.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
     dependencies:
       '@tailwindcss/node': 4.1.18
@@ -6410,6 +6519,27 @@ snapshots:
       source-map: 0.7.6
       tsx: 4.21.0
       zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+
+  '@tanstack/router-plugin@1.158.0(@tanstack/react-router@1.158.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/plugin-syntax-jsx': 7.28.6(@babel/core@7.29.0)
+      '@babel/plugin-syntax-typescript': 7.28.6(@babel/core@7.29.0)
+      '@babel/template': 7.28.6
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
+      '@tanstack/router-core': 1.158.0
+      '@tanstack/router-generator': 1.158.0
+      '@tanstack/router-utils': 1.158.0
+      '@tanstack/virtual-file-routes': 1.154.7
+      chokidar: 3.6.0
+      unplugin: 2.3.11
+      zod: 3.25.76
+    optionalDependencies:
+      '@tanstack/react-router': 1.158.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      vite: 7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6768,11 +6898,9 @@ snapshots:
 
   cookie-es@2.0.0: {}
 
-  cross-fetch@4.1.0(encoding@0.1.13):
+  cross-fetch@4.1.0:
     dependencies:
-      node-fetch: 2.7.0(encoding@0.1.13)
-    transitivePeerDependencies:
-      - encoding
+      node-fetch: 3.3.2
     optional: true
 
   cross-spawn@7.0.6:
@@ -6846,9 +6974,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.45.1(@libsql/client@0.17.0(encoding@0.1.13))(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7):
+  drizzle-orm@0.45.1(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7):
     optionalDependencies:
-      '@libsql/client': 0.17.0(encoding@0.1.13)
+      '@libsql/client': 0.17.0
       '@types/better-sqlite3': 7.6.13
       better-sqlite3: 12.6.2
       sqlite3: 5.1.7
@@ -7653,13 +7781,6 @@ snapshots:
   node-domexception@1.0.0:
     optional: true
 
-  node-fetch@2.7.0(encoding@0.1.13):
-    dependencies:
-      whatwg-url: 5.0.0
-    optionalDependencies:
-      encoding: 0.1.13
-    optional: true
-
   node-fetch@3.3.2:
     dependencies:
       data-uri-to-buffer: 4.0.1
@@ -8301,9 +8422,6 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
-  tr46@0.0.3:
-    optional: true
-
   tree-kill@1.2.2: {}
 
   tsdown@0.20.3(typescript@5.9.3):
@@ -8445,6 +8563,21 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0):
+    dependencies:
+      esbuild: 0.27.2
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.57.1
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 20.19.32
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      lightningcss: 1.30.2
+      tsx: 4.21.0
+
   vite@7.3.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0):
     dependencies:
       esbuild: 0.27.2
@@ -8463,16 +8596,7 @@ snapshots:
   web-streams-polyfill@3.3.3:
     optional: true
 
-  webidl-conversions@3.0.1:
-    optional: true
-
   webpack-virtual-modules@0.6.2: {}
-
-  whatwg-url@5.0.0:
-    dependencies:
-      tr46: 0.0.3
-      webidl-conversions: 3.0.1
-    optional: true
 
   which@2.0.2:
     dependencies:
