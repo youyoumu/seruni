@@ -35,11 +35,11 @@ export function useCreateNewSession() {
     mutationFn: async (name: string) => {
       return await api.request.createSession(name);
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({
         queryKey: keyring.sessions.all.queryKey,
       });
-      navigate({
+      await navigate({
         to: "/text-hooker/$sessionId",
         params: { sessionId: data.id },
       });
@@ -61,12 +61,12 @@ export function useDeleteSession() {
     mutationFn: async (id: number) => {
       return await api.request.deleteSession(id);
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({
         queryKey: keyring.sessions.all.queryKey,
       });
       if (typeof active === "object" && Number(active.sessionId) === data?.id) {
-        navigate({
+        await navigate({
           to: "/",
         });
       }
@@ -81,9 +81,9 @@ export function useUpdateSessionDuration() {
     mutationFn: async ({ sessionId, duration }: { sessionId: number; duration: number }) => {
       return await api.request.updateSession({ id: sessionId, duration });
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data) {
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: keyring.sessions.byId(data.id).queryKey,
         });
       }

@@ -8,7 +8,7 @@ export function useTextHistory$({ sessionId }: { sessionId: number }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       queryKey: keyring.textHistory.bySession(sessionId).queryKey,
     });
   }, [sessionId, keyring, queryClient]);
@@ -23,9 +23,9 @@ export function useDeleteTextHistory() {
     mutationFn: async (id: number) => {
       return await api.request.deleteTextHistory(id);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data) {
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: keyring.textHistory.bySession(data.sessionId).queryKey,
         });
       }

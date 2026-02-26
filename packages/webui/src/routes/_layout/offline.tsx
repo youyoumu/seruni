@@ -29,8 +29,8 @@ function RouteComponent() {
   useEffect(() => {
     const redirectBack = () => {
       if (timeoutId.current) clearTimeout(timeoutId.current);
-      timeoutId.current = setTimeout(() => {
-        navigate({
+      timeoutId.current = setTimeout(async () => {
+        await navigate({
           to: redirectPath,
           // @ts-expect-error dynamic
           search: search,

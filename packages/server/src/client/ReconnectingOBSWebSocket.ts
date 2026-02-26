@@ -51,7 +51,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
     this.#setupEventListeners();
-    this.connect();
+    void this.connect();
   }
 
   get client(): OBSWebSocket {
@@ -105,9 +105,9 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
       this.log.info(
         `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
-      this.#attemptReconnectTimeoutId = setTimeout(() => {
+      this.#attemptReconnectTimeoutId = setTimeout(async () => {
         this.#attemptReconnectTimeoutId = null;
-        this.connect();
+        await this.connect();
       }, delay);
     }
   }
@@ -119,9 +119,9 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     return this.#obs.call(requestType, requestData);
   }
 
-  close() {
+  async close() {
     this.#manualClose = true;
-    this.#obs.disconnect();
+    await this.#obs.disconnect();
     this.#isConnected = false;
   }
 

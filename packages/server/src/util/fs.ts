@@ -1,3 +1,4 @@
+import type { PathLike } from "node:fs";
 import fs from "node:fs/promises";
 
 import { R } from "@praha/byethrow";
@@ -15,7 +16,7 @@ export const safeReadFile = R.fn({
 });
 
 export const safeReadDir = R.fn({
-  try: fs.readdir,
+  try: (path: PathLike) => fs.readdir(path),
   catch: anyCatch("Error when reading directory"),
 });
 

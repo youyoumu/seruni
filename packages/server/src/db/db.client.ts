@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { State } from "#/state/state";
+import { safeCp } from "#/util/fs";
 import { anyFail } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
@@ -45,7 +46,7 @@ export class DBClient {
   }): Promise<R.Result<null, Error>> {
     media.forEach((m) => {
       this.log.trace(`Copying ${m.filePath} to ${this.state.path().storageDir}`);
-      fs.cp(m.filePath, path.join(this.state.path().storageDir, path.basename(m.filePath)));
+      void safeCp(m.filePath, path.join(this.state.path().storageDir, path.basename(m.filePath)));
     });
 
     const insertedNotes = await this.db

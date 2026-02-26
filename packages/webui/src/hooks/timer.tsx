@@ -71,7 +71,7 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   // Sync duration when timer stops
   useEffect(() => {
     if (isRunning) return;
-    updateDuration({ duration: seconds$.current, sessionId });
+    void updateDuration({ duration: seconds$.current, sessionId });
   }, [isRunning, sessionId, updateDuration]);
 
   const reset = useCallback(() => {

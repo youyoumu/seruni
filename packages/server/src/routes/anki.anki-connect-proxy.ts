@@ -8,7 +8,7 @@ import type { Logger } from "pino";
 import z from "zod";
 
 type ProxyContext = {
-  bodyJson: ReturnType<typeof JSON.parse> | undefined;
+  bodyJson: unknown;
   log: Logger;
   forward: (overwrite?: {
     headers?: Headers;
@@ -26,7 +26,7 @@ app.post("/", async (c, next) => {
   const targetUrl = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
   let body: ArrayBuffer | undefined;
   let bodyText: string | undefined;
-  let bodyJson: ReturnType<typeof JSON.parse> | undefined;
+  let bodyJson: unknown;
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     body = await c.req.arrayBuffer();
     bodyText = new TextDecoder().decode(body);

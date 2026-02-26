@@ -108,14 +108,11 @@ export class Services {
 
       toast.promise(promise, {
         loading: data.loading,
-        success: (resolvedData) => {
+        success: () => {
           const deferred = this.#deferredPromises.get(data.id);
           const msg = deferred?.successMessage;
           this.#deferredPromises.delete(data.id);
           if (msg && msg !== "__fn__") return msg;
-          return typeof resolvedData === "object"
-            ? JSON.stringify(resolvedData)
-            : String(resolvedData);
         },
         error: (err) => {
           const deferred = this.#deferredPromises.get(data.id);

@@ -77,8 +77,8 @@ function LayoutComponent() {
   const location = useLocation();
 
   useEffect(() => {
-    return ws.addListener("close", () => {
-      navigate({
+    return ws.addListener("close", async () => {
+      await navigate({
         to: "/offline",
         search: { redirect: location.pathname },
       });
@@ -222,8 +222,8 @@ export function TextHookerSessionList() {
             key={session.id}
             to={`/text-hooker/$sessionId`}
             params={{ sessionId: session.id }}
-            onClick={() => {
-              setActiveSession(session.id);
+            onClick={async () => {
+              await setActiveSession(session.id);
             }}
           >
             {session.name}
@@ -262,9 +262,9 @@ function NewSessionForm() {
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        form.handleSubmit();
+        await form.handleSubmit();
       }}
       className="flex gap-4"
     >
@@ -286,8 +286,8 @@ function DeleteSessionButton({ sessionId }: { sessionId: number }) {
     <TrashIcon
       className="cursor-pointer text-danger"
       size={20}
-      onClick={() => {
-        deleteSession(sessionId);
+      onClick={async () => {
+        await deleteSession(sessionId);
       }}
     ></TrashIcon>
   );

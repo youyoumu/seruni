@@ -42,13 +42,13 @@ export class TypesafeEventTarget<EMap extends Record<string, unknown>> extends E
   /** @deprecated
    * use dispatch instead
    * */
-  dispatchEvent = super.dispatchEvent;
+  dispatchEvent = super.dispatchEvent.bind(this);
   /** @deprecated
    * use addListener instead
    * */
-  addEventListener = super.addEventListener;
+  addEventListener = super.addEventListener.bind(this);
   /** @deprecated
    * use method returned from addListener instead
    * */
-  removeEventListener = super.removeEventListener;
+  removeEventListener = super.removeEventListener.bind(this);
 }

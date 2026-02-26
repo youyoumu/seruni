@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import { serve } from "@hono/node-server";
@@ -23,6 +22,7 @@ import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
 import { createState, serializeState } from "./state/state";
 import type { AppContext } from "./types/types";
+import { safeReadDir, safeRm } from "./util/fs";
 import { createLogger } from "./util/logger";
 import { anyFail } from "./util/result";
 import { registerHandlers } from "./wss/handlers";
@@ -43,7 +43,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   log.info(serializeState(state), "Starting with state");
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
-  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+  const nodews = createNodeWebSocket({ app });
 
   const dbClient = new DBClient({ db, logger, state });
 
@@ -67,11 +67,14 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   await dbClient.migrate();
 
   // remove temp files
-  fs.readdir(state.path().tempDir).then((files) => {
-    files.forEach((file) => {
-      fs.rm(path.join(state.path().tempDir, file), { recursive: true });
-    });
-  });
+  void R.pipe(
+    safeReadDir(state.path().tempDir),
+    R.inspect((files) => {
+      files.forEach((file) => {
+        void safeRm(path.join(state.path().tempDir, file), { recursive: true });
+      });
+    }),
+  );
 
   // make at least one session exists
   const sessions = await db.select().from(session);
@@ -95,7 +98,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
     onPayload,
     addWS,
     removeWS,
-    upgradeWebSocket,
+    upgradeWebSocket: nodews.upgradeWebSocket,
     ankiConnectClient,
   };
 
@@ -130,7 +133,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
       logger.info(`Server is running on http://localhost:${info.port}`);
     },
   );
-  injectWebSocket(server);
+  nodews.injectWebSocket(server);
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {

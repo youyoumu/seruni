@@ -42,7 +42,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
     this.#pollInterval = options.pollInterval ?? 4000;
-    this.connect();
+    void this.connect();
   }
 
   get client(): YankiConnect {
@@ -58,10 +58,10 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     }
   }
 
-  connect() {
+  async connect() {
     if (this.#pollIntervalId) return;
     this.#manualClose = false;
-    this.#startPolling();
+    await this.#startPolling();
   }
 
   async #startPolling() {
@@ -117,9 +117,9 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
       this.log.info(
         `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
-      this.#attemptReconnectTimeoutId = setTimeout(() => {
+      this.#attemptReconnectTimeoutId = setTimeout(async () => {
         this.#attemptReconnectTimeoutId = null;
-        this.#startPolling();
+        await this.#startPolling();
       }, delay);
     }
   }

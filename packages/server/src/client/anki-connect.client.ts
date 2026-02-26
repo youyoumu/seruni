@@ -122,7 +122,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     const reuseMedia = this.#createMediaCache.has(textHistoryId);
 
     //TODO: title description action etc
-    this.api.toastPromise(
+    void this.api.toastPromise(
       async () => {
         const updateResult = await this.updateNoteMedia({
           note: note.value,
@@ -157,7 +157,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     );
   }
 
-  createMedia = memoize(this.#createMedia, {
+  createMedia = memoize(this.#createMedia.bind(this), {
     getCacheKey: ({ textHistory }) => textHistory.id,
     cache: this.#createMediaCache,
   });
@@ -174,7 +174,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     return await R.pipe(
       R.do(),
       // save replay buffer
-      R.bind("replay", this.obsClient.saveReplayBuffer),
+      R.bind("replay", () => this.obsClient.saveReplayBuffer()),
       R.map(({ replay }) => ({ replay: { path: replay, savedAt: new Date() } })),
       R.andThrough(({ replay }) => R.succeed(filesToDelete.push(replay.path))),
 
@@ -245,7 +245,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
           format: `${pictureFormat}:multiple`,
         });
 
-        R.pipe(
+        void R.pipe(
           R.collect({ sentenceAudioEdit, pictureEditDir }),
           R.andThrough(({ pictureEditDir, sentenceAudioEdit }) => {
             const result = this.insertNoteAndMedia({

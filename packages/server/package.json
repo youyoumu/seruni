@@ -8,8 +8,8 @@
     "typecheck": "tsc -b",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --fix --type-aware",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -44,6 +44,7 @@
     "@types/node": "^20.11.17",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
+    "oxlint-tsgolint": "^0.15.0",
     "tsdown": "^0.20.3",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
