@@ -14,7 +14,7 @@ import { textHistory as textHistoryTable, type TextHistory } from "@repo/shared/
 import type { AnkiNote } from "@repo/shared/schema";
 import type { ServerApi } from "@repo/shared/ws";
 import { eq } from "drizzle-orm";
-import { delay, last, memoize, uniq } from "es-toolkit";
+import { last, memoize, retry, uniq } from "es-toolkit";
 import type { Logger } from "pino";
 
 import type { OBSClient } from "./obs.client";
@@ -43,10 +43,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     python: PythonExec;
   }) {
     const ankiConnectAddress = opts.state.config().ankiConnectAddress;
-    const url = new URL(ankiConnectAddress);
     super({
-      host: `${url.protocol}//${url.hostname}`,
-      port: parseInt(url.port),
+      host: new URL(ankiConnectAddress).origin,
+      port: parseInt(new URL(ankiConnectAddress).port),
       logger: opts.logger.child({ name: "anki-connect-client" }),
     });
     this.state = opts.state;
@@ -66,22 +65,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     });
   }
 
-  #mediaDirCache = "";
-  async getMediaDir(): Promise<R.Result<string, Error>> {
-    if (this.#mediaDirCache) return R.succeed(this.#mediaDirCache);
-    const maxRetries = 3;
-    const retryDelay = 1000;
-    const getMediaDirPath = R.fn({
-      try: () => this.client.media.getMediaDirPath(),
+  getMediaDir = memoize(this.#getMediaDir.bind(this));
+  async #getMediaDir(): Promise<R.Result<string, Error>> {
+    return R.try({
+      try: () => retry(this.client.media.getMediaDirPath, { delay: 1000, retries: 3 }),
       catch: anyCatch("Failed to get media dir"),
     });
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      const result = await getMediaDirPath();
-      if (R.isSuccess(result)) return R.succeed((this.#mediaDirCache = result.value));
-      if (attempt === maxRetries) return R.fail(result.error);
-      await delay(retryDelay * attempt);
-    }
-    return anyFail("Failed to get media dir after retries");
   }
 
   async preUpdateNoteMedia({
