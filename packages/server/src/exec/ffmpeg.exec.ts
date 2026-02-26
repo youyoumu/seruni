@@ -36,7 +36,7 @@ export class FFmpegExec extends Exec {
 
   timestamps = new Set<string>();
   createTimestamp(): string {
-    const timestamp = `${formatDate(new Date(), "yyyyMMdd_HHmmss")}_${uid().slice(0, 3)}`;
+    const timestamp = `${formatDate(new Date(), "yyyyMMdd_HHmmss")}_${uid(3)}`;
     if (this.timestamps.has(timestamp)) {
       return this.createTimestamp();
     }
