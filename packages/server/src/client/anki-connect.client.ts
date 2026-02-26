@@ -11,11 +11,11 @@ import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { textHistory as textHistoryTable, type TextHistory } from "@repo/shared/db";
+import type { AnkiNote } from "@repo/shared/schema";
 import type { ServerApi } from "@repo/shared/ws";
 import { eq } from "drizzle-orm";
 import { delay, last, memoize, uniq } from "es-toolkit";
 import type { Logger } from "pino";
-import z from "zod";
 
 import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
@@ -430,16 +430,3 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 function isNoteNsfw(note: AnkiNote) {
   return note.tags.map((t) => t.toLowerCase()).includes("nsfw");
 }
-
-//TODO: move to shared
-export const zAnkiNote = z.object({
-  cards: z.array(z.number()),
-  fields: z.record(z.string(), z.object({ order: z.number(), value: z.string() })),
-  mod: z.number(),
-  modelName: z.string(),
-  noteId: z.number(),
-  profile: z.string(),
-  tags: z.array(z.string()),
-});
-
-export type AnkiNote = z.infer<typeof zAnkiNote>;
