@@ -10,7 +10,7 @@ import { Popover, Skeleton, cn } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { CircleIcon, TrashIcon } from "lucide-react";
 import { Suspense } from "react";
-import z from "zod";
+import * as z from "zod/mini";
 
 export function TextHookerSessionListPopover(props: {
   slot: {
@@ -88,7 +88,7 @@ function NewSessionForm() {
     },
     validators: {
       onChange: z.object({
-        name: z.string().min(1, "Can't be empty"),
+        name: z.string().check(z.minLength(1, "Cannot be empty")),
       }),
     },
     onSubmit: async ({ value }) => {

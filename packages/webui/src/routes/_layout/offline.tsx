@@ -2,13 +2,13 @@ import { useServices } from "#/hooks/api";
 import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { ShellIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
-import z from "zod";
+import * as z from "zod/mini";
 
 export const Route = createFileRoute("/_layout/offline")({
   component: RouteComponent,
   validateSearch: z.object({
     redirect: z.string(),
-    search: z.string().optional(),
+    search: z.optional(z.string()),
   }),
 });
 
@@ -32,7 +32,7 @@ function RouteComponent() {
       timeoutId.current = setTimeout(async () => {
         await navigate({
           to: redirectPath,
-          // @ts-expect-error dynamic
+          //@ts-expect-error dynamic
           search: search,
         });
       }, 1000);

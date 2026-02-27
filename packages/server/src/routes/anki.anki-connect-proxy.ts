@@ -5,7 +5,7 @@ import { R } from "@praha/byethrow";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { Logger } from "pino";
-import z from "zod";
+import * as z from "zod/mini";
 
 type ProxyContext = {
   bodyJson: unknown;
