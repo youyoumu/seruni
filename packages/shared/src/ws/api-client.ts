@@ -11,25 +11,6 @@ export type ToastPayload = {
   variant?: "default" | "accent" | "success" | "warning" | "danger";
 };
 
-export type ToastLoadingPayload = {
-  id: string;
-  title: string;
-  description?: string;
-  timeout?: number;
-};
-
-export type ToastSuccessPayload = {
-  id: string;
-  title: string;
-  description?: string;
-};
-
-export type ToastErrorPayload = {
-  id: string;
-  title: string;
-  description?: string;
-};
-
 export type ToastPromiseConfig = {
   id: string;
   loading: string;
@@ -51,9 +32,6 @@ export type ApiSchema = CreateSchema<{
   };
   serverPush: {
     toast: Push<ToastPayload>;
-    toastLoading: Push<ToastLoadingPayload>;
-    toastSuccess: Push<ToastSuccessPayload>;
-    toastError: Push<ToastErrorPayload>;
     toastPromise: Push<ToastPromiseConfig>;
     toastPromiseResolve: Push<ToastPromiseResolvePayload>;
     toastPromiseReject: Push<ToastPromiseRejectPayload>;
@@ -91,9 +69,6 @@ const createApi = () => {
     clientPush: { ping: 0 },
     serverPush: {
       toast: 0,
-      toastLoading: 0,
-      toastSuccess: 0,
-      toastError: 0,
       toastPromise: 0,
       toastPromiseResolve: 0,
       toastPromiseReject: 0,
