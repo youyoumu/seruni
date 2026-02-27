@@ -1,19 +1,7 @@
+import { TextHookerSessionListPopover } from "#/components/SessionList";
+import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/api";
-import {
-  useAnkiConnectConnected$,
-  useObsConnected$,
-  useTextHookerConnected$,
-} from "#/hooks/client";
-import { useAppForm } from "#/hooks/form";
-import {
-  useActiveSession$,
-  useCreateNewSession,
-  useDeleteSession,
-  useSessions$,
-  useSetActiveSession,
-} from "#/hooks/sessions";
-import { Button, cn, Skeleton, Spinner, tv } from "@heroui/react";
-import { Popover } from "@heroui/react";
+import { Button, cn, tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
@@ -24,31 +12,16 @@ import {
   useLocation,
   useMatchRoute,
 } from "@tanstack/react-router";
-import {
-  Terminal,
-  FileText,
-  Settings,
-  TrashIcon,
-  BugIcon,
-  CircleIcon,
-  ZapIcon,
-  ZapOffIcon,
-} from "lucide-react";
-import { Suspense, useEffect } from "react";
+import { Terminal, FileText, Settings, BugIcon } from "lucide-react";
+import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { z } from "zod";
 
-const navLink = tv({
+const navLinkTv = tv({
   base: [
     "cursor-pointer rounded p-3 text-foreground/60 transition-colors",
     "hover:text-foreground",
     "[&.active]:bg-surface-hover [&.active]:text-foreground",
   ],
-  variants: {
-    active: {
-      active: "bg-surface-hover text-foreground",
-    },
-  },
 });
 
 export const Route = createFileRoute("/_layout")({
@@ -72,6 +45,7 @@ export const Route = createFileRoute("/_layout")({
 });
 
 function LayoutComponent() {
+  const matchRoute = useMatchRoute();
   const { ws } = useServices();
   const navigate = Route.useNavigate();
   const location = useLocation();
@@ -107,13 +81,25 @@ function LayoutComponent() {
           >
             <aside className="flex w-16 flex-col items-center justify-between border-r border-border bg-surface py-4">
               <nav className="flex flex-col gap-2">
-                <Link to="/" className={navLink()} title="Home">
+                <Link to="/" className={navLinkTv()} title="Home">
                   <Terminal size={20} />
                 </Link>
-                <TextHookerSessionListPopover />
+                <TextHookerSessionListPopover
+                  slot={{
+                    trigger: (
+                      <button
+                        className={cn(navLinkTv(), {
+                          active: matchRoute({ to: "/text-hooker/$sessionId" }),
+                        })}
+                      >
+                        <FileText size={20} />
+                      </button>
+                    ),
+                  }}
+                ></TextHookerSessionListPopover>
               </nav>
               <div className="flex flex-col gap-2">
-                <Link to="/settings" className={navLink()} title="Settings">
+                <Link to="/settings" className={navLinkTv()} title="Settings">
                   <Settings size={20} />
                 </Link>
               </div>
@@ -126,169 +112,5 @@ function LayoutComponent() {
         )}
       </QueryErrorResetBoundary>
     </div>
-  );
-}
-
-function StatusBar() {
-  const { data: textHookerConnected } = useTextHookerConnected$();
-  const { data: ankiConnectConnected } = useAnkiConnectConnected$();
-  const { data: obsConnected } = useObsConnected$();
-
-  return (
-    <div className="flex justify-end gap-2 border-t border-border bg-surface-calm px-2 py-1">
-      <div className="flex items-center gap-2">
-        <StatusIcon status={textHookerConnected ? "connected" : "connecting"} />
-        <div className="text-sm">Text Hooker</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <StatusIcon status={ankiConnectConnected ? "connected" : "connecting"} />
-        <div className="text-sm">Anki Connect</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <StatusIcon status={obsConnected ? "connected" : "connecting"} />
-        <div className="text-sm">OBS</div>
-      </div>
-    </div>
-  );
-}
-
-function StatusIcon({ status }: { status: "connected" | "disconnected" | "connecting" }) {
-  switch (status) {
-    case "connected":
-      return <ZapIcon size={16} className="text-success" />;
-    case "disconnected":
-      return <ZapOffIcon size={16} className="text-danger" />;
-    case "connecting":
-      return <Spinner className="size-4 text-surface-foreground-calm" />;
-  }
-}
-
-export function TextHookerSessionListPopover() {
-  const matchRoute = useMatchRoute();
-  const active = matchRoute({
-    to: "/text-hooker/$sessionId",
-  });
-
-  return (
-    <Popover>
-      <Popover.Trigger>
-        <button
-          className={navLink({
-            active: active ? "active" : undefined,
-          })}
-        >
-          <FileText size={20} />
-        </button>
-      </Popover.Trigger>
-      <Popover.Content className=" overflow-auto bg-surface-calm">
-        <Popover.Dialog className="flex flex-col gap-4">
-          <Popover.Heading className="text-lg">Select Session</Popover.Heading>
-          <NewSessionForm />
-          <Suspense
-            fallback={
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-3 w-3/5 rounded-lg" />
-                <Skeleton className="h-3 w-4/5 rounded-lg" />
-                <Skeleton className="h-3 w-5/5 rounded-lg" />
-              </div>
-            }
-          >
-            <TextHookerSessionList />
-          </Suspense>
-        </Popover.Dialog>
-      </Popover.Content>
-    </Popover>
-  );
-}
-
-export function TextHookerSessionList() {
-  const { data: sessions } = useSessions$();
-  const { data: activeSession } = useActiveSession$();
-  const { mutateAsync: setActiveSession } = useSetActiveSession();
-  const reversedSessions = [...sessions].reverse();
-
-  //TODO: rename sessions
-  return (
-    <div className="flex max-h-[50vh] flex-col gap-2 overflow-auto">
-      {reversedSessions.map((session) => (
-        <div className="flex items-center gap-2 pe-2" key={session.id}>
-          <Link
-            className={cn(
-              "text-surface-foreground-calm transition-colors hover:text-surface-foreground",
-              {
-                "text-surface-foreground": session.id === activeSession?.id,
-              },
-            )}
-            key={session.id}
-            to={`/text-hooker/$sessionId`}
-            params={{ sessionId: session.id }}
-            onClick={async () => {
-              await setActiveSession(session.id);
-            }}
-          >
-            {session.name}
-          </Link>
-          {session.id === activeSession?.id && (
-            <CircleIcon size={8} fill="var(--color-success)" className="text-success" />
-          )}
-          <div className="flex-1"></div>
-          <DeleteSessionButton sessionId={session.id} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function NewSessionForm() {
-  const { mutateAsync: createNewSession } = useCreateNewSession();
-
-  const form = useAppForm({
-    defaultValues: {
-      name: "",
-    },
-    validators: {
-      onChange: z.object({
-        name: z.string().min(1, "Can't be empty"),
-      }),
-    },
-    onSubmit: async ({ value }) => {
-      await createNewSession(value.name, {
-        onSuccess() {
-          form.reset();
-        },
-      });
-    },
-  });
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        await form.handleSubmit();
-      }}
-      className="flex gap-4"
-    >
-      <form.AppField
-        name="name"
-        children={(field) => <field.TextFieldSet placeholder="New Session" />}
-      />
-      <form.AppForm>
-        <form.SubmitButton>Create</form.SubmitButton>
-      </form.AppForm>
-    </form>
-  );
-}
-
-function DeleteSessionButton({ sessionId }: { sessionId: number }) {
-  const { mutateAsync: deleteSession } = useDeleteSession();
-
-  return (
-    <TrashIcon
-      className="cursor-pointer text-danger"
-      size={20}
-      onClick={async () => {
-        await deleteSession(sessionId);
-      }}
-    ></TrashIcon>
   );
 }
