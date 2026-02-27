@@ -3,8 +3,8 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: ["./src/main.ts"],
   noExternal: [/.*/, "@libsql/linux-x64-gnu"],
-  // nodeProtocol: true,
-  // unbundle: true,
+  external: ["open"],
+  nodeProtocol: true,
   define: {
     __DEV__: "false",
   },

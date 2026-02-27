@@ -7,6 +7,7 @@ settings:
 
 overrides:
   node-fetch: ^3.0.0
+  cross-fetch: link:./packages/cross-fetch
 
 importers:
 
@@ -21,6 +22,8 @@ importers:
       typescript:
         specifier: 5.9.2
         version: 5.9.2
+
+  packages/cross-fetch: {}
 
   packages/python: {}
 
@@ -95,7 +98,7 @@ importers:
     devDependencies:
       '@repo/webui':
         specifier: workspace:*
-        version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(tailwind-merge@3.4.0)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+        version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@types/node':
         specifier: ^20.11.17
         version: 20.19.32
@@ -2604,9 +2607,6 @@ packages:
   cookie-es@2.0.0:
     resolution: {integrity: sha512-RAj4E421UYRgqokKUmotqAwuplYw15qtdXfY+hGzgCJ/MBjCVZcSoHK/kH9kocfjRjcDME7IiDWR/1WX1TM2Pg==}
 
-  cross-fetch@4.1.0:
-    resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
-
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -4718,7 +4718,7 @@ snapshots:
   '@libsql/hrana-client@0.9.0':
     dependencies:
       '@libsql/isomorphic-ws': 0.1.5
-      cross-fetch: 4.1.0
+      cross-fetch: link:packages/cross-fetch
       js-base64: 3.7.8
       node-fetch: 3.3.2
     transitivePeerDependencies:
@@ -6024,7 +6024,7 @@ snapshots:
       - sqlite3
       - typescript
 
-  '@repo/webui@file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(tailwind-merge@3.4.0)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+  '@repo/webui@file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
     dependencies:
       '@heroui/react': 3.0.0-beta.7(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.1.18)
       '@heroui/styles': 3.0.0-beta.7(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
@@ -6874,11 +6874,6 @@ snapshots:
   convert-source-map@2.0.0: {}
 
   cookie-es@2.0.0: {}
-
-  cross-fetch@4.1.0:
-    dependencies:
-      node-fetch: 3.3.2
-    optional: true
 
   cross-spawn@7.0.6:
     dependencies:

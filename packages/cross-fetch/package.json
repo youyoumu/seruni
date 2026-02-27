@@ -1,0 +1,9 @@
+{
+  "name": "@repo/cross-fetch",
+  "type": "module",
+  "packageManager": "pnpm@10.26.1",
+  "dependencies": {},
+  "exports": {
+    ".": "./index.js"
+  }
+}
