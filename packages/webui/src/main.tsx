@@ -42,7 +42,7 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ToastProvider className="bottom-12" placement="bottom end"></ToastProvider>
+      <ToastProvider className="right-8 bottom-12" placement="bottom end"></ToastProvider>
       <ServicesProvider value={services}>
         <OnlineProvider ws={services.ws}>
           <RouterProvider router={router} />
