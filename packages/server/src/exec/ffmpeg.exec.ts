@@ -43,7 +43,7 @@ export class FFmpegExec extends Exec {
 
   async getFileDuration(filePath: string): Promise<R.Result<number, Error>> {
     const params = ["-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", filePath];
-    const result = await this.safeExeca("ffprobe", params);
+    const result = await this.exec("ffprobe", params);
     if (R.isFailure(result)) return R.fail(result.error);
     const { stdout, stderr } = result.value;
     this.log.trace({ params, stdout, stderr }, "ffprobe");
