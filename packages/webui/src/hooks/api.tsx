@@ -1,6 +1,7 @@
 import { createKeyring } from "#/util/keyring";
 import type { Keyring } from "#/util/keyring";
-import { toast } from "@heroui/react";
+import { createToastStore } from "#/util/toast";
+import { createToast } from "#/util/toast";
 import type { TextHistory } from "@repo/shared/db";
 import { TypesafeEventTarget } from "@repo/shared/util";
 import type {
@@ -25,6 +26,8 @@ export class Services {
   keyring: Keyring;
   ws: ReconnectingWebSocket;
   bus = new TypesafeEventTarget<ServicesEventMap>();
+  toastStore = createToastStore();
+  toast = createToast(this.toastStore);
   #deferredPromises = new Map<
     string,
     {
@@ -91,9 +94,9 @@ export class Services {
     });
 
     this.api.onPush.toast((data: ToastPayload) => {
-      toast(data.title ?? "", {
+      this.toast(data.title ?? "", {
         description: data.description,
-        variant: data.variant,
+        variant: data.variant ?? "default",
       });
     });
 
@@ -101,7 +104,7 @@ export class Services {
       const { promise, resolve, reject } = Promise.withResolvers<void>();
       this.#deferredPromises.set(data.id, { resolve, reject });
 
-      toast.promise(promise, {
+      this.toast.promise(promise, {
         loading: data.loading,
         success: () => {
           return this.#deferredPromises.get(data.id)?.successMessage;
