@@ -3,3 +3,6 @@ packages:
   - packages/*
 
 injectWorkspacePackages: true
+
+onlyBuiltDependencies:
+  - better-sqlite3

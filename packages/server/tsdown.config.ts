@@ -17,12 +17,16 @@ export default defineConfig({
       to: "./dist/python",
     },
     {
-      from: "node_modules/@libsql/linux-x64-gnu/index.node",
-      to: "./dist/node_modules/@libsql/linux-x64-gnu",
+      from: "./.better-sqlite3/better-sqlite3-v12.6.2-node-v137-linux-x64/build/Release/better_sqlite3.node",
+      to: "./dist/lib/binding/node-v137-linux-x64",
     },
     {
-      from: "node_modules/@libsql/win32-x64-msvc/index.node",
-      to: "./dist/node_modules/@libsql/win32-x64-msvc",
+      from: "./.better-sqlite3/better-sqlite3-v12.6.2-node-v137-win32-x64/build/Release/better_sqlite3.node",
+      to: "./dist/lib/binding/node-v137-win32-x64",
+    },
+    {
+      from: "./package.json",
+      to: "./dist",
     },
   ],
   plugins: [
@@ -30,4 +34,5 @@ export default defineConfig({
       outDir: "..",
     }),
   ],
+  shims: true,
 });
