@@ -77,7 +77,7 @@ export function registerHandlers({
   });
 
   api.onRequest.markTextHistoryAsCompleted(async (id) => {
-    const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
+    const [result] = await db.select().from(textHistory).where(eq(textHistory.id, id));
     if (result) state.completedTextHistory()[result.id] = Date.now();
     return result ?? null;
   });
