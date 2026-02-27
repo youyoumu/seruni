@@ -1,4 +1,5 @@
 import { useServices } from "#/hooks/api";
+import { useHover } from "#/hooks/dom";
 import {
   useDeleteTextHistory,
   useIsTextHistoryCompleted$,
@@ -204,7 +205,9 @@ function TextHistoryList() {
           return (
             <div
               key={virtualItem.key}
-              ref={virtualizer.measureElement}
+              ref={(el) => {
+                virtualizer.measureElement(el);
+              }}
               data-index={virtualItem.index}
               style={{
                 position: "absolute",
@@ -215,33 +218,7 @@ function TextHistoryList() {
               }}
               className="px-4"
             >
-              <div className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
-                <p className="flex-1 text-xl">
-                  {"\n"}
-                  {item.text}
-                  <span
-                    style={{
-                      opacity: 0.01,
-                      fontSize: "0.1px",
-                      pointerEvents: "none",
-                      userSelect: "none",
-                    }}
-                  >{`‹id:${item.id}›`}</span>
-                  {"\n"}
-                </p>
-
-                {
-                  <TextHistoryPopover
-                    key={item.id}
-                    slot={{
-                      trigger: (
-                        <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />
-                      ),
-                    }}
-                    textHistory={item}
-                  />
-                }
-              </div>
+              <TextHistoryItem textHistory={item} />
             </div>
           );
         })}
@@ -250,16 +227,56 @@ function TextHistoryList() {
   );
 }
 
+export function TextHistoryItem(props: { textHistory: TextHistory }) {
+  const { textHistory: item } = props;
+  const [isOpen, setIsOpen] = useState(false);
+  const [hoverRef, isHover] = useHover();
+
+  return (
+    <div ref={hoverRef} className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
+      <p className="flex-1 text-xl">
+        {"\n"}
+        {item.text}
+        <span
+          style={{
+            opacity: 0.01,
+            fontSize: "0.1px",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >{`‹id:${item.id}›`}</span>
+        {"\n"}
+      </p>
+      {(isHover || isOpen) && (
+        <TextHistoryPopover
+          onOpenChange={setIsOpen}
+          key={item.id}
+          slot={{
+            trigger: <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />,
+          }}
+          textHistory={item}
+        />
+      )}
+    </div>
+  );
+}
+
 export function TextHistoryPopover(props: {
   slot: { trigger: React.ReactNode };
   textHistory: TextHistory;
+  onOpenChange?: (open: boolean) => void;
 }) {
+  const { onOpenChange } = props;
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
   const { mutate: markTextHistoryAsCompleted } = useMarkTextHistoryAsCompleted();
   const isCompleted = useIsTextHistoryCompleted$(props.textHistory);
 
+  useEffect(() => {
+    return onOpenChange?.(false);
+  }, [onOpenChange]);
+
   return (
-    <Popover>
+    <Popover onOpenChange={onOpenChange}>
       <Popover.Trigger>{props.slot.trigger}</Popover.Trigger>
       <Popover.Content className="-translate-4 overflow-auto bg-surface-calm">
         <Popover.Dialog className="flex flex-col gap-2">
