@@ -1,13 +1,13 @@
 import { useServices } from "#/hooks/api";
 import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
-import { Button, cn, Separator, Skeleton } from "@heroui/react";
+import { Button, cn, Popover, Separator, Skeleton } from "@heroui/react";
 import type { TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
-import { PauseIcon, PlayIcon, RssIcon, TrashIcon } from "lucide-react";
+import { EllipsisVerticalIcon, PauseIcon, PlayIcon, RssIcon, TrashIcon, XIcon } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
@@ -106,7 +106,6 @@ function TextHistoryPageHeader() {
 function TextHistoryList() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId });
-  const { mutate: deleteTextHistory } = useDeleteTextHistory();
   const { bus } = useServices();
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -219,12 +218,14 @@ function TextHistoryList() {
                   {"\n"}
                 </p>
 
-                <TrashIcon
-                  size={20}
-                  className="shrink-0 cursor-pointer text-danger"
-                  onClick={() => {
-                    deleteTextHistory(item.id);
+                <TextHistoryPopover
+                  key={item.id}
+                  slot={{
+                    trigger: (
+                      <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />
+                    ),
                   }}
+                  textHistory={item}
                 />
               </div>
             </div>
@@ -232,5 +233,31 @@ function TextHistoryList() {
         })}
       </div>
     </div>
+  );
+}
+
+export function TextHistoryPopover(props: {
+  slot: { trigger: React.ReactNode };
+  textHistory: TextHistory;
+}) {
+  const { mutate: deleteTextHistory } = useDeleteTextHistory();
+
+  return (
+    <Popover>
+      <Popover.Trigger>{props.slot.trigger}</Popover.Trigger>
+      <Popover.Content className="-translate-4 overflow-auto bg-surface-calm">
+        <Popover.Dialog className="flex flex-col gap-2">
+          <button
+            className="flex cursor-pointer items-center justify-between gap-2 rounded-lg p-2 hover:bg-surface-soft"
+            onClick={() => {
+              deleteTextHistory(props.textHistory.id);
+            }}
+          >
+            <TrashIcon className="size-4 shrink-0 text-danger" />
+            <div>Delete</div>
+          </button>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }
