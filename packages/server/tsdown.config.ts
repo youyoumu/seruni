@@ -1,8 +1,9 @@
+import { bundleStats } from "rollup-plugin-bundle-stats";
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
   entry: ["./src/main.ts"],
-  noExternal: [/.*/, "@libsql/linux-x64-gnu"],
+  noExternal: [/.*/],
   external: ["open"],
   nodeProtocol: true,
   define: {
@@ -23,5 +24,10 @@ export default defineConfig({
       from: "node_modules/@libsql/win32-x64-msvc/index.node",
       to: "./dist/node_modules/@libsql/win32-x64-msvc",
     },
+  ],
+  plugins: [
+    bundleStats({
+      outDir: "..",
+    }),
   ],
 });
