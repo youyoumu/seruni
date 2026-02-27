@@ -47,6 +47,8 @@ export type ApiSchema = CreateSchema<{
   clientRequest: {
     textHistoryBySessionId: Request<number, TextHistory[]>;
     deleteTextHistory: Request<number, TextHistory | null>;
+    completedTextHistory: Request<undefined, Record<number, number>>;
+    markTextHistoryAsCompleted: Request<number, TextHistory | null>;
     session: Request<number, Session | null>;
     sessions: Request<undefined, Session[]>;
     createSession: Request<string, Session>;
@@ -84,6 +86,8 @@ const createApi = () => {
     clientRequest: {
       textHistoryBySessionId: 0,
       deleteTextHistory: 0,
+      completedTextHistory: 0,
+      markTextHistoryAsCompleted: 0,
       session: 0,
       sessions: 0,
       createSession: 0,

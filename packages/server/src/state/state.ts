@@ -51,6 +51,7 @@ export async function createState(
     path: signal(path_),
     activeSessionId: signal<number | null>(null),
     isListeningTexthooker: signal<boolean>(false),
+    completedTextHistory: signal<Record<number, number>>({}),
     textHookerConnected: signal<boolean>(false),
     ankiConnectConnected: signal<boolean>(false),
     obsConnected: signal<boolean>(false),

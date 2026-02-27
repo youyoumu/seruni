@@ -1,13 +1,25 @@
 import { useServices } from "#/hooks/api";
-import { useDeleteTextHistory, useTextHistory$ } from "#/hooks/text-history";
+import {
+  useDeleteTextHistory,
+  useIsTextHistoryCompleted$,
+  useMarkTextHistoryAsCompleted,
+  useTextHistory$,
+} from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { Button, cn, Popover, Separator, Skeleton } from "@heroui/react";
-import type { TextHistory } from "@repo/shared/db";
+import { type TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
 import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
-import { EllipsisVerticalIcon, PauseIcon, PlayIcon, RssIcon, TrashIcon, XIcon } from "lucide-react";
+import {
+  ClockCheckIcon,
+  EllipsisVerticalIcon,
+  PauseIcon,
+  PlayIcon,
+  RssIcon,
+  TrashIcon,
+} from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
@@ -218,15 +230,17 @@ function TextHistoryList() {
                   {"\n"}
                 </p>
 
-                <TextHistoryPopover
-                  key={item.id}
-                  slot={{
-                    trigger: (
-                      <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />
-                    ),
-                  }}
-                  textHistory={item}
-                />
+                {
+                  <TextHistoryPopover
+                    key={item.id}
+                    slot={{
+                      trigger: (
+                        <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />
+                      ),
+                    }}
+                    textHistory={item}
+                  />
+                }
               </div>
             </div>
           );
@@ -241,6 +255,8 @@ export function TextHistoryPopover(props: {
   textHistory: TextHistory;
 }) {
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
+  const { mutate: markTextHistoryAsCompleted } = useMarkTextHistoryAsCompleted();
+  const isCompleted = useIsTextHistoryCompleted$(props.textHistory);
 
   return (
     <Popover>
@@ -248,7 +264,21 @@ export function TextHistoryPopover(props: {
       <Popover.Content className="-translate-4 overflow-auto bg-surface-calm">
         <Popover.Dialog className="flex flex-col gap-2">
           <button
-            className="flex cursor-pointer items-center justify-between gap-2 rounded-lg p-2 hover:bg-surface-soft"
+            className={cn("flex items-center gap-2 rounded-lg p-2", {
+              "cursor-pointer hover:bg-surface-soft": !isCompleted,
+            })}
+            disabled={isCompleted}
+            onClick={() => {
+              markTextHistoryAsCompleted(props.textHistory.id);
+            }}
+          >
+            <ClockCheckIcon className={cn("size-4 shrink-0", { "text-success": isCompleted })} />
+            <div className={cn({ "text-surface-foreground-soft": isCompleted })}>
+              Mark as completed
+            </div>
+          </button>
+          <button
+            className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-surface-soft"
             onClick={() => {
               deleteTextHistory(props.textHistory.id);
             }}

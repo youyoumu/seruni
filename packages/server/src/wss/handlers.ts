@@ -72,6 +72,16 @@ export function registerHandlers({
     return result ?? null;
   });
 
+  api.onRequest.completedTextHistory(async () => {
+    return state.completedTextHistory();
+  });
+
+  api.onRequest.markTextHistoryAsCompleted(async (id) => {
+    const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
+    if (result) state.completedTextHistory()[result.id] = Date.now();
+    return result ?? null;
+  });
+
   api.onRequest.session(async (id) => {
     const result = await db.query.session.findFirst({
       where: eq(session.id, id),

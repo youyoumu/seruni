@@ -26,6 +26,10 @@ export const createKeyring = (api: Services["api"]) =>
         queryKey: [{ sessionId }],
         queryFn: () => api.request.textHistoryBySessionId(sessionId),
       }),
+      completed: {
+        queryKey: null,
+        queryFn: () => api.request.completedTextHistory(),
+      },
     },
     isListeningTexthooker: {
       isListening: {
