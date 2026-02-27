@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { DB } from "#/db";
@@ -6,7 +5,7 @@ import type { DBClient, MediaList } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
 import type { State } from "#/state/state";
-import { safeAccess, safeRm } from "#/util/fs";
+import { safeAccess, safeReadDir, safeRm } from "#/util/fs";
 import { anyFail, anyCatch } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
@@ -243,15 +242,19 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     }
 
     if (pictureDir) {
-      const files = await fs.readdir(pictureDir);
-      const imageFiles = files
-        .filter((f) => f.endsWith(`.${pictureFormat}`))
-        .map((file) => ({
-          filePath: path.join(pictureDir, file),
-          type: "picture" as const,
-          vadData: undefined,
-        }));
-      mediaList.push(...imageFiles);
+      await R.pipe(
+        safeReadDir(pictureDir),
+        R.inspect((files) => {
+          const imageFiles = files
+            .filter((f) => f.endsWith(`.${pictureFormat}`))
+            .map((file) => ({
+              filePath: path.join(pictureDir, file),
+              type: "picture" as const,
+              vadData: undefined,
+            }));
+          mediaList.push(...imageFiles);
+        }),
+      );
     }
 
     if (mediaList.length > 0) {

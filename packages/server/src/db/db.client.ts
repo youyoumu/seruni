@@ -1,8 +1,7 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import { safeAccess, safeCp } from "#/util/fs";
+import { safeAccess, safeCp, safeRm } from "#/util/fs";
 import { anyFail } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
@@ -105,8 +104,10 @@ export class DBClient {
       .where(eq(mediaTable.fileName, fileName))
       .returning();
     this.log.debug({ deleted }, "Deleted note media from database");
-    await fs.rm(path.join(this.state.path().storageDir, fileName));
-    this.log.trace(`Deleted ${fileName} from ${this.state.path().storageDir}`);
+    await R.pipe(
+      safeRm(path.join(this.state.path().storageDir, fileName)),
+      R.inspect(() => this.log.trace(`Deleted ${fileName} from ${this.state.path().storageDir}`)),
+    );
     const noteRowIds = deleted.map((d) => d.noteId);
     const notes = await this.db.select().from(notesTable).where(inArray(notesTable.id, noteRowIds));
     return notes;

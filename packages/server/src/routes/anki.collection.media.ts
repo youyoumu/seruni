@@ -1,7 +1,7 @@
-import fs from "node:fs/promises";
 import { join } from "node:path";
 
 import type { AppContext } from "#/types/types";
+import { safeReadFile } from "#/util/fs";
 import { R } from "@praha/byethrow";
 import { Hono } from "hono";
 import { serveStatic } from "hono/serve-static";
@@ -17,7 +17,9 @@ app.get(`/:filename`, async (c, next) => {
 
   return serveStatic({
     getContent: async () => {
-      return await fs.readFile(filePath);
+      const file = await safeReadFile(filePath, "binary");
+      if (R.isFailure(file)) return c.notFound();
+      return file.value;
     },
   })(c, next);
 });

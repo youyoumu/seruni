@@ -1,6 +1,5 @@
-import { mkdir } from "node:fs/promises";
-
 import type { State } from "#/state/state";
+import { safeMkdir } from "#/util/fs";
 import { R } from "@praha/byethrow";
 import { format as formatDate } from "date-fns";
 import type { Logger } from "pino";
@@ -25,7 +24,10 @@ type ProcessFormat =
   | "png:multiple";
 
 export class FFmpegExec extends Exec {
-  constructor(public logger: Logger, public state: State) {
+  constructor(
+    public logger: Logger,
+    public state: State,
+  ) {
     super(logger, state, "ffmpeg", "ffmpeg");
   }
 
@@ -80,7 +82,7 @@ export class FFmpegExec extends Exec {
     const outputPath = `${tempPath}/${timestamp}.${actualFormat}`;
     const outputDir = `${tempPath}/${timestamp}`;
     if (format.endsWith("multiple")) {
-      await mkdir(outputDir, { recursive: true });
+      await safeMkdir(outputDir, { recursive: true });
     }
     const outputPattern = `${outputDir}/${timestamp}_%03d.${actualFormat}`;
 

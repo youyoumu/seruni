@@ -1,8 +1,6 @@
-import { readFile } from "node:fs/promises";
-import fs from "node:fs/promises";
 import path from "node:path";
 
-import { safeReadFile } from "#/util/fs";
+import { safeMkdir, safeReadFile, safeWriteFile } from "#/util/fs";
 import { safeJSONParse } from "#/util/result";
 import { R } from "@praha/byethrow";
 import { zConfig } from "@repo/shared/schema";
@@ -44,7 +42,7 @@ export async function createState(
   };
 
   const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir, path_.venvDir];
-  await Promise.all(dirToCreate.map((dir) => fs.mkdir(dir, { recursive: true })));
+  await Promise.all(dirToCreate.map((dir) => safeMkdir(dir, { recursive: true })));
   const config = await getConfigFromFile(path_.config);
 
   const state = {
@@ -61,15 +59,12 @@ export async function createState(
 
   let isWritingConfig = false;
   effect(async () => {
-    try {
-      if (isWritingConfig) return;
-      isWritingConfig = true;
-      const config = state.config();
-      const configPath = state.path().config;
-      await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-    } finally {
-      isWritingConfig = false;
-    }
+    if (isWritingConfig) return;
+    isWritingConfig = true;
+    const config = state.config();
+    const configPath = state.path().config;
+    await safeWriteFile(configPath, JSON.stringify(config, null, 2));
+    isWritingConfig = false;
   });
 
   return state;
@@ -89,7 +84,7 @@ export function serializeState(state: State) {
 }
 
 async function getConfigFromFile(configFilePath: string) {
-  await fs.mkdir(path.join(configFilePath, ".."), { recursive: true });
+  await safeMkdir(path.join(configFilePath, ".."), { recursive: true });
   const parsedConfig = await R.pipe(
     safeReadFile(configFilePath, "utf-8"),
     R.andThen((text) => safeJSONParse(text)),

@@ -1,7 +1,8 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { AppContext } from "#/types/types";
+import { safeReadFile } from "#/util/fs";
+import { R } from "@praha/byethrow";
 import { Hono } from "hono";
 import { serveStatic } from "hono/serve-static";
 
@@ -12,7 +13,9 @@ app.get("*", (c, next) => {
   return serveStatic({
     getContent: async (filePath) => {
       const resolvedPath = path.join(state.path().webuiDir, filePath);
-      return await fs.readFile(resolvedPath);
+      const file = await safeReadFile(resolvedPath, "binary");
+      if (R.isFailure(file)) return c.notFound();
+      return file.value;
     },
   })(c, next);
 });
