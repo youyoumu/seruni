@@ -1,12 +1,12 @@
 import type { State } from "#/state/state";
-import { anyFail } from "#/util/result";
+import { anyCatch } from "#/util/result";
 import { R } from "@praha/byethrow";
 import { execa } from "execa";
 import type { Logger } from "pino";
 
 export class Exec {
   log: Logger;
-  
+
   constructor(
     public logger: Logger,
     public state: State,
@@ -36,12 +36,13 @@ export class Exec {
       logStderr.trace(`${txt.includes("\n") ? "\n" : ""}${txt}`);
     });
 
-    try {
-      const { stdout, stderr } = await subprocess;
-      return R.succeed({ stdout, stderr });
-    } catch (e) {
-      return e instanceof Error ? R.fail(e) : anyFail(`Error when running ${this.name}`);
-    }
+    return await R.pipe(
+      R.try({
+        try: () => subprocess,
+        catch: anyCatch(`Error when running ${this.name}`),
+      }),
+      R.andThen(({ stdout, stderr }) => R.succeed({ stdout, stderr })),
+    );
   }
 
   safeExeca = R.fn({

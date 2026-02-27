@@ -1,3 +1,5 @@
+import { anyCatch } from "#/util/result";
+import { R } from "@praha/byethrow";
 import { TypesafeEventTarget } from "@repo/shared/util";
 import OBSWebSocket, {
   type OBSRequestTypes,
@@ -82,13 +84,16 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     if (this.#isConnected) return;
     this.#manualClose = false;
 
-    try {
-      await this.#obs.connect(this.#url, this.#password);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.dispatch("error", error instanceof Error ? error : new Error(message));
-      this.#attemptReconnect();
-    }
+    await R.pipe(
+      R.try({
+        try: () => this.#obs.connect(this.#url, this.#password),
+        catch: anyCatch("Failed to connect to OBS"),
+      }),
+      R.inspectError((e) => {
+        this.dispatch("error", e);
+        this.#attemptReconnect();
+      }),
+    );
   }
 
   #attemptReconnect() {

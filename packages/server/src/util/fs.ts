@@ -1,3 +1,4 @@
+import type { Encoding } from "node:crypto";
 import type { PathLike } from "node:fs";
 import fs from "node:fs/promises";
 
@@ -11,7 +12,7 @@ export const safeAccess = R.fn({
 });
 
 export const safeReadFile = R.fn({
-  try: fs.readFile,
+  try: (path: PathLike, encoding: Encoding) => fs.readFile(path, encoding),
   catch: anyCatch("Error when reading file"),
 });
 

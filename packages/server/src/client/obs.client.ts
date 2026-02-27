@@ -1,4 +1,5 @@
 import type { State } from "#/state/state";
+import { anyCatch } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
@@ -7,7 +8,10 @@ import { ReconnectingOBSWebSocket } from "./ReconnectingOBSWebSocket";
 export class OBSClient extends ReconnectingOBSWebSocket {
   #replayBufferActive = false;
 
-  constructor(public logger: Logger, public state: State) {
+  constructor(
+    public logger: Logger,
+    public state: State,
+  ) {
     super({
       logger: logger.child({ name: "obs-client" }),
       url: state.config().obsWebSocketAddress,
@@ -48,19 +52,27 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   async #startReplayBuffer() {
     if (this.#isStartingReplayBuffer) return;
     this.#isStartingReplayBuffer = true;
-    try {
-      const status = await this.call("GetReplayBufferStatus");
-      if (!status.outputActive) {
-        await this.call("StartReplayBuffer");
-      } else {
+    await R.pipe(
+      R.try({
+        try: () => this.call("GetReplayBufferStatus"),
+        catch: anyCatch("Failed to get replay buffer status"),
+      }),
+      R.andThen((status) => {
+        if (!status.outputActive) {
+          return R.try({
+            try: () => this.call("StartReplayBuffer"),
+            catch: anyCatch("Failed to start replay buffer"),
+          });
+        }
         this.#replayBufferActive = true;
-      }
-    } catch (e) {
-      if (e instanceof Error) this.log.warn(`Failed to start replay buffer: ${e.message}`);
-      setTimeout(() => this.#startReplayBuffer(), 5000);
-    } finally {
-      this.#isStartingReplayBuffer = false;
-    }
+        return R.succeed();
+      }),
+      R.inspectError((e) => {
+        this.log.warn(`Failed to start replay buffer: ${e.message}`);
+        setTimeout(() => this.#startReplayBuffer(), 5000);
+      }),
+    );
+    this.#isStartingReplayBuffer = false;
   }
 
   get replayBufferActive() {

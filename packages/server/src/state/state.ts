@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { safeReadFile } from "#/util/fs";
+import { safeJSONParse } from "#/util/result";
+import { R } from "@praha/byethrow";
 import { zConfig } from "@repo/shared/schema";
 import { effect, signal } from "alien-signals";
 
@@ -87,13 +90,11 @@ export function serializeState(state: State) {
 
 async function getConfigFromFile(configFilePath: string) {
   await fs.mkdir(path.join(configFilePath, ".."), { recursive: true });
-  let parsedConfig: unknown;
-  try {
-    const configFile = await readFile(configFilePath, "utf-8");
-    parsedConfig = JSON.parse(configFile);
-  } catch {
-    parsedConfig = {};
-  }
+  const parsedConfig = await R.pipe(
+    safeReadFile(configFilePath, "utf-8"),
+    R.andThen((text) => safeJSONParse(text)),
+    R.orElse(() => R.succeed({})),
+  );
   const defaultConfig = zConfig.parse({});
   const configResult = zConfig.safeParse(parsedConfig);
   return configResult.success ? configResult.data : defaultConfig;

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import { safeCp } from "#/util/fs";
+import { safeAccess, safeCp } from "#/util/fs";
 import { anyFail } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
@@ -86,10 +86,10 @@ export class DBClient {
     const result = await this.db.select().from(mediaTable).where(eq(mediaTable.noteId, noteRowId));
     const validMedia: number[] = [];
     for (const r of result) {
-      try {
-        await fs.access(path.join(this.state.path().storageDir, r.fileName));
-        validMedia.push(r.id);
-      } catch {}
+      await R.pipe(
+        safeAccess(path.join(this.state.path().storageDir, r.fileName)),
+        R.inspect(() => validMedia.push(r.id)),
+      );
     }
     return result
       .filter((r) => validMedia.includes(r.id))
