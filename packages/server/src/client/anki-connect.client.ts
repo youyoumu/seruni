@@ -74,16 +74,24 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       R.andThen((note) => {
         const expression = this.getExpression(note);
         const reuseMedia = this.#createMediaCache.has(textHistoryId);
-        //TODO: desc action etc
         return this.api.toastPromise(() => this.updateNoteMedia({ note, textHistoryId }), {
-          loading: `Processing new note: ${expression}`,
+          loading: {
+            title: `Processing note`,
+            description: expression,
+          },
           //TODO: open note in anki with uid toast action
           success: () => {
-            return `Note has been updated: ${expression}${reuseMedia ? " (♻  media)" : ""}`;
+            return {
+              title: `Note has been updated${reuseMedia ? " (cache hit)" : ""}`,
+              description: expression,
+            };
           },
           error: (e) => {
             const error = Array.isArray(e) ? (e[0] ?? new Error("Unknown Error")) : e;
-            return `Failed to process new note: ${error.message}`;
+            return {
+              title: `Failed to process note`,
+              description: error.message,
+            };
           },
         });
       }),

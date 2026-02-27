@@ -108,7 +108,7 @@ function ToastHistoryList() {
       {toastHistory.map((item, i) => (
         <div key={item.id} className="flex gap-2 rounded-xl p-2 hover:bg-surface-soft">
           <ToastIcon variant={item.variant ?? "default"} />
-          <div className="flex flex-col">
+          <div className="flex flex-1 flex-col">
             <div className={toastTitleTv({ color: item.variant ?? "default" })}>{item.title}</div>
             <div className="text-sm text-surface-foreground-soft">{item.description}</div>
           </div>

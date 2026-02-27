@@ -33,8 +33,8 @@ export class Services {
     {
       resolve: () => void;
       reject: () => void;
-      successMessage?: string;
-      errorMessage?: string;
+      success: { title?: string; description?: string };
+      error: { title?: string; description?: string };
     }
   >();
 
@@ -102,32 +102,57 @@ export class Services {
 
     this.api.onPush.toastPromise((data: ToastPromiseConfig) => {
       const { promise, resolve, reject } = Promise.withResolvers<void>();
-      this.#deferredPromises.set(data.id, { resolve, reject });
+      this.#deferredPromises.set(data.id, { resolve, reject, success: {}, error: {} });
 
-      this.toast.promise(promise, {
-        loading: data.loading,
-        success: () => {
-          return this.#deferredPromises.get(data.id)?.successMessage;
-        },
-        error: () => {
-          return this.#deferredPromises.get(data.id)?.errorMessage;
-        },
-      });
+      const { title, description } = data.loading;
+
+      // NOTE: toast.promise can only show title
+      //
+      // this.toast.promise(promise, {
+      //   loading: title,
+      //   success: () => {
+      //     const { title } = this.#deferredPromises.get(data.id)?.success ?? {};
+      //     return title;
+      //   },
+      //   error: () => {
+      //     const { title } = this.#deferredPromises.get(data.id)?.error ?? {};
+      //     return title;
+      //   },
+      // });
+
+      const id = this.toast(title, { description, isLoading: true, timeout: 0 });
+      void promise
+        .then(() => {
+          this.toast.close(id);
+          const result = this.#deferredPromises.get(data.id);
+          this.toast.success(result?.success.title, {
+            description: result?.success.description,
+          });
+        })
+        .catch(() => {
+          this.toast.close(id);
+          const deferred = this.#deferredPromises.get(data.id);
+          this.toast.danger(deferred?.error.title, {
+            description: deferred?.error.description,
+          });
+        });
     });
 
     this.api.onPush.toastPromiseResolve((data: ToastPromiseResolvePayload) => {
-      const deferred = this.#deferredPromises.get(data.id);
-      if (deferred) {
-        if (data.message) deferred.successMessage = data.message;
-        deferred.resolve();
+      const result = this.#deferredPromises.get(data.id);
+      if (result) {
+        result.success.title = data.title;
+        result.success.description = data.description;
+        result.resolve();
       }
     });
 
     this.api.onPush.toastPromiseReject((data: ToastPromiseRejectPayload) => {
-      const deferred = this.#deferredPromises.get(data.id);
-      if (deferred) {
-        if (data.message) deferred.errorMessage = data.message;
-        deferred.reject();
+      const result = this.#deferredPromises.get(data.id);
+      if (result) {
+        result.error.title = data.title;
+        result.error.description = data.description;
+        result.reject();
       }
     });
 

@@ -13,17 +13,19 @@ export type ToastPayload = {
 
 export type ToastPromiseConfig = {
   id: string;
-  loading: string;
+  loading: { title?: string; description?: string };
 };
 
 export type ToastPromiseResolvePayload = {
   id: string;
-  message?: string;
+  title?: string;
+  description?: string;
 };
 
 export type ToastPromiseRejectPayload = {
   id: string;
-  message?: string;
+  title?: string;
+  description?: string;
 };
 
 export type ApiSchema = CreateSchema<{
@@ -113,9 +115,13 @@ export type ServerApi = ReturnType<typeof createApi>["server"]["api"] & {
 type ToastPromiseFn = <TData, TError>(
   promise: () => Promise<R.Result<TData, TError>>,
   options: {
-    loading: string;
-    success: string | ((data: TData) => string);
-    error: string | ((error: TError) => string);
+    loading: { title?: string; description?: string };
+    success:
+      | { title?: string; description?: string }
+      | ((data: TData) => { title?: string; description?: string });
+    error:
+      | { title?: string; description?: string }
+      | ((error: TError) => { title?: string; description?: string });
   },
 ) => Promise<R.Result<TData, TError>>;
 
@@ -130,12 +136,12 @@ export function createServerApi() {
 
     const data = await promise();
     if (R.isSuccess(data)) {
-      const computedSuccessMsg = typeof success === "function" ? success(data.value) : success;
-      push.toastPromiseResolve({ id, message: computedSuccessMsg });
+      const computedSuccess = typeof success === "function" ? success(data.value) : success;
+      push.toastPromiseResolve({ id, ...computedSuccess });
     }
     if (R.isFailure(data)) {
-      const computedErrorMsg = typeof error === "function" ? error(data.error) : error;
-      push.toastPromiseReject({ id, message: computedErrorMsg });
+      const computedError = typeof error === "function" ? error(data.error) : error;
+      push.toastPromiseReject({ id, ...computedError });
     }
     return data;
   };

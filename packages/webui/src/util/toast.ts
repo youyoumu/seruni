@@ -36,8 +36,11 @@ type ToastStore = ReturnType<typeof createToastStore>;
 
 type ToastFunction = (
   title: React.ReactNode,
-  options?: Omit<ToastItem, "id" | "title" | "timestamp">,
-) => void;
+  options?: Omit<ToastItem, "id" | "title" | "timestamp"> & {
+    isLoading?: boolean;
+    timeout?: number;
+  },
+) => string;
 
 type ToastPromiseFunction = (
   promise: (() => Promise<unknown>) | Promise<unknown>,
@@ -54,6 +57,7 @@ interface Toast extends ToastFunction {
   success: ToastFunction;
   warning: ToastFunction;
   danger: ToastFunction;
+  close: (id: string) => void;
 }
 
 export function createToast(toastStore: ToastStore): Toast {
@@ -65,19 +69,19 @@ export function createToast(toastStore: ToastStore): Toast {
       error: React.ReactNode | ((error: unknown) => React.ReactNode);
     },
   ) => {
-    let successMsg: React.ReactNode | undefined;
-    let errorMsg: React.ReactNode | undefined;
+    let successTitle: React.ReactNode | undefined;
+    let errorTitle: React.ReactNode | undefined;
 
     heroToast.promise(promise, {
       loading: options.loading,
       success: (value) => {
-        successMsg =
+        successTitle =
           typeof options.success === "function" ? options.success(value) : options.success;
-        return successMsg;
+        return successTitle;
       },
       error: (error) => {
-        errorMsg = typeof options.error === "function" ? options.error(error) : options.error;
-        return errorMsg;
+        errorTitle = typeof options.error === "function" ? options.error(error) : options.error;
+        return errorTitle;
       },
     });
 
@@ -86,8 +90,7 @@ export function createToast(toastStore: ToastStore): Toast {
       .then(() => {
         toastStore.trigger.addToast({
           id: uid(),
-          title: successMsg ?? "Success",
-          description: "",
+          title: successTitle,
           variant: "success",
           timestamp: Date.now(),
         });
@@ -95,8 +98,7 @@ export function createToast(toastStore: ToastStore): Toast {
       .catch(() => {
         toastStore.trigger.addToast({
           id: uid(),
-          title: errorMsg ?? "Error",
-          description: "",
+          title: errorTitle,
           variant: "danger",
           timestamp: Date.now(),
         });
@@ -105,19 +107,16 @@ export function createToast(toastStore: ToastStore): Toast {
 
   const toastFunction: ToastFunction = (title, options) => {
     const id = uid();
-    const variant = options?.variant ?? "default";
-    const description = options?.description;
-
-    heroToast(title, { description, variant });
-
+    const toastId = heroToast(title, options);
     const toastItem: ToastItem = {
       id,
       title,
-      description,
-      variant,
+      description: options?.description,
+      variant: options?.variant ?? "default",
       timestamp: Date.now(),
     };
-    toastStore.trigger.addToast(toastItem);
+    if (!options?.isLoading) toastStore.trigger.addToast(toastItem);
+    return toastId;
   };
 
   const toastInfo: ToastFunction = (title, options) =>
@@ -129,12 +128,15 @@ export function createToast(toastStore: ToastStore): Toast {
   const toastDanger: ToastFunction = (title, options) =>
     toastFunction(title, { ...options, variant: "danger" });
 
+  const close = heroToast.close;
+
   const toast: Toast = Object.assign(toastFunction, {
     promise: toastPromise,
     info: toastInfo,
     success: toastSuccess,
     warning: toastWarning,
     danger: toastDanger,
+    close,
   });
   return toast;
 }
