@@ -1,5 +1,4 @@
 import type { State } from "#/state/state";
-import { anyCatch } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
@@ -53,16 +52,10 @@ export class OBSClient extends ReconnectingOBSWebSocket {
     if (this.#isStartingReplayBuffer) return;
     this.#isStartingReplayBuffer = true;
     await R.pipe(
-      R.try({
-        try: () => this.call("GetReplayBufferStatus"),
-        catch: anyCatch("Failed to get replay buffer status"),
-      }),
+      this.call("GetReplayBufferStatus"),
       R.andThen((status) => {
         if (!status.outputActive) {
-          return R.try({
-            try: () => this.call("StartReplayBuffer"),
-            catch: anyCatch("Failed to start replay buffer"),
-          });
+          return this.call("StartReplayBuffer");
         }
         this.#replayBufferActive = true;
         return R.succeed();
@@ -85,14 +78,13 @@ export class OBSClient extends ReconnectingOBSWebSocket {
       cleanup();
       resolve(event.savedReplayPath);
     };
-    const cleanup = () => {
-      this.client.off("ReplayBufferSaved", handler);
-    };
+    const cleanup = () => this.client.off("ReplayBufferSaved", handler);
     this.client.on("ReplayBufferSaved", handler);
-    this.call("SaveReplayBuffer").catch((error) => {
-      cleanup();
-      resolve(error);
-    });
-    return R.succeed(await promise);
+
+    return await R.pipe(
+      this.call("SaveReplayBuffer"),
+      R.andThen(() => R.succeed(promise)),
+      R.inspectError(cleanup),
+    );
   }
 }

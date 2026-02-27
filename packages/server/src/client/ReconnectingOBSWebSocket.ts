@@ -118,8 +118,11 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
   async call<K extends keyof OBSRequestTypes>(
     requestType: K,
     requestData?: OBSRequestTypes[K],
-  ): Promise<OBSResponseTypes[K]> {
-    return this.#obs.call(requestType, requestData);
+  ): Promise<R.Result<OBSResponseTypes[K], Error>> {
+    return R.try({
+      try: () => this.#obs.call(requestType, requestData),
+      catch: anyCatch(`Failed to call ${requestType}`),
+    });
   }
 
   async close() {
