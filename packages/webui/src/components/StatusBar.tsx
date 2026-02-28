@@ -17,24 +17,32 @@ import {
   ZapOffIcon,
 } from "lucide-react";
 
+const statusTv = tv({
+  slots: { statusPair: "flex items-center gap-2" },
+});
+
 export function StatusBar() {
   const { data: textHookerConnected } = useTextHookerConnected$();
   const { data: ankiConnectConnected } = useAnkiConnectConnected$();
   const { data: obsConnected } = useObsConnected$();
 
+  const { statusPair } = statusTv();
+
   return (
-    <div className="flex justify-end gap-2 border-t border-border bg-surface-calm px-2 py-1">
-      <div className="flex items-center gap-2">
-        <StatusIcon status={textHookerConnected ? "connected" : "connecting"} />
-        <div className="text-sm">Text Hooker</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <StatusIcon status={ankiConnectConnected ? "connected" : "connecting"} />
-        <div className="text-sm">Anki Connect</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <StatusIcon status={obsConnected ? "connected" : "connecting"} />
-        <div className="text-sm">OBS</div>
+    <div className="flex justify-end gap-4 border-t border-border bg-surface-calm px-2 py-1">
+      <div className="flex justify-end gap-2 text-sm">
+        <div className={statusPair()}>
+          <StatusIcon status={textHookerConnected ? "connected" : "connecting"} />
+          <div>Text Hooker</div>
+        </div>
+        <div className={statusPair()}>
+          <StatusIcon status={ankiConnectConnected ? "connected" : "connecting"} />
+          <div>Anki Connect</div>
+        </div>
+        <div className={statusPair()}>
+          <StatusIcon status={obsConnected ? "connected" : "connecting"} />
+          <div>OBS</div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -106,14 +114,17 @@ function ToastHistoryList() {
   return (
     <div className="flex max-h-[50vh] min-w-[320px] flex-col gap-2 overflow-auto pe-4">
       {toastHistory.map((item) => (
-        <div key={item.id} className="flex gap-2 rounded-xl p-2 hover:bg-surface-soft">
+        <div
+          key={item.id}
+          className="flex gap-2 rounded-xl border border-border p-2 hover:bg-surface-soft"
+        >
           <ToastIcon variant={item.variant ?? "default"} />
           <div className="flex flex-1 flex-col">
             <div className={toastTitleTv({ color: item.variant ?? "default" })}>{item.title}</div>
             <div className="text-sm text-surface-foreground-soft">{item.description}</div>
           </div>
           <XIcon
-            className="size-4 cursor-pointer"
+            className="size-4 cursor-pointer text-surface-foreground-soft"
             onClick={() => toastStore.trigger.removeToast(item)}
           />
         </div>
