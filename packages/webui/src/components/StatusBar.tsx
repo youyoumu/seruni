@@ -105,7 +105,7 @@ function ToastHistoryList() {
 
   return (
     <div className="flex max-h-[50vh] min-w-[320px] flex-col gap-2 overflow-auto pe-4">
-      {toastHistory.map((item, i) => (
+      {toastHistory.map((item) => (
         <div key={item.id} className="flex gap-2 rounded-xl p-2 hover:bg-surface-soft">
           <ToastIcon variant={item.variant ?? "default"} />
           <div className="flex flex-1 flex-col">

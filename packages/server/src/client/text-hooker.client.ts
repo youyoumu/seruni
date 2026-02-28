@@ -45,7 +45,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
         this.log.info(`Message: ${detail}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
-        const row = await this.db
+        const row = this.db
           .insert(textHistory)
           .values({
             text: text,

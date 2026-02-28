@@ -31,7 +31,7 @@ export class DBClient {
 
   async migrate() {
     this.log.debug("Migrating database");
-    await migrate(this.db, {
+    migrate(this.db, {
       migrationsFolder: this.state.path().drizzleDir,
     });
   }

@@ -94,7 +94,7 @@ export function registerHandlers({
   });
 
   api.onRequest.createSession(async (name) => {
-    const result = await db.insert(session).values({ name }).returning().get();
+    const result = db.insert(session).values({ name }).returning().get();
     state.activeSessionId(result.id);
     return result;
   });
