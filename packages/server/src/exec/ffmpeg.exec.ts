@@ -1,7 +1,7 @@
 import type { State } from "#/state/state";
+import { yyyyMMdd_HHmmss } from "#/util/date";
 import { safeMkdir } from "#/util/fs";
 import { R } from "@praha/byethrow";
-import { format as formatDate } from "date-fns";
 import type { Logger } from "pino";
 import { uid } from "uid";
 
@@ -33,10 +33,10 @@ export class FFmpegExec extends Exec {
 
   timestamps = new Set<string>();
   createTimestamp(): string {
-    const timestamp = `${formatDate(new Date(), "yyyyMMdd_HHmmss")}_${uid(3)}`;
-    if (this.timestamps.has(timestamp)) {
-      return this.createTimestamp();
-    }
+    let timestamp: string;
+    do {
+      timestamp = `${yyyyMMdd_HHmmss(new Date())}_${uid(3)}`;
+    } while (this.timestamps.has(timestamp));
     this.timestamps.add(timestamp);
     return timestamp;
   }
