@@ -123,6 +123,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   app.route("/ws", routes.ws);
   app.route("/anki/collection.media", routes.ankiCollectionMedia);
   app.route("/anki/anki-connect-proxy", routes.ankiAnkiConnectProxy);
+  app.route("*", routes.root);
 
   const server = serve(
     {
