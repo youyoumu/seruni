@@ -92,7 +92,11 @@ async function getConfigFromFile(configFilePath: string) {
     R.andThen((text) => safeJSONParse(text)),
     R.orElse(() => R.succeed({})),
   );
+  //TODO:report individual config entry
   const defaultConfig = zConfig.parse({});
-  const configResult = zConfig.safeParse(parsedConfig);
+  if (R.isFailure(parsedConfig)) {
+    return defaultConfig;
+  }
+  const configResult = zConfig.safeParse(parsedConfig.value);
   return configResult.success ? configResult.data : defaultConfig;
 }
