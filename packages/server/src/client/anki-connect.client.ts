@@ -112,7 +112,10 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       where: eq(textHistoryTable.id, textHistoryId),
     });
     if (!text) return anyFail("Failed to find text history");
-    if (text.createdAt.getTime() < now.getTime() - this.state.config().obsReplayBufferDuration) {
+    if (
+      text.createdAt.getTime() <
+      now.getTime() - this.state.config().obsReplayBufferDurationS * 1000
+    ) {
       return anyFail("Text history already pass the replay buffer duration");
     }
 

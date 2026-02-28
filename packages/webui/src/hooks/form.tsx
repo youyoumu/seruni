@@ -33,27 +33,32 @@ function TextFieldSet({
   placeholder,
   description,
   defaultValue,
+  type,
 }: {
   label?: React.ReactNode;
   placeholder?: string;
   description?: React.ReactNode;
-  defaultValue?: string;
+  defaultValue?: string | number;
+  type?: React.HTMLInputTypeAttribute;
 }) {
-  const field = useFieldContext<string>();
+  const field = useFieldContext<string | number>();
   const isDefaultValue = field.state.value === defaultValue;
 
   return (
     <TextField
       name={field.name}
       aria-label={field.name}
-      value={field.state.value}
-      onChange={field.handleChange}
+      value={field.state.value.toString()}
+      onChange={(v) => {
+        const newValue = type === "number" ? parseInt(v) : v;
+        field.handleChange(newValue);
+      }}
       onBlur={field.handleBlur}
       isInvalid={!field.state.meta.isValid}
     >
       {label && <Label>{label}</Label>}
       <InputGroup>
-        <InputGroup.Input placeholder={placeholder} />
+        <InputGroup.Input placeholder={placeholder} type={type} />
         {defaultValue && !isDefaultValue && (
           <InputGroup.Suffix>
             <UndoIcon
