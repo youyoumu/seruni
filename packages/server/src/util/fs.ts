@@ -12,7 +12,7 @@ export const safeAccess = R.fn({
 });
 
 export const safeReadFile = R.fn({
-  try: (path: PathLike, encoding: Encoding) => fs.readFile(path, encoding),
+  try: (path: PathLike, encoding?: Encoding) => fs.readFile(path, encoding),
   catch: anyCatch("Error when reading file"),
 });
 

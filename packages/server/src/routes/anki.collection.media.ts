@@ -17,7 +17,7 @@ app.get(`/:filename`, async (c, next) => {
 
   return serveStatic({
     getContent: async () => {
-      const file = await safeReadFile(filePath, "binary");
+      const file = await safeReadFile(filePath);
       if (R.isFailure(file)) return c.notFound();
       return file.value;
     },

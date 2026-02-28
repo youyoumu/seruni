@@ -13,7 +13,7 @@ app.get("*", (c, next) => {
   return serveStatic({
     getContent: async (filePath) => {
       const resolvedPath = path.join(state.path().webuiDir, filePath);
-      const file = await safeReadFile(resolvedPath, "binary");
+      const file = await safeReadFile(resolvedPath);
       if (R.isFailure(file)) return c.notFound();
       return file.value;
     },
