@@ -46,8 +46,9 @@
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.15.0",
+    "rollup-plugin-bundle-stats": "^4.21.10",
     "typescript": "^5.7.2",
-    "vite": "^7.1.7",
+    "vite": "npm:rolldown-vite@latest",
     "vite-plugin-webfont-dl": "^3.12.0"
   }
 }
