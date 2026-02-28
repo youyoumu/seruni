@@ -9,6 +9,7 @@ export type ToastPayload = {
   title?: string;
   description?: string;
   variant?: "default" | "accent" | "success" | "warning" | "danger";
+  action?: { id: string; text: string };
 };
 
 export type ToastPromiseConfig = {
@@ -20,17 +21,20 @@ export type ToastPromiseResolvePayload = {
   id: string;
   title?: string;
   description?: string;
+  action?: { id: string; text: string };
 };
 
 export type ToastPromiseRejectPayload = {
   id: string;
   title?: string;
   description?: string;
+  action?: { id: string; text: string };
 };
 
 export type ApiSchema = CreateSchema<{
   clientPush: {
     ping: Push;
+    action: Push<string>;
   };
   serverPush: {
     toast: Push<ToastPayload>;
@@ -70,7 +74,10 @@ export type ApiSchema = CreateSchema<{
 
 const createApi = () => {
   return createCentralBus<ApiSchema>({
-    clientPush: { ping: 0 },
+    clientPush: {
+      ping: 0,
+      action: 0,
+    },
     serverPush: {
       toast: 0,
       toastPromise: 0,

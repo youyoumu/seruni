@@ -1,4 +1,4 @@
-import { toast as heroToast } from "@heroui/react";
+import { toast as heroToast, type ButtonRootProps } from "@heroui/react";
 import { createStore } from "@xstate/store";
 import { uid } from "uid";
 
@@ -39,6 +39,7 @@ type ToastFunction = (
   options?: Omit<ToastItem, "id" | "title" | "timestamp"> & {
     isLoading?: boolean;
     timeout?: number;
+    actionProps?: ButtonRootProps;
   },
 ) => string;
 

@@ -139,4 +139,8 @@ export function registerHandlers({
   });
 
   api.onRequest.checkHealth(() => undefined);
+
+  api.onPush.action((id) => {
+    state.actionMap.get(id)?.();
+  });
 }

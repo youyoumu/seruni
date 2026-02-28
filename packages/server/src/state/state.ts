@@ -47,6 +47,7 @@ export async function createState(
 
   const state = {
     appName: "Seruni",
+    actionMap: new Map<string, () => void>(),
     config: signal(config),
     path: signal(path_),
     activeSessionId: signal<number | null>(null),

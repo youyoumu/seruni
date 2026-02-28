@@ -35,6 +35,7 @@ export class Services {
       reject: () => void;
       success: { title?: string; description?: string };
       error: { title?: string; description?: string };
+      action?: { id: string; text: string };
     }
   >();
 
@@ -97,6 +98,14 @@ export class Services {
       this.toast(data.title ?? "", {
         description: data.description,
         variant: data.variant ?? "default",
+        actionProps: data.action
+          ? {
+              children: data.action.text,
+              onClick: () => {
+                if (data.action) this.api.push.action(data.action?.id);
+              },
+            }
+          : undefined,
       });
     });
 
@@ -127,6 +136,14 @@ export class Services {
           const result = this.#deferredPromises.get(data.id);
           this.toast.success(result?.success.title, {
             description: result?.success.description,
+            actionProps: result?.action
+              ? {
+                  children: result?.action.text,
+                  onClick: () => {
+                    if (result?.action) this.api.push.action(result?.action?.id);
+                  },
+                }
+              : undefined,
           });
         })
         .catch(() => {
@@ -134,6 +151,14 @@ export class Services {
           const deferred = this.#deferredPromises.get(data.id);
           this.toast.danger(deferred?.error.title, {
             description: deferred?.error.description,
+            actionProps: deferred?.action
+              ? {
+                  children: deferred?.action.text,
+                  onClick: () => {
+                    if (deferred?.action) this.api.push.action(deferred?.action?.id);
+                  },
+                }
+              : undefined,
           });
         });
     });
@@ -143,6 +168,7 @@ export class Services {
       if (result) {
         result.success.title = data.title;
         result.success.description = data.description;
+        result.action = data.action;
         result.resolve();
       }
     });
@@ -152,6 +178,7 @@ export class Services {
       if (result) {
         result.error.title = data.title;
         result.error.description = data.description;
+        result.action = data.action;
         result.reject();
       }
     });
