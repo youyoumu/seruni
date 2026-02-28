@@ -6,7 +6,7 @@ import { R } from "@praha/byethrow";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
 import chalk from "chalk";
-import { Command } from "commander";
+import { defineCommand, runMain } from "citty";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import pino from "pino";
@@ -80,7 +80,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const sessions = await db.select().from(session);
   let lastSession = sessions[sessions.length - 1];
   if (!lastSession) {
-    lastSession = await db
+    lastSession = db
       .insert(session)
       .values({
         name: "Default Session",
@@ -178,51 +178,111 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
   return console.log(chalk.green(`[OK] ${state.path().venvDir}`));
 }
 
-function main() {
-  const program = new Command();
-
-  program.name("seruni").description("TODO").version("0.0.1");
-
-  program
-    .command("start")
-    .description("Start the Seruni server")
-    .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
-    .action(async (workdir: string, options: { logLevel: string }) => {
-      const logLevel = validateLogLevel(options.logLevel);
-      if (R.isFailure(logLevel)) {
-        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
-      }
-      await start({ workdir, logLevel: logLevel.value });
-    });
-
-  program
-    .command("doctor")
-    .description("Check dependencies")
-    .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "info")
-    .action(async (workdir: string, options: { logLevel: string }) => {
-      const logLevel = validateLogLevel(options.logLevel);
-      if (R.isFailure(logLevel)) {
-        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
-      }
-      await doctor({ workdir, logLevel: logLevel.value });
-    });
-
-  program
-    .command("venv")
-    .description("Setup a Python virtual environment")
-    .argument("[workdir]", "Working directory for the server", process.cwd())
-    .option("--log-level <level>", "Log level (trace, debug, info, warn, error, fatal)", "trace")
-    .action(async (workdir: string, options: { logLevel: string }) => {
-      const logLevel = validateLogLevel(options.logLevel);
-      if (R.isFailure(logLevel)) {
-        return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
-      }
-      await venv({ workdir, logLevel: logLevel.value });
-    });
-
-  program.parse();
+async function startCommand(args: { workdir: string; logLevel: string }) {
+  const logLevel = validateLogLevel(args.logLevel);
+  if (R.isFailure(logLevel)) {
+    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+  }
+  await start({ workdir: args.workdir, logLevel: logLevel.value });
 }
 
-main();
+async function doctorCommand(args: { workdir: string; logLevel: string }) {
+  const logLevel = validateLogLevel(args.logLevel);
+  if (R.isFailure(logLevel)) {
+    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+  }
+  await doctor({ workdir: args.workdir, logLevel: logLevel.value });
+}
+
+async function venvCommand(args: { workdir: string; logLevel: string }) {
+  const logLevel = validateLogLevel(args.logLevel);
+  if (R.isFailure(logLevel)) {
+    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+  }
+  await venv({ workdir: args.workdir, logLevel: logLevel.value });
+}
+
+const startCmd = defineCommand({
+  meta: {
+    name: "start",
+    description: "Start the Seruni server",
+  },
+  args: {
+    workdir: {
+      type: "positional",
+      description: "Working directory for the server",
+      default: process.cwd(),
+    },
+    "log-level": {
+      type: "string",
+      description: "Log level (trace, debug, info, warn, error, fatal)",
+      default: "trace",
+    },
+  },
+  run({ args }) {
+    return startCommand({ workdir: args.workdir as string, logLevel: args["log-level"] as string });
+  },
+});
+
+const doctorCmd = defineCommand({
+  meta: {
+    name: "doctor",
+    description: "Check dependencies",
+  },
+  args: {
+    workdir: {
+      type: "positional",
+      description: "Working directory for the server",
+      default: process.cwd(),
+    },
+    "log-level": {
+      type: "string",
+      description: "Log level (trace, debug, info, warn, error, fatal)",
+      default: "info",
+    },
+  },
+  run({ args }) {
+    return doctorCommand({
+      workdir: args.workdir as string,
+      logLevel: args["log-level"] as string,
+    });
+  },
+});
+
+const venvCmd = defineCommand({
+  meta: {
+    name: "venv",
+    description: "Setup a Python virtual environment",
+  },
+  args: {
+    workdir: {
+      type: "positional",
+      description: "Working directory for the server",
+      default: process.cwd(),
+    },
+    "log-level": {
+      type: "string",
+      description: "Log level (trace, debug, info, warn, error, fatal)",
+      default: "trace",
+    },
+  },
+  run({ args }) {
+    return venvCommand({ workdir: args.workdir as string, logLevel: args["log-level"] as string });
+  },
+});
+
+const main = defineCommand({
+  meta: {
+    name: "seruni",
+    description: "TODO",
+    version: "0.0.1",
+  },
+  subCommands: {
+    start: startCmd,
+    doctor: doctorCmd,
+    venv: venvCmd,
+  },
+  run() {},
+});
+
+await runMain(main);
