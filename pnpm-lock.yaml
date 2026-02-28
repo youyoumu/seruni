@@ -50,12 +50,12 @@ importers:
       better-sqlite3:
         specifier: ^12.6.2
         version: 12.6.2
-      chalk:
-        specifier: ^5.6.2
-        version: 5.6.2
       citty:
         specifier: ^0.2.1
         version: 0.2.1
+      colorette:
+        specifier: ^2.0.20
+        version: 2.0.20
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@libsql/client@0.17.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)
@@ -2554,10 +2554,6 @@ packages:
 
   caniuse-lite@1.0.30001767:
     resolution: {integrity: sha512-34+zUAMhSH+r+9eKmYG+k2Rpt8XttfE4yXAjoZvkAPs15xcYQhyBYdalJ65BzivAvGRMViEjy6oKr/S91loekQ==}
-
-  chalk@5.6.2:
-    resolution: {integrity: sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA==}
-    engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
 
   character-entities@2.0.2:
     resolution: {integrity: sha512-shx7oQ0Awen/BRIdkjkvz54PnEEI/EjwXDSIZp86/KKdbafHh1Df/RYGBhn4hbe2+uKC9FnT5UCEdyPz3ai9hQ==}
@@ -6885,8 +6881,6 @@ snapshots:
       function-bind: 1.1.2
 
   caniuse-lite@1.0.30001767: {}
-
-  chalk@5.6.2: {}
 
   character-entities@2.0.2: {}
 

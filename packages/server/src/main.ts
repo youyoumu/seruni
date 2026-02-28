@@ -5,8 +5,8 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import { R } from "@praha/byethrow";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
-import chalk from "chalk";
 import { defineCommand, runMain } from "citty";
+import * as c from "colorette";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import pino from "pino";
@@ -152,11 +152,11 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   const pythonResult = await python.version();
 
   const logResult = (name: string, result: R.Result<string, Error>) => {
-    const label = R.isSuccess(result) ? chalk.green("OK") : chalk.red("ERROR");
+    const label = R.isSuccess(result) ? c.green("OK") : c.red("ERROR");
     const message = R.isSuccess(result)
-      ? result.value
-      : chalk.yellow(result.error.message.split("\n")[0]);
-    console.log(`[${chalk.cyan(name)}] [${label}]: ${message}`);
+      ? result.value.trim()
+      : c.yellow(result.error.message.split("\n")[0]?.trim() ?? "");
+    console.log(`[${c.cyan(name)}] [${label}]: ${message}`);
   };
 
   logResult("uv", uvResult);
@@ -174,14 +174,14 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
   const uv = new UvExec(logger, state);
 
   const result = await uv.setupVenv();
-  if (R.isFailure(result)) return console.error(chalk.red(`[ERROR] ${result.error.message}`));
-  return console.log(chalk.green(`[OK] ${state.path().venvDir}`));
+  if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));
+  return console.log(c.green(`[OK] ${state.path().venvDir}`));
 }
 
 async function startCommand(args: { workdir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
-    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
   await start({ workdir: args.workdir, logLevel: logLevel.value });
 }
@@ -189,7 +189,7 @@ async function startCommand(args: { workdir: string; logLevel: string }) {
 async function doctorCommand(args: { workdir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
-    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
   await doctor({ workdir: args.workdir, logLevel: logLevel.value });
 }
@@ -197,7 +197,7 @@ async function doctorCommand(args: { workdir: string; logLevel: string }) {
 async function venvCommand(args: { workdir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
-    return console.error(chalk.red(`[ERROR] ${logLevel.error.message}`));
+    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
   await venv({ workdir: args.workdir, logLevel: logLevel.value });
 }
