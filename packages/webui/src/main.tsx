@@ -5,8 +5,8 @@ import { BirdIcon } from "lucide-react";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
-import { Services, OnlineProvider } from "./hooks/api";
-import { ServicesProvider } from "./hooks/api";
+import { Services, OnlineProvider } from "./hooks/services";
+import { ServicesProvider } from "./hooks/services";
 import { routeTree } from "./routeTree.gen";
 
 const queryClient = new QueryClient();

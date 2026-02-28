@@ -2,7 +2,7 @@ import type { TextHistory } from "@repo/shared/db";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import { useServices } from "./api";
+import { useServices } from "./services";
 
 export function useTextHistory$({ sessionId }: { sessionId: number }) {
   const { keyring } = useServices();

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 
-import { useServices } from "./api";
+import { useServices } from "./services";
 
 export function useSessions$() {
   const { keyring } = useServices();

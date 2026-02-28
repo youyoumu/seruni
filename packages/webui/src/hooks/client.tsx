@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { useServices } from "./api";
+import { useServices } from "./services";
 
 export function useTextHookerConnected$() {
   const { keyring } = useServices();

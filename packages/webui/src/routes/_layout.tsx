@@ -1,6 +1,6 @@
 import { TextHookerSessionListPopover } from "#/components/SessionList";
 import { StatusBar } from "#/components/StatusBar";
-import { useServices } from "#/hooks/api";
+import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
 import { WSBusError } from "@repo/shared/ws-bus";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";

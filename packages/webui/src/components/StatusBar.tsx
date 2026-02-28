@@ -1,9 +1,9 @@
-import { useServices } from "#/hooks/api";
 import {
   useTextHookerConnected$,
   useAnkiConnectConnected$,
   useObsConnected$,
 } from "#/hooks/client";
+import { useServices } from "#/hooks/services";
 import { Popover, Spinner, tv } from "@heroui/react";
 import { useSelector } from "@xstate/store-react";
 import {
