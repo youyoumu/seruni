@@ -70,7 +70,7 @@ function TextFieldSet({
               className="size-4 cursor-pointer"
               onClick={() => {
                 if (!defaultValue) return;
-                field.setValue(defaultValue);
+                field.handleChange(defaultValue);
               }}
             />
           )}
@@ -130,7 +130,7 @@ function SelectSet({
               className="size-4 cursor-pointer"
               onClick={() => {
                 if (!defaultValue) return;
-                field.setValue(defaultValue);
+                field.handleChange(defaultValue);
               }}
             />
           )}

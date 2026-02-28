@@ -62,6 +62,9 @@ function SettingsPage() {
           onChange={() => {
             submitD();
           }}
+          onBlur={() => {
+            submitD();
+          }}
           onSubmit={async (e) => {
             e.preventDefault();
             await form.handleSubmit();
