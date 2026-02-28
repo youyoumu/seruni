@@ -12,24 +12,10 @@ export type ToastPayload = {
   action?: { id: string; text: string };
 };
 
-export type ToastPromiseConfig = {
-  id: string;
-  loading: { title?: string; description?: string };
-};
-
-export type ToastPromiseResolvePayload = {
-  id: string;
-  title?: string;
-  description?: string;
-  action?: { id: string; text: string };
-};
-
-export type ToastPromiseRejectPayload = {
-  id: string;
-  title?: string;
-  description?: string;
-  action?: { id: string; text: string };
-};
+export type ToastPayloadFix = Omit<ToastPayload, "variant">;
+export type ToastPromiseConfig = ToastPayloadFix & { id: string };
+export type ToastPromiseResolvePayload = ToastPayloadFix & { id: string };
+export type ToastPromiseRejectPayload = ToastPayloadFix & { id: string };
 
 export type ApiSchema = CreateSchema<{
   clientPush: {
@@ -126,13 +112,9 @@ export type ServerApi = ReturnType<typeof createApi>["server"]["api"] & {
 type ToastPromiseFn = <TData, TError>(
   promise: () => Promise<R.Result<TData, TError>>,
   options: {
-    loading: { title?: string; description?: string };
-    success:
-      | { title?: string; description?: string }
-      | ((data: TData) => { title?: string; description?: string });
-    error:
-      | { title?: string; description?: string }
-      | ((error: TError) => { title?: string; description?: string });
+    loading: ToastPayloadFix;
+    success: ToastPayloadFix | ((data: TData) => ToastPayloadFix);
+    error: ToastPayloadFix | ((error: TError) => ToastPayloadFix);
   },
 ) => Promise<R.Result<TData, TError>>;
 
@@ -143,7 +125,7 @@ export function createServerApi() {
   const toastPromise: ToastPromiseFn = async (promise, options) => {
     const { loading, success, error } = options;
     const id = uid();
-    push.toastPromise({ id, loading });
+    push.toastPromise({ id, ...loading });
 
     const data = await promise();
     if (R.isSuccess(data)) {

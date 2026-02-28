@@ -15,6 +15,7 @@ import type { ServerApi } from "@repo/shared/ws";
 import { eq } from "drizzle-orm";
 import { last, memoize, retry, uniq } from "es-toolkit";
 import type { Logger } from "pino";
+import { uid } from "uid";
 
 import type { OBSClient } from "./obs.client";
 import { ReconnectingAnkiConnect } from "./ReconnectingAnkiConnect";
@@ -79,11 +80,15 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
             title: `Processing note`,
             description: expression,
           },
-          //TODO: open note in anki with uid toast action
           success: () => {
+            const actionId = uid();
+            this.state.actionMap.set(actionId, async () => {
+              await this.openNoteInAnki(note.noteId);
+            });
             return {
               title: `Note has been updated${reuseMedia ? " (cache hit)" : ""}`,
               description: expression,
+              action: { id: actionId, text: "Open in Anki" },
             };
           },
           error: (e) => {
@@ -407,6 +412,19 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     if (soundMatch?.[1]) return R.succeed(path.join(ankiMediaDir.value, soundMatch?.[1]));
 
     return anyFail("Can't find media path from field value");
+  }
+
+  async openNoteInAnki(noteId: number) {
+    this.log.debug(`Opening note in Anki: ${noteId}`);
+    await R.pipe(
+      R.try({
+        try: () => this.client.graphical.guiBrowse({ query: `nid:${noteId}` }),
+        catch: anyCatch("Error when opening note in Anki"),
+      }),
+      R.inspectError((e) => {
+        this.log.error(e);
+      }),
+    );
   }
 }
 

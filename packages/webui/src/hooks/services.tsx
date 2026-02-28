@@ -94,18 +94,21 @@ export class Services {
       queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
     });
 
+    const createActionProps = (action?: { text: string; id: string }) => {
+      if (!action) return undefined;
+      return {
+        children: action.text,
+        onClick: () => {
+          this.api.push.action(action.id);
+        },
+      };
+    };
+
     this.api.onPush.toast((data: ToastPayload) => {
       this.toast(data.title ?? "", {
         description: data.description,
         variant: data.variant ?? "default",
-        actionProps: data.action
-          ? {
-              children: data.action.text,
-              onClick: () => {
-                if (data.action) this.api.push.action(data.action?.id);
-              },
-            }
-          : undefined,
+        actionProps: createActionProps(data.action),
       });
     });
 
@@ -113,7 +116,7 @@ export class Services {
       const { promise, resolve, reject } = Promise.withResolvers<void>();
       this.#deferredPromises.set(data.id, { resolve, reject, success: {}, error: {} });
 
-      const { title, description } = data.loading;
+      const { title, description } = data;
 
       // NOTE: toast.promise can only show title
       //
@@ -129,36 +132,27 @@ export class Services {
       //   },
       // });
 
-      const id = this.toast(title, { description, isLoading: true, timeout: 0 });
+      const id = this.toast(title, {
+        description,
+        isLoading: true,
+        timeout: 0,
+        actionProps: createActionProps(data.action),
+      });
       void promise
         .then(() => {
           this.toast.close(id);
           const result = this.#deferredPromises.get(data.id);
           this.toast.success(result?.success.title, {
             description: result?.success.description,
-            actionProps: result?.action
-              ? {
-                  children: result?.action.text,
-                  onClick: () => {
-                    if (result?.action) this.api.push.action(result?.action?.id);
-                  },
-                }
-              : undefined,
+            actionProps: createActionProps(data.action),
           });
         })
         .catch(() => {
           this.toast.close(id);
-          const deferred = this.#deferredPromises.get(data.id);
-          this.toast.danger(deferred?.error.title, {
-            description: deferred?.error.description,
-            actionProps: deferred?.action
-              ? {
-                  children: deferred?.action.text,
-                  onClick: () => {
-                    if (deferred?.action) this.api.push.action(deferred?.action?.id);
-                  },
-                }
-              : undefined,
+          const result = this.#deferredPromises.get(data.id);
+          this.toast.danger(result?.error.title, {
+            description: result?.error.description,
+            actionProps: createActionProps(data.action),
           });
         });
     });
