@@ -15,9 +15,17 @@ const zObsWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 const zTextHookerWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 
 const zObsReplayBufferDurationS = z.number();
-const zFfmpegPictureFormat = z.union([z.literal("webp")]);
-const zFfmpegMaxPictureResolution = z.number();
-const zFfmpegPictureFrameCount = z.number();
+const zFfmpegPictureFormat = z.union(
+  [z.literal("webp", "Must be WebP"), z.literal("jpeg", "Must be JPEG")],
+  "Must be WebP or JPEG",
+);
+const zFfmpegMaxPictureResolution = z.union(
+  [z.literal(720, "Must be 720"), z.literal(1080, "Must be 1080")],
+  "Must be 720 or 1080",
+);
+const zFfmpegPictureFrameCount = z
+  .number()
+  .check(z.minimum(1, "Must be greater than 0"), z.maximum(99, "Must be less than 100"));
 
 export const zConfigStrict = z.object({
   ankiExpressionField: zAnkiExpressionField,

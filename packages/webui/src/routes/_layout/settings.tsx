@@ -2,7 +2,7 @@ import { useConfig$, useSetConfig } from "#/hooks/config";
 import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
 import { Separator, tv } from "@heroui/react";
-import { zConfig, zConfigStrict } from "@repo/shared/schema";
+import { zConfig, zConfigStrict, type Config } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
 import { debounce } from "es-toolkit";
 
@@ -19,6 +19,20 @@ const settingsTv = tv({
 });
 
 const defaultConfig = zConfig.parse({});
+
+const ffmpegPictureFormatMap: Record<Config["ffmpegPictureFormat"], string> = {
+  webp: "WebP",
+  jpeg: "JPEG",
+};
+
+const ffmpegMaxPictureResolutionMap: Record<Config["ffmpegMaxPictureResolution"], string> = {
+  720: "720",
+  1080: "1080",
+};
+
+function toSelectItems(itemMap: Record<string | number, string>) {
+  return Object.entries(itemMap).map(([id, name]) => ({ id, name }));
+}
 
 function SettingsPage() {
   const { toast } = useServices();
@@ -137,6 +151,70 @@ function SettingsPage() {
                     type="number"
                     placeholder={defaultConfig.obsReplayBufferDurationS.toString()}
                     defaultValue={defaultConfig.obsReplayBufferDurationS}
+                  />
+                )}
+              />
+            </div>
+            <Separator />
+          </div>
+
+          <div className={groupSection()}>
+            <h3 className={header()}>Text Hooker</h3>
+            <div className={groupInput()}>
+              <form.AppField
+                name="textHookerWebSocketAddress"
+                children={(field) => (
+                  <field.TextFieldSet
+                    label="WebSocket Address"
+                    placeholder={defaultConfig.textHookerWebSocketAddress}
+                    defaultValue={defaultConfig.textHookerWebSocketAddress}
+                  />
+                )}
+              />
+            </div>
+            <Separator />
+          </div>
+
+          <div className={groupSection()}>
+            <h3 className={header()}>FFmpeg</h3>
+            <div className={groupInput()}>
+              <form.AppField
+                name="ffmpegPictureFrameCount"
+                children={(field) => (
+                  <field.TextFieldSet
+                    label="Picture Frame Count"
+                    type="number"
+                    min={1}
+                    max={99}
+                    placeholder={defaultConfig.ffmpegPictureFrameCount.toString()}
+                    defaultValue={defaultConfig.ffmpegPictureFrameCount}
+                  />
+                )}
+              />
+
+              <form.AppField
+                name="ffmpegPictureFormat"
+                children={(field) => (
+                  <field.SelectSet
+                    items={toSelectItems(ffmpegPictureFormatMap)}
+                    label="Picture Format"
+                    placeholder={ffmpegPictureFormatMap[defaultConfig.ffmpegPictureFormat]}
+                    defaultValue={defaultConfig.ffmpegPictureFormat}
+                  />
+                )}
+              />
+
+              <form.AppField
+                name="ffmpegMaxPictureResolution"
+                children={(field) => (
+                  <field.SelectSet
+                    items={toSelectItems(ffmpegMaxPictureResolutionMap)}
+                    isNumber
+                    label="Picture Resolution"
+                    placeholder={
+                      ffmpegMaxPictureResolutionMap[defaultConfig.ffmpegMaxPictureResolution]
+                    }
+                    defaultValue={defaultConfig.ffmpegMaxPictureResolution}
                   />
                 )}
               />
