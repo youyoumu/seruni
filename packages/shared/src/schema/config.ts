@@ -13,3 +13,5 @@ export const zConfig = z.object({
   ffmpegMaxPictureResolution: z.catch(z.number(), 720),
   ffmpegPictureFrameCount: z.catch(z.number(), 6),
 });
+
+export type Config = z.infer<typeof zConfig>;

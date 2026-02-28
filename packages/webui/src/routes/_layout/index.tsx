@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_layout/")({
 
 function IndexPage() {
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <TurtleIcon className="size-64 text-surface-foreground-faint" strokeWidth={1}></TurtleIcon>
     </div>
   );

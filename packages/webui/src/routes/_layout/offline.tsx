@@ -44,7 +44,7 @@ function RouteComponent() {
   }, [navigate, ws, location, redirectPath, search]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <ShellIcon className="size-64 animate-spin  text-surface-foreground-faint [animation-direction:reverse]"></ShellIcon>
     </div>
   );

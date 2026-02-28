@@ -51,6 +51,12 @@ export const createKeyring = (api: Services["api"]) =>
         queryFn: () => api.request.obsConnected(),
       },
     },
+    config: {
+      detail: {
+        queryKey: null,
+        queryFn: () => api.request.config(),
+      },
+    },
   });
 
 export type Keyring = ReturnType<typeof createKeyring>;

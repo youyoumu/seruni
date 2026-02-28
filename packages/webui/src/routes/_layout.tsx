@@ -104,7 +104,7 @@ function LayoutComponent() {
                 </Link>
               </div>
             </aside>
-            <main className="flex flex-1 flex-col overflow-hidden">
+            <main className="flex flex-1 flex-col">
               <Outlet />
               <StatusBar />
             </main>

@@ -1,4 +1,5 @@
 import { type Session, type TextHistory } from "#/db/schema";
+import type { Config } from "#/schema";
 import { createCentralBus } from "#/ws-bus";
 import type { Push, Request, CreateSchema } from "#/ws-bus";
 import { R } from "@praha/byethrow";
@@ -51,6 +52,8 @@ export type ApiSchema = CreateSchema<{
     textHookerConnected: Request<undefined, boolean>;
     ankiConnectConnected: Request<undefined, boolean>;
     obsConnected: Request<undefined, boolean>;
+    config: Request<undefined, Config>;
+    setConfig: Request<Partial<Config>, Config | null>;
     checkHealth: Request<undefined, undefined>;
   };
   serverRequest: {
@@ -93,6 +96,8 @@ const createApi = () => {
       textHookerConnected: 0,
       ankiConnectConnected: 0,
       obsConnected: 0,
+      config: 0,
+      setConfig: 0,
       checkHealth: 0,
     },
     serverRequest: { userAgent: 0 },

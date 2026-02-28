@@ -1,6 +1,7 @@
 import type { DB } from "#/db";
 import type { State } from "#/state/state";
 import { textHistory, session } from "@repo/shared/db";
+import { zConfig } from "@repo/shared/schema";
 import type { ServerApi } from "@repo/shared/ws";
 import { effect } from "alien-signals";
 import { eq } from "drizzle-orm";
@@ -136,6 +137,17 @@ export function registerHandlers({
       .where(eq(session.id, payload.id))
       .returning();
     return result ?? null;
+  });
+
+  api.onRequest.config(() => state.config());
+  api.onRequest.setConfig(async (payload) => {
+    const currentConfig = state.config();
+    const newConfig = zConfig.safeParse({ ...currentConfig, ...payload });
+    if (newConfig.success) {
+      state.config(newConfig.data);
+      return state.config();
+    }
+    return null;
   });
 
   api.onRequest.checkHealth(() => undefined);
