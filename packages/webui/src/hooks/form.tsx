@@ -1,5 +1,7 @@
-import { Button, FieldError, Input, Label, NumberField, TextField } from "@heroui/react";
+import { Button, FieldError, Label, NumberField, TextField } from "@heroui/react";
+import { Description, InputGroup } from "@heroui/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
+import { UndoIcon } from "lucide-react";
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts();
 
@@ -18,8 +20,28 @@ export const { useAppForm } = createFormHook({
   formContext,
 });
 
-function TextFieldSet({ label, placeholder }: { label?: React.ReactNode; placeholder?: string }) {
+export function WithSuffixIcon() {
+  return (
+    <TextField className="w-full max-w-[280px]" name="email">
+      <Label>Email address</Label>
+    </TextField>
+  );
+}
+
+function TextFieldSet({
+  label,
+  placeholder,
+  description,
+  defaultValue,
+}: {
+  label?: React.ReactNode;
+  placeholder?: string;
+  description?: React.ReactNode;
+  defaultValue?: string;
+}) {
   const field = useFieldContext<string>();
+  const isDefaultValue = field.state.value === defaultValue;
+
   return (
     <TextField
       name={field.name}
@@ -30,8 +52,22 @@ function TextFieldSet({ label, placeholder }: { label?: React.ReactNode; placeho
       isInvalid={!field.state.meta.isValid}
     >
       {label && <Label>{label}</Label>}
-      <Input placeholder={placeholder} />
+      <InputGroup>
+        <InputGroup.Input placeholder={placeholder} />
+        {defaultValue && !isDefaultValue && (
+          <InputGroup.Suffix>
+            <UndoIcon
+              className="size-4 cursor-pointer"
+              onClick={() => {
+                if (!defaultValue) return;
+                field.setValue(defaultValue);
+              }}
+            />
+          </InputGroup.Suffix>
+        )}
+      </InputGroup>
       <FieldError>{field.state.meta.errors[0]?.message}</FieldError>
+      {description && <Description>{description}</Description>}
     </TextField>
   );
 }

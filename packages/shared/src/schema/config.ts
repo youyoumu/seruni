@@ -1,17 +1,50 @@
 import * as z from "zod/mini";
 
+const zStartsWithHttp = z.startsWith("http", "Must start with http");
+const zStartsWithWs = z.startsWith("ws", "Must start with ws");
+const zUrl = z.url("Invalid URL");
+const zNoSpace = z.refine((v) => typeof v === "string" && !v.includes(" "), "Cannot contain space");
+
+const zAnkiExpressionField = z.string().check(z.trim(), zNoSpace);
+const zAnkiSentenceField = z.string().check(z.trim(), zNoSpace);
+const zAnkiPictureField = z.string().check(z.trim(), zNoSpace);
+const zAnkiSentenceAudioField = z.string().check(z.trim(), zNoSpace);
+
+const zAnkiConnectAddress = z.string().check(z.trim(), zUrl, zStartsWithHttp);
+const zObsWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
+const zTextHookerWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
+
+const zObsReplayBufferDuration = z.number();
+const zFfmpegPictureFormat = z.union([z.literal("webp")]);
+const zFfmpegMaxPictureResolution = z.number();
+const zFfmpegPictureFrameCount = z.number();
+
+export const zConfigStrict = z.object({
+  ankiExpressionField: zAnkiExpressionField,
+  ankiSentenceField: zAnkiSentenceField,
+  ankiPictureField: zAnkiPictureField,
+  ankiSentenceAudioField: zAnkiSentenceAudioField,
+  ankiConnectAddress: zAnkiConnectAddress,
+  obsWebSocketAddress: zObsWebSocketAddress,
+  obsReplayBufferDuration: zObsReplayBufferDuration,
+  textHookerWebSocketAddress: zTextHookerWebSocketAddress,
+  ffmpegPictureFormat: zFfmpegPictureFormat,
+  ffmpegMaxPictureResolution: zFfmpegMaxPictureResolution,
+  ffmpegPictureFrameCount: zFfmpegPictureFrameCount,
+});
+
 export const zConfig = z.object({
-  ankiExpressionField: z.catch(z.string(), "Expression"),
-  ankiSentenceField: z.catch(z.string(), "Sentence"),
-  ankiPictureField: z.catch(z.string(), "Picture"),
-  ankiSentenceAudioField: z.catch(z.string(), "SentenceAudio"),
-  ankiConnectAddress: z.catch(z.string().check(z.url()), "http://127.0.0.1:8765"),
-  obsWebSocketAddress: z.catch(z.string().check(z.url()), "ws://127.0.0.1:4455"),
-  obsReplayBufferDuration: z.catch(z.number(), 5 * 60 * 1000),
-  textHookerWebSocketAddress: z.catch(z.string().check(z.url()), "ws://127.0.0.1:6677"),
-  ffmpegPictureFormat: z.catch(z.union([z.literal("webp")]), "webp"),
-  ffmpegMaxPictureResolution: z.catch(z.number(), 720),
-  ffmpegPictureFrameCount: z.catch(z.number(), 6),
+  ankiExpressionField: z.catch(zAnkiExpressionField, "Expression"),
+  ankiSentenceField: z.catch(zAnkiSentenceField, "Sentence"),
+  ankiPictureField: z.catch(zAnkiPictureField, "Picture"),
+  ankiSentenceAudioField: z.catch(zAnkiSentenceAudioField, "SentenceAudio"),
+  ankiConnectAddress: z.catch(zAnkiConnectAddress, "http://127.0.0.1:8765"),
+  obsWebSocketAddress: z.catch(zObsWebSocketAddress, "ws://127.0.0.1:4455"),
+  obsReplayBufferDuration: z.catch(zObsReplayBufferDuration, 5 * 60 * 1000),
+  textHookerWebSocketAddress: z.catch(zTextHookerWebSocketAddress, "ws://127.0.0.1:6677"),
+  ffmpegPictureFormat: z.catch(zFfmpegPictureFormat, "webp"),
+  ffmpegMaxPictureResolution: z.catch(zFfmpegMaxPictureResolution, 720),
+  ffmpegPictureFrameCount: z.catch(zFfmpegPictureFrameCount, 6),
 });
 
 export type Config = z.infer<typeof zConfig>;

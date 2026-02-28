@@ -13,7 +13,9 @@ export function useSetConfig() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (config: Partial<Config>) => {
-      return await api.request.setConfig(config);
+      const data = await api.request.setConfig(config);
+      if (!data) throw Error("Failed to set config");
+      return data;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({

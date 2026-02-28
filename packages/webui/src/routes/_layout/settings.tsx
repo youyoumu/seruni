@@ -1,9 +1,10 @@
-import { useConfig$ } from "#/hooks/config";
+import { useConfig$, useSetConfig } from "#/hooks/config";
 import { useAppForm } from "#/hooks/form";
-import { tv } from "@heroui/react";
-import { zConfig } from "@repo/shared/schema";
+import { useServices } from "#/hooks/services";
+import { Separator, tv } from "@heroui/react";
+import { zConfig, zConfigStrict } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
-import * as z from "zod/mini";
+import { debounce } from "es-toolkit";
 
 export const Route = createFileRoute("/_layout/settings")({
   component: SettingsPage,
@@ -11,28 +12,106 @@ export const Route = createFileRoute("/_layout/settings")({
 
 const settingsTv = tv({
   slots: {
-    header: "text-xl font-bold",
+    header: "text-2xl font-bold",
+    groupContainer: "flex flex-col gap-4",
   },
 });
 
+const defaultConfig = zConfig.parse({});
+
 function SettingsPage() {
-  const { header } = settingsTv();
+  const { toast } = useServices();
+  const { header, groupContainer } = settingsTv();
   const { data: config } = useConfig$();
+  const { mutate: updateConfig } = useSetConfig();
 
   const form = useAppForm({
     defaultValues: { ...config },
-    validators: {
-      onChange: zConfig,
-    },
+    validators: { onChange: zConfigStrict },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      const newValue = zConfigStrict.parse(value);
+      updateConfig(newValue, {
+        onSuccess() {
+          toast("Config has been updated");
+        },
+      });
     },
   });
 
+  const submitD = debounce(() => form.handleSubmit(), 2000);
+
   return (
-    <div className="flex h-full items-center justify-center">
+    <div className="flex h-full justify-center">
       <div className="w-full max-w-7xl p-4">
-        <h3 className={header()}>Anki</h3>
+        <div className={groupContainer()}>
+          <h3 className={header()}>Anki</h3>
+          <form
+            onChange={() => {
+              submitD();
+            }}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await form.handleSubmit();
+            }}
+            className="grid grid-cols-[repeat(auto-fill,_minmax(320px,_1fr))] gap-4"
+          >
+            <form.AppField
+              name="ankiConnectAddress"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="AnkiConnect Address"
+                  placeholder={defaultConfig.ankiConnectAddress}
+                  defaultValue={defaultConfig.ankiConnectAddress}
+                />
+              )}
+            />
+
+            <form.AppField
+              name="ankiExpressionField"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Expression Field"
+                  placeholder={defaultConfig.ankiExpressionField}
+                  defaultValue={defaultConfig.ankiExpressionField}
+                />
+              )}
+            />
+
+            <form.AppField
+              name="ankiPictureField"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Picture Field"
+                  placeholder={defaultConfig.ankiPictureField}
+                  defaultValue={defaultConfig.ankiPictureField}
+                />
+              )}
+            />
+
+            <form.AppField
+              name="ankiSentenceField"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Sentence Field"
+                  placeholder={defaultConfig.ankiSentenceField}
+                  defaultValue={defaultConfig.ankiSentenceField}
+                />
+              )}
+            />
+
+            <form.AppField
+              name="ankiSentenceAudioField"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Sentence Audio Field"
+                  placeholder={defaultConfig.ankiSentenceAudioField}
+                  defaultValue={defaultConfig.ankiSentenceAudioField}
+                />
+              )}
+            />
+          </form>
+          <Separator />
+        </div>
       </div>
     </div>
   );
