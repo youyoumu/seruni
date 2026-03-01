@@ -1,3 +1,4 @@
+import { useConfig$ } from "#/hooks/config";
 import { useHover } from "#/hooks/dom";
 import { useServices } from "#/hooks/services";
 import {
@@ -7,6 +8,7 @@ import {
   useTextHistory$,
 } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
+import { useInterval } from "#/hooks/util";
 import { Button, cn, Popover, Separator, Skeleton } from "@heroui/react";
 import { type TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
@@ -104,13 +106,11 @@ function TextHookerPage() {
             </Button>
           </div>
         </div>
-        <TextHistoryListM isRunning={timer.isRunning} />
+        <TextHistoryList isRunning={timer.isRunning} />
       </Suspense>
     </div>
   );
 }
-
-const TextHistoryListM = memo(TextHistoryList);
 
 function TextHistoryList(props: { isRunning: boolean }) {
   const { sessionId } = Route.useParams();
@@ -235,12 +235,22 @@ export function TextHistoryItem(props: {
   const { textHistory: item, last, isRunning } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [hoverRef, isHover] = useHover();
+  const { data: config } = useConfig$();
+
+  const [now, setNow] = useState(new Date());
+  const replayBufferDuration = config.obsReplayBufferDurationS * 1000;
+  const isExpired = new Date(item.createdAt).getTime() + replayBufferDuration < now.getTime();
+
+  useInterval(() => {
+    setNow(new Date());
+  }, 1000);
 
   return (
     <div ref={hoverRef} className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
       <p
         className={cn("flex-1 text-xl", {
           "text-surface-foreground-calm": !isRunning,
+          "text-surface-foreground-faint": isExpired,
         })}
       >
         {"\n"}
