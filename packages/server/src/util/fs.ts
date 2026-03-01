@@ -11,10 +11,15 @@ export const safeAccess = R.fn({
   catch: anyCatch("Error when accessing file"),
 });
 
-export const safeReadFile = R.fn({
-  try: (path: PathLike, encoding?: Encoding) => fs.readFile(path, encoding),
-  catch: anyCatch("Error when reading file"),
-});
+export const safeReadFile = <T extends Encoding | undefined>(
+  path: PathLike,
+  ...encoding: T extends undefined ? [] : [T]
+) =>
+  R.try({
+    try: () =>
+      fs.readFile(path, encoding[0]) as Promise<T extends undefined ? Buffer<ArrayBuffer> : string>,
+    catch: anyCatch("Error when reading file"),
+  });
 
 export const safeReadDir = R.fn({
   try: (path: PathLike) => fs.readdir(path),
