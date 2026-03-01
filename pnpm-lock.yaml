@@ -86,7 +86,7 @@ importers:
     devDependencies:
       '@repo/webui':
         specifier: workspace:*
-        version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+        version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(tailwind-merge@3.4.0)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -245,6 +245,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.0.4
         version: 5.1.3(rolldown-vite@7.3.1(@types/node@25.2.1)(esbuild@0.27.2)(jiti@2.6.1)(tsx@4.21.0))
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
       oxfmt:
         specifier: ^0.28.0
         version: 0.28.0
@@ -2577,6 +2580,9 @@ packages:
 
   babel-dead-code-elimination@1.0.12:
     resolution: {integrity: sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig==}
+
+  babel-plugin-react-compiler@1.0.0:
+    resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -6230,7 +6236,7 @@ snapshots:
       - sqlite3
       - typescript
 
-  '@repo/webui@file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+  '@repo/webui@file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(tailwind-merge@3.4.0)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
     dependencies:
       '@heroui/react': 3.0.0-beta.7(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.1.18)
       '@heroui/styles': 3.0.0-beta.7(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
@@ -6967,6 +6973,10 @@ snapshots:
       '@babel/types': 7.29.0
     transitivePeerDependencies:
       - supports-color
+
+  babel-plugin-react-compiler@1.0.0:
+    dependencies:
+      '@babel/types': 7.29.0
 
   balanced-match@1.0.2:
     optional: true

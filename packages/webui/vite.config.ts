@@ -15,7 +15,9 @@ const config = defineConfig({
   },
   plugins: [
     tailwindcss(),
-    viteReact(),
+    viteReact({
+      babel: { plugins: ["babel-plugin-react-compiler"] },
+    }),
     tanstackRouter({
       target: "react",
     }),
