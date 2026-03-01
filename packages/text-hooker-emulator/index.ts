@@ -1,4 +1,7 @@
 import { WebSocketServer } from "ws";
+import "dotenv/config";
+
+const enabled = process.env.ENABLE_TEXT_HOOKER_EMULATOR;
 
 const japaneseTexts = [
   "こんにちは、私たちと一緒に歩きませんか？",
@@ -19,6 +22,7 @@ wss.on("connection", (ws) => {
   console.log("Client connected");
 
   const interval = setInterval(() => {
+    if (!enabled) return;
     const randomText = japaneseTexts[Math.floor(Math.random() * japaneseTexts.length)];
     ws.send(randomText);
   }, 3000);

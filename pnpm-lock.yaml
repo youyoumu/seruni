@@ -157,6 +157,9 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
+      dotenv:
+        specifier: ^17.3.1
+        version: 17.3.1
       ws:
         specifier: ^8.19.0
         version: 8.19.0
@@ -2791,6 +2794,10 @@ packages:
   diff@8.0.3:
     resolution: {integrity: sha512-qejHi7bcSD4hQAZE0tNAawRK1ZtafHDmMTMkrrIGgSLl7hTnQHmKCeB45xAcbfTqK2zowkM3j3bHt/4b/ARbYQ==}
     engines: {node: '>=0.3.1'}
+
+  dotenv@17.3.1:
+    resolution: {integrity: sha512-IO8C/dzEb6O3F9/twg6ZLXz164a2fhTnEWb95H23Dm4OuN+92NmEAlTrupP9VW6Jm3sO26tQlqyvyi4CsnY9GA==}
+    engines: {node: '>=12'}
 
   drizzle-kit@0.31.8:
     resolution: {integrity: sha512-O9EC/miwdnRDY10qRxM8P3Pg8hXe3LyU4ZipReKOgTwn4OqANmftj8XJz1UPUAS6NMHf0E2htjsbQujUTkncCg==}
@@ -7183,6 +7190,8 @@ snapshots:
       dequal: 2.0.3
 
   diff@8.0.3: {}
+
+  dotenv@17.3.1: {}
 
   drizzle-kit@0.31.8:
     dependencies:
