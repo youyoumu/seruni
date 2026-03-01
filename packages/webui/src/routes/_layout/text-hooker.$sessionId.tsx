@@ -250,7 +250,7 @@ export function TextHistoryItem(props: { textHistory: TextHistory; last?: boolea
         >{`‹id:${item.id}›`}</span>
         {"\n"}
       </p>
-      {(isHover || isOpen) && (
+      {isHover || isOpen ? (
         <TextHistoryPopover
           onOpenChange={setIsOpen}
           key={item.id}
@@ -260,6 +260,8 @@ export function TextHistoryItem(props: { textHistory: TextHistory; last?: boolea
           textHistory={item}
           last={last}
         />
+      ) : (
+        <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />
       )}
     </div>
   );
