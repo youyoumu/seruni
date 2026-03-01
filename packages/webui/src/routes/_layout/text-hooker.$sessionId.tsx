@@ -23,7 +23,7 @@ import {
   RssIcon,
   TrashIcon,
 } from "lucide-react";
-import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
@@ -74,6 +74,16 @@ function FallbackTextHistoryList() {
 }
 
 function TextHookerPage() {
+  return (
+    <div className="flex h-full flex-col overflow-auto">
+      <Suspense fallback={<FallbackTextHistoryList />}>
+        <TextHookerPageContent />
+      </Suspense>
+    </div>
+  );
+}
+
+function TextHookerPageContent() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId });
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
@@ -84,31 +94,29 @@ function TextHookerPage() {
   const speed = useReadingSpeed(textHistoryCharCount, timer.seconds);
 
   return (
-    <div className="flex h-full flex-col overflow-auto">
-      <Suspense fallback={<FallbackTextHistoryList />}>
-        <div className="flex items-center justify-between gap-4 border-b p-4">
-          <div>
-            <RssIcon
-              size={24}
-              className={cn({
-                "text-surface-foreground-faint": !timer.isRunning,
-              })}
-            />
-          </div>
-          <div className="flex h-full items-center justify-end gap-4">
-            <span className="text-lg font-medium">
-              {textHistoryCharCount} characters in {timer.formattedDuration}
-            </span>
-            <Separator orientation="vertical" />
-            <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
-            <Button isIconOnly onClick={timer.toggle}>
-              {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-            </Button>
-          </div>
+    <>
+      <div className="flex items-center justify-between gap-4 border-b p-4">
+        <div>
+          <RssIcon
+            size={24}
+            className={cn({
+              "text-surface-foreground-faint": !timer.isRunning,
+            })}
+          />
         </div>
-        <TextHistoryList isRunning={timer.isRunning} />
-      </Suspense>
-    </div>
+        <div className="flex h-full items-center justify-end gap-4">
+          <span className="text-lg font-medium">
+            {textHistoryCharCount} characters in {timer.formattedDuration}
+          </span>
+          <Separator orientation="vertical" />
+          <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
+          <Button isIconOnly onClick={timer.toggle}>
+            {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+          </Button>
+        </div>
+      </div>
+      <TextHistoryList isRunning={timer.isRunning} />
+    </>
   );
 }
 
