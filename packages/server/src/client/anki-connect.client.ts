@@ -155,8 +155,12 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       }),
 
       // create wav file for vad
-      R.bind("audioWav", ({ seek, replay }) => {
-        const completeTime = this.state.completedTextHistory()[textHistory.id];
+      R.bind("audioWav", async ({ seek, replay }) => {
+        const next = await this.db.query.textHistory.findFirst({
+          where: eq(textHistoryTable.id, textHistory.id + 1),
+        });
+        const nextOffset = next ? next.createdAt.getTime() - 1000 : undefined;
+        const completeTime = nextOffset ?? this.state.completedTextHistory()[textHistory.id];
         const duration = completeTime ? completeTime - textHistory.createdAt.getTime() : undefined;
         return this.ffmpeg.process({
           inputPath: replay.path,

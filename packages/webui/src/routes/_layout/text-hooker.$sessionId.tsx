@@ -218,7 +218,10 @@ function TextHistoryList() {
               }}
               className="px-4"
             >
-              <TextHistoryItem textHistory={item} />
+              <TextHistoryItem
+                textHistory={item}
+                last={virtualItem.index === textHistory.length - 1}
+              />
             </div>
           );
         })}
@@ -227,8 +230,8 @@ function TextHistoryList() {
   );
 }
 
-export function TextHistoryItem(props: { textHistory: TextHistory }) {
-  const { textHistory: item } = props;
+export function TextHistoryItem(props: { textHistory: TextHistory; last?: boolean }) {
+  const { textHistory: item, last } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [hoverRef, isHover] = useHover();
 
@@ -255,6 +258,7 @@ export function TextHistoryItem(props: { textHistory: TextHistory }) {
             trigger: <EllipsisVerticalIcon className="size-4 text-surface-foreground-soft" />,
           }}
           textHistory={item}
+          last={last}
         />
       )}
     </div>
@@ -265,8 +269,9 @@ export function TextHistoryPopover(props: {
   slot: { trigger: React.ReactNode };
   textHistory: TextHistory;
   onOpenChange?: (open: boolean) => void;
+  last?: boolean;
 }) {
-  const { onOpenChange } = props;
+  const { onOpenChange, last } = props;
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
   const { mutate: markTextHistoryAsCompleted } = useMarkTextHistoryAsCompleted();
   const isCompleted = useIsTextHistoryCompleted$(props.textHistory);
@@ -283,6 +288,7 @@ export function TextHistoryPopover(props: {
           <button
             className={cn("flex items-center gap-2 rounded-lg p-2", {
               "cursor-pointer hover:bg-surface-soft": !isCompleted,
+              hidden: !last,
             })}
             disabled={isCompleted}
             onClick={() => {
