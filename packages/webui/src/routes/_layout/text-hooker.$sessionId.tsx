@@ -21,7 +21,7 @@ import {
   RssIcon,
   TrashIcon,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
@@ -72,17 +72,6 @@ function FallbackTextHistoryList() {
 }
 
 function TextHookerPage() {
-  return (
-    <div className="flex h-full flex-col overflow-auto">
-      <Suspense fallback={<FallbackTextHistoryList />}>
-        <TextHistoryPageHeader />
-        <TextHistoryList />
-      </Suspense>
-    </div>
-  );
-}
-
-function TextHistoryPageHeader() {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId });
   const textHistoryCharCount = useMemo(() => getTextHistoryCharCount(textHistory), [textHistory]);
@@ -93,30 +82,37 @@ function TextHistoryPageHeader() {
   const speed = useReadingSpeed(textHistoryCharCount, timer.seconds);
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b p-4">
-      <div>
-        <RssIcon
-          size={24}
-          className={cn({
-            "text-surface-foreground-faint": !timer.isRunning,
-          })}
-        />
-      </div>
-      <div className="flex h-full items-center justify-end gap-4">
-        <span className="text-lg font-medium">
-          {textHistoryCharCount} characters in {timer.formattedDuration}
-        </span>
-        <Separator orientation="vertical" />
-        <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
-        <Button isIconOnly onClick={timer.toggle}>
-          {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-        </Button>
-      </div>
+    <div className="flex h-full flex-col overflow-auto">
+      <Suspense fallback={<FallbackTextHistoryList />}>
+        <div className="flex items-center justify-between gap-4 border-b p-4">
+          <div>
+            <RssIcon
+              size={24}
+              className={cn({
+                "text-surface-foreground-faint": !timer.isRunning,
+              })}
+            />
+          </div>
+          <div className="flex h-full items-center justify-end gap-4">
+            <span className="text-lg font-medium">
+              {textHistoryCharCount} characters in {timer.formattedDuration}
+            </span>
+            <Separator orientation="vertical" />
+            <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
+            <Button isIconOnly onClick={timer.toggle}>
+              {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+            </Button>
+          </div>
+        </div>
+        <TextHistoryListM isRunning={timer.isRunning} />
+      </Suspense>
     </div>
   );
 }
 
-function TextHistoryList() {
+const TextHistoryListM = memo(TextHistoryList);
+
+function TextHistoryList(props: { isRunning: boolean }) {
   const { sessionId } = Route.useParams();
   const { data: textHistory } = useTextHistory$({ sessionId });
   const { bus } = useServices();
@@ -221,6 +217,7 @@ function TextHistoryList() {
               <TextHistoryItem
                 textHistory={item}
                 last={virtualItem.index === textHistory.length - 1}
+                isRunning={props.isRunning}
               />
             </div>
           );
@@ -230,14 +227,22 @@ function TextHistoryList() {
   );
 }
 
-export function TextHistoryItem(props: { textHistory: TextHistory; last?: boolean }) {
-  const { textHistory: item, last } = props;
+export function TextHistoryItem(props: {
+  textHistory: TextHistory;
+  last: boolean;
+  isRunning: boolean;
+}) {
+  const { textHistory: item, last, isRunning } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [hoverRef, isHover] = useHover();
 
   return (
     <div ref={hoverRef} className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
-      <p className="flex-1 text-xl">
+      <p
+        className={cn("flex-1 text-xl", {
+          "text-surface-foreground-calm": !isRunning,
+        })}
+      >
         {"\n"}
         {item.text}
         <span
