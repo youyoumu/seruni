@@ -17,6 +17,7 @@ import type { VirtualizerOptions } from "@tanstack/react-virtual";
 import { randomInt, range, shuffle } from "es-toolkit";
 import {
   ClockCheckIcon,
+  CopyIcon,
   EllipsisVerticalIcon,
   PauseIcon,
   PlayIcon,
@@ -296,6 +297,8 @@ export function TextHistoryPopover(props: {
   onOpenChange?: (open: boolean) => void;
   last?: boolean;
 }) {
+  const { toast } = useServices();
+  const { data: textHistoryList } = useTextHistory$({ sessionId: props.textHistory.sessionId });
   const { onOpenChange, last } = props;
   const { mutate: deleteTextHistory } = useDeleteTextHistory();
   const { mutate: markTextHistoryAsCompleted } = useMarkTextHistoryAsCompleted();
@@ -304,6 +307,29 @@ export function TextHistoryPopover(props: {
   useEffect(() => {
     return onOpenChange?.(false);
   }, [onOpenChange]);
+
+  async function copyWithContext() {
+    const index = textHistoryList.findIndex((item) => item.id === props.textHistory.id);
+    if (index === -1) {
+      console.warn("Item not found in history.");
+      return;
+    }
+    const start = Math.max(0, index - 10);
+    const end = Math.min(textHistoryList.length, index + 11);
+    const contextItems = textHistoryList.slice(start, end);
+    const contextLines = contextItems.map((item) => `- ${item.text}`).join("\n");
+    const text = `
+### CONTEXT (PREVIOUS & NEXT LINES)
+${contextLines}
+
+### TARGET LINE FOR ANALYSIS
+>> ${props.textHistory.text} <<
+`;
+    await navigator.clipboard.writeText(text);
+    toast("Copied to clipboard", {
+      description: props.textHistory.text.slice(0, 200),
+    });
+  }
 
   return (
     <Popover onOpenChange={onOpenChange}>
@@ -324,6 +350,15 @@ export function TextHistoryPopover(props: {
             <div className={cn({ "text-surface-foreground-soft": isCompleted })}>
               Mark as completed
             </div>
+          </button>
+          <button
+            className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-surface-soft"
+            onClick={async () => {
+              await copyWithContext();
+            }}
+          >
+            <CopyIcon className="size-4 shrink-0" />
+            <div>Copy with context</div>
           </button>
           <button
             className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-surface-soft"
