@@ -144,7 +144,7 @@ export class Services {
           const result = this.#deferredPromises.get(data.id);
           this.toast.success(result?.success.title, {
             description: result?.success.description,
-            actionProps: createActionProps(data.action),
+            actionProps: createActionProps(result?.action),
           });
         })
         .catch(() => {
@@ -152,7 +152,7 @@ export class Services {
           const result = this.#deferredPromises.get(data.id);
           this.toast.danger(result?.error.title, {
             description: result?.error.description,
-            actionProps: createActionProps(data.action),
+            actionProps: createActionProps(result?.action),
           });
         });
     });
