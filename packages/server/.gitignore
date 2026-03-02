@@ -30,3 +30,4 @@ lerna-debug.log*
 .drizzle
 .seruni
 bundle-stats.html
+.release

@@ -1,6 +1,5 @@
 import child_process from "node:child_process";
 
-import type { State } from "#/state/state";
 import { anyCatch } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
@@ -8,7 +7,6 @@ import type { Logger } from "pino";
 export class Exec {
   constructor(
     public log: Logger,
-    public state: State,
     public bin: string,
     public name: string,
   ) {

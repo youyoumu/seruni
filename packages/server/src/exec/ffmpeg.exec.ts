@@ -75,7 +75,7 @@ export class FFmpegExec extends Exec {
     public log: Logger,
     public state: State,
   ) {
-    super(log, state, "ffmpeg", "ffmpeg");
+    super(log, "ffmpeg", "ffmpeg");
   }
 
   timestamps = new Set<string>();

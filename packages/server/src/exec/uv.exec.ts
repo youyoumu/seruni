@@ -9,7 +9,7 @@ export class UvExec extends Exec {
     public log: Logger,
     public state: State,
   ) {
-    super(log, state, "uv", "uv");
+    super(log, "uv", "uv");
   }
 
   async version(): Promise<R.Result<string, Error>> {
