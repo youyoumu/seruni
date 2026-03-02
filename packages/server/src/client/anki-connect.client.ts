@@ -12,6 +12,7 @@ import { R } from "@praha/byethrow";
 import { textHistory as textHistoryTable, type TextHistory } from "@repo/shared/db";
 import type { AnkiNote } from "@repo/shared/schema";
 import type { ServerApi } from "@repo/shared/ws";
+import { effect } from "alien-signals";
 import { eq } from "drizzle-orm";
 import { last, memoize, retry, uniq } from "es-toolkit";
 import type { Logger } from "pino";
@@ -35,12 +36,8 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     public ffmpeg: FFmpegExec,
     public python: PythonExec,
   ) {
-    const url = new URL(state.config().ankiConnectAddress);
-    const port = parseInt(url.port);
-    url.port = "";
     super({
-      host: url.origin,
-      port: port,
+      url: state.config().ankiConnectAddress,
       log: log.child({ name: "anki-connect-client" }),
     });
 
@@ -50,6 +47,14 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
 
     this.addListener("close", () => {
       this.state.ankiConnectConnected(false);
+    });
+
+    effect(async () => {
+      const url = this.state.config().ankiConnectAddress;
+      if (this.url === url) return;
+      this.url = url;
+      this.log.info(`AnkiConnect address changed to ${url}`);
+      await this.restart();
     });
   }
 

@@ -8,10 +8,19 @@ export type ReconnectingAnkiConnectEventMap = {
   close: undefined;
 };
 
+function parseUrl(url: string) {
+  const url_ = new URL(url);
+  const port = parseInt(url_.port);
+  url_.port = "";
+  const newUrl = `${url_.origin}:${port}`;
+  return { url: newUrl, port, host: url_.origin };
+}
+
 export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnkiConnectEventMap> {
   log: Logger;
+  url: string;
+  #actualUrl: string;
   #yankiConnect: YankiConnect;
-  #url: string;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -22,20 +31,19 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   #pollInterval: number;
 
   constructor(options: {
-    host: string;
-    port: number;
     log: Logger;
+    url: string;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
     pollInterval?: number;
   }) {
     super();
     this.log = options.log;
-    this.#yankiConnect = new YankiConnect({
-      host: options.host,
-      port: options.port,
-    });
-    this.#url = `${options.host}:${options.port}`;
+    this.url = options.url;
+    const { url, port, host } = parseUrl(this.url);
+    this.#actualUrl = url;
+    this.#yankiConnect = new YankiConnect({ host, port });
+
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -57,6 +65,9 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   }
 
   async connect() {
+    const { url, port, host } = parseUrl(this.url);
+    this.#actualUrl = url;
+    this.#yankiConnect = new YankiConnect({ host, port });
     if (this.#pollIntervalId) return;
     this.#manualClose = false;
     await this.#startPolling();
@@ -71,12 +82,12 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
       const nowConnected = await this.#checkConnection();
 
       if (nowConnected && !wasConnected) {
-        this.log.info(`Connected to ${this.#url}`);
+        this.log.info(`Connected to ${this.#actualUrl}`);
         this.#isConnected = true;
         this.#reconnectAttempts = 0;
         this.dispatch("open");
       } else if (!nowConnected && wasConnected) {
-        this.log.warn(`Disconnected from ${this.#url}`);
+        this.log.warn(`Disconnected from ${this.#actualUrl}`);
         this.#isConnected = false;
         this.dispatch("close");
         this.#attemptReconnect();
@@ -110,7 +121,7 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
         this.#maxReconnectDelay,
       );
       this.log.info(
-        `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
+        `Reconnecting to ${this.#actualUrl} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#attemptReconnectTimeoutId = setTimeout(async () => {
         this.#attemptReconnectTimeoutId = null;
@@ -123,6 +134,11 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
     this.#manualClose = true;
     this.#stopPolling();
     this.#isConnected = false;
+  }
+
+  async restart() {
+    this.close();
+    await this.connect();
   }
 
   get isConnected() {
