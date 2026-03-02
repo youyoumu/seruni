@@ -241,6 +241,7 @@ export class FFmpegExec extends Exec {
       const durationParam = ["-t", `${requiredDuration}ms`];
       const frameRateParam = ["-r", `${fps}`];
       const filterParam = ["-vf", scaleFilter];
+      const codecParam = actualFormat === "webp" ? ["-c:a", "libwebp"] : [];
       const qualityParam = ["-q:v", pictureQuality];
 
       return [
@@ -250,6 +251,7 @@ export class FFmpegExec extends Exec {
         ...durationParam,
         ...frameRateParam,
         ...filterParam,
+        ...codecParam,
         ...qualityParam,
         "-an", // no audio
         outputPattern,
