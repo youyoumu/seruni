@@ -269,6 +269,30 @@ function SettingsForm() {
                 />
               )}
             />
+            <form.AppField
+              name="ffmpegAudioOffsetStart"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Audio Offset Start (ms)"
+                  type="number"
+                  max={0}
+                  placeholder={defaultConfig.ffmpegAudioOffsetStart.toString()}
+                  defaultValue={defaultConfig.ffmpegAudioOffsetStart}
+                />
+              )}
+            />
+            <form.AppField
+              name="ffmpegAudioOffsetEnd"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Audio Offset End (ms)"
+                  type="number"
+                  min={0}
+                  placeholder={defaultConfig.ffmpegAudioOffsetEnd.toString()}
+                  defaultValue={defaultConfig.ffmpegAudioOffsetEnd}
+                />
+              )}
+            />
           </div>
           <Separator />
         </div>

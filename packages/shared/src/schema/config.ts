@@ -52,6 +52,8 @@ const zFfmpegAudioQuality = z.union(
   ],
   "Must be very low, low, medium, high, or very high",
 );
+const zFfmpegAudioOffsetStart = z.number().check(z.maximum(0, "Must be less than or equal to 0"));
+const zFfmpegAudioOffsetEnd = z.number().check(z.minimum(0, "Must be greater than or equal to 0"));
 
 export const zConfig = z.object({
   ankiExpressionField: zAnkiExpressionField,
@@ -68,6 +70,8 @@ export const zConfig = z.object({
   ffmpegPictureFrameCount: zFfmpegPictureFrameCount,
   ffmpegAudioFormat: zFfmpegAudioFormat,
   ffmpegAudioQuality: zFfmpegAudioQuality,
+  ffmpegAudioOffsetStart: zFfmpegAudioOffsetStart,
+  ffmpegAudioOffsetEnd: zFfmpegAudioOffsetEnd,
 });
 
 export type Config = z.infer<typeof zConfig>;
@@ -87,4 +91,6 @@ export const defaultConfig: Config = {
   ffmpegPictureFrameCount: 6,
   ffmpegAudioFormat: "opus",
   ffmpegAudioQuality: "medium",
+  ffmpegAudioOffsetStart: -500,
+  ffmpegAudioOffsetEnd: 500,
 };

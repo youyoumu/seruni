@@ -56,7 +56,10 @@ function TextFieldSet({
       aria-label={field.name}
       value={field.state.value.toString()}
       onChange={(v) => {
-        const newValue = type === "number" ? parseInt(v) : v;
+        let newValue = type === "number" ? parseInt(v) : v;
+        if (type === "number" && isNaN(parseInt(v))) {
+          newValue = v;
+        }
         field.handleChange(newValue);
       }}
       onBlur={field.handleBlur}
