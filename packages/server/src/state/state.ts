@@ -27,6 +27,7 @@ export type Path = {
   pythonEntry: string;
   pythonWorkdir: string;
   entry: string;
+  installationDir: string;
   libDir: string;
   packageJson: string;
 };
@@ -86,6 +87,7 @@ export class StateManager {
       pythonEntry,
       pythonWorkdir,
       entry: entry,
+      installationDir,
       libDir: DEV
         ? path.join(import.meta.dirname, "../../.lib")
         : path.join(installationDir, "./lib"),

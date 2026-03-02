@@ -184,7 +184,7 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
   return console.log(c.green(`[OK] ${state.path().venvDir}`));
 }
 
-async function update(options: { workdir: string; logLevel: pino.Level }) {
+async function update(options: { workdir: string; logLevel: pino.Level; tarFilePath?: string }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "update" });
   const stateManager = new StateManager(log, options.workdir);
   const state = await stateManager.createState();
@@ -192,7 +192,11 @@ async function update(options: { workdir: string; logLevel: pino.Level }) {
   log.info(stateManager.serializeState(state), "Starting with state");
 
   const tar = new TarExec(log, state);
-  await tar.removeInstallation();
+  const result = await tar.update(options.tarFilePath);
+  if (R.isFailure(result)) {
+    return log.error(result.error, "Failed to update");
+  }
+  log.info("Update completed successfully");
 }
 
 async function startCommand(args: { workdir: string; logLevel: string }) {
@@ -219,12 +223,12 @@ async function venvCommand(args: { workdir: string; logLevel: string }) {
   await venv({ workdir: args.workdir, logLevel: logLevel.value });
 }
 
-async function updateCommand(args: { workdir: string; logLevel: string }) {
+async function updateCommand(args: { workdir: string; logLevel: string; tarFilePath?: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
-  await update({ workdir: args.workdir, logLevel: logLevel.value });
+  await update({ workdir: args.workdir, logLevel: logLevel.value, tarFilePath: args.tarFilePath });
 }
 
 const startCmd = defineCommand({
@@ -312,11 +316,17 @@ const updateCmd = defineCommand({
       description: "Log level (trace, debug, info, warn, error, fatal)",
       default: "trace",
     },
+    "tar-file": {
+      type: "positional",
+      description: "Path to seruni-v<version>.tar.gz (optional, will detect if not provided)",
+      required: false,
+    },
   },
   run({ args }) {
     return updateCommand({
       workdir: args.workdir as string,
       logLevel: args["log-level"] as string,
+      tarFilePath: args["tar-file"] as string | undefined,
     });
   },
 });

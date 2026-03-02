@@ -11,7 +11,7 @@ class Script {
     const tar = new Exec(log, "tar", "tar");
     const fileName = `seruni-v${getPackageVersion()}.tar.gz`;
     const output = path.join(RELEASE_DIR, fileName);
-    await tar.run(["-czf", output, "dist"]);
+    await tar.run(["-czf", output, "-C", "dist", "."]);
   }
 }
 
