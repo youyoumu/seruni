@@ -13,10 +13,10 @@ type EntryCommand = SileroCommand | HealthcheckCommand | HealthcheckVenvCommand 
 
 export class PythonExec extends Exec {
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
   ) {
-    super(logger, state, state.path().python, "python");
+    super(log, state, state.path().python, "python");
   }
 
   async runEntry(command: EntryCommand) {

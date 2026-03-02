@@ -20,8 +20,9 @@ const app = new Hono<{ Variables: { ctx: AppContext; proxyCtx: ProxyContext } }>
 
 // setup first middleware
 app.post("/", async (c, next) => {
-  const { logger, state, ankiConnectClient } = c.get("ctx");
-  const log = logger.child({ name: "anki-connect-proxy" });
+  const ctx = c.get("ctx");
+  const { state, ankiConnectClient } = ctx;
+  const log = ctx.log.child({ name: "anki-connect-proxy" });
   const url = new URL(c.req.url);
   const targetUrl = `${state.config().ankiConnectAddress}${url.pathname}${url.search}`;
   if (!ankiConnectClient.isConnected) {

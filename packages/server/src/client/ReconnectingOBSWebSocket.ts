@@ -37,13 +37,13 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
   constructor(options: {
     url: string;
     password?: string;
-    logger: Logger;
+    log: Logger;
     baseReconnectInterval?: number;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
   }) {
     super();
-    this.log = options.logger;
+    this.log = options.log;
     this.#obs = new OBSWebSocket();
     this.#url = options.url;
     this.#password = options.password;

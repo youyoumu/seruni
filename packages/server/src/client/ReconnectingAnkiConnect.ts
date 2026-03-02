@@ -24,13 +24,13 @@ export class ReconnectingAnkiConnect extends TypesafeEventTarget<ReconnectingAnk
   constructor(options: {
     host: string;
     port: number;
-    logger: Logger;
+    log: Logger;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
     pollInterval?: number;
   }) {
     super();
-    this.log = options.logger;
+    this.log = options.log;
     this.#yankiConnect = new YankiConnect({
       host: options.host,
       port: options.port,

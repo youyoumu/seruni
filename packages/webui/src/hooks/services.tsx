@@ -42,7 +42,7 @@ export class Services {
   constructor({ queryClient }: { queryClient: QueryClient }) {
     const ws = new ReconnectingWebSocket({
       url: "ws://localhost:45626/ws",
-      logger: {
+      log: {
         info: console.log,
         warn: console.log,
       },

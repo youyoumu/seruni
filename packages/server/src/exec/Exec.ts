@@ -6,15 +6,13 @@ import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
 export class Exec {
-  log: Logger;
-
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
     public bin: string,
     public name: string,
   ) {
-    this.log = logger.child({ name });
+    this.log = log.child({ name });
   }
 
   run(params: string[], options: { env?: Record<string, string> } = {}) {

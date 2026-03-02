@@ -12,9 +12,9 @@ export class WSSHandlers {
     public api: ServerApi,
     public db: DB,
     public state: State,
-    public logger: Logger,
+    public log: Logger,
   ) {
-    const logState = logger.child({ name: "state" });
+    const logState = log.child({ name: "state" });
 
     effect(async () => {
       const activeSessionId = state.activeSessionId();

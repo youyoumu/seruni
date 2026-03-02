@@ -9,7 +9,7 @@ import type { Logger } from "pino";
 export interface AppContext {
   db: DB;
   state: State;
-  logger: Logger;
+  log: Logger;
   api: ServerApi;
   onPayload: ReturnType<typeof createServerApi>["onPayload"];
   addWS: ReturnType<typeof createServerApi>["addWS"];

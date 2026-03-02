@@ -26,7 +26,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
   #createMediaCache = new Map();
 
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
     public db: DB,
     public dbClient: DBClient,
@@ -41,7 +41,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     super({
       host: url.origin,
       port: port,
-      logger: logger.child({ name: "anki-connect-client" }),
+      log: log.child({ name: "anki-connect-client" }),
     });
 
     this.addListener("open", () => {

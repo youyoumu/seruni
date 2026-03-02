@@ -6,10 +6,10 @@ import { Exec } from "./Exec";
 
 export class UvExec extends Exec {
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
   ) {
-    super(logger, state, "uv", "uv");
+    super(log, state, "uv", "uv");
   }
 
   async version(): Promise<R.Result<string, Error>> {

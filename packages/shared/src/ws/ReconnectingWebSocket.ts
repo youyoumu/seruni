@@ -26,12 +26,12 @@ export class ReconnectingWebSocket<
 
   constructor(options: {
     url: string;
-    logger: Logger;
+    log: Logger;
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
   }) {
     super();
-    this.log = options.logger;
+    this.log = options.log;
     this.#url = options.url;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;

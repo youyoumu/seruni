@@ -36,25 +36,24 @@ function validateLogLevel(level: string): R.Result<pino.Level, Error> {
 }
 
 async function start(options: { workdir: string; logLevel: pino.Level }) {
-  const logger = createLogger({ level: options.logLevel });
-  const log = logger.child({ name: "main" });
+  const log = createLogger({ level: options.logLevel }).child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const stateManager = new StateManager(logger, options.workdir);
+  const stateManager = new StateManager(log, options.workdir);
   const state = await stateManager.createState();
   log.info(stateManager.serializeState(state), "Starting with state");
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
-  const dbClient = new DBClient(db, logger, state);
+  const dbClient = new DBClient(db, log, state);
 
-  const ffmpeg = new FFmpegExec(logger, state);
-  const python = new PythonExec(logger, state);
+  const ffmpeg = new FFmpegExec(log, state);
+  const python = new PythonExec(log, state);
 
-  new TextHookerClient(logger, api, db, state);
-  const obsClient = new OBSClient(logger, state);
+  new TextHookerClient(log, api, db, state);
+  const obsClient = new OBSClient(log, state);
   const ankiConnectClient = new AnkiConnectClient(
-    logger,
+    log,
     state,
     db,
     dbClient,
@@ -94,7 +93,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const ctx: AppContext = {
     db,
     state,
-    logger,
+    log: log,
     api,
     onPayload,
     addWS,
@@ -125,30 +124,29 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   app.route("/anki/anki-connect-proxy", routes.ankiAnkiConnectProxy);
   app.route("*", routes.root);
 
-  new WSSHandlers(api, db, state, logger);
+  new WSSHandlers(api, db, state, log);
   const server = serve(
     {
       fetch: app.fetch,
       port: 45626,
     },
     (info) => {
-      logger.info(`Server is running on http://localhost:${info.port}`);
+      log.info(`Server is running on http://localhost:${info.port}`);
     },
   );
   nodews.injectWebSocket(server);
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {
-  const logger = createLogger({ level: options.logLevel });
-  const stateManager = new StateManager(logger, options.workdir);
+  const log = createLogger({ level: options.logLevel }).child({ name: "doctor" });
+  const stateManager = new StateManager(log, options.workdir);
   const state = await stateManager.createState();
-  const log = logger.child({ name: "doctor" });
 
   log.info(stateManager.serializeState(state), "Starting with state");
 
-  const ffmpeg = new FFmpegExec(logger, state);
-  const uv = new UvExec(logger, state);
-  const python = new PythonExec(logger, state);
+  const ffmpeg = new FFmpegExec(log, state);
+  const uv = new UvExec(log, state);
+  const python = new PythonExec(log, state);
 
   const ffmpegResult = await ffmpeg.version();
   const uvResult = await uv.version();
@@ -168,14 +166,13 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
 }
 
 async function venv(options: { workdir: string; logLevel: pino.Level }) {
-  const logger = createLogger({ level: options.logLevel });
-  const stateManager = new StateManager(logger, options.workdir);
+  const log = createLogger({ level: options.logLevel }).child({ name: "venv" });
+  const stateManager = new StateManager(log, options.workdir);
   const state = await stateManager.createState();
-  const log = logger.child({ name: "venv" });
 
   log.info(stateManager.serializeState(state), "Starting with state");
 
-  const uv = new UvExec(logger, state);
+  const uv = new UvExec(log, state);
 
   const result = await uv.setupVenv();
   if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));

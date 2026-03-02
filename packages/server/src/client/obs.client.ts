@@ -8,11 +8,11 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   #replayBufferActive = false;
 
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
   ) {
     super({
-      logger: logger.child({ name: "obs-client" }),
+      log: log.child({ name: "obs-client" }),
       url: state.config().obsWebSocketAddress,
     });
 

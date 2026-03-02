@@ -6,8 +6,8 @@ const app = new Hono<{ Variables: { ctx: AppContext } }>();
 app.get("/", (c, next) => {
   const ctx = c.get("ctx");
   const { upgradeWebSocket } = ctx;
-  const { state, logger, onPayload, addWS, removeWS } = ctx;
-  const logWS = logger.child({ name: "ws-client" });
+  const { state, onPayload, addWS, removeWS } = ctx;
+  const log = ctx.log.child({ name: "ws-client" });
 
   return upgradeWebSocket(() => {
     return {
@@ -16,11 +16,11 @@ app.get("/", (c, next) => {
         onPayload(payload, ws as Parameters<typeof onPayload>[1]);
       },
       onOpen: (_: unknown, ws: unknown) => {
-        logWS.info("Connection opened");
+        log.info("Connection opened");
         addWS(ws as Parameters<typeof addWS>[0]);
       },
       onClose: (_: unknown, ws: unknown) => {
-        logWS.warn("Connection closed");
+        log.warn("Connection closed");
         state.isListeningTexthooker(false);
         removeWS(ws as Parameters<typeof removeWS>[0]);
       },

@@ -72,10 +72,10 @@ function getAudioQuality(format: ActualFormat, quality: Quality = "medium"): str
 
 export class FFmpegExec extends Exec {
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public state: State,
   ) {
-    super(logger, state, "ffmpeg", "ffmpeg");
+    super(log, state, "ffmpeg", "ffmpeg");
   }
 
   timestamps = new Set<string>();

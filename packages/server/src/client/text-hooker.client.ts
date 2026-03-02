@@ -17,14 +17,14 @@ export class TextHookerClient extends ReconnectingWebSocket {
   messages: string[] = [];
 
   constructor(
-    public logger: Logger,
+    public log: Logger,
     public api: ServerApi,
     public db: DB,
     public state: State,
   ) {
     super({
       url: state.config().textHookerWebSocketAddress,
-      logger: logger.child({ name: "text-hooker-client" }),
+      log: log.child({ name: "text-hooker-client" }),
     });
 
     const textHookerToastD = debounce(() => {
