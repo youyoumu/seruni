@@ -3,9 +3,10 @@ import path from "node:path";
 import { safeMkdir, safeReadFile, safeWriteFile } from "#/util/fs";
 import { safeJSONParse } from "#/util/result";
 import { R } from "@praha/byethrow";
-import { zConfig, type Config } from "@repo/shared/schema";
+import { zConfig, zConfigStrict, type Config } from "@repo/shared/schema";
 import { effect, signal } from "alien-signals";
 import type { Logger } from "pino";
+import * as z from "zod/mini";
 
 type Signal<T> = {
   (): T;
@@ -43,7 +44,9 @@ export class StateManager {
   constructor(
     public log: Logger,
     public workdir: string,
-  ) {}
+  ) {
+    this.log = log.child({ name: "state" });
+  }
 
   async createState() {
     //@ts-expect-error injected during build
@@ -122,17 +125,43 @@ export class StateManager {
 
   async getConfigFromFile(configFilePath: string) {
     await safeMkdir(path.join(configFilePath, ".."), { recursive: true });
-    const parsedConfig = await R.pipe(
+
+    const parsedFile = await R.pipe(
       safeReadFile(configFilePath, "utf-8"),
       R.andThen((text) => safeJSONParse(text)),
-      R.orElse(() => R.succeed({})),
+      R.inspectError((e) => {
+        this.log.error(e, "Failed to parse config, fallback to default");
+      }),
     );
-    //TODO:report individual config entry
+
     const defaultConfig = zConfig.parse({});
-    if (R.isFailure(parsedConfig)) {
+    if (R.isFailure(parsedFile)) {
       return defaultConfig;
     }
-    const configResult = zConfig.safeParse(parsedConfig.value);
-    return configResult.success ? configResult.data : defaultConfig;
+
+    const rawData = parsedFile.value as Record<string, unknown>;
+    const finalConfig: Config = { ...defaultConfig };
+
+    for (const key of Object.keys(zConfigStrict.shape)) {
+      const fieldSchema = zConfigStrict.shape[key as keyof Config];
+      const rawValue = rawData[key];
+      if (rawValue === undefined) {
+        this.log.warn(`Config field "${key}" is missing. Using default value.`);
+        continue;
+      }
+
+      const result = fieldSchema.safeParse(rawValue);
+      if (result.success) {
+        (finalConfig as Record<string, unknown>)[key] = result.data;
+      } else {
+        const error = z.prettifyError(result.error);
+        this.log.error(
+          { key, error, rawValue },
+          `Invalid config field "${key}". Using default value.`,
+        );
+      }
+    }
+
+    return finalConfig;
   }
 }
