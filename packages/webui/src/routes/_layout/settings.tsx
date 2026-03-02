@@ -1,8 +1,9 @@
 import { useConfig$, useSetConfig } from "#/hooks/config";
 import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
+import { ffmpegMaxPictureResolutionMap, ffmpegPictureFormatMap } from "#/util/config";
 import { Separator, Skeleton, tv } from "@heroui/react";
-import { defaultConfig, zConfig, type Config } from "@repo/shared/schema";
+import { defaultConfig, zConfig } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
 import { debounce, randomInt, range } from "es-toolkit";
 import { Suspense, useState } from "react";
@@ -18,16 +19,6 @@ const settingsTv = tv({
     groupInput: "grid grid-cols-[repeat(auto-fill,_minmax(320px,_1fr))] gap-4",
   },
 });
-
-const ffmpegPictureFormatMap: Record<Config["ffmpegPictureFormat"], string> = {
-  webp: "WebP",
-  jpeg: "JPEG",
-};
-
-const ffmpegMaxPictureResolutionMap: Record<Config["ffmpegMaxPictureResolution"], string> = {
-  720: "720",
-  1080: "1080",
-};
 
 function toSelectItems(itemMap: Record<string | number, string>) {
   return Object.entries(itemMap).map(([id, name]) => ({ id, name }));

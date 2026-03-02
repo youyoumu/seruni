@@ -32,7 +32,7 @@ type ProcessFormat =
 
 type ActualFormat = "wav" | "opus" | "mp3" | "webp" | "jpeg";
 
-function getPictureQuality(format: ActualFormat, quality: Quality = "medium"): string {
+function getPictureQuality(format: ActualFormat, quality: Quality): string {
   const jpegQualityMap: Record<Quality, string> = {
     "very-low": "25",
     low: "15",
@@ -51,7 +51,7 @@ function getPictureQuality(format: ActualFormat, quality: Quality = "medium"): s
   return percentageQualityMap[quality];
 }
 
-function getAudioQuality(format: ActualFormat, quality: Quality = "medium"): string {
+function getAudioQuality(format: ActualFormat, quality: Quality): string {
   const opusQualityMap: Record<Quality, string> = {
     "very-low": "16k",
     low: "32k",
@@ -159,8 +159,11 @@ export class FFmpegExec extends Exec {
     const numberOfFrames = this.state.config().ffmpegPictureFrameCount;
     const fps = numberOfFrames / (requiredDuration / 1000);
 
-    const audioQuality = getAudioQuality(actualFormat);
-    const pictureQuality = getPictureQuality(actualFormat);
+    const audioQuality = getAudioQuality(actualFormat, this.state.config().ffmpegAudioQuality);
+    const pictureQuality = getPictureQuality(
+      actualFormat,
+      this.state.config().ffmpegPictureQuality,
+    );
 
     const audioParam = (format: "wav" | "opus" | "mp3") => {
       const codecMap = {

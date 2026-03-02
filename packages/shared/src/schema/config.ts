@@ -14,10 +14,21 @@ const zAnkiConnectAddress = z.string().check(z.trim(), zUrl, zStartsWithHttp);
 const zObsWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 const zTextHookerWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 
-const zObsReplayBufferDurationS = z.number();
+const zObsReplayBufferDurationS = z.number().check(z.minimum(1, "Must be greater than 0"));
+
 const zFfmpegPictureFormat = z.union(
   [z.literal("webp", "Must be WebP"), z.literal("jpeg", "Must be JPEG")],
   "Must be WebP or JPEG",
+);
+const zFfmpegPictureQuality = z.union(
+  [
+    z.literal("very-low", "Must be very low"),
+    z.literal("low", "Must be low"),
+    z.literal("medium", "Must be medium"),
+    z.literal("high", "Must be high"),
+    z.literal("very-high", "Must be very high"),
+  ],
+  "Must be very low, low, medium, high, or very high",
 );
 const zFfmpegMaxPictureResolution = z.union(
   [z.literal(720, "Must be 720"), z.literal(1080, "Must be 1080")],
@@ -26,6 +37,21 @@ const zFfmpegMaxPictureResolution = z.union(
 const zFfmpegPictureFrameCount = z
   .number()
   .check(z.minimum(1, "Must be greater than 0"), z.maximum(99, "Must be less than 100"));
+
+const zFfmpegAudioFormat = z.union(
+  [z.literal("opus", "Must be Opus"), z.literal("mp3", "Must be MP3")],
+  "Must be Opus or MP3",
+);
+const zFfmpegAudioQuality = z.union(
+  [
+    z.literal("very-low", "Must be very low"),
+    z.literal("low", "Must be low"),
+    z.literal("medium", "Must be medium"),
+    z.literal("high", "Must be high"),
+    z.literal("very-high", "Must be very high"),
+  ],
+  "Must be very low, low, medium, high, or very high",
+);
 
 export const zConfig = z.object({
   ankiExpressionField: zAnkiExpressionField,
@@ -37,8 +63,11 @@ export const zConfig = z.object({
   obsReplayBufferDurationS: zObsReplayBufferDurationS,
   textHookerWebSocketAddress: zTextHookerWebSocketAddress,
   ffmpegPictureFormat: zFfmpegPictureFormat,
+  ffmpegPictureQuality: zFfmpegPictureQuality,
   ffmpegMaxPictureResolution: zFfmpegMaxPictureResolution,
   ffmpegPictureFrameCount: zFfmpegPictureFrameCount,
+  ffmpegAudioFormat: zFfmpegAudioFormat,
+  ffmpegAudioQuality: zFfmpegAudioQuality,
 });
 
 export type Config = z.infer<typeof zConfig>;
@@ -53,6 +82,9 @@ export const defaultConfig: Config = {
   obsReplayBufferDurationS: 5 * 60,
   textHookerWebSocketAddress: "ws://127.0.0.1:6677",
   ffmpegPictureFormat: "webp",
+  ffmpegPictureQuality: "medium",
   ffmpegMaxPictureResolution: 720,
   ffmpegPictureFrameCount: 6,
+  ffmpegAudioFormat: "opus",
+  ffmpegAudioQuality: "medium",
 };
