@@ -1,5 +1,6 @@
 import type { State } from "#/state/state";
 import { R } from "@praha/byethrow";
+import { effect } from "alien-signals";
 import type { Logger } from "pino";
 
 import { ReconnectingOBSWebSocket } from "./ReconnectingOBSWebSocket";
@@ -27,6 +28,14 @@ export class OBSClient extends ReconnectingOBSWebSocket {
     });
 
     this.#listenToReplayBufferEvents();
+
+    effect(async () => {
+      const url = this.state.config().obsWebSocketAddress;
+      if (this.url === url) return;
+      this.url = url;
+      this.log.info(`OBS WebSocket address changed to ${url}`);
+      await this.restart();
+    });
   }
 
   #listenToReplayBufferEvents() {

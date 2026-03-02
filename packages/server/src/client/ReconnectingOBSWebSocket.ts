@@ -24,8 +24,8 @@ export type ReconnectingObsEventMap = {
 
 export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingObsEventMap> {
   log: Logger;
+  url: string;
   #obs: OBSWebSocket;
-  #url: string;
   #password: string | undefined;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
@@ -45,7 +45,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     super();
     this.log = options.log;
     this.#obs = new OBSWebSocket();
-    this.#url = options.url;
+    this.url = options.url;
     this.#password = options.password;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
@@ -60,7 +60,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
 
   #setupEventListeners() {
     this.#obs.on("Identified", () => {
-      this.log.info(`Connected to ${this.#url}`);
+      this.log.info(`Connected to ${this.url}`);
       this.#isConnected = true;
       this.#reconnectAttempts = 0;
       this.dispatch("open");
@@ -68,7 +68,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
 
     this.#obs.on("ConnectionClosed", () => {
       if (this.#isConnected) {
-        this.log.warn(`Disconnected from ${this.#url}`);
+        this.log.warn(`Disconnected from ${this.url}`);
       }
       this.#isConnected = false;
       this.dispatch("close", undefined);
@@ -86,7 +86,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
 
     await R.pipe(
       R.try({
-        try: () => this.#obs.connect(this.#url, this.#password),
+        try: () => this.#obs.connect(this.url, this.#password),
         catch: anyCatch("Failed to connect to OBS"),
       }),
       R.inspectError((e) => {
@@ -106,7 +106,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
         this.#maxReconnectDelay,
       );
       this.log.info(
-        `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
+        `Reconnecting to ${this.url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#attemptReconnectTimeoutId = setTimeout(async () => {
         this.#attemptReconnectTimeoutId = null;
@@ -129,6 +129,11 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     this.#manualClose = true;
     await this.#obs.disconnect();
     this.#isConnected = false;
+  }
+
+  async restart() {
+    await this.close();
+    await this.connect();
   }
 
   get isConnected() {
