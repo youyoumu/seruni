@@ -25,15 +25,14 @@ import { ConfigManager, StateManager } from "./state/state";
 import type { AppContext } from "./types/types";
 import { safeReadDir, safeRm } from "./util/fs";
 import { createLogger } from "./util/logger";
-import { anyFail } from "./util/result";
 import { WSSHandlers } from "./wss/handlers";
 
-function validateLogLevel(level: string): R.Result<pino.Level, Error> {
+function validateLogLevel(level: string): pino.Level {
   const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
   if (!levels.includes(level as pino.Level)) {
-    return anyFail(`Invalid log level '${level}'. Valid options: ${levels.join(", ")}`);
+    return "trace";
   }
-  return R.succeed(level as pino.Level);
+  return level as pino.Level;
 }
 
 async function start(options: { dataDir: string; logLevel: pino.Level }) {
@@ -209,46 +208,6 @@ async function update(options: { dataDir: string; logLevel: pino.Level; tarFileP
   log.info("Update completed successfully");
 }
 
-async function startCommand(args: { dataDir: string; logLevel: string }) {
-  const logLevel = validateLogLevel(args.logLevel);
-  if (R.isFailure(logLevel)) {
-    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
-  }
-  await start({ dataDir: args.dataDir, logLevel: logLevel.value });
-}
-
-async function doctorCommand(args: { dataDir: string; logLevel: string }) {
-  const logLevel = validateLogLevel(args.logLevel);
-  if (R.isFailure(logLevel)) {
-    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
-  }
-  await doctor({ dataDir: args.dataDir, logLevel: logLevel.value });
-}
-
-async function venvCommand(args: { dataDir: string; logLevel: string }) {
-  const logLevel = validateLogLevel(args.logLevel);
-  if (R.isFailure(logLevel)) {
-    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
-  }
-  await venv({ dataDir: args.dataDir, logLevel: logLevel.value });
-}
-
-async function bindingCommand(args: { dataDir: string; logLevel: string }) {
-  const logLevel = validateLogLevel(args.logLevel);
-  if (R.isFailure(logLevel)) {
-    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
-  }
-  await binding({ dataDir: args.dataDir, logLevel: logLevel.value });
-}
-
-async function updateCommand(args: { dataDir: string; logLevel: string; tarFilePath?: string }) {
-  const logLevel = validateLogLevel(args.logLevel);
-  if (R.isFailure(logLevel)) {
-    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
-  }
-  await update({ dataDir: args.dataDir, logLevel: logLevel.value, tarFilePath: args.tarFilePath });
-}
-
 const startCmd = defineCommand({
   meta: {
     name: "start",
@@ -267,7 +226,8 @@ const startCmd = defineCommand({
     },
   },
   run({ args }) {
-    return startCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
+    const logLevel = validateLogLevel(args["log-level"]);
+    return start({ dataDir: args["data-dir"], logLevel });
   },
 });
 
@@ -289,10 +249,8 @@ const doctorCmd = defineCommand({
     },
   },
   run({ args }) {
-    return doctorCommand({
-      dataDir: args["data-dir"],
-      logLevel: args["log-level"],
-    });
+    const logLevel = validateLogLevel(args["log-level"]);
+    return doctor({ dataDir: args["data-dir"], logLevel });
   },
 });
 
@@ -314,7 +272,8 @@ const venvCmd = defineCommand({
     },
   },
   run({ args }) {
-    return venvCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
+    const logLevel = validateLogLevel(args["log-level"]);
+    return venv({ dataDir: args["data-dir"], logLevel });
   },
 });
 
@@ -336,7 +295,8 @@ const bindingCmd = defineCommand({
     },
   },
   run({ args }) {
-    return bindingCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
+    const logLevel = validateLogLevel(args["log-level"]);
+    return binding({ dataDir: args["data-dir"], logLevel });
   },
 });
 
@@ -362,11 +322,8 @@ const updateCmd = defineCommand({
     },
   },
   run({ args }) {
-    return updateCommand({
-      dataDir: args["data-dir"],
-      logLevel: args["log-level"],
-      tarFilePath: args.file,
-    });
+    const logLevel = validateLogLevel(args["log-level"]);
+    return update({ dataDir: args["data-dir"], logLevel, tarFilePath: args.file });
   },
 });
 
