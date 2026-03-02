@@ -84,21 +84,25 @@ export class TarExec extends Exec {
     return R.succeed(backupDir);
   }
 
-  async install(tarFilePath?: string): Promise<R.Result<void, Error>> {
-    const entryDir = this.state.path().entryDir;
+  async checkIntegrity(tarFilePath: string): Promise<R.Result<void, Error>> {
+    const result = await safeReadDir(path.dirname(tarFilePath));
+    if (R.isFailure(result)) return anyFail("Failed to read tar file directory", result.error);
 
-    let targetPath = tarFilePath;
-    if (!targetPath) {
-      const result = await safeReadDir(entryDir);
-      if (R.isFailure(result))
-        return anyFail("Failed to read installation directory", result.error);
-
-      const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
-      if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in installation directory");
-      targetPath = path.join(entryDir, tarFile);
+    const fileName = path.basename(tarFilePath);
+    if (!result.value.includes(fileName)) {
+      return anyFail(`Tar file not found: ${tarFilePath}`);
     }
 
-    const extractResult = await this.run(["-xzf", targetPath, "-C", entryDir]);
+    const extractResult = await this.run(["-tzf", tarFilePath]);
+    if (R.isFailure(extractResult)) return anyFail("Tar file is corrupted or invalid", extractResult.error);
+
+    return R.succeed();
+  }
+
+  async install(tarFilePath: string): Promise<R.Result<void, Error>> {
+    const entryDir = this.state.path().entryDir;
+
+    const extractResult = await this.run(["-xzf", tarFilePath, "-C", entryDir]);
     if (R.isFailure(extractResult))
       return anyFail("Failed to extract tarball", extractResult.error);
 
@@ -106,6 +110,21 @@ export class TarExec extends Exec {
   }
 
   async update(tarFilePath?: string): Promise<R.Result<void, Error>> {
+    const entryDir = this.state.path().entryDir;
+
+    let targetPath = tarFilePath;
+    if (!targetPath) {
+      const result = await safeReadDir(entryDir);
+      if (R.isFailure(result)) return anyFail("Failed to read entry directory", result.error);
+
+      const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
+      if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in entry directory");
+      targetPath = path.join(entryDir, tarFile);
+    }
+
+    const integrityResult = await this.checkIntegrity(targetPath);
+    if (R.isFailure(integrityResult)) return anyFail("Update failed: tar file check failed", integrityResult.error);
+
     const removeResult = await this.removeInstallation();
     if (R.isFailure(removeResult)) {
       const err = removeResult.error;
@@ -118,7 +137,7 @@ export class TarExec extends Exec {
       return anyFail("Failed to remove installation", err);
     }
 
-    const installResult = await this.install(tarFilePath);
+    const installResult = await this.install(targetPath);
     if (R.isFailure(installResult)) {
       const restoreResult = await this.restoreInstallation(removeResult.value);
       if (R.isFailure(restoreResult)) {
