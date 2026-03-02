@@ -3,6 +3,7 @@ import type { State } from "#/state/state";
 import { textHistory } from "@repo/shared/db";
 import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { type ServerApi } from "@repo/shared/ws";
+import { effect } from "alien-signals";
 import { debounce } from "es-toolkit";
 import { type Logger } from "pino";
 
@@ -64,6 +65,14 @@ export class TextHookerClient extends ReconnectingWebSocket {
 
     this.addListener("close", () => {
       this.state.textHookerConnected(false);
+    });
+
+    effect(async () => {
+      const url = this.state.config().textHookerWebSocketAddress;
+      if (this.url === url) return;
+      this.url = url;
+      this.log.info(`TextHooker WebSocket address changed to ${url}`);
+      await this.restart();
     });
   }
 

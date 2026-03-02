@@ -16,7 +16,7 @@ export class ReconnectingWebSocket<
   T extends ReconnectingWebSocketEventMap = ReconnectingWebSocketEventMap,
 > extends TypesafeEventTarget<T> {
   log: Logger;
-  #url: string;
+  url: string;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -32,7 +32,7 @@ export class ReconnectingWebSocket<
   }) {
     super();
     this.log = options.log;
-    this.#url = options.url;
+    this.url = options.url;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -47,12 +47,12 @@ export class ReconnectingWebSocket<
       return;
     }
 
-    this.#ws = new WebSocket(this.#url);
+    this.#ws = new WebSocket(this.url);
     this.#readyState = WebSocket.CONNECTING;
     this.#manualClose = false;
 
     this.#ws.onopen = () => {
-      this.log.info(`Connected to ${this.#url}`);
+      this.log.info(`Connected to ${this.url}`);
       this.#readyState = WebSocket.OPEN;
       this.#reconnectAttempts = 0;
       this.dispatch("open", undefined);
@@ -64,11 +64,12 @@ export class ReconnectingWebSocket<
 
     this.#ws.onclose = () => {
       if (this.#readyState === WebSocket.OPEN) {
-        this.log.warn(`Disconnected from ${this.#url}`);
+        this.log.warn(`Disconnected from ${this.url}`);
       }
       this.#ws = null;
       this.#readyState = WebSocket.CLOSED;
       this.dispatch("close", undefined);
+      this.closing.resolve();
       this.#attemptReconnect();
     };
 
@@ -86,7 +87,7 @@ export class ReconnectingWebSocket<
         this.#maxReconnectDelay,
       );
       this.log.info(
-        `Reconnecting to ${this.#url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
+        `Reconnecting to ${this.url} in ${delay / 1000}s (attempt ${this.#reconnectAttempts})`,
       );
       this.#readyState = WebSocket.CONNECTING;
       setTimeout(() => this.connect(), delay);
@@ -99,9 +100,17 @@ export class ReconnectingWebSocket<
     }
   }
 
+  closing = Promise.withResolvers<void>();
   close() {
+    this.closing = Promise.withResolvers<void>();
     this.#manualClose = true;
     this.#ws?.close();
+    return this.closing.promise;
+  }
+
+  async restart() {
+    await this.close();
+    this.connect();
   }
 
   get readyState() {
