@@ -183,6 +183,20 @@ async function venv(options: { dataDir: string; logLevel: pino.Level }) {
   return console.log(c.green(`[OK] ${state.path().venvDir}`));
 }
 
+async function binding(options: { dataDir: string; logLevel: pino.Level }) {
+  const log = createLogger({ level: options.logLevel }).child({ name: "binding" });
+  const stateManager = new StateManager(log, options.dataDir);
+  const state = await stateManager.createState();
+
+  log.info(stateManager.serializeState(state), "Starting with state");
+
+  const tar = new TarExec(log, state);
+
+  const result = await tar.downloadBinding();
+  if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));
+  return console.log(c.green(`[OK] Binding installed`));
+}
+
 async function update(options: { dataDir: string; logLevel: pino.Level; tarFilePath?: string }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "update" });
   const stateManager = new StateManager(log, options.dataDir);
@@ -220,6 +234,14 @@ async function venvCommand(args: { dataDir: string; logLevel: string }) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
   await venv({ dataDir: args.dataDir, logLevel: logLevel.value });
+}
+
+async function bindingCommand(args: { dataDir: string; logLevel: string }) {
+  const logLevel = validateLogLevel(args.logLevel);
+  if (R.isFailure(logLevel)) {
+    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
+  }
+  await binding({ dataDir: args.dataDir, logLevel: logLevel.value });
 }
 
 async function updateCommand(args: { dataDir: string; logLevel: string; tarFilePath?: string }) {
@@ -299,6 +321,28 @@ const venvCmd = defineCommand({
   },
 });
 
+const bindingCmd = defineCommand({
+  meta: {
+    name: "binding",
+    description: "Download and install native bindings for better-sqlite3",
+  },
+  args: {
+    "data-dir": {
+      type: "string",
+      description: "Data directory",
+      default: process.cwd(),
+    },
+    "log-level": {
+      type: "string",
+      description: "Log level (trace, debug, info, warn, error, fatal)",
+      default: "trace",
+    },
+  },
+  run({ args }) {
+    return bindingCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
+  },
+});
+
 const updateCmd = defineCommand({
   meta: {
     name: "update",
@@ -339,6 +383,7 @@ const main = defineCommand({
     start: startCmd,
     doctor: doctorCmd,
     venv: venvCmd,
+    binding: bindingCmd,
     update: updateCmd,
   },
   run() {},

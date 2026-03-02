@@ -17,14 +17,6 @@ export default defineConfig({
       to: "./dist/python",
     },
     {
-      from: "./.better-sqlite3/better-sqlite3-v12.6.2-node-v137-linux-x64/build/Release/better_sqlite3.node",
-      to: "./dist/lib/binding/node-v137-linux-x64",
-    },
-    {
-      from: "./.better-sqlite3/better-sqlite3-v12.6.2-node-v137-win32-x64/build/Release/better_sqlite3.node",
-      to: "./dist/lib/binding/node-v137-win32-x64",
-    },
-    {
       from: "./package.json",
       to: "./dist",
     },

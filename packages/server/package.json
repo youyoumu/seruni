@@ -9,6 +9,7 @@
     "dev": "tsx watch src/main.ts start --data-dir ./.seruni",
     "build": "tsdown",
     "start": "node dist/main.mjs start --data-dir ./.seruni",
+    "binding": "tsx src/main.ts binding --data-dir ./.seruni",
     "release": "tsx script/release.ts",
     "typecheck": "tsc -b",
     "fmt": "oxfmt",
