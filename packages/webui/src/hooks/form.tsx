@@ -2,7 +2,8 @@ import { Button, ErrorMessage, FieldError, Label, NumberField, TextField } from 
 import { Description, InputGroup } from "@heroui/react";
 import { ListBox, Select } from "@heroui/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import { UndoIcon } from "lucide-react";
+import { EyeClosedIcon, EyeIcon, UndoIcon } from "lucide-react";
+import { useState } from "react";
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts();
 
@@ -47,8 +48,10 @@ function TextFieldSet({
   min?: number;
   max?: number;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
   const field = useFieldContext<string | number | null>();
   const isDefaultValue = (field.state.value ?? "") === defaultValue;
+  const actualType = type === "password" && showPassword ? "text" : type;
 
   return (
     <TextField
@@ -81,8 +84,20 @@ function TextFieldSet({
       )}
 
       <InputGroup>
-        <InputGroup.Input placeholder={placeholder} type={type} min={min} max={max} />
-        <InputGroup.Suffix></InputGroup.Suffix>
+        <InputGroup.Input placeholder={placeholder} type={actualType} min={min} max={max} />
+        <InputGroup.Suffix className="pr-0">
+          {type === "password" && (
+            <Button
+              isIconOnly
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              size="sm"
+              variant="ghost"
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeIcon className="size-4" /> : <EyeClosedIcon className="size-4" />}
+            </Button>
+          )}
+        </InputGroup.Suffix>
       </InputGroup>
       <FieldError>{field.state.meta.errors[0]?.message}</FieldError>
       {description && <Description>{description}</Description>}
