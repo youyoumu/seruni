@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { safeMkdir, safeReadFile, safeWriteFile } from "#/util/fs";
 import { safeJSONParse } from "#/util/result";
@@ -24,6 +25,9 @@ export type Path = {
   python: string;
   pythonEntry: string;
   pythonWorkdir: string;
+  entry: string;
+  libDir: string;
+  packageJson: string;
 };
 
 export type State = {
@@ -51,11 +55,13 @@ export class StateManager {
   async createState() {
     //@ts-expect-error injected during build
     const DEV = typeof __DEV__ === "undefined";
+    const entry = fileURLToPath(import.meta.url);
+    const installationDir = path.dirname(entry);
 
     const workdir = path.resolve(this.workdir ?? process.cwd());
     const pythonWorkdir = DEV
       ? path.join(import.meta.dirname, "../../../python")
-      : path.join(workdir, "./python");
+      : path.join(installationDir, "./python");
     const pythonEntry = path.join(pythonWorkdir, "src/main.py");
     const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(workdir, "./venv");
 
@@ -66,10 +72,10 @@ export class StateManager {
       storageDir: path.join(workdir, "./storage"),
       drizzleDir: DEV
         ? path.join(import.meta.dirname, "../../drizzle")
-        : path.join(workdir, "./drizzle"),
+        : path.join(installationDir, "./drizzle"),
       webuiDir: DEV
         ? path.join(import.meta.dirname, "../../../webui/dist")
-        : path.join(workdir, "./webui"),
+        : path.join(installationDir, "./webui"),
       venvDir,
       python:
         process.platform === "win32"
@@ -77,6 +83,13 @@ export class StateManager {
           : path.join(venvDir, "bin/python"),
       pythonEntry,
       pythonWorkdir,
+      entry: entry,
+      libDir: DEV
+        ? path.join(import.meta.dirname, "../../.lib")
+        : path.join(installationDir, "./lib"),
+      packageJson: DEV
+        ? path.join(import.meta.dirname, "../../package.json")
+        : path.join(installationDir, "./package.json"),
     };
 
     const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir, path_.venvDir];

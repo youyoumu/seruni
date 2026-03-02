@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
@@ -18,6 +19,7 @@ import { createDb } from "./db";
 import { DBClient } from "./db/db.client";
 import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
+import { TarExec } from "./exec/tar.exec";
 import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
 import { StateManager } from "./state/state";
@@ -147,10 +149,12 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   const ffmpeg = new FFmpegExec(log, state);
   const uv = new UvExec(log, state);
   const python = new PythonExec(log, state);
+  const tar = new TarExec(log, state);
 
   const ffmpegResult = await ffmpeg.version();
   const uvResult = await uv.version();
   const pythonResult = await python.version();
+  const tarResult = await tar.version();
 
   const logResult = (name: string, result: R.Result<string, Error>) => {
     const label = R.isSuccess(result) ? c.green("OK") : c.red("ERROR");
@@ -163,6 +167,7 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   logResult("uv", uvResult);
   logResult("FFmpeg", ffmpegResult);
   logResult("Python", pythonResult);
+  logResult("tar", tarResult);
 }
 
 async function venv(options: { workdir: string; logLevel: pino.Level }) {
@@ -177,6 +182,17 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
   const result = await uv.setupVenv();
   if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));
   return console.log(c.green(`[OK] ${state.path().venvDir}`));
+}
+
+async function update(options: { workdir: string; logLevel: pino.Level }) {
+  const log = createLogger({ level: options.logLevel }).child({ name: "update" });
+  const stateManager = new StateManager(log, options.workdir);
+  const state = await stateManager.createState();
+
+  log.info(stateManager.serializeState(state), "Starting with state");
+
+  const tar = new TarExec(log, state);
+  await tar.removeInstallation();
 }
 
 async function startCommand(args: { workdir: string; logLevel: string }) {
@@ -201,6 +217,14 @@ async function venvCommand(args: { workdir: string; logLevel: string }) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
   await venv({ workdir: args.workdir, logLevel: logLevel.value });
+}
+
+async function updateCommand(args: { workdir: string; logLevel: string }) {
+  const logLevel = validateLogLevel(args.logLevel);
+  if (R.isFailure(logLevel)) {
+    return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
+  }
+  await update({ workdir: args.workdir, logLevel: logLevel.value });
 }
 
 const startCmd = defineCommand({
@@ -233,7 +257,7 @@ const doctorCmd = defineCommand({
   args: {
     workdir: {
       type: "positional",
-      description: "Working directory for the server",
+      description: "Working directory",
       default: process.cwd(),
     },
     "log-level": {
@@ -258,7 +282,7 @@ const venvCmd = defineCommand({
   args: {
     workdir: {
       type: "positional",
-      description: "Working directory for the server",
+      description: "Working directory",
       default: process.cwd(),
     },
     "log-level": {
@@ -272,6 +296,31 @@ const venvCmd = defineCommand({
   },
 });
 
+const updateCmd = defineCommand({
+  meta: {
+    name: "update",
+    description: "Update Seruni",
+  },
+  args: {
+    workdir: {
+      type: "positional",
+      description: "Working directory",
+      default: process.cwd(),
+    },
+    "log-level": {
+      type: "string",
+      description: "Log level (trace, debug, info, warn, error, fatal)",
+      default: "trace",
+    },
+  },
+  run({ args }) {
+    return updateCommand({
+      workdir: args.workdir as string,
+      logLevel: args["log-level"] as string,
+    });
+  },
+});
+
 const main = defineCommand({
   meta: {
     name: "seruni",
@@ -282,6 +331,7 @@ const main = defineCommand({
     start: startCmd,
     doctor: doctorCmd,
     venv: venvCmd,
+    update: updateCmd,
   },
   run() {},
 });
