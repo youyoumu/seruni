@@ -21,7 +21,7 @@ import { PythonExec } from "./exec/python.exec";
 import { TarExec } from "./exec/tar.exec";
 import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
-import { StateManager } from "./state/state";
+import { ConfigManager, StateManager } from "./state/state";
 import type { AppContext } from "./types/types";
 import { safeReadDir, safeRm } from "./util/fs";
 import { createLogger } from "./util/logger";
@@ -39,9 +39,10 @@ function validateLogLevel(level: string): R.Result<pino.Level, Error> {
 async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const stateManager = new StateManager(log, options.dataDir);
-  const state = await stateManager.createState();
-  log.info(stateManager.serializeState(state), "Starting with state");
+
+  const configManager = new ConfigManager(log);
+  const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
+  new StateManager(log, state);
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
@@ -140,10 +141,9 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
 
 async function doctor(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "doctor" });
-  const stateManager = new StateManager(log, options.dataDir);
-  const state = await stateManager.createState();
-
-  log.info(stateManager.serializeState(state), "Starting with state");
+  const configManager = new ConfigManager(log);
+  const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
+  new StateManager(log, state);
 
   const ffmpeg = new FFmpegExec(log, state);
   const uv = new UvExec(log, state);
@@ -171,10 +171,9 @@ async function doctor(options: { dataDir: string; logLevel: pino.Level }) {
 
 async function venv(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "venv" });
-  const stateManager = new StateManager(log, options.dataDir);
-  const state = await stateManager.createState();
-
-  log.info(stateManager.serializeState(state), "Starting with state");
+  const configManager = new ConfigManager(log);
+  const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
+  new StateManager(log, state);
 
   const uv = new UvExec(log, state);
 
@@ -185,10 +184,9 @@ async function venv(options: { dataDir: string; logLevel: pino.Level }) {
 
 async function binding(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "binding" });
-  const stateManager = new StateManager(log, options.dataDir);
-  const state = await stateManager.createState();
-
-  log.info(stateManager.serializeState(state), "Starting with state");
+  const configManager = new ConfigManager(log);
+  const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
+  new StateManager(log, state);
 
   const tar = new TarExec(log, state);
 
@@ -199,10 +197,9 @@ async function binding(options: { dataDir: string; logLevel: pino.Level }) {
 
 async function update(options: { dataDir: string; logLevel: pino.Level; tarFilePath?: string }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "update" });
-  const stateManager = new StateManager(log, options.dataDir);
-  const state = await stateManager.createState();
-
-  log.info(stateManager.serializeState(state), "Starting with state");
+  const configManager = new ConfigManager(log);
+  const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
+  new StateManager(log, state);
 
   const tar = new TarExec(log, state);
   const result = await tar.update(options.tarFilePath);

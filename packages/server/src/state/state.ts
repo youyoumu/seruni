@@ -46,93 +46,9 @@ export type State = {
   yomitanAnkiConnectDeckName: Signal<string>;
 };
 
-export class StateManager {
-  constructor(
-    public log: Logger,
-    public dataDir: string,
-  ) {
-    this.log = log.child({ name: "state" });
-  }
-
-  async createState() {
-    //@ts-expect-error injected during build
-    const DEV = typeof __DEV__ === "undefined";
-    const entry = fileURLToPath(import.meta.url);
-    const entryDir = path.dirname(entry);
-
-    const dataDir = path.resolve(this.dataDir ?? process.cwd());
-    // prettier-ignore
-    const pythonWorkdir = DEV ? path.join(import.meta.dirname, "../../../python") : path.join(entryDir, "./python");
-    const pythonEntry = path.join(pythonWorkdir, "src/main.py");
-    const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(dataDir, "./venv");
-
-    // prettier-ignore
-    const path_: Path = {
-      config: path.join(dataDir, "./config.json"),
-      db: path.join(dataDir, "./db.sqlite"),
-      tempDir: path.join(dataDir, "./temp"),
-      trashDir: path.join(dataDir, "./trash"),
-      storageDir: path.join(dataDir, "./storage"),
-      drizzleDir: DEV ? path.join(import.meta.dirname, "../../drizzle") : path.join(entryDir, "./drizzle"),
-      webuiDir: DEV ? path.join(import.meta.dirname, "../../../webui/dist") : path.join(entryDir, "./webui"),
-      venvDir,
-      python: process.platform === "win32" ? path.join(venvDir, "Scripts/python.exe") : path.join(venvDir, "bin/python"),
-      pythonEntry,
-      pythonWorkdir,
-      entry: entry,
-      entryDir: entryDir,
-      libDir: DEV ? path.join(import.meta.dirname, "../../.lib") : path.join(entryDir, "./lib"),
-      packageJson: DEV ? path.join(import.meta.dirname, "../../package.json") : path.join(entryDir, "./package.json"),
-    };
-
-    const dirToCreate = [
-      path_.tempDir,
-      path_.trashDir,
-      path_.storageDir,
-      path_.drizzleDir,
-      path_.venvDir,
-    ];
-    await Promise.all(dirToCreate.map((dir) => safeMkdir(dir, { recursive: true })));
-    const config = await this.getConfigFromFile(path_.config);
-
-    const state: State = {
-      appName: "Seruni",
-      actionMap: new Map<string, () => void>(),
-      config: signal(config),
-      path: signal(path_),
-      activeSessionId: signal<number | null>(null),
-      isListeningTexthooker: signal<boolean>(false),
-      completedTextHistory: signal<Record<number, number>>({}),
-      textHookerConnected: signal<boolean>(false),
-      ankiConnectConnected: signal<boolean>(false),
-      obsConnected: signal<boolean>(false),
-      yomitanAnkiConnectDeckName: signal<string>(""),
-    };
-
-    let isWritingConfig = false;
-    effect(async () => {
-      if (isWritingConfig) return;
-      isWritingConfig = true;
-      const config = state.config();
-      const configPath = state.path().config;
-      await safeWriteFile(configPath, JSON.stringify(config, null, 2));
-      isWritingConfig = false;
-    });
-
-    return state;
-  }
-
-  serializeState(state: State) {
-    const result = {} as Record<string, unknown>;
-    for (const key in state) {
-      const property = state[key as keyof State];
-      if (typeof property === "function") {
-        result[key] = property();
-      } else {
-        result[key] = property;
-      }
-    }
-    return result;
+export class ConfigManager {
+  constructor(public log: Logger) {
+    this.log = log.child({ name: "config" });
   }
 
   async getConfigFromFile(configFilePath: string) {
@@ -175,10 +91,33 @@ export class StateManager {
 
     return finalConfig;
   }
+}
 
-  logState(state: State) {
-    for (const key in state) {
-      const property = state[key as keyof State];
+export class StateManager {
+  constructor(
+    public log: Logger,
+    public state: State,
+  ) {
+    this.log = log.child({ name: "state" });
+    this.logState();
+  }
+
+  serializeState() {
+    const result = {} as Record<string, unknown>;
+    for (const key in this.state) {
+      const property = this.state[key as keyof State];
+      if (typeof property === "function") {
+        result[key] = property();
+      } else {
+        result[key] = property;
+      }
+    }
+    return result;
+  }
+
+  logState() {
+    for (const key in this.state) {
+      const property = this.state[key as keyof State];
       if (typeof property === "function") {
         effect(() => {
           const value = property();
@@ -189,5 +128,73 @@ export class StateManager {
         });
       }
     }
+  }
+
+  static async createState(opts: { dataDir: string; configManager: ConfigManager }) {
+    //@ts-expect-error injected during build
+    const DEV = typeof __DEV__ === "undefined";
+    const entry = fileURLToPath(import.meta.url);
+    const entryDir = path.dirname(entry);
+
+    const dataDir = path.resolve(opts.dataDir ?? process.cwd());
+    // prettier-ignore
+    const pythonWorkdir = DEV ? path.join(import.meta.dirname, "../../../python") : path.join(entryDir, "./python");
+    const pythonEntry = path.join(pythonWorkdir, "src/main.py");
+    const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(dataDir, "./venv");
+
+    // prettier-ignore
+    const path_: Path = {
+      config: path.join(dataDir, "./config.json"),
+      db: path.join(dataDir, "./db.sqlite"),
+      tempDir: path.join(dataDir, "./temp"),
+      trashDir: path.join(dataDir, "./trash"),
+      storageDir: path.join(dataDir, "./storage"),
+      drizzleDir: DEV ? path.join(import.meta.dirname, "../../drizzle") : path.join(entryDir, "./drizzle"),
+      webuiDir: DEV ? path.join(import.meta.dirname, "../../../webui/dist") : path.join(entryDir, "./webui"),
+      venvDir,
+      python: process.platform === "win32" ? path.join(venvDir, "Scripts/python.exe") : path.join(venvDir, "bin/python"),
+      pythonEntry,
+      pythonWorkdir,
+      entry: entry,
+      entryDir: entryDir,
+      libDir: DEV ? path.join(import.meta.dirname, "../../.lib") : path.join(entryDir, "./lib"),
+      packageJson: DEV ? path.join(import.meta.dirname, "../../package.json") : path.join(entryDir, "./package.json"),
+    };
+
+    const dirToCreate = [
+      path_.tempDir,
+      path_.trashDir,
+      path_.storageDir,
+      path_.drizzleDir,
+      path_.venvDir,
+    ];
+    await Promise.all(dirToCreate.map((dir) => safeMkdir(dir, { recursive: true })));
+    const config = await opts.configManager.getConfigFromFile(path_.config);
+
+    const state: State = {
+      appName: "Seruni",
+      actionMap: new Map<string, () => void>(),
+      config: signal(config),
+      path: signal(path_),
+      activeSessionId: signal<number | null>(null),
+      isListeningTexthooker: signal<boolean>(false),
+      completedTextHistory: signal<Record<number, number>>({}),
+      textHookerConnected: signal<boolean>(false),
+      ankiConnectConnected: signal<boolean>(false),
+      obsConnected: signal<boolean>(false),
+      yomitanAnkiConnectDeckName: signal<string>(""),
+    };
+
+    let isWritingConfig = false;
+    effect(async () => {
+      if (isWritingConfig) return;
+      isWritingConfig = true;
+      const config = state.config();
+      const configPath = state.path().config;
+      await safeWriteFile(configPath, JSON.stringify(config, null, 2));
+      isWritingConfig = false;
+    });
+
+    return state;
   }
 }
