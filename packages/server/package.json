@@ -6,9 +6,9 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts start ./.seruni",
+    "dev": "tsx watch src/main.ts start --workdir ./.seruni",
     "build": "tsdown",
-    "start": "node dist/main.mjs start ./.seruni",
+    "start": "node dist/main.mjs start --workidr ./.seruni",
     "deploy": "rm -rf .deploy && pnpm deploy --filter=@repo/server --prod .deploy && mv .deploy/dist/* .deploy/ && rmdir .deploy/dist",
     "typecheck": "tsc -b",
     "fmt": "oxfmt",

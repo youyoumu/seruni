@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
@@ -238,7 +237,7 @@ const startCmd = defineCommand({
   },
   args: {
     workdir: {
-      type: "positional",
+      type: "string",
       description: "Working directory for the server",
       default: process.cwd(),
     },
@@ -249,7 +248,7 @@ const startCmd = defineCommand({
     },
   },
   run({ args }) {
-    return startCommand({ workdir: args.workdir as string, logLevel: args["log-level"] as string });
+    return startCommand({ workdir: args.workdir, logLevel: args["log-level"] });
   },
 });
 
@@ -260,7 +259,7 @@ const doctorCmd = defineCommand({
   },
   args: {
     workdir: {
-      type: "positional",
+      type: "string",
       description: "Working directory",
       default: process.cwd(),
     },
@@ -272,8 +271,8 @@ const doctorCmd = defineCommand({
   },
   run({ args }) {
     return doctorCommand({
-      workdir: args.workdir as string,
-      logLevel: args["log-level"] as string,
+      workdir: args.workdir,
+      logLevel: args["log-level"],
     });
   },
 });
@@ -285,7 +284,7 @@ const venvCmd = defineCommand({
   },
   args: {
     workdir: {
-      type: "positional",
+      type: "string",
       description: "Working directory",
       default: process.cwd(),
     },
@@ -296,7 +295,7 @@ const venvCmd = defineCommand({
     },
   },
   run({ args }) {
-    return venvCommand({ workdir: args.workdir as string, logLevel: args["log-level"] as string });
+    return venvCommand({ workdir: args.workdir, logLevel: args["log-level"] });
   },
 });
 
@@ -307,7 +306,7 @@ const updateCmd = defineCommand({
   },
   args: {
     workdir: {
-      type: "positional",
+      type: "string",
       description: "Working directory",
       default: process.cwd(),
     },
@@ -316,17 +315,16 @@ const updateCmd = defineCommand({
       description: "Log level (trace, debug, info, warn, error, fatal)",
       default: "trace",
     },
-    "tar-file": {
-      type: "positional",
-      description: "Path to seruni-v<version>.tar.gz (optional, will detect if not provided)",
-      required: false,
+    file: {
+      type: "string",
+      description: "Path to update package (auto-detected if omitted)",
     },
   },
   run({ args }) {
     return updateCommand({
-      workdir: args.workdir as string,
-      logLevel: args["log-level"] as string,
-      tarFilePath: args["tar-file"] as string | undefined,
+      workdir: args.workdir,
+      logLevel: args["log-level"],
+      tarFilePath: args.file,
     });
   },
 });
