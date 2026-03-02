@@ -14,41 +14,17 @@ export class WSSHandlers {
     public state: State,
     public log: Logger,
   ) {
-    const logState = log.child({ name: "state" });
+    this.log = log.child({ name: "wss" });
+    this.setupStateEffect();
+    this.setupOnRequest();
 
-    effect(async () => {
-      const activeSessionId = state.activeSessionId();
-      logState.debug(`activeSessionId: ${activeSessionId}`);
-      if (!activeSessionId) return;
-      const result = await db.query.session.findFirst({
-        where: eq(session.id, activeSessionId),
-      });
-      api.push.activeSession(result ?? null);
+    api.onPush.action((id) => {
+      state.actionMap.get(id)?.();
     });
+  }
 
-    effect(() => {
-      const isListeningTexthooker = state.isListeningTexthooker();
-      logState.debug(`isListeningTexthooker: ${isListeningTexthooker}`);
-      api.push.isListeningTexthooker(isListeningTexthooker);
-    });
-
-    effect(() => {
-      const textHookerConnected = state.textHookerConnected();
-      logState.debug(`textHookerConnected: ${textHookerConnected}`);
-      api.push.textHookerConnected(textHookerConnected);
-    });
-
-    effect(() => {
-      const ankiConnectConnected = state.ankiConnectConnected();
-      logState.debug(`ankiConnectConnected: ${ankiConnectConnected}`);
-      api.push.ankiConnectConnected(ankiConnectConnected);
-    });
-
-    effect(() => {
-      const obsConnected = state.obsConnected();
-      logState.debug(`obsConnected: ${obsConnected}`);
-      api.push.obsConnected(obsConnected);
-    });
+  setupOnRequest() {
+    const { api, state, db } = this;
 
     api.onRequest.textHookerConnected(() => state.textHookerConnected());
     api.onRequest.ankiConnectConnected(() => state.ankiConnectConnected());
@@ -147,9 +123,38 @@ export class WSSHandlers {
     });
 
     api.onRequest.checkHealth(() => undefined);
+  }
 
-    api.onPush.action((id) => {
-      state.actionMap.get(id)?.();
+  setupStateEffect() {
+    const { state, db, api } = this;
+
+    effect(async () => {
+      const activeSessionId = state.activeSessionId();
+      if (!activeSessionId) return;
+      const result = await db.query.session.findFirst({
+        where: eq(session.id, activeSessionId),
+      });
+      api.push.activeSession(result ?? null);
+    });
+
+    effect(() => {
+      const isListeningTexthooker = state.isListeningTexthooker();
+      api.push.isListeningTexthooker(isListeningTexthooker);
+    });
+
+    effect(() => {
+      const textHookerConnected = state.textHookerConnected();
+      api.push.textHookerConnected(textHookerConnected);
+    });
+
+    effect(() => {
+      const ankiConnectConnected = state.ankiConnectConnected();
+      api.push.ankiConnectConnected(ankiConnectConnected);
+    });
+
+    effect(() => {
+      const obsConnected = state.obsConnected();
+      api.push.obsConnected(obsConnected);
     });
   }
 }

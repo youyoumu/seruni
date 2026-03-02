@@ -175,4 +175,19 @@ export class StateManager {
 
     return finalConfig;
   }
+
+  logState(state: State) {
+    for (const key in state) {
+      const property = state[key as keyof State];
+      if (typeof property === "function") {
+        effect(() => {
+          const value = property();
+          if (typeof value === "string") return this.log.debug(`${key}: ${value?.toString()}`);
+          if (typeof value === "boolean") return this.log.debug(`${key}: ${value}`);
+          if (typeof value === "number") return this.log.debug(`${key}: ${value}`);
+          if (typeof value === "object") return this.log.debug(value, key);
+        });
+      }
+    }
+  }
 }
