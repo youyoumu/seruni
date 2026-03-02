@@ -25,7 +25,7 @@ import type { AppContext } from "./types/types";
 import { safeReadDir, safeRm } from "./util/fs";
 import { createLogger } from "./util/logger";
 import { anyFail } from "./util/result";
-import { registerHandlers } from "./wss/handlers";
+import { WSSHandlers } from "./wss/handlers";
 
 function validateLogLevel(level: string): R.Result<pino.Level, Error> {
   const levels = ["trace", "debug", "info", "warn", "error", "fatal"] as pino.Level[];
@@ -118,7 +118,6 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
     await next();
   });
 
-  registerHandlers({ api, db, state, logger });
   app.route("/", routes.root);
   app.route("/assets", routes.assets);
   app.route("/ws", routes.ws);
@@ -126,6 +125,7 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   app.route("/anki/anki-connect-proxy", routes.ankiAnkiConnectProxy);
   app.route("*", routes.root);
 
+  new WSSHandlers(api, db, state, logger);
   const server = serve(
     {
       fetch: app.fetch,
