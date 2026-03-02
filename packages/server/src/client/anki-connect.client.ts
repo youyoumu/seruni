@@ -149,8 +149,9 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       // calculate seek
       R.bind("replayDuration", ({ replay }) => this.ffmpeg.getFileDuration(replay.path)),
       R.bind("seek", ({ replayDuration, replay }) => {
-        const offset = new Date(replay.savedAt.getTime() - replayDuration);
-        const seek = Math.max(0, textHistory.createdAt.getTime() - offset.getTime());
+        const offsetStart = this.state.config().ffmpegAudioOffsetStart;
+        const offset = new Date(replay.savedAt.getTime() - replayDuration).getTime();
+        const seek = Math.max(0, textHistory.createdAt.getTime() - offset + offsetStart);
         return R.succeed(seek);
       }),
 
@@ -175,6 +176,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       R.bind("audioDuration", ({ audioVadData }) => {
         let audioDuration = last(audioVadData)?.end;
         if (audioVadData.length === 1 && (audioDuration ?? 0) < 1000) audioDuration = undefined;
+        if (audioDuration) audioDuration += this.state.config().ffmpegAudioOffsetEnd;
         return R.succeed(audioDuration);
       }),
 
