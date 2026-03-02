@@ -25,8 +25,8 @@ export type ReconnectingObsEventMap = {
 export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingObsEventMap> {
   log: Logger;
   url: string;
+  password: string | undefined;
   #obs: OBSWebSocket;
-  #password: string | undefined;
   #maxReconnectDelay: number;
   #maxReconnectAttempts: number;
   #reconnectAttempts: number;
@@ -46,7 +46,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
     this.log = options.log;
     this.#obs = new OBSWebSocket();
     this.url = options.url;
-    this.#password = options.password;
+    this.password = options.password;
     this.#maxReconnectDelay = options.maxReconnectDelay ?? 8000;
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
     this.#reconnectAttempts = 0;
@@ -86,7 +86,7 @@ export class ReconnectingOBSWebSocket extends TypesafeEventTarget<ReconnectingOb
 
     await R.pipe(
       R.try({
-        try: () => this.#obs.connect(this.url, this.#password),
+        try: () => this.#obs.connect(this.url, this.password),
         catch: anyCatch("Failed to connect to OBS"),
       }),
       R.inspectError((e) => {

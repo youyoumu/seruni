@@ -47,14 +47,14 @@ function TextFieldSet({
   min?: number;
   max?: number;
 }) {
-  const field = useFieldContext<string | number>();
-  const isDefaultValue = field.state.value === defaultValue;
+  const field = useFieldContext<string | number | null>();
+  const isDefaultValue = (field.state.value ?? "") === defaultValue;
 
   return (
     <TextField
       name={field.name}
       aria-label={field.name}
-      value={field.state.value.toString()}
+      value={field.state.value?.toString() ?? ""}
       onChange={(v) => {
         let newValue = type === "number" ? parseInt(v) : v;
         if (type === "number" && isNaN(parseInt(v))) {
@@ -72,7 +72,7 @@ function TextFieldSet({
             <UndoIcon
               className="size-4 cursor-pointer"
               onClick={() => {
-                if (!defaultValue) return;
+                if (typeof defaultValue === "undefined") return;
                 field.handleChange(defaultValue);
               }}
             />

@@ -15,6 +15,7 @@ const zObsWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 const zTextHookerWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWithWs);
 
 const zObsReplayBufferDurationS = z.number().check(z.minimum(1, "Must be greater than 0"));
+const zObsWebSocketPassword = z.union([z.null(), z.string()]);
 
 const zFfmpegPictureFormat = z.union(
   [z.literal("webp", "Must be WebP"), z.literal("jpeg", "Must be JPEG")],
@@ -63,6 +64,7 @@ export const zConfig = z.object({
   ankiConnectAddress: zAnkiConnectAddress,
   obsWebSocketAddress: zObsWebSocketAddress,
   obsReplayBufferDurationS: zObsReplayBufferDurationS,
+  obsWebSocketPassword: zObsWebSocketPassword,
   textHookerWebSocketAddress: zTextHookerWebSocketAddress,
   ffmpegPictureFormat: zFfmpegPictureFormat,
   ffmpegPictureQuality: zFfmpegPictureQuality,
@@ -84,6 +86,7 @@ export const defaultConfig: Config = {
   ankiConnectAddress: "http://127.0.0.1:8765",
   obsWebSocketAddress: "ws://127.0.0.1:4455",
   obsReplayBufferDurationS: 5 * 60,
+  obsWebSocketPassword: null,
   textHookerWebSocketAddress: "ws://127.0.0.1:6677",
   ffmpegPictureFormat: "webp",
   ffmpegPictureQuality: "medium",

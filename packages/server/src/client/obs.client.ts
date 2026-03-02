@@ -12,9 +12,11 @@ export class OBSClient extends ReconnectingOBSWebSocket {
     public log: Logger,
     public state: State,
   ) {
+    const password = state.config().obsWebSocketPassword;
     super({
       log: log.child({ name: "obs-client" }),
       url: state.config().obsWebSocketAddress,
+      password: password ? password : undefined,
     });
 
     this.addListener("open", async () => {
@@ -34,6 +36,14 @@ export class OBSClient extends ReconnectingOBSWebSocket {
       if (this.url === url) return;
       this.url = url;
       this.log.info(`OBS WebSocket address changed to ${url}`);
+      await this.restart();
+    });
+
+    effect(async () => {
+      const password = this.state.config().obsWebSocketPassword;
+      if (this.password === password) return;
+      this.password = password ? password : undefined;
+      this.log.info(`OBS WebSocket password changed to ${password}`);
       await this.restart();
     });
   }

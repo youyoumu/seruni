@@ -164,6 +164,18 @@ function SettingsForm() {
             />
 
             <form.AppField
+              name="obsWebSocketPassword"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="WebSocket Password"
+                  type="password"
+                  placeholder={defaultConfig.obsWebSocketPassword ?? ""}
+                  defaultValue={defaultConfig.obsWebSocketPassword ?? ""}
+                />
+              )}
+            />
+
+            <form.AppField
               name="obsReplayBufferDurationS"
               children={(field) => (
                 <field.TextFieldSet
