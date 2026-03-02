@@ -123,3 +123,7 @@
     --color-foreground-calm: var(--color-foreground-700);
   }
 }
+
+@utility h-page {
+  height: calc(100vh - 32px);
+}

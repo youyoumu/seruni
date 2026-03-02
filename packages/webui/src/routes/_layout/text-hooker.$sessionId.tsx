@@ -76,7 +76,7 @@ function FallbackTextHistoryList() {
 
 function TextHookerPage() {
   return (
-    <div className="flex h-full flex-col overflow-auto">
+    <div className="flex h-full flex-col">
       <Suspense fallback={<FallbackTextHistoryList />}>
         <TextHookerPageContent />
       </Suspense>

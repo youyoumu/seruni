@@ -44,11 +44,9 @@ function FallbackSettingsPage() {
 
 function SettingsPage() {
   return (
-    <div className="flex h-full justify-center pt-8">
-      <Suspense fallback={<FallbackSettingsPage />}>
-        <SettingsForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<FallbackSettingsPage />}>
+      <SettingsForm />
+    </Suspense>
   );
 }
 
