@@ -14,10 +14,11 @@ export class OBSClient extends ReconnectingOBSWebSocket {
   ) {
     const password = state.config().obsWebSocketPassword;
     super({
-      log: log.child({ name: "obs-client" }),
+      log,
       url: state.config().obsWebSocketAddress,
       password: password ? password : undefined,
     });
+    this.log = log.child({ name: "obs-client" });
 
     this.addListener("open", async () => {
       this.state.obsConnected(true);

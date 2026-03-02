@@ -10,6 +10,7 @@ export class UvExec extends Exec {
     public state: State,
   ) {
     super(log, "uv", "uv");
+    this.log = log.child({ name: "uv" });
   }
 
   async version(): Promise<R.Result<string, Error>> {

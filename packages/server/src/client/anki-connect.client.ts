@@ -36,10 +36,8 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     public ffmpeg: FFmpegExec,
     public python: PythonExec,
   ) {
-    super({
-      url: state.config().ankiConnectAddress,
-      log: log.child({ name: "anki-connect-client" }),
-    });
+    super({ url: state.config().ankiConnectAddress, log });
+    this.log = log.child({ name: "anki-connect-client" });
 
     this.addListener("open", () => {
       this.state.ankiConnectConnected(true);

@@ -17,6 +17,7 @@ export class PythonExec extends Exec {
     public state: State,
   ) {
     super(log, state.path().python, "python");
+    this.log = log.child({ name: "python" });
   }
 
   async runEntry(command: EntryCommand) {

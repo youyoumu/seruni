@@ -27,6 +27,7 @@ export class TarExec extends Exec {
     public state: State,
   ) {
     super(log, "tar", "tar");
+    this.log = log.child({ name: "tar" });
   }
 
   async version(): Promise<R.Result<string, Error>> {
