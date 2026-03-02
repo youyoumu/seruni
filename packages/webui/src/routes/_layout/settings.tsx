@@ -2,7 +2,7 @@ import { useConfig$, useSetConfig } from "#/hooks/config";
 import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
 import { Separator, Skeleton, tv } from "@heroui/react";
-import { zConfig, zConfigStrict, type Config } from "@repo/shared/schema";
+import { defaultConfig, zConfig, type Config } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
 import { debounce, randomInt, range } from "es-toolkit";
 import { Suspense, useState } from "react";
@@ -18,8 +18,6 @@ const settingsTv = tv({
     groupInput: "grid grid-cols-[repeat(auto-fill,_minmax(320px,_1fr))] gap-4",
   },
 });
-
-const defaultConfig = zConfig.parse({});
 
 const ffmpegPictureFormatMap: Record<Config["ffmpegPictureFormat"], string> = {
   webp: "WebP",
@@ -65,9 +63,9 @@ function SettingsForm() {
 
   const form = useAppForm({
     defaultValues: { ...config },
-    validators: { onChange: zConfigStrict },
+    validators: { onChange: zConfig },
     onSubmit: async ({ value }) => {
-      const newValue = zConfigStrict.parse(value);
+      const newValue = zConfig.parse(value);
       updateConfig(newValue, {
         onSuccess() {
           toast.success("Config has been updated");

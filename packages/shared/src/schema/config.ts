@@ -27,7 +27,7 @@ const zFfmpegPictureFrameCount = z
   .number()
   .check(z.minimum(1, "Must be greater than 0"), z.maximum(99, "Must be less than 100"));
 
-export const zConfigStrict = z.object({
+export const zConfig = z.object({
   ankiExpressionField: zAnkiExpressionField,
   ankiSentenceField: zAnkiSentenceField,
   ankiPictureField: zAnkiPictureField,
@@ -41,18 +41,18 @@ export const zConfigStrict = z.object({
   ffmpegPictureFrameCount: zFfmpegPictureFrameCount,
 });
 
-export const zConfig = z.object({
-  ankiExpressionField: z.catch(zAnkiExpressionField, "Expression"),
-  ankiSentenceField: z.catch(zAnkiSentenceField, "Sentence"),
-  ankiPictureField: z.catch(zAnkiPictureField, "Picture"),
-  ankiSentenceAudioField: z.catch(zAnkiSentenceAudioField, "SentenceAudio"),
-  ankiConnectAddress: z.catch(zAnkiConnectAddress, "http://127.0.0.1:8765"),
-  obsWebSocketAddress: z.catch(zObsWebSocketAddress, "ws://127.0.0.1:4455"),
-  obsReplayBufferDurationS: z.catch(zObsReplayBufferDurationS, 5 * 60),
-  textHookerWebSocketAddress: z.catch(zTextHookerWebSocketAddress, "ws://127.0.0.1:6677"),
-  ffmpegPictureFormat: z.catch(zFfmpegPictureFormat, "webp"),
-  ffmpegMaxPictureResolution: z.catch(zFfmpegMaxPictureResolution, 720),
-  ffmpegPictureFrameCount: z.catch(zFfmpegPictureFrameCount, 6),
-});
-
 export type Config = z.infer<typeof zConfig>;
+
+export const defaultConfig: Config = {
+  ankiExpressionField: "Expression",
+  ankiSentenceField: "Sentence",
+  ankiPictureField: "Picture",
+  ankiSentenceAudioField: "SentenceAudio",
+  ankiConnectAddress: "http://127.0.0.1:8765",
+  obsWebSocketAddress: "ws://127.0.0.1:4455",
+  obsReplayBufferDurationS: 5 * 60,
+  textHookerWebSocketAddress: "ws://127.0.0.1:6677",
+  ffmpegPictureFormat: "webp",
+  ffmpegMaxPictureResolution: 720,
+  ffmpegPictureFrameCount: 6,
+};

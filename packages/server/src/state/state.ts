@@ -3,7 +3,7 @@ import path from "node:path";
 import { safeMkdir, safeReadFile, safeWriteFile } from "#/util/fs";
 import { safeJSONParse } from "#/util/result";
 import { R } from "@praha/byethrow";
-import { zConfig, zConfigStrict, type Config } from "@repo/shared/schema";
+import { defaultConfig, zConfig, type Config } from "@repo/shared/schema";
 import { effect, signal } from "alien-signals";
 import type { Logger } from "pino";
 import * as z from "zod/mini";
@@ -134,7 +134,6 @@ export class StateManager {
       }),
     );
 
-    const defaultConfig = zConfig.parse({});
     if (R.isFailure(parsedFile)) {
       return defaultConfig;
     }
@@ -142,8 +141,8 @@ export class StateManager {
     const rawData = parsedFile.value as Record<string, unknown>;
     const finalConfig: Config = { ...defaultConfig };
 
-    for (const key of Object.keys(zConfigStrict.shape)) {
-      const fieldSchema = zConfigStrict.shape[key as keyof Config];
+    for (const key of Object.keys(zConfig.shape)) {
+      const fieldSchema = zConfig.shape[key as keyof Config];
       const rawValue = rawData[key];
       if (rawValue === undefined) {
         this.log.warn(`Config field "${key}" is missing. Using default value.`);
