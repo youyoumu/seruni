@@ -42,7 +42,7 @@ export class TarExec extends Exec {
 
     for (const item of items.value) {
       const src = path.join(backupDir, item);
-      const dest = path.join(path_.installationDir, item);
+      const dest = path.join(path_.entryDir, item);
       const result = await safeCp(src, dest, { recursive: true });
       if (R.isFailure(result)) return anyFail(`Failed to restore ${item}`, result.error);
     }
@@ -65,7 +65,8 @@ export class TarExec extends Exec {
     const backupDir = path.join(path_.trashDir, backupDirName);
 
     const mkdirResult = await safeMkdir(backupDir, { recursive: true });
-    if (R.isFailure(mkdirResult)) return anyFail("Failed to create backup directory", mkdirResult.error);
+    if (R.isFailure(mkdirResult))
+      return anyFail("Failed to create backup directory", mkdirResult.error);
 
     for (const path__ of toDelete) {
       const newPath = path.join(backupDir, path.basename(path__));
@@ -84,20 +85,20 @@ export class TarExec extends Exec {
   }
 
   async install(tarFilePath?: string): Promise<R.Result<void, Error>> {
-    const installationDir = this.state.path().installationDir;
+    const entryDir = this.state.path().entryDir;
 
     let targetPath = tarFilePath;
     if (!targetPath) {
-      const result = await safeReadDir(installationDir);
+      const result = await safeReadDir(entryDir);
       if (R.isFailure(result))
         return anyFail("Failed to read installation directory", result.error);
 
       const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
       if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in installation directory");
-      targetPath = path.join(installationDir, tarFile);
+      targetPath = path.join(entryDir, tarFile);
     }
 
-    const extractResult = await this.run(["-xzf", targetPath, "-C", installationDir]);
+    const extractResult = await this.run(["-xzf", targetPath, "-C", entryDir]);
     if (R.isFailure(extractResult))
       return anyFail("Failed to extract tarball", extractResult.error);
 

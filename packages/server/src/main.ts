@@ -36,10 +36,10 @@ function validateLogLevel(level: string): R.Result<pino.Level, Error> {
   return R.succeed(level as pino.Level);
 }
 
-async function start(options: { workdir: string; logLevel: pino.Level }) {
+async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const stateManager = new StateManager(log, options.workdir);
+  const stateManager = new StateManager(log, options.dataDir);
   const state = await stateManager.createState();
   log.info(stateManager.serializeState(state), "Starting with state");
   const db = createDb(state);
@@ -138,9 +138,9 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   nodews.injectWebSocket(server);
 }
 
-async function doctor(options: { workdir: string; logLevel: pino.Level }) {
+async function doctor(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "doctor" });
-  const stateManager = new StateManager(log, options.workdir);
+  const stateManager = new StateManager(log, options.dataDir);
   const state = await stateManager.createState();
 
   log.info(stateManager.serializeState(state), "Starting with state");
@@ -169,9 +169,9 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
   logResult("tar", tarResult);
 }
 
-async function venv(options: { workdir: string; logLevel: pino.Level }) {
+async function venv(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "venv" });
-  const stateManager = new StateManager(log, options.workdir);
+  const stateManager = new StateManager(log, options.dataDir);
   const state = await stateManager.createState();
 
   log.info(stateManager.serializeState(state), "Starting with state");
@@ -183,9 +183,9 @@ async function venv(options: { workdir: string; logLevel: pino.Level }) {
   return console.log(c.green(`[OK] ${state.path().venvDir}`));
 }
 
-async function update(options: { workdir: string; logLevel: pino.Level; tarFilePath?: string }) {
+async function update(options: { dataDir: string; logLevel: pino.Level; tarFilePath?: string }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "update" });
-  const stateManager = new StateManager(log, options.workdir);
+  const stateManager = new StateManager(log, options.dataDir);
   const state = await stateManager.createState();
 
   log.info(stateManager.serializeState(state), "Starting with state");
@@ -198,36 +198,36 @@ async function update(options: { workdir: string; logLevel: pino.Level; tarFileP
   log.info("Update completed successfully");
 }
 
-async function startCommand(args: { workdir: string; logLevel: string }) {
+async function startCommand(args: { dataDir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
-  await start({ workdir: args.workdir, logLevel: logLevel.value });
+  await start({ dataDir: args.dataDir, logLevel: logLevel.value });
 }
 
-async function doctorCommand(args: { workdir: string; logLevel: string }) {
+async function doctorCommand(args: { dataDir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
-  await doctor({ workdir: args.workdir, logLevel: logLevel.value });
+  await doctor({ dataDir: args.dataDir, logLevel: logLevel.value });
 }
 
-async function venvCommand(args: { workdir: string; logLevel: string }) {
+async function venvCommand(args: { dataDir: string; logLevel: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
-  await venv({ workdir: args.workdir, logLevel: logLevel.value });
+  await venv({ dataDir: args.dataDir, logLevel: logLevel.value });
 }
 
-async function updateCommand(args: { workdir: string; logLevel: string; tarFilePath?: string }) {
+async function updateCommand(args: { dataDir: string; logLevel: string; tarFilePath?: string }) {
   const logLevel = validateLogLevel(args.logLevel);
   if (R.isFailure(logLevel)) {
     return console.error(c.red(`[ERROR] ${logLevel.error.message}`));
   }
-  await update({ workdir: args.workdir, logLevel: logLevel.value, tarFilePath: args.tarFilePath });
+  await update({ dataDir: args.dataDir, logLevel: logLevel.value, tarFilePath: args.tarFilePath });
 }
 
 const startCmd = defineCommand({
@@ -236,9 +236,9 @@ const startCmd = defineCommand({
     description: "Start the Seruni server",
   },
   args: {
-    workdir: {
+    "data-dir": {
       type: "string",
-      description: "Working directory for the server",
+      description: "Data directory for the server",
       default: process.cwd(),
     },
     "log-level": {
@@ -248,7 +248,7 @@ const startCmd = defineCommand({
     },
   },
   run({ args }) {
-    return startCommand({ workdir: args.workdir, logLevel: args["log-level"] });
+    return startCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
   },
 });
 
@@ -258,9 +258,9 @@ const doctorCmd = defineCommand({
     description: "Check dependencies",
   },
   args: {
-    workdir: {
+    "data-dir": {
       type: "string",
-      description: "Working directory",
+      description: "Data directory",
       default: process.cwd(),
     },
     "log-level": {
@@ -271,7 +271,7 @@ const doctorCmd = defineCommand({
   },
   run({ args }) {
     return doctorCommand({
-      workdir: args.workdir,
+      dataDir: args["data-dir"],
       logLevel: args["log-level"],
     });
   },
@@ -283,9 +283,9 @@ const venvCmd = defineCommand({
     description: "Setup a Python virtual environment",
   },
   args: {
-    workdir: {
+    "data-dir": {
       type: "string",
-      description: "Working directory",
+      description: "Data directory",
       default: process.cwd(),
     },
     "log-level": {
@@ -295,7 +295,7 @@ const venvCmd = defineCommand({
     },
   },
   run({ args }) {
-    return venvCommand({ workdir: args.workdir, logLevel: args["log-level"] });
+    return venvCommand({ dataDir: args["data-dir"], logLevel: args["log-level"] });
   },
 });
 
@@ -305,9 +305,9 @@ const updateCmd = defineCommand({
     description: "Update Seruni",
   },
   args: {
-    workdir: {
+    "data-dir": {
       type: "string",
-      description: "Working directory",
+      description: "Data directory",
       default: process.cwd(),
     },
     "log-level": {
@@ -322,7 +322,7 @@ const updateCmd = defineCommand({
   },
   run({ args }) {
     return updateCommand({
-      workdir: args.workdir,
+      dataDir: args["data-dir"],
       logLevel: args["log-level"],
       tarFilePath: args.file,
     });

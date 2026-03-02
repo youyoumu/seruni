@@ -27,7 +27,7 @@ export type Path = {
   pythonEntry: string;
   pythonWorkdir: string;
   entry: string;
-  installationDir: string;
+  entryDir: string;
   libDir: string;
   packageJson: string;
 };
@@ -49,7 +49,7 @@ export type State = {
 export class StateManager {
   constructor(
     public log: Logger,
-    public workdir: string,
+    public dataDir: string,
   ) {
     this.log = log.child({ name: "state" });
   }
@@ -58,42 +58,31 @@ export class StateManager {
     //@ts-expect-error injected during build
     const DEV = typeof __DEV__ === "undefined";
     const entry = fileURLToPath(import.meta.url);
-    const installationDir = path.dirname(entry);
+    const entryDir = path.dirname(entry);
 
-    const workdir = path.resolve(this.workdir ?? process.cwd());
-    const pythonWorkdir = DEV
-      ? path.join(import.meta.dirname, "../../../python")
-      : path.join(installationDir, "./python");
+    const dataDir = path.resolve(this.dataDir ?? process.cwd());
+    // prettier-ignore
+    const pythonWorkdir = DEV ? path.join(import.meta.dirname, "../../../python") : path.join(entryDir, "./python");
     const pythonEntry = path.join(pythonWorkdir, "src/main.py");
-    const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(workdir, "./venv");
+    const venvDir = DEV ? path.join(pythonWorkdir, ".venv") : path.join(dataDir, "./venv");
 
+    // prettier-ignore
     const path_: Path = {
-      config: path.join(workdir, "./config.json"),
-      db: path.join(workdir, "./db.sqlite"),
-      tempDir: path.join(workdir, "./temp"),
-      trashDir: path.join(workdir, "./trash"),
-      storageDir: path.join(workdir, "./storage"),
-      drizzleDir: DEV
-        ? path.join(import.meta.dirname, "../../drizzle")
-        : path.join(installationDir, "./drizzle"),
-      webuiDir: DEV
-        ? path.join(import.meta.dirname, "../../../webui/dist")
-        : path.join(installationDir, "./webui"),
+      config: path.join(dataDir, "./config.json"),
+      db: path.join(dataDir, "./db.sqlite"),
+      tempDir: path.join(dataDir, "./temp"),
+      trashDir: path.join(dataDir, "./trash"),
+      storageDir: path.join(dataDir, "./storage"),
+      drizzleDir: DEV ? path.join(import.meta.dirname, "../../drizzle") : path.join(entryDir, "./drizzle"),
+      webuiDir: DEV ? path.join(import.meta.dirname, "../../../webui/dist") : path.join(entryDir, "./webui"),
       venvDir,
-      python:
-        process.platform === "win32"
-          ? path.join(venvDir, "Scripts/python.exe")
-          : path.join(venvDir, "bin/python"),
+      python: process.platform === "win32" ? path.join(venvDir, "Scripts/python.exe") : path.join(venvDir, "bin/python"),
       pythonEntry,
       pythonWorkdir,
       entry: entry,
-      installationDir,
-      libDir: DEV
-        ? path.join(import.meta.dirname, "../../.lib")
-        : path.join(installationDir, "./lib"),
-      packageJson: DEV
-        ? path.join(import.meta.dirname, "../../package.json")
-        : path.join(installationDir, "./package.json"),
+      entryDir: entryDir,
+      libDir: DEV ? path.join(import.meta.dirname, "../../.lib") : path.join(entryDir, "./lib"),
+      packageJson: DEV ? path.join(import.meta.dirname, "../../package.json") : path.join(entryDir, "./package.json"),
     };
 
     const dirToCreate = [
