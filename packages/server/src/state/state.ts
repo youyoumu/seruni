@@ -18,6 +18,7 @@ export type Path = {
   config: string;
   db: string;
   tempDir: string;
+  trashDir: string;
   storageDir: string;
   drizzleDir: string;
   webuiDir: string;
@@ -69,6 +70,7 @@ export class StateManager {
       config: path.join(workdir, "./config.json"),
       db: path.join(workdir, "./db.sqlite"),
       tempDir: path.join(workdir, "./temp"),
+      trashDir: path.join(workdir, "./trash"),
       storageDir: path.join(workdir, "./storage"),
       drizzleDir: DEV
         ? path.join(import.meta.dirname, "../../drizzle")
@@ -92,7 +94,13 @@ export class StateManager {
         : path.join(installationDir, "./package.json"),
     };
 
-    const dirToCreate = [path_.tempDir, path_.storageDir, path_.drizzleDir, path_.venvDir];
+    const dirToCreate = [
+      path_.tempDir,
+      path_.trashDir,
+      path_.storageDir,
+      path_.drizzleDir,
+      path_.venvDir,
+    ];
     await Promise.all(dirToCreate.map((dir) => safeMkdir(dir, { recursive: true })));
     const config = await this.getConfigFromFile(path_.config);
 

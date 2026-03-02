@@ -1,7 +1,11 @@
+import path from "node:path";
+
 import type { State } from "#/state/state";
-import { safeRm } from "#/util/fs";
+import { yyyyMMdd_HHmmss } from "#/util/date";
+import { safeCp, safeRm } from "#/util/fs";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
+import { uid } from "uid";
 
 import { Exec } from "./Exec";
 
@@ -28,6 +32,14 @@ export class TarExec extends Exec {
       this.state.path().drizzleDir,
       this.state.path().webuiDir,
     ];
+    const dir = `seruni-old-${yyyyMMdd_HHmmss(new Date())}_${uid()}`;
+    for (const path_ of toDelete) {
+      const newPath = path.join(this.state.path().trashDir, dir, path.basename(path_));
+      const result = await safeCp(path_, newPath, { recursive: true });
+      if (R.isFailure(result))
+        return this.log.error(result.error, `Error when copying ${path_} to ${newPath}`);
+    }
+
     for (const path of toDelete) {
       const result = await safeRm(path, { recursive: true });
       if (R.isFailure(result)) return this.log.error(result.error, `Error when deleting ${path}`);
