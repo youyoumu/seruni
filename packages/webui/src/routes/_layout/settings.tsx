@@ -72,7 +72,7 @@ function SettingsForm() {
   const submitD = debounce(() => form.handleSubmit(), 2000);
 
   return (
-    <div className="w-full max-w-7xl p-4">
+    <div className="w-full max-w-7xl p-4 pb-32">
       <form
         onChange={() => {
           submitD();
