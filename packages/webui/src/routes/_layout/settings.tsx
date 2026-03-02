@@ -1,7 +1,13 @@
 import { useConfig$, useSetConfig } from "#/hooks/config";
 import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
-import { ffmpegMaxPictureResolutionMap, ffmpegPictureFormatMap } from "#/util/config";
+import {
+  ffmpegAudioFormatMap,
+  ffmpegAudioQualityMap,
+  ffmpegMaxPictureResolutionMap,
+  ffmpegPictureFormatMap,
+  ffmpegPictureQualityMap,
+} from "#/util/config";
 import { Separator, Skeleton, tv } from "@heroui/react";
 import { defaultConfig, zConfig } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
@@ -193,6 +199,42 @@ function SettingsForm() {
           <h3 className={header()}>FFmpeg</h3>
           <div className={groupInput()}>
             <form.AppField
+              name="ffmpegPictureFormat"
+              children={(field) => (
+                <field.SelectSet
+                  items={toSelectItems(ffmpegPictureFormatMap)}
+                  label="Picture Format"
+                  placeholder={ffmpegPictureFormatMap[defaultConfig.ffmpegPictureFormat]}
+                  defaultValue={defaultConfig.ffmpegPictureFormat}
+                />
+              )}
+            />
+            <form.AppField
+              name="ffmpegPictureQuality"
+              children={(field) => (
+                <field.SelectSet
+                  items={toSelectItems(ffmpegPictureQualityMap)}
+                  label="Picture Quality"
+                  placeholder={ffmpegPictureQualityMap[defaultConfig.ffmpegPictureQuality]}
+                  defaultValue={defaultConfig.ffmpegPictureQuality}
+                />
+              )}
+            />
+            <form.AppField
+              name="ffmpegMaxPictureResolution"
+              children={(field) => (
+                <field.SelectSet
+                  items={toSelectItems(ffmpegMaxPictureResolutionMap)}
+                  isNumber
+                  label="Picture Resolution"
+                  placeholder={
+                    ffmpegMaxPictureResolutionMap[defaultConfig.ffmpegMaxPictureResolution]
+                  }
+                  defaultValue={defaultConfig.ffmpegMaxPictureResolution}
+                />
+              )}
+            />
+            <form.AppField
               name="ffmpegPictureFrameCount"
               children={(field) => (
                 <field.TextFieldSet
@@ -205,30 +247,25 @@ function SettingsForm() {
                 />
               )}
             />
-
             <form.AppField
-              name="ffmpegPictureFormat"
+              name="ffmpegAudioFormat"
               children={(field) => (
                 <field.SelectSet
-                  items={toSelectItems(ffmpegPictureFormatMap)}
-                  label="Picture Format"
-                  placeholder={ffmpegPictureFormatMap[defaultConfig.ffmpegPictureFormat]}
-                  defaultValue={defaultConfig.ffmpegPictureFormat}
+                  items={toSelectItems(ffmpegAudioFormatMap)}
+                  label="Audio Format"
+                  placeholder={ffmpegAudioFormatMap[defaultConfig.ffmpegAudioFormat]}
+                  defaultValue={defaultConfig.ffmpegAudioFormat}
                 />
               )}
             />
-
             <form.AppField
-              name="ffmpegMaxPictureResolution"
+              name="ffmpegAudioQuality"
               children={(field) => (
                 <field.SelectSet
-                  items={toSelectItems(ffmpegMaxPictureResolutionMap)}
-                  isNumber
-                  label="Picture Resolution"
-                  placeholder={
-                    ffmpegMaxPictureResolutionMap[defaultConfig.ffmpegMaxPictureResolution]
-                  }
-                  defaultValue={defaultConfig.ffmpegMaxPictureResolution}
+                  items={toSelectItems(ffmpegAudioQualityMap)}
+                  label="Audio Quality"
+                  placeholder={ffmpegAudioQualityMap[defaultConfig.ffmpegAudioQuality]}
+                  defaultValue={defaultConfig.ffmpegAudioQuality}
                 />
               )}
             />
