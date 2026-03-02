@@ -20,7 +20,7 @@ import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { UvExec } from "./exec/uv.exec";
 import * as routes from "./routes";
-import { createState, serializeState } from "./state/state";
+import { StateManager } from "./state/state";
 import type { AppContext } from "./types/types";
 import { safeReadDir, safeRm } from "./util/fs";
 import { createLogger } from "./util/logger";
@@ -39,8 +39,9 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
   const logger = createLogger({ level: options.logLevel });
   const log = logger.child({ name: "main" });
   const { api, onPayload, addWS, removeWS } = createServerApi();
-  const state = await createState({ workdir: options.workdir });
-  log.info(serializeState(state), "Starting with state");
+  const stateManager = new StateManager(logger, options.workdir);
+  const state = await stateManager.createState();
+  log.info(stateManager.serializeState(state), "Starting with state");
   const db = createDb(state);
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
@@ -138,11 +139,12 @@ async function start(options: { workdir: string; logLevel: pino.Level }) {
 }
 
 async function doctor(options: { workdir: string; logLevel: pino.Level }) {
-  const state = await createState({ workdir: options.workdir });
   const logger = createLogger({ level: options.logLevel });
+  const stateManager = new StateManager(logger, options.workdir);
+  const state = await stateManager.createState();
   const log = logger.child({ name: "doctor" });
 
-  log.info(serializeState(state), "Starting with state");
+  log.info(stateManager.serializeState(state), "Starting with state");
 
   const ffmpeg = new FFmpegExec(logger, state);
   const uv = new UvExec(logger, state);
@@ -166,11 +168,12 @@ async function doctor(options: { workdir: string; logLevel: pino.Level }) {
 }
 
 async function venv(options: { workdir: string; logLevel: pino.Level }) {
-  const state = await createState({ workdir: options.workdir });
   const logger = createLogger({ level: options.logLevel });
+  const stateManager = new StateManager(logger, options.workdir);
+  const state = await stateManager.createState();
   const log = logger.child({ name: "venv" });
 
-  log.info(serializeState(state), "Starting with state");
+  log.info(stateManager.serializeState(state), "Starting with state");
 
   const uv = new UvExec(logger, state);
 
