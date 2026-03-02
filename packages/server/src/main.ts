@@ -37,19 +37,46 @@ function validateLogLevel(level: string): pino.Level {
 
 async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const log = createLogger({ level: options.logLevel }).child({ name: "main" });
-  const { api, onPayload, addWS, removeWS } = createServerApi();
-
   const configManager = new ConfigManager(log);
   const state = await StateManager.createState({ dataDir: options.dataDir, configManager });
   new StateManager(log, state);
-  const db = createDb(state);
-  const app = new Hono<{ Variables: { ctx: AppContext } }>();
-  const nodews = createNodeWebSocket({ app });
-
-  const dbClient = new DBClient(db, log, state);
 
   const ffmpeg = new FFmpegExec(log, state);
   const python = new PythonExec(log, state);
+  const uv = new UvExec(log, state);
+  const tar = new TarExec(log, state);
+
+  const binding = await tar.getBinding();
+  if (R.isFailure(binding)) return console.error(c.red(`[ERROR] ${binding.error.message}`));
+  if (!binding.value.exists) {
+    const downloadR = await tar.downloadBinding();
+    if (R.isFailure(downloadR)) return console.error(c.red(`[ERROR] ${downloadR.error.message}`));
+  }
+
+  const venvR = await R.pipe(
+    python.version(),
+    R.orElse(() => {
+      log.info("Setting up Python virtual environment");
+      return uv.setupVenv();
+    }),
+  );
+  if (R.isFailure(venvR)) return console.error(c.red(`[ERROR] ${venvR.error.message}`));
+
+  const doctorR = await R.pipe(
+    R.collect([ffmpeg.version(), python.version(), uv.version(), tar.version()]),
+    R.inspectError(() => {
+      log.error("Some dependencies are broken or missing");
+    }),
+  );
+  if (R.isFailure(doctorR))
+    return console.error(c.red(`[ERROR] ${doctorR.error.map((e) => e.message).join("\n")}`));
+
+  const db = createDb(state);
+  const dbClient = new DBClient(db, log, state);
+
+  const { api, onPayload, addWS, removeWS } = createServerApi();
+  const app = new Hono<{ Variables: { ctx: AppContext } }>();
+  const nodews = createNodeWebSocket({ app });
 
   new TextHookerClient(log, api, db, state);
   const obsClient = new OBSClient(log, state);

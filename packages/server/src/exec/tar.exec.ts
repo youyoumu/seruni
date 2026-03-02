@@ -2,7 +2,15 @@ import path from "node:path";
 
 import type { State } from "#/state/state";
 import { yyyyMMdd_HHmmss } from "#/util/date";
-import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm, safeWriteFile } from "#/util/fs";
+import {
+  safeAccess,
+  safeCp,
+  safeMkdir,
+  safeReadDir,
+  safeReadFile,
+  safeRm,
+  safeWriteFile,
+} from "#/util/fs";
 import { anyCatch, anyFail, safeJSONParse } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
@@ -36,10 +44,8 @@ export class TarExec extends Exec {
     return R.succeed(result.value.stdout.split("\n")[0] ?? "");
   }
 
-  async downloadBinding(): Promise<R.Result<void, Error>> {
-    const path_ = this.state.path();
-
-    const platformResult = R.pipe(
+  async getBinding() {
+    return R.pipe(
       R.do(),
       R.bind("platform", () => {
         const platform = process.platform;
@@ -58,16 +64,28 @@ export class TarExec extends Exec {
         return anyFail(`Unsupported abi: ${abi}`);
       }),
       R.map(({ platform, arch, abi }) => {
+        const path_ = this.state.path();
         const bindingName = `node-v${abi}-${platform}-${arch}`;
         const targetDir = path.join(path_.libDir, "binding", bindingName);
-        return { platform, arch, abi, bindingName, targetDir };
+        const target = path.join(targetDir, "better_sqlite3.node");
+        return { platform, arch, abi, bindingName, targetDir, target };
+      }),
+      R.andThen(async (attr) => {
+        const exists = await safeAccess(attr.target);
+        return R.succeed({
+          ...attr,
+          exists: R.isSuccess(exists),
+        });
       }),
     );
-    if (R.isFailure(platformResult)) return platformResult;
-    const { bindingName, targetDir } = platformResult.value;
+  }
 
-    const existsResult = await safeReadDir(targetDir);
-    if (R.isSuccess(existsResult)) {
+  async downloadBinding(): Promise<R.Result<void, Error>> {
+    const path_ = this.state.path();
+    const binding = await this.getBinding();
+    if (R.isFailure(binding)) return binding;
+    const { bindingName, targetDir, exists } = binding.value;
+    if (exists) {
       this.log.info(`Binding already exists at ${targetDir}`);
       return R.succeed();
     }
