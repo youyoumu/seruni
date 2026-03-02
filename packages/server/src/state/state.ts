@@ -58,13 +58,10 @@ export class ConfigManager {
       safeReadFile(configFilePath, "utf-8"),
       R.andThen((text) => safeJSONParse(text)),
       R.inspectError((e) => {
-        this.log.error(e, "Failed to parse config, fallback to default");
+        this.log.warn(e, "Failed parse config, fallback to default");
       }),
     );
-
-    if (R.isFailure(parsedFile)) {
-      return defaultConfig;
-    }
+    if (R.isFailure(parsedFile)) return defaultConfig;
 
     const rawData = parsedFile.value as Record<string, unknown>;
     const finalConfig: Config = { ...defaultConfig };
@@ -167,6 +164,7 @@ export class StateManager {
       path_.storageDir,
       path_.drizzleDir,
       path_.venvDir,
+      path_.libDir,
     ];
     await Promise.all(dirToCreate.map((dir) => safeMkdir(dir, { recursive: true })));
     const config = await opts.configManager.getConfigFromFile(path_.config);

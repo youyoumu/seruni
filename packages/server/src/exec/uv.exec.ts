@@ -20,10 +20,19 @@ export class UvExec extends Exec {
   }
 
   async setupVenv() {
-    return await this.run(["sync", "--directory", this.state.path().pythonWorkdir], {
-      env: {
-        UV_PROJECT_ENVIRONMENT: this.state.path().venvDir,
-      },
-    });
+    this.log.info("Setting up Python virtual environment");
+    return await R.pipe(
+      this.run(["sync", "--directory", this.state.path().pythonWorkdir], {
+        env: {
+          UV_PROJECT_ENVIRONMENT: this.state.path().venvDir,
+        },
+      }),
+      R.inspectError((e) => {
+        this.log.error(e, "Failed to setup Python virtual environment");
+      }),
+      R.inspect(() => {
+        this.log.info("Successfully setup Python virtual environment");
+      }),
+    );
   }
 }

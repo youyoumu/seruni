@@ -18,14 +18,12 @@ import { uid } from "uid";
 
 import { Exec } from "./Exec";
 
-export class UpdateError extends Error {
-  constructor(
-    message: string,
-    public backupDir: string,
-    cause?: Error,
-  ) {
-    super(message, { cause });
+class UpdateError extends Error {
+  backupDir: string;
+  constructor(message: string, options: { backupDir: string; cause?: Error }) {
+    super(message, { cause: options.cause });
     this.name = "UpdateError";
+    this.backupDir = options.backupDir;
   }
 }
 
@@ -77,10 +75,13 @@ export class TarExec extends Exec {
           exists: R.isSuccess(exists),
         });
       }),
+      R.inspectError((e) => {
+        this.log.error(e.message);
+      }),
     );
   }
 
-  async downloadBinding(): Promise<R.Result<void, Error>> {
+  async installBinding(): Promise<R.Result<void, Error>> {
     const path_ = this.state.path();
     const binding = await this.getBinding();
     if (R.isFailure(binding)) return binding;
@@ -106,6 +107,9 @@ export class TarExec extends Exec {
         const url = `https://github.com/WiseLibs/better-sqlite3/releases/download/v${version}/better-sqlite3-v${version}-${bindingName}.tar.gz`;
         const tempTar = path.join(path_.tempDir, `better-sqlite3-${bindingName}.tar.gz`);
         return { ...attr, url, tempTar };
+      }),
+      R.inspectError((e) => {
+        this.log.error(e.message);
       }),
     );
     if (R.isFailure(urlResult)) return urlResult;
@@ -134,8 +138,11 @@ export class TarExec extends Exec {
       }),
       R.andThen(() => safeRm(path.join(targetDir, "build"), { recursive: true })),
       R.andThen(() => safeRm(tempTar)),
-      R.map(() => {
+      R.inspect(() => {
         this.log.info(`Successfully installed better-sqlite3 binding to ${targetDir}`);
+      }),
+      R.inspectError((e) => {
+        this.log.error(e, "Failed when installing binding");
       }),
     );
   }
@@ -155,7 +162,7 @@ export class TarExec extends Exec {
     return R.succeed();
   }
 
-  async removeInstallation(): Promise<R.Result<string, Error>> {
+  async removeInstallation(): Promise<R.Result<string, Error | UpdateError>> {
     const path_ = this.state.path();
     const toDelete = [
       path_.packageJson,
@@ -182,7 +189,9 @@ export class TarExec extends Exec {
     for (const path__ of toDelete) {
       const result = await safeRm(path__, { recursive: true });
       if (R.isFailure(result)) {
-        return R.fail(new UpdateError(`Failed to delete ${path__}`, backupDir, result.error));
+        return R.fail(
+          new UpdateError(`Failed to delete ${path__}`, { backupDir, cause: result.error }),
+        );
       }
     }
 
@@ -217,42 +226,46 @@ export class TarExec extends Exec {
 
   async update(tarFilePath?: string): Promise<R.Result<void, Error>> {
     const entryDir = this.state.path().entryDir;
+    return await R.pipe(
+      R.do(),
+      R.bind("targetPath", async () => {
+        if (tarFilePath) return R.succeed(tarFilePath);
+        const result = await safeReadDir(entryDir);
+        if (R.isFailure(result)) return anyFail("Failed to read entry directory", result.error);
+        const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
+        if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in entry directory");
+        return R.succeed(path.join(entryDir, tarFile));
+      }),
 
-    let targetPath = tarFilePath;
-    if (!targetPath) {
-      const result = await safeReadDir(entryDir);
-      if (R.isFailure(result)) return anyFail("Failed to read entry directory", result.error);
+      R.andThrough(({ targetPath }) => this.checkIntegrity(targetPath)),
+      R.bind("backupDir", () => this.removeInstallation()),
 
-      const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
-      if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in entry directory");
-      targetPath = path.join(entryDir, tarFile);
-    }
-
-    const integrityResult = await this.checkIntegrity(targetPath);
-    if (R.isFailure(integrityResult))
-      return anyFail("Update failed: tar file check failed", integrityResult.error);
-
-    const removeResult = await this.removeInstallation();
-    if (R.isFailure(removeResult)) {
-      const err = removeResult.error;
-      if (err instanceof UpdateError) {
-        const restoreResult = await this.restoreInstallation(err.backupDir);
-        if (R.isFailure(restoreResult)) {
-          this.log.error(restoreResult.error, "Installation may be broken after failed removal");
+      R.andThen(async ({ targetPath, backupDir }) => {
+        const result = await this.install(targetPath);
+        if (R.isFailure(result)) {
+          return R.fail(
+            new UpdateError("Failed to install update", { backupDir, cause: result.error }),
+          );
         }
-      }
-      return anyFail("Failed to remove installation", err);
-    }
+        return R.succeed();
+      }),
 
-    const installResult = await this.install(targetPath);
-    if (R.isFailure(installResult)) {
-      const restoreResult = await this.restoreInstallation(removeResult.value);
-      if (R.isFailure(restoreResult)) {
-        this.log.error(restoreResult.error, "Installation may be broken after failed install");
-      }
-      return anyFail("Failed to install update", installResult.error);
-    }
-
-    return R.succeed();
+      R.inspectError(async (e) => {
+        this.log.error(e, "Failed to update");
+        if (e instanceof UpdateError) {
+          this.log.info("Restoring installation");
+          const restoreResult = await this.restoreInstallation(e.backupDir);
+          if (R.isFailure(restoreResult)) {
+            this.log.error(
+              restoreResult.error,
+              "Failed to restore installation, Installation may be broken.",
+            );
+          }
+        }
+      }),
+      R.inspect(() => {
+        this.log.info("Update completed successfully");
+      }),
+    );
   }
 }

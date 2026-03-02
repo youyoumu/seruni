@@ -5,7 +5,7 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import { R } from "@praha/byethrow";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
-import { defineCommand, runMain } from "citty";
+import { defineCommand, runCommand, runMain, showUsage } from "citty";
 import * as c from "colorette";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -47,29 +47,25 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const tar = new TarExec(log, state);
 
   const binding = await tar.getBinding();
-  if (R.isFailure(binding)) return console.error(c.red(`[ERROR] ${binding.error.message}`));
+  if (R.isFailure(binding)) return process.exit(1);
   if (!binding.value.exists) {
-    const downloadR = await tar.downloadBinding();
-    if (R.isFailure(downloadR)) return console.error(c.red(`[ERROR] ${downloadR.error.message}`));
+    const downloadR = await tar.installBinding();
+    if (R.isFailure(downloadR)) return process.exit(1);
   }
 
   const venvR = await R.pipe(
     python.version(),
-    R.orElse(() => {
-      log.info("Setting up Python virtual environment");
-      return uv.setupVenv();
-    }),
+    R.orElse(() => uv.setupVenv()),
   );
-  if (R.isFailure(venvR)) return console.error(c.red(`[ERROR] ${venvR.error.message}`));
+  if (R.isFailure(venvR)) return process.exit(1);
 
   const doctorR = await R.pipe(
     R.collect([ffmpeg.version(), python.version(), uv.version(), tar.version()]),
-    R.inspectError(() => {
-      log.error("Some dependencies are broken or missing");
+    R.inspectError((e) => {
+      log.error(e, "Some dependencies are broken or missing");
     }),
   );
-  if (R.isFailure(doctorR))
-    return console.error(c.red(`[ERROR] ${doctorR.error.map((e) => e.message).join("\n")}`));
+  if (R.isFailure(doctorR)) return process.exit(1);
 
   const db = createDb(state);
   const dbClient = new DBClient(db, log, state);
@@ -202,10 +198,7 @@ async function venv(options: { dataDir: string; logLevel: pino.Level }) {
   new StateManager(log, state);
 
   const uv = new UvExec(log, state);
-
-  const result = await uv.setupVenv();
-  if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));
-  return console.log(c.green(`[OK] ${state.path().venvDir}`));
+  if (R.isFailure(await uv.setupVenv())) return process.exit(1);
 }
 
 async function binding(options: { dataDir: string; logLevel: pino.Level }) {
@@ -215,10 +208,7 @@ async function binding(options: { dataDir: string; logLevel: pino.Level }) {
   new StateManager(log, state);
 
   const tar = new TarExec(log, state);
-
-  const result = await tar.downloadBinding();
-  if (R.isFailure(result)) return console.error(c.red(`[ERROR] ${result.error.message}`));
-  return console.log(c.green(`[OK] Binding installed`));
+  if (R.isFailure(await tar.installBinding())) return process.exit(1);
 }
 
 async function update(options: { dataDir: string; logLevel: pino.Level; tarFilePath?: string }) {
@@ -229,10 +219,7 @@ async function update(options: { dataDir: string; logLevel: pino.Level; tarFileP
 
   const tar = new TarExec(log, state);
   const result = await tar.update(options.tarFilePath);
-  if (R.isFailure(result)) {
-    return log.error(result.error, "Failed to update");
-  }
-  log.info("Update completed successfully");
+  if (R.isFailure(result)) return process.exit(1);
 }
 
 const startCmd = defineCommand({
@@ -367,7 +354,9 @@ const main = defineCommand({
     binding: bindingCmd,
     update: updateCmd,
   },
-  run() {},
+  async run({ rawArgs }) {
+    await runCommand(startCmd, { rawArgs });
+  },
 });
 
 await runMain(main);
