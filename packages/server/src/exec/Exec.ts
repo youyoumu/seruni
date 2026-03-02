@@ -1,8 +1,10 @@
-import child_process from "node:child_process";
+import child_process, { type CommonSpawnOptions } from "node:child_process";
 
 import { anyCatch } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
+
+type ExecOptions = { env?: Record<string, string>; stdio?: CommonSpawnOptions["stdio"] };
 
 export class Exec {
   constructor(
@@ -13,14 +15,14 @@ export class Exec {
     this.log = log.child({ name });
   }
 
-  run(params: string[], options: { env?: Record<string, string> } = {}) {
+  run(params: string[], options: ExecOptions = {}) {
     return this.exec(this.bin, params, options);
   }
 
   async exec(
     bin: string,
     params: string[],
-    options: { env?: Record<string, string> } = {},
+    options: ExecOptions = {},
   ): Promise<R.Result<{ stdout: string; stderr: string }, Error>> {
     this.log.debug(`Spawning: ${params.join(" ")}`);
     const { promise, resolve, reject } = Promise.withResolvers<{
@@ -30,6 +32,7 @@ export class Exec {
 
     const subprocess = child_process.spawn(bin, params, {
       env: options.env,
+      stdio: options.stdio,
     });
     let stdout = "";
     let stderr = "";

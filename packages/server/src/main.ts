@@ -5,7 +5,7 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import { R } from "@praha/byethrow";
 import { session } from "@repo/shared/db";
 import { createServerApi } from "@repo/shared/ws";
-import { defineCommand, runCommand, runMain, showUsage } from "citty";
+import { defineCommand, runCommand, runMain } from "citty";
 import * as c from "colorette";
 import { Hono } from "hono";
 import { cors } from "hono/cors";

@@ -37,7 +37,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     public python: PythonExec,
   ) {
     super({ url: state.config().ankiConnectAddress, log });
-    this.log = log.child({ name: "anki-connect-client" });
+    this.log = log.child({ name: "anki-connect" });
 
     this.addListener("open", () => {
       this.state.ankiConnectConnected(true);

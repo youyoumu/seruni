@@ -18,7 +18,7 @@ export class OBSClient extends ReconnectingOBSWebSocket {
       url: state.config().obsWebSocketAddress,
       password: password ? password : undefined,
     });
-    this.log = log.child({ name: "obs-client" });
+    this.log = log.child({ name: "obs" });
 
     this.addListener("open", async () => {
       this.state.obsConnected(true);

@@ -24,7 +24,7 @@ export class DBClient {
     public log: Logger,
     public state: State,
   ) {
-    this.log = log.child({ name: "db-client" });
+    this.log = log.child({ name: "db" });
   }
 
   async migrate() {

@@ -24,7 +24,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
     public state: State,
   ) {
     super({ url: state.config().textHookerWebSocketAddress, log });
-    this.log = log.child({ name: "text-hooker-client" });
+    this.log = log.child({ name: "text-hooker" });
 
     const textHookerToastD = debounce(() => {
       this.api.push.toast({

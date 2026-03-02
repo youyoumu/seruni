@@ -26,6 +26,7 @@ export class UvExec extends Exec {
         env: {
           UV_PROJECT_ENVIRONMENT: this.state.path().venvDir,
         },
+        stdio: "inherit",
       }),
       R.inspectError((e) => {
         this.log.error(e, "Failed to setup Python virtual environment");
