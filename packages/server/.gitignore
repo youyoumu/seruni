@@ -31,3 +31,4 @@ lerna-debug.log*
 .seruni
 bundle-stats.html
 .release
+.lib

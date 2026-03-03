@@ -354,8 +354,8 @@ const main = defineCommand({
     binding: bindingCmd,
     update: updateCmd,
   },
-  async run({ rawArgs }) {
-    await runCommand(startCmd, { rawArgs });
+  async run({ rawArgs, args }) {
+    if (args._.length === 0) return await runCommand(startCmd, { rawArgs });
   },
 });
 

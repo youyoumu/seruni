@@ -53,10 +53,11 @@ app.post("/", async (c, next) => {
       headers: overwrite.headers ?? c.req.raw.headers,
       body: overwrite.body ?? body,
     });
-    const json = await response.clone().json();
+    const buffer = await response.arrayBuffer();
+    const json = JSON.parse(new TextDecoder().decode(buffer));
     log.trace(json, "AnkiConnect proxy received response");
     return {
-      response: new Response(response.body, {
+      response: new Response(buffer, {
         status: response.status,
         statusText: response.statusText,
         headers: new Headers(response.headers),
