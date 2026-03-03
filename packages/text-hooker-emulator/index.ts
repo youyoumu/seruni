@@ -16,7 +16,7 @@ const japaneseTexts = [
   "待っててください、必ず帰ってきます。",
 ];
 
-const wss = new WebSocketServer({ port: 6677 });
+const wss = new WebSocketServer({ port: 2233 });
 
 wss.on("connection", (ws) => {
   console.log("Client connected");

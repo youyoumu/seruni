@@ -87,7 +87,7 @@ export const defaultConfig: Config = {
   obsWebSocketAddress: "ws://127.0.0.1:4455",
   obsReplayBufferDurationS: 5 * 60,
   obsWebSocketPassword: null,
-  textHookerWebSocketAddress: "ws://127.0.0.1:6677",
+  textHookerWebSocketAddress: "ws://127.0.0.1:2233/api/ws/text/origin",
   ffmpegPictureFormat: "webp",
   ffmpegPictureQuality: "medium",
   ffmpegMaxPictureResolution: 720,
