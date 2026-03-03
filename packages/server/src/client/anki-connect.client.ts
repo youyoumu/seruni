@@ -1,9 +1,9 @@
 import path from "node:path";
 
-import type { DB } from "#/db";
-import type { DBClient, MediaList } from "#/db/db.client";
 import type { FFmpegExec } from "#/exec/ffmpeg.exec";
 import type { PythonExec } from "#/exec/python.exec";
+import type { DB } from "#/services/db.service";
+import type { DbService, MediaList } from "#/services/db.service";
 import type { State } from "#/state/state";
 import { safeAccess, safeReadDir, safeRm } from "#/util/fs";
 import { anyFail, anyCatch } from "#/util/result";
@@ -30,7 +30,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     public log: Logger,
     public state: State,
     public db: DB,
-    public dbClient: DBClient,
+    public dbSvc: DbService,
     public api: ServerApi,
     public obsClient: OBSClient,
     public ffmpeg: FFmpegExec,
@@ -286,7 +286,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     }
 
     if (mediaList.length > 0) {
-      await this.dbClient.insertNoteAndMedia({
+      await this.dbSvc.insertNoteAndMedia({
         noteId: note.noteId,
         media: mediaList,
       });
@@ -376,7 +376,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
     }
 
     if (media.length > 0) {
-      return await this.dbClient.insertNoteAndMedia({ noteId: note.noteId, media });
+      return await this.dbSvc.insertNoteAndMedia({ noteId: note.noteId, media });
     }
     return R.succeed(null);
   }

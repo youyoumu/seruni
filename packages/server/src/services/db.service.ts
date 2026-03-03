@@ -6,11 +6,18 @@ import { anyFail } from "#/util/result";
 import type { VadData } from "#/util/schema";
 import { R } from "@praha/byethrow";
 import { notes as notesTable, media as mediaTable } from "@repo/shared/db";
+import * as schema from "@repo/shared/db";
+import Database from "better-sqlite3";
 import { eq, inArray } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Logger } from "pino";
 
-import type { DB } from ".";
+const createDb = (state: State) => {
+  const sqlite = new Database(state.path().db);
+  return drizzle(sqlite, { schema });
+};
+export type DB = ReturnType<typeof createDb>;
 
 export type MediaList = Array<{
   type: "picture" | "sentenceAudio";
@@ -18,7 +25,9 @@ export type MediaList = Array<{
   vadData?: VadData;
 }>;
 
-export class DBClient {
+export class DbService {
+  static createDb = createDb;
+
   constructor(
     public db: DB,
     public log: Logger,

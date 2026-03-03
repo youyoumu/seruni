@@ -1,4 +1,4 @@
-import type { DB } from "#/db";
+import type { DB } from "#/services/db.service";
 import type { State } from "#/state/state";
 import { textHistory, session } from "@repo/shared/db";
 import { zConfig } from "@repo/shared/schema";

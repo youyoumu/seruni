@@ -14,8 +14,7 @@ import pino from "pino";
 import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
-import { createDb } from "./db";
-import { DBClient } from "./db/db.client";
+import { DbService } from "./services/db.service";
 import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { TarExec } from "./exec/tar.exec";
@@ -70,8 +69,8 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   );
   if (R.isFailure(doctorR)) return process.exit(1);
 
-  const db = createDb(state);
-  const dbClient = new DBClient(db, log, state);
+  const db = DbService.createDb(state);
+  const dbSvc = new DbService(db, log, state);
 
   const { api, onPayload, addWS, removeWS } = createServerApi();
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
@@ -83,7 +82,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
     log,
     state,
     db,
-    dbClient,
+    dbSvc,
     api,
     obsClient,
     ffmpeg,
@@ -91,7 +90,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   );
 
   // migrate database
-  await dbClient.migrate();
+  await dbSvc.migrate();
 
   // remove temp files
   void R.pipe(
