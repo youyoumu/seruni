@@ -1,6 +1,6 @@
 import type { State } from "#/state/state";
 import { safeAccess } from "#/util/fs";
-import { anyFail } from "#/util/result";
+import { anyFail, hashFile } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
@@ -21,7 +21,25 @@ export class TarExec extends Exec {
     return R.succeed(result.value.stdout.split("\n")[0] ?? "");
   }
 
-  async checkIntegrity(tarFilePath: string, requiredFiles?: string[]): Promise<R.Result<void, Error>> {
+  async verifyChecksum(
+    tarFilePath: string,
+    expectedChecksum: string,
+  ): Promise<R.Result<void, Error>> {
+    const hashResult = await hashFile(tarFilePath, "sha256");
+    if (R.isFailure(hashResult)) return anyFail("Failed to compute hash", hashResult.error);
+
+    const actual = hashResult.value;
+    const expected = expectedChecksum.trim().split(" ")[0];
+
+    if (actual !== expected) return anyFail("Checksum mismatch");
+    return R.succeed();
+  }
+
+  async checkIntegrity(
+    tarFilePath: string,
+    requiredFiles?: string[],
+    checksum?: string,
+  ): Promise<R.Result<void, Error>> {
     const exists = await safeAccess(tarFilePath);
     if (R.isFailure(exists)) return anyFail("Tar file not found", exists.error);
 
@@ -35,6 +53,11 @@ export class TarExec extends Exec {
       if (missing.length > 0) {
         return anyFail(`Tar missing required files: ${missing.join(", ")}`);
       }
+    }
+
+    if (checksum) {
+      const verifyResult = await this.verifyChecksum(tarFilePath, checksum);
+      if (R.isFailure(verifyResult)) return verifyResult;
     }
 
     return R.succeed();

@@ -1,3 +1,7 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { pipeline } from "node:stream/promises";
+
 import { R } from "@praha/byethrow";
 
 export class FetchError extends Error {
@@ -34,3 +38,17 @@ export const safeFetch = R.fn({
   },
   catch: (e) => (e instanceof Error ? e : new Error("Error when fetching")) as Error | FetchError,
 });
+
+export async function hashFile(
+  filePath: string,
+  algorithm: string,
+): Promise<R.Result<string, Error>> {
+  const hash = createHash(algorithm);
+  try {
+    await pipeline(createReadStream(filePath), hash);
+    return R.succeed(hash.digest("hex"));
+  } catch (error) {
+    const cause = error instanceof Error ? error : new Error(String(error));
+    return anyFail("Failed to hash file", cause);
+  }
+}

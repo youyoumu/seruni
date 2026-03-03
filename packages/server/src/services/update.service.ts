@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { State } from "#/state/state";
 import { yyyyMMdd_HHmmss } from "#/util/date";
-import { safeCp, safeMkdir, safeReadDir, safeRm } from "#/util/fs";
+import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm } from "#/util/fs";
 import { anyFail } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
@@ -102,7 +102,16 @@ export class UpdateService {
         return R.succeed(path.join(entryDir, tarFile));
       }),
 
-      R.andThrough(({ targetPath }) => this.tar.checkIntegrity(targetPath, ["package.json", "main.mjs"])),
+      R.bind("checksum", async ({ targetPath }) => {
+        const checksumPath = `${targetPath}.sha256`;
+        const result = await safeReadFile(checksumPath, "utf-8");
+        if (R.isFailure(result)) return anyFail("Checksum file not found (required)", result.error);
+        return R.succeed(result.value.trim());
+      }),
+
+      R.andThrough(({ targetPath, checksum }) => {
+        return this.tar.checkIntegrity(targetPath, ["./package.json", "./main.mjs"], checksum);
+      }),
       R.bind("backupDir", () => this.removeInstallation()),
 
       R.andThen(async ({ targetPath, backupDir }) => {
