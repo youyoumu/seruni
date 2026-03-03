@@ -111,12 +111,17 @@ function TextHookerPageContent() {
           </span>
           <Separator orientation="vertical" />
           <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
-          <Button isIconOnly onClick={timer.toggle}>
-            {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-          </Button>
         </div>
       </div>
       <TextHistoryList isRunning={timer.isRunning} />
+      <Button
+        isIconOnly
+        onClick={timer.toggle}
+        className={cn("absolute bottom-4 left-4")}
+        variant={timer.isRunning ? "tertiary" : "primary"}
+      >
+        {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+      </Button>
     </>
   );
 }
@@ -257,7 +262,7 @@ export function TextHistoryItem(props: {
   return (
     <div ref={hoverRef} className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
       <p
-        className={cn("flex-1 font-secondary text-2xl", {
+        className={cn("flex-1 font-secondary text-2xl transition-colors", {
           "text-surface-foreground-calm": !isRunning,
           "text-surface-foreground-faint": isExpired,
         })}

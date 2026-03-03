@@ -105,7 +105,7 @@ function LayoutComponent() {
               </div>
             </aside>
             <main className="flex flex-1 flex-col">
-              <div className="h-page overflow-auto">
+              <div className="relative h-page overflow-auto">
                 <Outlet />
               </div>
               <StatusBar />
