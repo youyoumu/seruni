@@ -183,7 +183,7 @@ export class FFmpegExec extends Exec {
       const durationParam = duration !== undefined ? ["-t", `${duration}ms`] : [];
       const stereoParam = ["-ac", "2"];
       const samplingRateParam = ["-ar", samplingRateMap[format]];
-      const codecParam = ["-c:a", codecMap[format]];
+      const codecParam = ["-c:v", codecMap[format]];
       const bitrateParam = format === "wav" ? [] : ["-b:a", audioQuality];
 
       return [

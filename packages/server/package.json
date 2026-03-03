@@ -10,7 +10,7 @@
     "build": "tsdown",
     "start": "node dist/main.mjs start --data-dir ./.seruni",
     "binding": "tsx src/main.ts binding --data-dir ./.seruni",
-    "release": "tsx script/release.ts",
+    "release": "tsdown && tsx script/release.ts",
     "typecheck": "tsc -b",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
