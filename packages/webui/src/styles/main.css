@@ -8,6 +8,10 @@
   --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+  --font-serif: var(--font-noto-serif), ui-serif, serif;
+  --font-noto-serif: "Noto Serif JP";
+  --font-secondary: var(--font-noto-serif);
+
   --color-surface-100: color-mix(in srgb, var(--surface) 10%, var(--background));
   --color-surface-200: color-mix(in srgb, var(--surface) 20%, var(--background));
   --color-surface-300: color-mix(in srgb, var(--surface) 30%, var(--background));

@@ -257,7 +257,7 @@ export function TextHistoryItem(props: {
   return (
     <div ref={hoverRef} className="flex items-start gap-2 border-b p-2 hover:bg-surface-calm">
       <p
-        className={cn("flex-1 text-xl", {
+        className={cn("flex-1 font-secondary text-2xl", {
           "text-surface-foreground-calm": !isRunning,
           "text-surface-foreground-faint": isExpired,
         })}
