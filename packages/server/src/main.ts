@@ -20,6 +20,8 @@ import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { TarExec } from "./exec/tar.exec";
 import { UvExec } from "./exec/uv.exec";
+import { BindingService } from "./services/binding.service";
+import { UpdateService } from "./services/update.service";
 import * as routes from "./routes";
 import { ConfigManager, StateManager } from "./state/state";
 import type { AppContext } from "./types/types";
@@ -45,11 +47,12 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const python = new PythonExec(log, state);
   const uv = new UvExec(log, state);
   const tar = new TarExec(log, state);
+  const bindingSvc = new BindingService(log, state, tar);
 
-  const binding = await tar.getBinding();
+  const binding = await bindingSvc.getBinding();
   if (R.isFailure(binding)) return process.exit(1);
   if (!binding.value.exists) {
-    const downloadR = await tar.installBinding();
+    const downloadR = await bindingSvc.installBinding();
     if (R.isFailure(downloadR)) return process.exit(1);
   }
 
@@ -208,7 +211,8 @@ async function binding(options: { dataDir: string; logLevel: pino.Level }) {
   new StateManager(log, state);
 
   const tar = new TarExec(log, state);
-  if (R.isFailure(await tar.installBinding())) return process.exit(1);
+  const bindingSvc = new BindingService(log, state, tar);
+  if (R.isFailure(await bindingSvc.installBinding())) return process.exit(1);
 }
 
 async function update(options: { dataDir: string; logLevel: pino.Level; tarFilePath?: string }) {
@@ -218,7 +222,8 @@ async function update(options: { dataDir: string; logLevel: pino.Level; tarFileP
   new StateManager(log, state);
 
   const tar = new TarExec(log, state);
-  const result = await tar.update(options.tarFilePath);
+  const updateSvc = new UpdateService(log, state, tar);
+  const result = await updateSvc.update(options.tarFilePath ?? "");
   if (R.isFailure(result)) return process.exit(1);
 }
 
