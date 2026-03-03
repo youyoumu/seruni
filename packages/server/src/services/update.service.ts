@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { State } from "#/state/state";
 import { fmt } from "#/util/date";
-import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm } from "#/util/fs";
+import { safeCp, safeMkdir, safeMv, safeMvBatch, safeReadDir, safeReadFile } from "#/util/fs";
 import { anyFail, safeJSONParse, verifySignature } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
@@ -69,20 +69,19 @@ export class UpdateService {
     if (R.isFailure(mkdirResult))
       return anyFail("Failed to create backup directory", mkdirResult.error);
 
-    for (const path__ of toDelete) {
-      const newPath = path.join(backupDir, path.basename(path__));
-      const result = await safeCp(path__, newPath, { recursive: true });
-      if (R.isFailure(result)) return anyFail(`Failed to backup ${path__}`, result.error);
-    }
+    const toMove = toDelete.map((path_) => ({
+      source: path_,
+      destination: path.join(backupDir, path.basename(path_)),
+    }));
+    const moveResult = await safeMvBatch(toMove);
 
-    for (const path__ of toDelete) {
-      const result = await safeRm(path__, { recursive: true });
-      if (R.isFailure(result)) {
-        return R.fail(
-          new UpdateError(`Failed to delete ${path__}`, { backupDir, cause: result.error }),
-        );
-      }
-    }
+    if (R.isFailure(moveResult))
+      return R.fail(
+        new UpdateError("Failed to backup old installation", {
+          backupDir,
+          cause: moveResult.error,
+        }),
+      );
 
     return R.succeed(backupDir);
   }
@@ -156,15 +155,9 @@ export class UpdateService {
       R.andThrough(async ({ manifestPath, targetPath, parentDir, trashDir }) => {
         if (parentDir === this.state.path().entryDir) {
           return await R.collect([
-            safeCp(manifestPath, path.join(trashDir, path.basename(manifestPath))),
-            safeCp(targetPath, path.join(trashDir, path.basename(targetPath))),
+            safeMv(manifestPath, path.join(trashDir, path.basename(manifestPath))),
+            safeMv(targetPath, path.join(trashDir, path.basename(targetPath))),
           ]);
-        }
-        return R.succeed();
-      }),
-      R.andThrough(async ({ manifestPath, targetPath, parentDir }) => {
-        if (parentDir === this.state.path().entryDir) {
-          return await R.collect([safeRm(manifestPath), safeRm(targetPath)]);
         }
         return R.succeed();
       }),

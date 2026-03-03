@@ -41,6 +41,37 @@ export const safeRm = R.fn({
   catch: anyCatch("Error when removing file"),
 });
 
+export const safeMv = (source: string, destination: string) =>
+  R.try({
+    try: () => {
+      return R.pipe(
+        safeCp(source, destination),
+        R.andThen(() => safeRm(source)),
+      );
+    },
+    catch: anyCatch("Error when moving file"),
+  });
+
+export const safeMvBatch = (
+  params: {
+    source: string;
+    destination: string;
+  }[],
+) =>
+  R.try({
+    try: async () => {
+      for (const { source, destination } of params) {
+        const result = await safeCp(source, destination);
+        if (R.isFailure(result)) return result.error;
+      }
+      for (const { source } of params) {
+        const result = await safeRm(source);
+        if (R.isFailure(result)) return result.error;
+      }
+    },
+    catch: anyCatch("Error when batch moving file"),
+  });
+
 export const safeRmdir = R.fn({
   try: fs.rmdir,
   catch: anyCatch("Error when removing directory"),
