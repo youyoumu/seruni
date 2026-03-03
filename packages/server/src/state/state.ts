@@ -17,6 +17,7 @@ type Signal<T> = {
 export type Path = {
   config: string;
   db: string;
+  dataDir: string;
   tempDir: string;
   trashDir: string;
   storageDir: string;
@@ -143,6 +144,7 @@ export class StateManager {
     const path_: Path = {
       config: path.join(dataDir, "./config.json"),
       db: path.join(dataDir, "./db.sqlite"),
+      dataDir,
       tempDir: path.join(dataDir, "./temp"),
       trashDir: path.join(dataDir, "./trash"),
       storageDir: path.join(dataDir, "./storage"),

@@ -14,14 +14,14 @@ import pino from "pino";
 import { AnkiConnectClient } from "./client/anki-connect.client";
 import { OBSClient } from "./client/obs.client";
 import { TextHookerClient } from "./client/text-hooker.client";
-import { DbService } from "./services/db.service";
 import { FFmpegExec } from "./exec/ffmpeg.exec";
 import { PythonExec } from "./exec/python.exec";
 import { TarExec } from "./exec/tar.exec";
 import { UvExec } from "./exec/uv.exec";
-import { BindingService } from "./services/binding.service";
-import { UpdateService } from "./services/update.service";
 import * as routes from "./routes";
+import { BindingService } from "./services/binding.service";
+import { DbService } from "./services/db.service";
+import { UpdateService } from "./services/update.service";
 import { ConfigManager, StateManager } from "./state/state";
 import type { AppContext } from "./types/types";
 import { safeReadDir, safeRm } from "./util/fs";
@@ -47,7 +47,9 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const uv = new UvExec(log, state);
   const tar = new TarExec(log, state);
   const bindingSvc = new BindingService(log, state, tar);
+  const updateSvc = new UpdateService(log, state, tar);
 
+  // initialize native node modules
   const binding = await bindingSvc.getBinding();
   if (R.isFailure(binding)) return process.exit(1);
   if (!binding.value.exists) {
@@ -55,12 +57,14 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
     if (R.isFailure(downloadR)) return process.exit(1);
   }
 
+  // initialize python venv
   const venvR = await R.pipe(
     python.version(),
     R.orElse(() => uv.setupVenv()),
   );
   if (R.isFailure(venvR)) return process.exit(1);
 
+  // check dependencies
   const doctorR = await R.pipe(
     R.collect([ffmpeg.version(), python.version(), uv.version(), tar.version()]),
     R.inspectError((e) => {
@@ -68,6 +72,13 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
     }),
   );
   if (R.isFailure(doctorR)) return process.exit(1);
+
+  // auto update
+  const tarFilePathR = await updateSvc.getTarFileFromDataDir();
+  if (R.isSuccess(tarFilePathR)) {
+    await updateSvc.update(tarFilePathR.value);
+    return process.exit(1);
+  }
 
   const db = DbService.createDb(state);
   const dbSvc = new DbService(db, log, state);
@@ -222,7 +233,7 @@ async function update(options: { dataDir: string; logLevel: pino.Level; tarFileP
 
   const tar = new TarExec(log, state);
   const updateSvc = new UpdateService(log, state, tar);
-  const result = await updateSvc.update(options.tarFilePath ?? "");
+  const result = await updateSvc.update(options.tarFilePath);
   if (R.isFailure(result)) return process.exit(1);
 }
 

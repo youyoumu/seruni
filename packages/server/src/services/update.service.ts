@@ -87,19 +87,21 @@ export class UpdateService {
     return R.succeed(backupDir);
   }
 
-  async update(tarFilePath: string): Promise<R.Result<void, Error>> {
-    const path_ = this.state.path();
-    const entryDir = path_.entryDir;
+  async getTarFileFromDataDir() {
+    const dataDir = this.state.path().dataDir;
+    const result = await safeReadDir(dataDir);
+    if (R.isFailure(result)) return anyFail("Failed to read data directory", result.error);
+    const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
+    if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in data directory");
+    return R.succeed(path.join(dataDir, tarFile));
+  }
 
+  async update(tarFilePath?: string): Promise<R.Result<void, Error>> {
     return await R.pipe(
       R.do(),
       R.bind("targetPath", async () => {
         if (tarFilePath) return R.succeed(tarFilePath);
-        const result = await safeReadDir(entryDir);
-        if (R.isFailure(result)) return anyFail("Failed to read entry directory", result.error);
-        const tarFile = result.value.find((f) => /^seruni-v\d+\.\d+\.\d+\.tar\.gz$/.test(f));
-        if (!tarFile) return anyFail("No seruni-v<version>.tar.gz found in entry directory");
-        return R.succeed(path.join(entryDir, tarFile));
+        return this.getTarFileFromDataDir();
       }),
 
       R.bind("manifest", async ({ targetPath }) => {
@@ -133,7 +135,7 @@ export class UpdateService {
       R.bind("backupDir", () => this.removeInstallation()),
 
       R.andThen(async ({ targetPath, backupDir }) => {
-        const result = await this.tar.extract(targetPath, entryDir);
+        const result = await this.tar.extract(targetPath, this.state.path().entryDir);
         if (R.isFailure(result)) {
           return R.fail(
             new UpdateError("Failed to install update", { backupDir, cause: result.error }),
