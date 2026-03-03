@@ -2,7 +2,7 @@ import { Button, ErrorMessage, FieldError, Label, NumberField, TextField } from 
 import { Description, InputGroup } from "@heroui/react";
 import { ListBox, Select } from "@heroui/react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import { EyeClosedIcon, EyeIcon, UndoIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, UndoIcon } from "lucide-react";
 import { useState } from "react";
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts();
@@ -94,7 +94,7 @@ function TextFieldSet({
               variant="ghost"
               onPress={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? <EyeIcon className="size-4" /> : <EyeClosedIcon className="size-4" />}
+              {showPassword ? <EyeIcon className="size-4" /> : <EyeOffIcon className="size-4" />}
             </Button>
           )}
         </InputGroup.Suffix>

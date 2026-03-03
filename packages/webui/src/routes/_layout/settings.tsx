@@ -11,7 +11,7 @@ import {
 import { Separator, Skeleton, tv } from "@heroui/react";
 import { defaultConfig, zConfig } from "@repo/shared/schema";
 import { createFileRoute } from "@tanstack/react-router";
-import { debounce, randomInt, range } from "es-toolkit";
+import { debounce, isEqual, randomInt, range } from "es-toolkit";
 import { Suspense, useState } from "react";
 
 export const Route = createFileRoute("/_layout/settings")({
@@ -63,7 +63,7 @@ function SettingsForm() {
       const newValue = zConfig.parse(value);
       updateConfig(newValue, {
         onSuccess() {
-          toast.success("Config has been updated");
+          if (!isEqual(config, newValue)) toast.success("Config has been updated");
         },
       });
     },
