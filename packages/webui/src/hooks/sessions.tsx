@@ -93,7 +93,7 @@ export function useUpdateSessionDuration() {
 
 export function useIsListeningTextHooker$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.isListeningTexthooker.isListening);
+  return useSuspenseQuery(keyring.isListeningTextHooker.isListening);
 }
 
 export function useSetIsListeningTextHooker() {

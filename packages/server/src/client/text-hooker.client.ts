@@ -41,8 +41,8 @@ export class TextHookerClient extends ReconnectingWebSocket {
         }
         this.setupAfkTimer();
         const text = detail.replaceAll("\n", " ").trim();
-        const isListeningTexthooker = this.state.isListeningTextHooker();
-        if (!isListeningTexthooker) {
+        const isListeningTextHooker = this.state.isListeningTextHooker();
+        if (!isListeningTextHooker) {
           textHookerToastD();
           return;
         }

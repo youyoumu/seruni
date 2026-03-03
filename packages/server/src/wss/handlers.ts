@@ -33,9 +33,9 @@ export class WSSHandlers {
     api.onRequest.obsConnected(() => state.obsConnected());
 
     api.onRequest.isListeningTextHooker(() => state.isListeningTextHooker());
-    api.onRequest.setIsListeningTextHooker(async (isListeningTexthooker) => {
-      state.isListeningTextHooker(isListeningTexthooker);
-      return isListeningTexthooker;
+    api.onRequest.setIsListeningTextHooker(async (isListeningTextHooker) => {
+      state.isListeningTextHooker(isListeningTextHooker);
+      return isListeningTextHooker;
     });
     api.onRequest.isTextHookerAutoResume(() => state.isTextHookerAutoResume());
     api.onRequest.setIsTextHookerAutoResume(async (isTextHookerAutoResume) => {
@@ -149,8 +149,8 @@ export class WSSHandlers {
     });
 
     effect(() => {
-      const isListeningTexthooker = state.isListeningTextHooker();
-      api.push.isListeningTextHooker(isListeningTexthooker);
+      const isListeningTextHooker = state.isListeningTextHooker();
+      api.push.isListeningTextHooker(isListeningTextHooker);
     });
 
     effect(() => {

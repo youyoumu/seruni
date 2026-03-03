@@ -69,7 +69,7 @@ export class Services {
     });
 
     this.api.onPush.isListeningTextHooker((data) => {
-      queryClient.setQueryData(this.keyring.isListeningTexthooker.isListening.queryKey, data);
+      queryClient.setQueryData(this.keyring.isListeningTextHooker.isListening.queryKey, data);
     });
 
     this.api.onPush.isTextHookerAutoResume((data) => {

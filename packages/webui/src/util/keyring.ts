@@ -31,7 +31,7 @@ export const createKeyring = (api: Services["api"]) =>
         queryFn: () => api.request.completedTextHistory(),
       },
     },
-    isListeningTexthooker: {
+    isListeningTextHooker: {
       isListening: {
         queryKey: null,
         queryFn: () => api.request.isListeningTextHooker(),

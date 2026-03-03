@@ -24,9 +24,9 @@ const SYNC_INTERVAL = 5000;
 export function useSessionTimer({ sessionId }: { sessionId: number }) {
   const { data: activeSession } = useActiveSession$();
   const { data: session } = useSession$(sessionId);
-  const { data: isListeningTexthooker } = useIsListeningTextHooker$();
+  const { data: isListeningTextHooker } = useIsListeningTextHooker$();
 
-  const isRunning = isListeningTexthooker && activeSession?.id === sessionId;
+  const isRunning = isListeningTextHooker && activeSession?.id === sessionId;
   const initialDuration = session.duration;
   const [seconds, setSeconds] = useState(initialDuration);
   const seconds$ = useRef<number>(initialDuration);
