@@ -83,25 +83,17 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const db = DbService.createDb(state);
   const dbSvc = new DbService(db, log, state);
 
+  // migrate database
+  await dbSvc.migrate();
+
   const { api, onPayload, addWS, removeWS } = createServerApi();
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
   new TextHookerClient(log, api, db, state);
   const obsClient = new OBSClient(log, state);
-  const ankiConnectClient = new AnkiConnectClient(
-    log,
-    state,
-    db,
-    dbSvc,
-    api,
-    obsClient,
-    ffmpeg,
-    python,
-  );
-
-  // migrate database
-  await dbSvc.migrate();
+  // prettier-ignore
+  const ankiConnectClient = new AnkiConnectClient(log, state, db, dbSvc, api, obsClient, ffmpeg, python);
 
   // remove temp files
   void R.pipe(

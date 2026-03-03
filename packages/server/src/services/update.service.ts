@@ -3,7 +3,7 @@ import path from "node:path";
 import type { State } from "#/state/state";
 import { yyyyMMdd_HHmmss } from "#/util/date";
 import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm } from "#/util/fs";
-import { anyFail, verifySignature } from "#/util/result";
+import { anyFail, safeJSONParse, verifySignature } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 import { uid } from "uid";
@@ -62,7 +62,7 @@ export class UpdateService {
       path_.webuiDir,
     ];
 
-    const backupDirName = `seruni-old-${yyyyMMdd_HHmmss(new Date())}_${uid()}`;
+    const backupDirName = `seruni.old-${yyyyMMdd_HHmmss(new Date())}-${uid()}`;
     const backupDir = path.join(path_.trashDir, backupDirName);
 
     const mkdirResult = await safeMkdir(backupDir, { recursive: true });
@@ -96,20 +96,21 @@ export class UpdateService {
     return R.succeed(path.join(dataDir, tarFile));
   }
 
-  async update(tarFilePath?: string): Promise<R.Result<void, Error>> {
+  async update(tarFilePath?: string) {
     return await R.pipe(
       R.do(),
       R.bind("targetPath", async () => {
         if (tarFilePath) return R.succeed(tarFilePath);
         return this.getTarFileFromDataDir();
       }),
-
-      R.bind("manifest", async ({ targetPath }) => {
-        const manifestPath = targetPath.replace(/\.tar\.gz$/, ".manifest.json");
-        const result = await safeReadFile(manifestPath, "utf-8");
-        if (R.isFailure(result)) return anyFail("Manifest file not found (required)", result.error);
-        return R.succeed(JSON.parse(result.value));
+      R.map((attr) => {
+        const manifestPath = attr.targetPath.replace(/\.tar\.gz$/, ".manifest.json");
+        return { ...attr, manifestPath };
       }),
+      R.bind("manifestString", ({ manifestPath }) => safeReadFile(manifestPath, "utf-8")),
+      R.bind("manifest", ({ manifestString }) =>
+        safeJSONParse<Record<string, unknown>>(manifestString),
+      ),
 
       R.bind("hash", async ({ manifest }) => {
         if (typeof manifest !== "object") return anyFail("Manifest is not an object");
@@ -134,12 +135,36 @@ export class UpdateService {
       }),
       R.bind("backupDir", () => this.removeInstallation()),
 
-      R.andThen(async ({ targetPath, backupDir }) => {
+      R.andThrough(async ({ targetPath, backupDir }) => {
         const result = await this.tar.extract(targetPath, this.state.path().entryDir);
         if (R.isFailure(result)) {
           return R.fail(
             new UpdateError("Failed to install update", { backupDir, cause: result.error }),
           );
+        }
+        return R.succeed();
+      }),
+      R.map((attr) => {
+        const parentDir = path.dirname(attr.targetPath);
+        const trashDir = path.join(
+          this.state.path().trashDir,
+          `${path.basename(attr.targetPath)}-${yyyyMMdd_HHmmss(new Date())}-${uid()}`,
+        );
+        return { ...attr, parentDir, trashDir };
+      }),
+
+      R.andThrough(async ({ manifestPath, targetPath, parentDir, trashDir }) => {
+        if (parentDir === this.state.path().entryDir) {
+          return await R.collect([
+            safeCp(manifestPath, path.join(trashDir, path.basename(manifestPath))),
+            safeCp(targetPath, path.join(trashDir, path.basename(targetPath))),
+          ]);
+        }
+        return R.succeed();
+      }),
+      R.andThrough(async ({ manifestPath, targetPath, parentDir }) => {
+        if (parentDir === this.state.path().entryDir) {
+          return await R.collect([safeRm(manifestPath), safeRm(targetPath)]);
         }
         return R.succeed();
       }),

@@ -8,10 +8,11 @@ const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
   hour12: false,
 });
 
+//TODO: rename variable
 export function yyyyMMdd_HHmmss(date: Date) {
   const parts = Object.fromEntries(
     dateTimeFormat.formatToParts(date).map(({ type, value }) => [type, value]),
   );
 
-  return `${parts.year}${parts.month}${parts.day}_${parts.hour}${parts.minute}${parts.second}`;
+  return `${parts.year}${parts.month}${parts.day}-${parts.hour}${parts.minute}${parts.second}`;
 }

@@ -23,10 +23,11 @@ export function anyCatch(fallbackMessage: string) {
   };
 }
 
-export const safeJSONParse = R.fn({
-  try: (text: string) => JSON.parse(text) as unknown,
-  catch: (e) => (e instanceof Error ? e : new Error("Error when parsing JSON")),
-});
+export const safeJSONParse = <T = unknown>(text: string): R.Result<T, Error> =>
+  R.try({
+    try: () => JSON.parse(text) as T,
+    catch: (e) => (e instanceof Error ? e : new Error("Error when parsing JSON")),
+  });
 
 export const safeFetch = R.fn({
   try: async (url: string) => {
