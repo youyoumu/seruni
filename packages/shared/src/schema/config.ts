@@ -94,6 +94,6 @@ export const defaultConfig: Config = {
   ffmpegPictureFrameCount: 6,
   ffmpegAudioFormat: "opus",
   ffmpegAudioQuality: "medium",
-  ffmpegAudioOffsetStart: -500,
-  ffmpegAudioOffsetEnd: 500,
+  ffmpegAudioOffsetStart: -250,
+  ffmpegAudioOffsetEnd: 250,
 };
