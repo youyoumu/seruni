@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import { yyyyMMdd_HHmmss } from "#/util/date";
+import { fmt } from "#/util/date";
 import { safeMkdir } from "#/util/fs";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
@@ -83,7 +83,7 @@ export class FFmpegExec extends Exec {
   createTimestamp(): string {
     let timestamp: string;
     do {
-      timestamp = `${yyyyMMdd_HHmmss(new Date())}_${uid(3)}`;
+      timestamp = `${fmt["yyyyMMdd-HHmmss"]()}-${uid(3)}`;
     } while (this.timestamps.has(timestamp));
     this.timestamps.add(timestamp);
     return timestamp;

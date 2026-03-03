@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import { yyyyMMdd_HHmmss } from "#/util/date";
+import { fmt } from "#/util/date";
 import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm } from "#/util/fs";
 import { anyFail, safeJSONParse, verifySignature } from "#/util/result";
 import { R } from "@praha/byethrow";
@@ -62,7 +62,7 @@ export class UpdateService {
       path_.webuiDir,
     ];
 
-    const backupDirName = `seruni.old-${yyyyMMdd_HHmmss(new Date())}-${uid()}`;
+    const backupDirName = `seruni.old-${fmt["yyyyMMdd-HHmmss"]()}-${uid()}`;
     const backupDir = path.join(path_.trashDir, backupDirName);
 
     const mkdirResult = await safeMkdir(backupDir, { recursive: true });
@@ -148,7 +148,7 @@ export class UpdateService {
         const parentDir = path.dirname(attr.targetPath);
         const trashDir = path.join(
           this.state.path().trashDir,
-          `${path.basename(attr.targetPath)}-${yyyyMMdd_HHmmss(new Date())}-${uid()}`,
+          `${path.basename(attr.targetPath)}-${fmt["yyyyMMdd-HHmmss"]()}-${uid()}`,
         );
         return { ...attr, parentDir, trashDir };
       }),
