@@ -21,13 +21,21 @@ export class TarExec extends Exec {
     return R.succeed(result.value.stdout.split("\n")[0] ?? "");
   }
 
-  async checkIntegrity(tarFilePath: string): Promise<R.Result<void, Error>> {
+  async checkIntegrity(tarFilePath: string, requiredFiles?: string[]): Promise<R.Result<void, Error>> {
     const exists = await safeAccess(tarFilePath);
     if (R.isFailure(exists)) return anyFail("Tar file not found", exists.error);
 
     const extractResult = await this.run(["-tzf", tarFilePath]);
     if (R.isFailure(extractResult))
       return anyFail("Tar file is corrupted or invalid", extractResult.error);
+
+    if (requiredFiles && requiredFiles.length > 0) {
+      const contents = extractResult.value.stdout.split("\n").filter(Boolean);
+      const missing = requiredFiles.filter((f) => !contents.some((c) => c.startsWith(f)));
+      if (missing.length > 0) {
+        return anyFail(`Tar missing required files: ${missing.join(", ")}`);
+      }
+    }
 
     return R.succeed();
   }

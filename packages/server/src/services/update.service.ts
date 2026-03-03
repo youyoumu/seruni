@@ -102,7 +102,7 @@ export class UpdateService {
         return R.succeed(path.join(entryDir, tarFile));
       }),
 
-      R.andThrough(({ targetPath }) => this.tar.checkIntegrity(targetPath)),
+      R.andThrough(({ targetPath }) => this.tar.checkIntegrity(targetPath, ["package.json", "main.mjs"])),
       R.bind("backupDir", () => this.removeInstallation()),
 
       R.andThen(async ({ targetPath, backupDir }) => {
