@@ -1,15 +1,8 @@
 import path from "node:path";
 
 import type { State } from "#/state/state";
-import {
-  safeAccess,
-  safeCp,
-  safeMkdir,
-  safeReadFile,
-  safeRm,
-  safeWriteFile,
-} from "#/util/fs";
-import { anyCatch, anyFail, safeJSONParse } from "#/util/result";
+import { safeAccess, safeCp, safeMkdir, safeReadFile, safeRm, safeWriteFile } from "#/util/fs";
+import { anyFail, safeFetch, safeJSONParse } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 
@@ -97,18 +90,13 @@ export class BindingService {
     if (R.isFailure(urlResult)) return urlResult;
     const { url, tempTar } = urlResult.value;
 
+    this.log.info(`Downloading better-sqlite3 binding from ${url}`);
+
     return R.pipe(
-      R.try({
-        try: async () => {
-          this.log.info(`Downloading better-sqlite3 binding from ${url}`);
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
-          }
-          const arrayBuffer = await response.arrayBuffer();
-          return Buffer.from(arrayBuffer);
-        },
-        catch: anyCatch("Failed to download binding"),
+      safeFetch(url),
+      R.andThen(async (response) => {
+        const arrayBuffer = await response.arrayBuffer();
+        return R.succeed(Buffer.from(arrayBuffer));
       }),
       R.andThen((buffer) => safeWriteFile(tempTar, buffer)),
       R.andThen(() => safeMkdir(targetDir, { recursive: true })),
