@@ -1,12 +1,13 @@
+import crypto from "node:crypto";
 import path from "node:path";
 
 import { Exec } from "#/exec/Exec";
-import { safeWriteFile } from "#/util/fs";
+import { safeReadFile, safeWriteFile } from "#/util/fs";
 import { createLogger } from "#/util/logger";
 import { hashFile } from "#/util/result";
 import { R } from "@praha/byethrow";
 
-import { getPackageVersion, RELEASE_DIR } from "./util";
+import { getPackageVersion, RELEASE_DIR, ROOT_DIR } from "./util";
 
 class Script {
   async run() {
@@ -18,9 +19,22 @@ class Script {
 
     const hashResult = await hashFile(output, "sha256");
     const hash = R.unwrap(hashResult);
-    const hashFileName = `${fileName}.sha256`;
-    const hashOutput = path.join(RELEASE_DIR, hashFileName);
-    await safeWriteFile(hashOutput, hash);
+    const manifestFileName = `seruni-v${getPackageVersion()}.manifest.json`;
+    const manifestOutput = path.join(RELEASE_DIR, manifestFileName);
+
+    const privateKey = R.unwrap(
+      await safeReadFile(path.join(ROOT_DIR, "id_ed25519_seruni"), "utf-8"),
+    );
+
+    const signature = crypto.sign(null, Buffer.from(hash), privateKey).toString("hex");
+
+    const manifest = {
+      version: getPackageVersion(),
+      hash,
+      signature,
+    };
+
+    await safeWriteFile(manifestOutput, JSON.stringify(manifest, null, 2));
   }
 }
 

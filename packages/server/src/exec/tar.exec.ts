@@ -38,7 +38,7 @@ export class TarExec extends Exec {
   async checkIntegrity(
     tarFilePath: string,
     requiredFiles?: string[],
-    checksum?: string,
+    hash?: string,
   ): Promise<R.Result<void, Error>> {
     const exists = await safeAccess(tarFilePath);
     if (R.isFailure(exists)) return anyFail("Tar file not found", exists.error);
@@ -55,8 +55,8 @@ export class TarExec extends Exec {
       }
     }
 
-    if (checksum) {
-      const verifyResult = await this.verifyChecksum(tarFilePath, checksum);
+    if (hash) {
+      const verifyResult = await this.verifyChecksum(tarFilePath, hash);
       if (R.isFailure(verifyResult)) return verifyResult;
     }
 

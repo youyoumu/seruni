@@ -3,7 +3,7 @@ import path from "node:path";
 import type { State } from "#/state/state";
 import { yyyyMMdd_HHmmss } from "#/util/date";
 import { safeCp, safeMkdir, safeReadDir, safeReadFile, safeRm } from "#/util/fs";
-import { anyFail } from "#/util/result";
+import { anyFail, verifySignature } from "#/util/result";
 import { R } from "@praha/byethrow";
 import type { Logger } from "pino";
 import { uid } from "uid";
@@ -102,15 +102,33 @@ export class UpdateService {
         return R.succeed(path.join(entryDir, tarFile));
       }),
 
-      R.bind("checksum", async ({ targetPath }) => {
-        const checksumPath = `${targetPath}.sha256`;
-        const result = await safeReadFile(checksumPath, "utf-8");
-        if (R.isFailure(result)) return anyFail("Checksum file not found (required)", result.error);
-        return R.succeed(result.value.trim());
+      R.bind("manifest", async ({ targetPath }) => {
+        const manifestPath = targetPath.replace(/\.tar\.gz$/, ".manifest.json");
+        const result = await safeReadFile(manifestPath, "utf-8");
+        if (R.isFailure(result)) return anyFail("Manifest file not found (required)", result.error);
+        return R.succeed(JSON.parse(result.value));
       }),
 
-      R.andThrough(({ targetPath, checksum }) => {
-        return this.tar.checkIntegrity(targetPath, ["./package.json", "./main.mjs"], checksum);
+      R.bind("hash", async ({ manifest }) => {
+        if (typeof manifest !== "object") return anyFail("Manifest is not an object");
+        const hash = manifest?.hash;
+        if (typeof hash !== "string") return anyFail("Hash is not a string");
+        if (!hash) return anyFail("Hash not found in manifest");
+        return R.succeed(hash);
+      }),
+      R.bind("signature", async ({ manifest }) => {
+        if (typeof manifest !== "object") return anyFail("Manifest is not an object");
+        const signature = manifest?.signature;
+        if (typeof signature !== "string") return anyFail("Signature is not a string");
+        if (!signature) return anyFail("Signature not found in manifest");
+        return R.succeed(signature);
+      }),
+      R.andThrough(({ hash, signature }) => {
+        return verifySignature(hash, signature);
+      }),
+
+      R.andThrough(({ targetPath, hash }) => {
+        return this.tar.checkIntegrity(targetPath, ["./package.json", "./main.mjs"], hash);
       }),
       R.bind("backupDir", () => this.removeInstallation()),
 

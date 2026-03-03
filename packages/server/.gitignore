@@ -32,3 +32,4 @@ lerna-debug.log*
 bundle-stats.html
 .release
 .lib
+id_ed25519_*
