@@ -348,11 +348,14 @@ const updateCmd = defineCommand({
   },
 });
 
+//@ts-expect-error injected during build
+const VERSION = typeof __VERSION__ === "undefined" ? "0.0.0" : __VERSION__;
+
 const main = defineCommand({
   meta: {
     name: "seruni",
     description: "TODO",
-    version: "0.0.1",
+    version: VERSION,
   },
   subCommands: {
     start: startCmd,

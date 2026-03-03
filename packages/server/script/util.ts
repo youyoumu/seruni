@@ -10,5 +10,7 @@ process.chdir(ROOT_DIR);
 
 export function getPackageVersion() {
   const packageJson = require(path.join(ROOT_DIR, "package.json"));
-  return packageJson.version;
+  const version = packageJson.version;
+  if (typeof version !== "string") throw new Error("Version is not a string");
+  return version;
 }

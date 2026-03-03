@@ -1,13 +1,18 @@
 import { bundleStats } from "rollup-plugin-bundle-stats";
 import { defineConfig } from "tsdown";
 
+import { getPackageVersion } from "./script/util.ts";
+
+const version = getPackageVersion();
+
 export default defineConfig({
   entry: ["./src/main.ts"],
   noExternal: [/.*/],
   external: ["open"],
   nodeProtocol: true,
   define: {
-    __DEV__: "false",
+    __DEV__: JSON.stringify(false),
+    __VERSION__: JSON.stringify(version),
   },
   copy: [
     "./drizzle/",
