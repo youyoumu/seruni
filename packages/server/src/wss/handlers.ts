@@ -1,3 +1,4 @@
+import type { TextHookerClient } from "#/client/text-hooker.client";
 import type { DB } from "#/services/db.service";
 import type { State } from "#/state/state";
 import { textHistory, session } from "@repo/shared/db";
@@ -13,6 +14,7 @@ export class WSSHandlers {
     public db: DB,
     public state: State,
     public log: Logger,
+    public textHookerClient: TextHookerClient,
   ) {
     this.log = log.child({ name: "wss" });
     this.setupStateEffect();
@@ -30,10 +32,15 @@ export class WSSHandlers {
     api.onRequest.ankiConnectConnected(() => state.ankiConnectConnected());
     api.onRequest.obsConnected(() => state.obsConnected());
 
-    api.onRequest.isListeningTexthooker(() => state.isListeningTexthooker());
-    api.onRequest.setIsListeningTexthooker(async (isListeningTexthooker) => {
-      state.isListeningTexthooker(isListeningTexthooker);
+    api.onRequest.isListeningTextHooker(() => state.isListeningTextHooker());
+    api.onRequest.setIsListeningTextHooker(async (isListeningTexthooker) => {
+      state.isListeningTextHooker(isListeningTexthooker);
       return isListeningTexthooker;
+    });
+    api.onRequest.isTextHookerAutoResume(() => state.isTextHookerAutoResume());
+    api.onRequest.setIsTextHookerAutoResume(async (isTextHookerAutoResume) => {
+      state.isTextHookerAutoResume(isTextHookerAutoResume);
+      return isTextHookerAutoResume;
     });
 
     api.onRequest.textHistoryBySessionId(async (id) => {
@@ -123,6 +130,10 @@ export class WSSHandlers {
     });
 
     api.onRequest.checkHealth(() => undefined);
+
+    api.onPush.refreshAfkTimer(() => {
+      this.textHookerClient.setupAfkTimer();
+    });
   }
 
   setupStateEffect() {
@@ -138,8 +149,13 @@ export class WSSHandlers {
     });
 
     effect(() => {
-      const isListeningTexthooker = state.isListeningTexthooker();
-      api.push.isListeningTexthooker(isListeningTexthooker);
+      const isListeningTexthooker = state.isListeningTextHooker();
+      api.push.isListeningTextHooker(isListeningTexthooker);
+    });
+
+    effect(() => {
+      const isTextHookerAutoResume = state.isTextHookerAutoResume();
+      api.push.isTextHookerAutoResume(isTextHookerAutoResume);
     });
 
     effect(() => {

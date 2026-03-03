@@ -21,7 +21,7 @@ app.get("/", (c, next) => {
       },
       onClose: (_: unknown, ws: unknown) => {
         log.warn("Connection closed");
-        state.isListeningTexthooker(false);
+        state.isListeningTextHooker(false);
         removeWS(ws as Parameters<typeof removeWS>[0]);
       },
     };

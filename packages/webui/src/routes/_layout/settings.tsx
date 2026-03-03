@@ -179,6 +179,7 @@ function SettingsForm() {
                 <field.TextFieldSet
                   label="Replay Buffer Duration (s)"
                   type="number"
+                  min={0}
                   placeholder={defaultConfig.obsReplayBufferDurationS.toString()}
                   defaultValue={defaultConfig.obsReplayBufferDurationS}
                 />
@@ -198,6 +199,19 @@ function SettingsForm() {
                   label="WebSocket Address"
                   placeholder={defaultConfig.textHookerWebSocketAddress}
                   defaultValue={defaultConfig.textHookerWebSocketAddress}
+                />
+              )}
+            />
+
+            <form.AppField
+              name="textHookerAfkTimerS"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="AFK Timer (s)"
+                  type="number"
+                  min={0}
+                  placeholder={defaultConfig.textHookerAfkTimerS.toString()}
+                  defaultValue={defaultConfig.textHookerAfkTimerS}
                 />
               )}
             />

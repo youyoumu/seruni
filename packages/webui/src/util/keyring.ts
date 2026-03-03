@@ -34,7 +34,13 @@ export const createKeyring = (api: Services["api"]) =>
     isListeningTexthooker: {
       isListening: {
         queryKey: null,
-        queryFn: () => api.request.isListeningTexthooker(),
+        queryFn: () => api.request.isListeningTextHooker(),
+      },
+    },
+    isTextHookerAutoResume: {
+      isAutoResume: {
+        queryKey: null,
+        queryFn: () => api.request.isTextHookerAutoResume(),
       },
     },
     client: {

@@ -13,6 +13,7 @@ import type {
 import { ReconnectingWebSocket } from "@repo/shared/ws";
 import { createClientApi } from "@repo/shared/ws";
 import type { QueryClient } from "@tanstack/react-query";
+import { throttle } from "es-toolkit";
 import { createContext, useContext, useEffect, useState } from "react";
 
 type ServicesEventMap = {
@@ -67,8 +68,12 @@ export class Services {
       queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
-    this.api.onPush.isListeningTexthooker((data) => {
+    this.api.onPush.isListeningTextHooker((data) => {
       queryClient.setQueryData(this.keyring.isListeningTexthooker.isListening.queryKey, data);
+    });
+
+    this.api.onPush.isTextHookerAutoResume((data) => {
+      queryClient.setQueryData(this.keyring.isTextHookerAutoResume.isAutoResume.queryKey, data);
     });
 
     this.api.onPush.textHistory((data) => {
@@ -93,6 +98,9 @@ export class Services {
     this.api.onPush.obsConnected((data) => {
       queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
     });
+
+    const refreshAfkTimerT = throttle(() => this.api.push.refreshAfkTimer(), 5000);
+    document.addEventListener("mousemove", refreshAfkTimerT);
 
     const createActionProps = (action?: { text: string; id: string }) => {
       if (!action) return undefined;
@@ -175,14 +183,6 @@ export class Services {
         result.action = data.action;
         result.reject();
       }
-    });
-
-    this.api.onPush.ankiConnectConnected((data) => {
-      queryClient.setQueryData(this.keyring.client.ankiConnectConnected.queryKey, data);
-    });
-
-    this.api.onPush.obsConnected((data) => {
-      queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
     });
   }
 }

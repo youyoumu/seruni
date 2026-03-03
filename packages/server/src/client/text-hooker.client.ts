@@ -36,8 +36,12 @@ export class TextHookerClient extends ReconnectingWebSocket {
     this.addListener("message", async (detail) => {
       const now = new Date();
       if (typeof detail === "string") {
+        if (this.state.isTextHookerAutoResume() && !this.state.isListeningTextHooker()) {
+          this.state.isListeningTextHooker(true);
+        }
+        this.setupAfkTimer();
         const text = detail.replaceAll("\n", " ").trim();
-        const isListeningTexthooker = this.state.isListeningTexthooker();
+        const isListeningTexthooker = this.state.isListeningTextHooker();
         if (!isListeningTexthooker) {
           textHookerToastD();
           return;
@@ -67,13 +71,21 @@ export class TextHookerClient extends ReconnectingWebSocket {
       this.state.textHookerConnected(false);
     });
 
-    effect(async () => {
-      const url = this.state.config().textHookerWebSocketAddress;
-      if (this.url === url) return;
-      this.url = url;
-      this.log.info(`TextHooker WebSocket address changed to ${url}`);
-      await this.restart();
+    effect(() => this.setupAfkTimer());
+    effect(() => {
+      this.state.isListeningTextHooker();
+      this.setupAfkTimer();
     });
+  }
+
+  #afkTimeoutId: NodeJS.Timeout | undefined;
+  setupAfkTimer() {
+    const afkTimer = this.state.config().textHookerAfkTimerS * 1000;
+    clearTimeout(this.#afkTimeoutId);
+    if (afkTimer <= 0) return;
+    this.#afkTimeoutId = setTimeout(() => {
+      this.state.isListeningTextHooker(false);
+    }, afkTimer);
   }
 
   getMessages(): string[] {

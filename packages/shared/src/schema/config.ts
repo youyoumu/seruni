@@ -17,6 +17,8 @@ const zTextHookerWebSocketAddress = z.string().check(z.trim(), zUrl, zStartsWith
 const zObsReplayBufferDurationS = z.number().check(z.minimum(1, "Must be greater than 0"));
 const zObsWebSocketPassword = z.union([z.null(), z.string()]);
 
+const zTextHookerAfkTimerS = z.number().check(z.minimum(0, "Must be greater than or equal to 0"));
+
 const zFfmpegPictureFormat = z.union(
   [z.literal("webp", "Must be WebP"), z.literal("jpeg", "Must be JPEG")],
   "Must be WebP or JPEG",
@@ -66,6 +68,7 @@ export const zConfig = z.object({
   obsReplayBufferDurationS: zObsReplayBufferDurationS,
   obsWebSocketPassword: zObsWebSocketPassword,
   textHookerWebSocketAddress: zTextHookerWebSocketAddress,
+  textHookerAfkTimerS: zTextHookerAfkTimerS,
   ffmpegPictureFormat: zFfmpegPictureFormat,
   ffmpegPictureQuality: zFfmpegPictureQuality,
   ffmpegMaxPictureResolution: zFfmpegMaxPictureResolution,
@@ -88,6 +91,7 @@ export const defaultConfig: Config = {
   obsReplayBufferDurationS: 5 * 60,
   obsWebSocketPassword: null,
   textHookerWebSocketAddress: "ws://127.0.0.1:2233/api/ws/text/origin",
+  textHookerAfkTimerS: 60,
   ffmpegPictureFormat: "webp",
   ffmpegPictureQuality: "medium",
   ffmpegMaxPictureResolution: 720,

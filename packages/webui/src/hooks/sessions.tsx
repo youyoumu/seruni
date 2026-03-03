@@ -91,16 +91,30 @@ export function useUpdateSessionDuration() {
   });
 }
 
-export function useIsListeningTexthooker$() {
+export function useIsListeningTextHooker$() {
   const { keyring } = useServices();
   return useSuspenseQuery(keyring.isListeningTexthooker.isListening);
 }
 
-export function useSetIsListeningTexthooker() {
+export function useSetIsListeningTextHooker() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (isListening: boolean) => {
-      return await api.request.setIsListeningTexthooker(isListening);
+      return await api.request.setIsListeningTextHooker(isListening);
+    },
+  });
+}
+
+export function useIsTextHookerAutoResume$() {
+  const { keyring } = useServices();
+  return useSuspenseQuery(keyring.isTextHookerAutoResume.isAutoResume);
+}
+
+export function useSetIsTextHookerAutoResume() {
+  const { api } = useServices();
+  return useMutation({
+    mutationFn: async (isAutoResume: boolean) => {
+      return await api.request.setIsTextHookerAutoResume(isAutoResume);
     },
   });
 }

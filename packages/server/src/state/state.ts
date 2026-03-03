@@ -39,7 +39,8 @@ export type State = {
   config: Signal<Config>;
   path: Signal<Path>;
   activeSessionId: Signal<number | null>;
-  isListeningTexthooker: Signal<boolean>;
+  isListeningTextHooker: Signal<boolean>;
+  isTextHookerAutoResume: Signal<boolean>;
   completedTextHistory: Signal<Record<number, number>>;
   textHookerConnected: Signal<boolean>;
   ankiConnectConnected: Signal<boolean>;
@@ -177,7 +178,8 @@ export class StateManager {
       config: signal(config),
       path: signal(path_),
       activeSessionId: signal<number | null>(null),
-      isListeningTexthooker: signal<boolean>(false),
+      isListeningTextHooker: signal<boolean>(false),
+      isTextHookerAutoResume: signal<boolean>(false),
       completedTextHistory: signal<Record<number, number>>({}),
       textHookerConnected: signal<boolean>(false),
       ankiConnectConnected: signal<boolean>(false),

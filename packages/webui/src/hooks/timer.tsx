@@ -3,10 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   useActiveSession$,
-  useIsListeningTexthooker$,
+  useIsListeningTextHooker$,
   useSession$,
   useSetActiveSession,
-  useSetIsListeningTexthooker,
+  useSetIsListeningTextHooker,
   useUpdateSessionDuration,
 } from "./sessions";
 
@@ -24,7 +24,7 @@ const SYNC_INTERVAL = 5000;
 export function useSessionTimer({ sessionId }: { sessionId: number }) {
   const { data: activeSession } = useActiveSession$();
   const { data: session } = useSession$(sessionId);
-  const { data: isListeningTexthooker } = useIsListeningTexthooker$();
+  const { data: isListeningTexthooker } = useIsListeningTextHooker$();
 
   const isRunning = isListeningTexthooker && activeSession?.id === sessionId;
   const initialDuration = session.duration;
@@ -34,7 +34,7 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
 
   const { mutateAsync: updateDuration } = useUpdateSessionDuration();
   const { mutate: setActiveSession } = useSetActiveSession();
-  const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTexthooker();
+  const { mutate: setIsListeningTexthooker, isPending: isToggling } = useSetIsListeningTextHooker();
 
   useEffect(() => {
     seconds$.current = seconds;

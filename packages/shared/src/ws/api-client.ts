@@ -22,6 +22,7 @@ export type ApiSchema = CreateSchema<{
   clientPush: {
     ping: Push;
     action: Push<string>;
+    refreshAfkTimer: Push;
   };
   serverPush: {
     toast: Push<ToastPayload>;
@@ -30,7 +31,8 @@ export type ApiSchema = CreateSchema<{
     toastPromiseReject: Push<ToastPromiseRejectPayload>;
     textHistory: Push<TextHistory>;
     activeSession: Push<Session | null>;
-    isListeningTexthooker: Push<boolean>;
+    isListeningTextHooker: Push<boolean>;
+    isTextHookerAutoResume: Push<boolean>;
     textHookerConnected: Push<boolean>;
     ankiConnectConnected: Push<boolean>;
     obsConnected: Push<boolean>;
@@ -47,8 +49,10 @@ export type ApiSchema = CreateSchema<{
     updateSession: Request<Partial<Session>, Session | null>;
     setActiveSession: Request<number, Session | null>;
     getActiveSession: Request<undefined, Session | null>;
-    isListeningTexthooker: Request<undefined, boolean>;
-    setIsListeningTexthooker: Request<boolean, boolean>;
+    isListeningTextHooker: Request<undefined, boolean>;
+    setIsListeningTextHooker: Request<boolean, boolean>;
+    isTextHookerAutoResume: Request<undefined, boolean>;
+    setIsTextHookerAutoResume: Request<boolean, boolean>;
     textHookerConnected: Request<undefined, boolean>;
     ankiConnectConnected: Request<undefined, boolean>;
     obsConnected: Request<undefined, boolean>;
@@ -66,6 +70,7 @@ const createApi = () => {
     clientPush: {
       ping: 0,
       action: 0,
+      refreshAfkTimer: 0,
     },
     serverPush: {
       toast: 0,
@@ -74,7 +79,8 @@ const createApi = () => {
       toastPromiseReject: 0,
       textHistory: 0,
       activeSession: 0,
-      isListeningTexthooker: 0,
+      isListeningTextHooker: 0,
+      isTextHookerAutoResume: 0,
       textHookerConnected: 0,
       ankiConnectConnected: 0,
       obsConnected: 0,
@@ -91,8 +97,10 @@ const createApi = () => {
       updateSession: 0,
       setActiveSession: 0,
       getActiveSession: 0,
-      isListeningTexthooker: 0,
-      setIsListeningTexthooker: 0,
+      isListeningTextHooker: 0,
+      setIsListeningTextHooker: 0,
+      isTextHookerAutoResume: 0,
+      setIsTextHookerAutoResume: 0,
       textHookerConnected: 0,
       ankiConnectConnected: 0,
       obsConnected: 0,

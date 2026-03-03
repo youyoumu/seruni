@@ -90,7 +90,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
-  new TextHookerClient(log, api, db, state);
+  const textHookerClient = new TextHookerClient(log, api, db, state);
   const obsClient = new OBSClient(log, state);
   // prettier-ignore
   const ankiConnectClient = new AnkiConnectClient(log, state, db, dbSvc, api, obsClient, ffmpeg, python);
@@ -153,7 +153,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   app.route("/anki/anki-connect-proxy", routes.ankiAnkiConnectProxy);
   app.route("*", routes.root);
 
-  new WSSHandlers(api, db, state, log);
+  new WSSHandlers(api, db, state, log, textHookerClient);
   const server = serve(
     {
       fetch: app.fetch,

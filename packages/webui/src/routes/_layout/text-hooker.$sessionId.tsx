@@ -1,6 +1,7 @@
 import { useConfig$ } from "#/hooks/config";
 import { useHover } from "#/hooks/dom";
 import { useServices } from "#/hooks/services";
+import { useIsTextHookerAutoResume$, useSetIsTextHookerAutoResume } from "#/hooks/sessions";
 import {
   useDeleteTextHistory,
   useIsTextHistoryCompleted$,
@@ -9,7 +10,7 @@ import {
 } from "#/hooks/text-history";
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { useInterval } from "#/hooks/util";
-import { Button, cn, Popover, Separator, Skeleton } from "@heroui/react";
+import { Button, cn, Popover, Separator, Skeleton, Tooltip } from "@heroui/react";
 import { type TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
@@ -19,6 +20,8 @@ import {
   ClockCheckIcon,
   CopyIcon,
   EllipsisVerticalIcon,
+  LockIcon,
+  LockOpenIcon,
   PauseIcon,
   PlayIcon,
   RssIcon,
@@ -57,7 +60,8 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   },
   async onLeave({ context }) {
     const { api } = context.services;
-    await api.request.setIsListeningTexthooker(false);
+    await api.request.setIsListeningTextHooker(false);
+    await api.request.setIsTextHookerAutoResume(false);
   },
 });
 
@@ -111,6 +115,7 @@ function TextHookerPageContent() {
           </span>
           <Separator orientation="vertical" />
           <span className="text-lg font-semibold">{speed.formattedSpeed}</span>
+          <AutoResumeButton />
         </div>
       </div>
       <TextHistoryList isRunning={timer.isRunning} />
@@ -118,11 +123,33 @@ function TextHookerPageContent() {
         isIconOnly
         onClick={timer.toggle}
         className={cn("absolute bottom-4 left-4")}
-        variant={timer.isRunning ? "tertiary" : "primary"}
+        variant={timer.isRunning ? "primary" : "tertiary"}
       >
-        {timer.isRunning ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+        {timer.isRunning ? <PauseIcon className="size-4" /> : <PlayIcon className="size-4" />}
       </Button>
     </>
+  );
+}
+
+function AutoResumeButton() {
+  const { data: isAutoResume } = useIsTextHookerAutoResume$();
+  const { mutate: setIsAutoResume } = useSetIsTextHookerAutoResume();
+
+  return (
+    <Tooltip delay={1000}>
+      <Button
+        isIconOnly
+        onClick={() => {
+          setIsAutoResume(!isAutoResume);
+        }}
+        variant={isAutoResume ? "primary" : "tertiary"}
+      >
+        {isAutoResume ? <LockOpenIcon className="size-4" /> : <LockIcon className="size-4" />}
+      </Button>
+      <Tooltip.Content>
+        <p>Auto resume timer is {isAutoResume ? "enabled" : "disabled"}</p>
+      </Tooltip.Content>
+    </Tooltip>
   );
 }
 
