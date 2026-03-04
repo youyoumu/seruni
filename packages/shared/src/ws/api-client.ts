@@ -1,10 +1,9 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
-import { createCentralBus, createSchema, push, request } from "#/ws-bus";
+import { createCentralBus, createSchema, push, request } from "#/socket.et";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";
-export { WSBusError } from "#/ws-bus";
 
 export const zToastVariant = z.enum(["default", "accent", "success", "warning", "danger"]);
 

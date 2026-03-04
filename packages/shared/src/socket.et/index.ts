@@ -6,7 +6,7 @@ export type StandardSchema = StandardSchemaV1;
 
 type InferOutput<Schema extends StandardSchema> = StandardSchemaV1.InferOutput<Schema>;
 
-export class WSBusError extends Error {
+export class SocketError extends Error {
   type: "connectionClosed" | "requestTimeout";
   constructor(type: "connectionClosed" | "requestTimeout") {
     super(type);
@@ -20,7 +20,7 @@ export interface WithCorrelationId<T = undefined> {
   ws?: WS;
 }
 
-class ResponseErrorEvent<E extends WSBusError = WSBusError> extends CustomEvent<
+class ResponseErrorEvent<E extends SocketError = SocketError> extends CustomEvent<
   WithCorrelationId<E>
 > {}
 
@@ -325,8 +325,8 @@ class ClientReqBus<
         /** [7] */
         this.#sResBus.addEventListener(clientEvent, handler);
 
-        const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
-          const detail = e.detail as WithCorrelationId<WSBusError>;
+        const handleError = (e: CustomEventInit<WithCorrelationId<SocketError>>) => {
+          const detail = e.detail as WithCorrelationId<SocketError>;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
@@ -338,7 +338,7 @@ class ClientReqBus<
 
         timeoutId = setTimeout(() => {
           cleanup();
-          reject(new WSBusError("requestTimeout"));
+          reject(new SocketError("requestTimeout"));
         }, timeoutDuration);
 
         /** [5] */
@@ -385,7 +385,7 @@ class ClientReqBus<
         this.#sResBus.dispatchEvent(
           new ResponseErrorEvent(ERROR_EVENT, {
             detail: {
-              data: new WSBusError("connectionClosed"),
+              data: new SocketError("connectionClosed"),
               correlationId: detail.correlationId,
             },
           }),
@@ -510,8 +510,8 @@ class ServerReqBus<
           /** [10] */
           this.#cResBus.addEventListener(serverEvent, handler);
 
-          const handleError = (e: CustomEventInit<WithCorrelationId<WSBusError>>) => {
-            const detail = e.detail as WithCorrelationId<WSBusError>;
+          const handleError = (e: CustomEventInit<WithCorrelationId<SocketError>>) => {
+            const detail = e.detail as WithCorrelationId<SocketError>;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
@@ -523,7 +523,7 @@ class ServerReqBus<
 
           timeoutId = setTimeout(() => {
             cleanup();
-            reject(new WSBusError("requestTimeout"));
+            reject(new SocketError("requestTimeout"));
           }, timeoutDuration);
 
           /** [8] */
@@ -571,7 +571,7 @@ class ServerReqBus<
           this.#cResBus.dispatchEvent(
             new ResponseErrorEvent(ERROR_EVENT, {
               detail: {
-                data: new WSBusError("connectionClosed"),
+                data: new SocketError("connectionClosed"),
                 correlationId: detail.correlationId,
                 ws,
               },
@@ -659,18 +659,18 @@ type RequestSchemas<T extends Record<string, RequestSchema>> = {
     : never;
 };
 
-export type WSBusSchemas = {
+export type SocketSchemas = {
   clientPush?: Record<string, PushSchema>;
   serverPush?: Record<string, PushSchema>;
   clientRequest?: Record<string, RequestSchema>;
   serverRequest?: Record<string, RequestSchema>;
 };
 
-export function createSchema<const T extends WSBusSchemas>(schemas: T): T {
+export function createSchema<const T extends SocketSchemas>(schemas: T): T {
   return schemas;
 }
 
-export function createCentralBus<const Schema extends WSBusSchemas>(schemas: Schema) {
+export function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
   type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
   type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;

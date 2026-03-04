@@ -7,7 +7,7 @@ export default defineConfig({
     "./src/types/index.ts",
     "./src/util/index.ts",
     "./src/ws/index.ts",
-    "./src/ws-bus/index.ts",
+    "./src/socket.et/index.ts",
   ],
   format: ["es"],
   dts: true,
