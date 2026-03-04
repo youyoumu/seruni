@@ -1,6 +1,6 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
-import { defineSchema, createClientSocket, createServerSocket } from "#/sock.et";
+import { defineSocketSchema, createClientSocket, createServerSocket } from "#/sock.et";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";
@@ -34,7 +34,7 @@ export type ToastPromiseConfig = z.infer<typeof zToastPromiseConfig>;
 export type ToastPromiseResolvePayload = ToastPromiseConfig;
 export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
-const schema = defineSchema({
+const schema = defineSocketSchema({
   clientPush: {
     ping: z.undefined(),
     action: z.string(),

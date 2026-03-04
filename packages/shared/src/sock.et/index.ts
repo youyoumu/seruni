@@ -45,21 +45,21 @@ class SocketError extends Error {
 class SocketEnvelope<T extends unknown = unknown> {
   constructor(
     public data: T,
-    public correlationId: string,
+    public cid: string,
     public ws?: WS,
   ) {}
 }
 
-class SocketEvent<T extends SocketEnvelope> extends Event {
+class SocketEvent<T extends unknown = unknown> extends Event {
   constructor(
     type: string,
-    public envelope: T,
+    public envelope: SocketEnvelope<T>,
   ) {
     super(type);
   }
 }
 
-class SocketErrorEvent<E extends SocketError> extends SocketEvent<SocketEnvelope<E>> {
+class SocketErrorEvent<E extends SocketError> extends SocketEvent<E> {
   static EVENT_NAME = "__error__";
   constructor(envelope: SocketEnvelope<E>) {
     super(SocketErrorEvent.EVENT_NAME, envelope);
@@ -72,8 +72,9 @@ type ReqRes<TReq = undefined, TRes = undefined> = { req: TReq; res: TRes };
 type UnknownPush = Push<unknown>;
 type UnknownReqRes = ReqRes<unknown, unknown>;
 
+const SOCKET_MAGIC_NUMBER = 16777619 as const;
 interface SocketPacket {
-  __socket__: true;
+  "sock.et": typeof SOCKET_MAGIC_NUMBER;
   type: "push" | "req" | "res";
   name: string;
   envelope: SocketEnvelope<unknown>;
@@ -137,7 +138,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       if (!(e instanceof SocketEvent)) return;
       if (this.#clientWS.ws?.readyState !== WebSocket.OPEN) return;
       const payload: SocketPacket = {
-        __socket__: true,
+        "sock.et": SOCKET_MAGIC_NUMBER,
         type: "push",
         name: clientEvent,
         envelope: e.envelope,
@@ -218,7 +219,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: SocketPacket = {
-          __socket__: true,
+          "sock.et": SOCKET_MAGIC_NUMBER,
           type: "push",
           name: serverEvent,
           envelope: e.envelope,
@@ -304,7 +305,7 @@ class ClientReqBus<
 
     /** used on client: to send a request to server and receive response */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
-      const correlationId = uid();
+      const cid = uid();
       let timeoutId: ReturnType<typeof setTimeout>;
       const timeoutDuration = data[1]?.timeout ?? this.timeout;
 
@@ -316,7 +317,7 @@ class ClientReqBus<
 
         const handler = (e: Event) => {
           if (!(e instanceof SocketEvent)) return;
-          if (e.envelope.correlationId === correlationId) {
+          if (e.envelope.cid === cid) {
             clearTimeout(timeoutId);
             cleanup();
             resolve(e.envelope.data);
@@ -327,7 +328,7 @@ class ClientReqBus<
 
         const handleError = (e: Event) => {
           if (!(e instanceof SocketErrorEvent)) return;
-          if (e.envelope.correlationId === correlationId) {
+          if (e.envelope.cid === cid) {
             clearTimeout(timeoutId);
             cleanup();
             reject(e.envelope.data);
@@ -342,9 +343,7 @@ class ClientReqBus<
         }, timeoutDuration);
 
         /** [5] */
-        this.dispatchEvent(
-          new SocketEvent(clientEvent, new SocketEnvelope(data[0], correlationId)),
-        );
+        this.dispatchEvent(new SocketEvent(clientEvent, new SocketEnvelope(data[0], cid)));
       });
     };
 
@@ -355,7 +354,7 @@ class ClientReqBus<
         const result = await handler(e.envelope.data);
         /** [7] */
         this.#sResBus.dispatchEvent(
-          new SocketEvent(clientEvent, new SocketEnvelope(result, e.envelope.correlationId)),
+          new SocketEvent(clientEvent, new SocketEnvelope(result, e.envelope.cid)),
         );
       };
       /** [6] */
@@ -368,7 +367,7 @@ class ClientReqBus<
     this.addEventListener(clientEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __socket__: true,
+        "sock.et": SOCKET_MAGIC_NUMBER,
         type: "req",
         name: clientEvent,
         envelope: e.envelope,
@@ -380,10 +379,7 @@ class ClientReqBus<
         /** [7] */
         this.#sResBus.dispatchEvent(
           new SocketErrorEvent(
-            new SocketEnvelope(
-              new SocketError(SocketError.ConnectionClosed),
-              e.envelope.correlationId,
-            ),
+            new SocketEnvelope(new SocketError(SocketError.ConnectionClosed), e.envelope.cid),
           ),
         );
       }
@@ -394,7 +390,7 @@ class ClientReqBus<
     this.#sResBus.addEventListener(clientEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __socket__: true,
+        "sock.et": SOCKET_MAGIC_NUMBER,
         type: "res",
         name: clientEvent,
         envelope: e.envelope,
@@ -483,7 +479,7 @@ class ServerReqBus<
     /** used on server: to send a request to all connected clients and receive responses */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
       return Array.from(this.#serverWS.ws).map((ws) => {
-        const correlationId = uid();
+        const cid = uid();
         const timeoutDuration = data[1]?.timeout ?? this.timeout;
         let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -495,7 +491,7 @@ class ServerReqBus<
 
           const handler = (e: Event) => {
             if (!(e instanceof SocketEvent)) return;
-            if (e.envelope.correlationId === correlationId && e.envelope.ws === ws) {
+            if (e.envelope.cid === cid && e.envelope.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
               resolve(e.envelope.data);
@@ -506,7 +502,7 @@ class ServerReqBus<
 
           const handleError = (e: Event) => {
             if (!(e instanceof SocketErrorEvent)) return;
-            if (e.envelope.correlationId === correlationId && e.envelope.ws === ws) {
+            if (e.envelope.cid === cid && e.envelope.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
               reject(e.envelope.data);
@@ -521,9 +517,7 @@ class ServerReqBus<
           }, timeoutDuration);
 
           /** [8] */
-          this.dispatchEvent(
-            new SocketEvent(serverEvent, new SocketEnvelope(data[0], correlationId)),
-          );
+          this.dispatchEvent(new SocketEvent(serverEvent, new SocketEnvelope(data[0], cid)));
         });
       });
     };
@@ -535,7 +529,7 @@ class ServerReqBus<
         const result = await handler(e.envelope.data);
         /** [10] */
         this.#cResBus.dispatchEvent(
-          new SocketEvent(serverEvent, new SocketEnvelope(result, e.envelope.correlationId)),
+          new SocketEvent(serverEvent, new SocketEnvelope(result, e.envelope.cid)),
         );
       };
       /** [9] */
@@ -548,7 +542,7 @@ class ServerReqBus<
     this.addEventListener(serverEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __socket__: true,
+        "sock.et": SOCKET_MAGIC_NUMBER,
         type: "req",
         name: serverEvent,
         envelope: e.envelope,
@@ -560,11 +554,7 @@ class ServerReqBus<
           /** [10] */
           this.#cResBus.dispatchEvent(
             new SocketErrorEvent(
-              new SocketEnvelope(
-                new SocketError(SocketError.ConnectionClosed),
-                e.envelope.correlationId,
-                ws,
-              ),
+              new SocketEnvelope(new SocketError(SocketError.ConnectionClosed), e.envelope.cid, ws),
             ),
           );
         }
@@ -576,7 +566,7 @@ class ServerReqBus<
     this.#cResBus.addEventListener(serverEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __socket__: true,
+        "sock.et": SOCKET_MAGIC_NUMBER,
         type: "res",
         name: serverEvent,
         envelope: e.envelope,
@@ -639,7 +629,7 @@ type SocketSchemas = {
   serverRequest?: Record<string, [StandardSchema, StandardSchema]>;
 };
 
-function defineSchema<T extends SocketSchemas>(schema: T) {
+function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
 
@@ -711,8 +701,45 @@ function createSocket<const Schema extends SocketSchemas>(
     return Result.succeed(result.value);
   };
 
-  const cOnPayload = async (payload: SocketPacket) => {
-    if (!payload?.__socket__) return;
+  const validateEvent = (e: MessageEvent): Result<SocketPacket, undefined> => {
+    if (!(e instanceof MessageEvent)) return Result.fail(undefined);
+    if (typeof e.data !== "string") return Result.fail(undefined);
+    try {
+      const payload = JSON.parse(e.data) as unknown;
+      if (typeof payload !== "object" || payload === null) return Result.fail(undefined);
+      if (
+        "sock.et" in payload &&
+        "type" in payload &&
+        "name" in payload &&
+        "envelope" in payload &&
+        payload["sock.et"] === SOCKET_MAGIC_NUMBER &&
+        typeof payload.type === "string" &&
+        typeof payload.name === "string" &&
+        typeof payload.envelope === "object" &&
+        payload.envelope !== null &&
+        (payload.type === ("req" as const) ||
+          payload.type === ("res" as const) ||
+          payload.type === ("push" as const)) &&
+        "cid" in payload.envelope &&
+        typeof payload.envelope.cid === "string"
+      ) {
+        const data = "data" in payload.envelope ? payload.envelope.data : undefined;
+        const result = {
+          "sock.et": payload["sock.et"],
+          name: payload.name,
+          type: payload.type,
+          envelope: new SocketEnvelope(data, payload.envelope.cid),
+        };
+        return Result.succeed(result);
+      }
+    } catch {}
+    return Result.fail(undefined);
+  };
+
+  const cOnMessage = async (event: MessageEvent) => {
+    const result = validateEvent(event);
+    if (Result.isFailure(result)) return;
+    const payload = result.value;
     switch (payload.type) {
       case "push": {
         const result = await validatePush(payload.name, payload.envelope.data, schemas.serverPush);
@@ -745,8 +772,10 @@ function createSocket<const Schema extends SocketSchemas>(
     }
   };
 
-  const sOnPayload = async (payload: SocketPacket, ws: WS) => {
-    if (!payload?.__socket__) return;
+  const sOnMessage = async (event: MessageEvent, ws: WS) => {
+    const result = validateEvent(event);
+    if (Result.isFailure(result)) return;
+    const payload = result.value;
     payload.envelope.ws = ws;
     switch (payload.type) {
       case "push": {
@@ -787,7 +816,7 @@ function createSocket<const Schema extends SocketSchemas>(
 
   return {
     client: {
-      onPayload: cOnPayload,
+      onMessage: cOnMessage,
       bindWS: clientWS.bindWS.bind(clientWS),
       api: {
         push: clientPushApi.client.push,
@@ -797,7 +826,7 @@ function createSocket<const Schema extends SocketSchemas>(
       },
     },
     server: {
-      onPayload: sOnPayload,
+      onMessage: sOnMessage,
       addWS: serverWS.addWS.bind(serverWS),
       removeWS: serverWS.removeWS.bind(serverWS),
       api: {
@@ -827,5 +856,5 @@ export {
   type SocketSchemas,
   createClientSocket,
   createServerSocket,
-  defineSchema,
+  defineSocketSchema,
 };

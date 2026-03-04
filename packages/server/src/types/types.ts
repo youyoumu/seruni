@@ -11,7 +11,7 @@ export interface AppContext {
   state: State;
   log: Logger;
   api: ServerApi;
-  onPayload: ReturnType<typeof createServerApi>["onPayload"];
+  onMessage: ReturnType<typeof createServerApi>["onMessage"];
   addWS: ReturnType<typeof createServerApi>["addWS"];
   removeWS: ReturnType<typeof createServerApi>["removeWS"];
   upgradeWebSocket: UpgradeWebSocket;

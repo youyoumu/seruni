@@ -86,7 +86,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   // migrate database
   await dbSvc.migrate();
 
-  const { api, onPayload, addWS, removeWS } = createServerApi();
+  const { api, onMessage, addWS, removeWS } = createServerApi();
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
@@ -124,7 +124,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
     state,
     log: log,
     api,
-    onPayload,
+    onMessage,
     addWS,
     removeWS,
     upgradeWebSocket: nodews.upgradeWebSocket,

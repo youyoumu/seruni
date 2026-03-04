@@ -20,7 +20,7 @@ type ServicesEventMap = {
   "textHistory:new": TextHistory;
 };
 
-const { api: clientApi, onPayload, bindWS } = createClientApi();
+const { api: clientApi, onMessage, bindWS } = createClientApi();
 
 export class Services {
   api: typeof clientApi;
@@ -54,10 +54,8 @@ export class Services {
 
     bindWS(ws);
 
-    ws.addListener("message", (detail) => {
-      if (typeof detail.data !== "string") return;
-      const payload = JSON.parse(detail.data);
-      void onPayload(payload);
+    ws.addListener("message", (event) => {
+      void onMessage(event);
     });
 
     this.api.onRequest.userAgent(() => {
