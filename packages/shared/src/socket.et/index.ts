@@ -1,85 +1,85 @@
 import { type StandardSchemaV1 } from "@standard-schema/spec";
 import { uid } from "uid";
-import { z } from "zod/mini";
 
-export type StandardSchema = StandardSchemaV1;
-
+type StandardSchema = StandardSchemaV1;
 type InferOutput<Schema extends StandardSchema> = StandardSchemaV1.InferOutput<Schema>;
+type Arg<T1, T2 = undefined> = undefined extends T1
+  ? undefined extends T2
+    ? [arg1?: T1, arg2?: T2]
+    : [arg1: T1 | undefined, arg2: T2]
+  : undefined extends T2
+    ? [arg1: T1, arg2?: T2]
+    : [arg1: T1, arg2: T2];
 
-export class SocketError extends Error {
-  type: "connectionClosed" | "requestTimeout";
-  constructor(type: "connectionClosed" | "requestTimeout") {
+const SocketErrorType = {
+  ConnectionClosed: "ConnectionClosed",
+  RequestTimeout: "RequestTimeout",
+} as const;
+
+class SocketError extends Error {
+  constructor(public readonly type: (typeof SocketErrorType)[keyof typeof SocketErrorType]) {
     super(type);
-    this.type = type;
+    this.name = "SocketError";
   }
 }
 
-export interface WithCorrelationId<T = undefined> {
-  data: T;
-  correlationId: string;
-  ws?: WS;
+class SocketEnvelope<T = undefined> {
+  constructor(
+    public data: T,
+    public correlationId: string,
+    public ws?: WS,
+  ) {}
 }
 
-class ResponseErrorEvent<E extends SocketError = SocketError> extends CustomEvent<
-  WithCorrelationId<E>
+class SocketErrorEvent<E extends SocketError = SocketError> extends CustomEvent<
+  SocketEnvelope<E>
 > {}
 
-type Arg<T1, T2 = undefined> = undefined extends T1
-  ? undefined extends T2
-    ? [data1?: T1, data2?: T2]
-    : [data1: T1 | undefined, data2: T2]
-  : undefined extends T2
-    ? [data1: T1, data2?: T2]
-    : [data1: T1, data2: T2];
-
-export type Push<T = undefined> = { payload: T };
-export type Request<TReq = undefined, TRes = undefined> = {
+type Push<T = undefined> = { payload: T };
+type ReqRes<TReq = undefined, TRes = undefined> = {
   request: TReq;
   response: TRes;
 };
 
 type UnknownPush = Push<unknown>;
-type UnknownRequest = Request<unknown, unknown>;
+type UnknownReqRes = ReqRes<unknown, unknown>;
 
 interface PushSchema<T extends StandardSchema = StandardSchema> {
   type: "push";
   schema: T;
 }
-interface RequestSchema<
+interface ReqResSchema<
   TReq extends StandardSchema = StandardSchema,
   TRes extends StandardSchema = StandardSchema,
 > {
-  type: "request";
+  type: "reqres";
   requestSchema: TReq;
   responseSchema: TRes;
 }
 
-export function push<T extends StandardSchema = StandardSchema>(schema?: T): PushSchema<T> {
-  return {
-    type: "push",
-    schema: (schema ?? z.undefined()) as unknown as T,
-  };
+function push<T extends StandardSchema = StandardSchema>(schema: T): PushSchema<T> {
+  return { type: "push", schema };
 }
 
-export function request<TReq extends StandardSchema, TRes extends StandardSchema>(
+function request<TReq extends StandardSchema, TRes extends StandardSchema>(
   requestSchema: TReq,
   responseSchema: TRes,
-): RequestSchema<TReq, TRes> {
+): ReqResSchema<TReq, TRes> {
   return {
-    type: "request",
+    type: "reqres",
     requestSchema,
     responseSchema,
   };
 }
 
-export interface WSPayload {
+interface SocketPacket {
   __wsBus__: true;
   type: "push" | "req" | "res";
   tag: string;
-  data: WithCorrelationId<unknown>;
+  envelope: SocketEnvelope<unknown>;
 }
 
-export interface WS {
+interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
 }
@@ -126,7 +126,7 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
 
     /** used on server: to handle data from client */
     const handle = (handler: (payload: CPush[T]["payload"]) => void) => {
-      const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+      const handler_ = (e: CustomEventInit<SocketEnvelope<unknown>>) => {
         handler(e.detail?.data);
       };
       /** [2] */
@@ -136,13 +136,13 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
 
     /** [1] */
     /** used on client: to forward events to server through WebSocket */
-    this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+    this.addEventListener(clientEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
       if (this.#clientWS.ws?.readyState !== WebSocket.OPEN) return;
-      const payload: WSPayload = {
+      const payload: SocketPacket = {
         __wsBus__: true,
         type: "push",
         tag: clientEvent,
-        data: e.detail as WithCorrelationId<unknown>,
+        envelope: e.detail as SocketEnvelope<unknown>,
       };
       this.#clientWS.ws.send(JSON.stringify(payload));
     });
@@ -151,9 +151,9 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
   }
 
   /** used on server: to forward data from WebSocket through events */
-  onPushPayload(payload: WSPayload) {
+  onPushPayload(payload: SocketPacket) {
     /** [2] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 
   setup(clientPush: Record<keyof CPush, 0>) {
@@ -208,7 +208,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
 
     /** used on client: to handle data from server */
     const handle = (handler: (payload: SPush[T]["payload"]) => void) => {
-      const handler_ = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+      const handler_ = (e: CustomEventInit<SocketEnvelope<unknown>>) => {
         handler(e.detail?.data);
       };
       /** [4] */
@@ -218,14 +218,14 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
 
     /** [3] */
     /** used on server: to forward events to all connected clients through WebSocket */
-    this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
+    this.addEventListener(serverEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
       this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
-        const payload: WSPayload = {
+        const payload: SocketPacket = {
           __wsBus__: true,
           type: "push",
           tag: serverEvent,
-          data: e.detail as WithCorrelationId<unknown>,
+          envelope: e.detail as SocketEnvelope<unknown>,
         };
         ws.send(JSON.stringify(payload));
       });
@@ -235,9 +235,9 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
   }
 
   /** used on client: to forward data from WebSocket through events */
-  onPushPayload(payload: WSPayload) {
+  onPushPayload(payload: SocketPacket) {
     /** [4] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 
   setup(serverPush: Record<keyof SPush, 0>) {
@@ -273,14 +273,14 @@ type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
   /** used on client: to forward response data from WebSocket through events */
-  onResponsePayload(payload: WSPayload) {
+  onResponsePayload(payload: SocketPacket) {
     /** [7] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 }
 
 class ClientReqBus<
-  CReq extends Record<string, UnknownRequest>,
+  CReq extends Record<string, UnknownReqRes>,
   SResBus extends ServerResBus,
 > extends EventTarget {
   #sResBus: SResBus;
@@ -314,8 +314,8 @@ class ClientReqBus<
           this.#sResBus.removeEventListener(clientEvent, handler);
         };
 
-        const handler = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-          const detail = e.detail as WithCorrelationId<unknown>;
+        const handler = (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+          const detail = e.detail as SocketEnvelope<unknown>;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
@@ -325,8 +325,8 @@ class ClientReqBus<
         /** [7] */
         this.#sResBus.addEventListener(clientEvent, handler);
 
-        const handleError = (e: CustomEventInit<WithCorrelationId<SocketError>>) => {
-          const detail = e.detail as WithCorrelationId<SocketError>;
+        const handleError = (e: CustomEventInit<SocketEnvelope<SocketError>>) => {
+          const detail = e.detail as SocketEnvelope<SocketError>;
           if (detail.correlationId === correlationId) {
             clearTimeout(timeoutId);
             cleanup();
@@ -338,7 +338,7 @@ class ClientReqBus<
 
         timeoutId = setTimeout(() => {
           cleanup();
-          reject(new SocketError("requestTimeout"));
+          reject(new SocketError(SocketErrorType.RequestTimeout));
         }, timeoutDuration);
 
         /** [5] */
@@ -352,8 +352,8 @@ class ClientReqBus<
 
     /** used on server: to handle request from client and return response */
     const handle = (handler: (payload: ReqType) => ResType | Promise<ResType>) => {
-      const handler_ = async (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-        const detail = e.detail as WithCorrelationId<unknown>;
+      const handler_ = async (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+        const detail = e.detail as SocketEnvelope<unknown>;
         const result = await handler(detail.data);
         /** [7] */
         this.#sResBus.dispatchEvent(
@@ -369,13 +369,13 @@ class ClientReqBus<
 
     /** [5] */
     /** used on client: to forward request to server through WebSocket */
-    this.addEventListener(clientEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-      const detail = e.detail as WithCorrelationId<unknown>;
-      const payload: WSPayload = {
+    this.addEventListener(clientEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+      const detail = e.detail as SocketEnvelope<unknown>;
+      const payload: SocketPacket = {
         __wsBus__: true,
         type: "req",
         tag: clientEvent,
-        data: detail,
+        envelope: detail,
       };
 
       if (this.#clientWS.ws?.readyState === WebSocket.OPEN) {
@@ -383,9 +383,9 @@ class ClientReqBus<
       } else {
         /** [7] */
         this.#sResBus.dispatchEvent(
-          new ResponseErrorEvent(ERROR_EVENT, {
+          new SocketErrorEvent(ERROR_EVENT, {
             detail: {
-              data: new SocketError("connectionClosed"),
+              data: new SocketError(SocketErrorType.ConnectionClosed),
               correlationId: detail.correlationId,
             },
           }),
@@ -395,29 +395,26 @@ class ClientReqBus<
 
     /** [7] */
     /** used on server: to forward response to client through WebSocket */
-    this.#sResBus.addEventListener(
-      clientEvent,
-      (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-        const detail = e.detail as WithCorrelationId<unknown>;
-        const payload: WSPayload = {
-          __wsBus__: true,
-          type: "res",
-          tag: clientEvent,
-          data: detail,
-        };
-        this.#serverWS.ws.forEach((ws) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-        });
-      },
-    );
+    this.#sResBus.addEventListener(clientEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+      const detail = e.detail as SocketEnvelope<unknown>;
+      const payload: SocketPacket = {
+        __wsBus__: true,
+        type: "res",
+        tag: clientEvent,
+        envelope: detail,
+      };
+      this.#serverWS.ws.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+      });
+    });
 
     return { request, handle };
   }
 
   /** used on server: to forward request data from WebSocket through events */
-  onRequestPayload(payload: WSPayload) {
+  onRequestPayload(payload: SocketPacket) {
     /** [6] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 
   setup(clientRequest: Record<keyof CReq, 0>) {
@@ -457,14 +454,14 @@ class ClientReqBus<
 
 class ClientResBus extends EventTarget {
   /** used on server: to forward response data from WebSocket through events */
-  onResponsePayload(payload: WSPayload) {
+  onResponsePayload(payload: SocketPacket) {
     /** [10] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 }
 
 class ServerReqBus<
-  SReq extends Record<string, UnknownRequest>,
+  SReq extends Record<string, UnknownReqRes>,
   CResBus extends ClientResBus,
 > extends EventTarget {
   #cResBus: CResBus;
@@ -499,8 +496,8 @@ class ServerReqBus<
             this.#cResBus.removeEventListener(serverEvent, handler);
           };
 
-          const handler = (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-            const detail = e.detail as WithCorrelationId<unknown>;
+          const handler = (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+            const detail = e.detail as SocketEnvelope<unknown>;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
@@ -510,8 +507,8 @@ class ServerReqBus<
           /** [10] */
           this.#cResBus.addEventListener(serverEvent, handler);
 
-          const handleError = (e: CustomEventInit<WithCorrelationId<SocketError>>) => {
-            const detail = e.detail as WithCorrelationId<SocketError>;
+          const handleError = (e: CustomEventInit<SocketEnvelope<SocketError>>) => {
+            const detail = e.detail as SocketEnvelope<SocketError>;
             if (detail.correlationId === correlationId && detail.ws === ws) {
               clearTimeout(timeoutId);
               cleanup();
@@ -523,7 +520,7 @@ class ServerReqBus<
 
           timeoutId = setTimeout(() => {
             cleanup();
-            reject(new SocketError("requestTimeout"));
+            reject(new SocketError(SocketErrorType.RequestTimeout));
           }, timeoutDuration);
 
           /** [8] */
@@ -555,13 +552,13 @@ class ServerReqBus<
 
     /** [8] */
     /** used on server: to forward request to all connected clients through WebSocket */
-    this.addEventListener(serverEvent, (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-      const detail = e.detail as WithCorrelationId<unknown>;
-      const payload: WSPayload = {
+    this.addEventListener(serverEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+      const detail = e.detail as SocketEnvelope<unknown>;
+      const payload: SocketPacket = {
         __wsBus__: true,
         type: "req",
         tag: serverEvent,
-        data: detail,
+        envelope: detail,
       };
       this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -569,9 +566,9 @@ class ServerReqBus<
         } else {
           /** [10] */
           this.#cResBus.dispatchEvent(
-            new ResponseErrorEvent(ERROR_EVENT, {
+            new SocketErrorEvent(ERROR_EVENT, {
               detail: {
-                data: new SocketError("connectionClosed"),
+                data: new SocketError(SocketErrorType.ConnectionClosed),
                 correlationId: detail.correlationId,
                 ws,
               },
@@ -583,28 +580,25 @@ class ServerReqBus<
 
     /** [10] */
     /** used on client**: to forward response to server through WebSocket */
-    this.#cResBus.addEventListener(
-      serverEvent,
-      (e: CustomEventInit<WithCorrelationId<unknown>>) => {
-        const detail = e.detail as WithCorrelationId<unknown>;
-        const payload: WSPayload = {
-          __wsBus__: true,
-          type: "res",
-          tag: serverEvent,
-          data: detail,
-        };
-        const ws = this.#clientWS.ws;
-        if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-      },
-    );
+    this.#cResBus.addEventListener(serverEvent, (e: CustomEventInit<SocketEnvelope<unknown>>) => {
+      const detail = e.detail as SocketEnvelope<unknown>;
+      const payload: SocketPacket = {
+        __wsBus__: true,
+        type: "res",
+        tag: serverEvent,
+        envelope: detail,
+      };
+      const ws = this.#clientWS.ws;
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+    });
 
     return { request, handle };
   }
 
   /** used on client: to forward request data from WebSocket through events */
-  onRequestPayload(payload: WSPayload) {
+  onRequestPayload(payload: SocketPacket) {
     /** [9] */
-    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.data }));
+    this.dispatchEvent(new CustomEvent(payload.tag, { detail: payload.envelope }));
   }
 
   setup(serverRequest: Record<keyof SReq, 0>) {
@@ -642,35 +636,35 @@ class ServerReqBus<
   }
 }
 
-export type BusSchema = {
+type BusSchema = {
   clientPush?: Record<string, UnknownPush>;
   serverPush?: Record<string, UnknownPush>;
-  clientRequest?: Record<string, UnknownRequest>;
-  serverRequest?: Record<string, UnknownRequest>;
+  clientRequest?: Record<string, UnknownReqRes>;
+  serverRequest?: Record<string, UnknownReqRes>;
 };
-export type CreateSchema<T extends BusSchema> = T;
+type CreateSchema<T extends BusSchema> = T;
 
 type PushSchemas<T extends Record<string, PushSchema>> = {
   [K in keyof T]: T[K] extends PushSchema<infer S> ? Push<InferOutput<S>> : never;
 };
-type RequestSchemas<T extends Record<string, RequestSchema>> = {
-  [K in keyof T]: T[K] extends RequestSchema<infer Req, infer Res>
-    ? Request<InferOutput<Req>, InferOutput<Res>>
+type RequestSchemas<T extends Record<string, ReqResSchema>> = {
+  [K in keyof T]: T[K] extends ReqResSchema<infer Req, infer Res>
+    ? ReqRes<InferOutput<Req>, InferOutput<Res>>
     : never;
 };
 
-export type SocketSchemas = {
+type SocketSchemas = {
   clientPush?: Record<string, PushSchema>;
   serverPush?: Record<string, PushSchema>;
-  clientRequest?: Record<string, RequestSchema>;
-  serverRequest?: Record<string, RequestSchema>;
+  clientRequest?: Record<string, ReqResSchema>;
+  serverRequest?: Record<string, ReqResSchema>;
 };
 
-export function createSchema<const T extends SocketSchemas>(schemas: T): T {
+function createSchema<const T extends SocketSchemas>(schemas: T): T {
   return schemas;
 }
 
-export function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
+function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
   type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
   type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
@@ -710,7 +704,7 @@ export function createCentralBus<const Schema extends SocketSchemas>(schemas: Sc
     isResponse: boolean,
   ) => {
     const schema = reqSchemas?.[tag];
-    if (!schema || schema.type !== "request") return data;
+    if (!schema || schema.type !== "reqres") return data;
     const schemaToUse = isResponse ? schema.responseSchema : schema.requestSchema;
     const result = await schemaToUse["~standard"].validate(data);
     if ("issues" in result) {
@@ -725,59 +719,67 @@ export function createCentralBus<const Schema extends SocketSchemas>(schemas: Sc
     return result.value;
   };
 
-  const cOnPayload = async (payload: WSPayload) => {
+  const cOnPayload = async (payload: SocketPacket) => {
     if (!payload?.__wsBus__) return;
     switch (payload.type) {
       case "push":
-        payload.data.data = await validatePush(payload.tag, payload.data.data, schemas.serverPush);
-        if (payload.data.data instanceof Error) return;
+        payload.envelope.data = await validatePush(
+          payload.tag,
+          payload.envelope.data,
+          schemas.serverPush,
+        );
+        if (payload.envelope.data instanceof Error) return;
         return sPushBus.onPushPayload(payload);
       case "req":
-        payload.data.data = await validateRequest(
+        payload.envelope.data = await validateRequest(
           payload.tag,
-          payload.data.data,
+          payload.envelope.data,
           schemas.serverRequest,
           false,
         );
-        if (payload.data.data instanceof Error) return;
+        if (payload.envelope.data instanceof Error) return;
         return sReqBus.onRequestPayload(payload);
       case "res":
-        payload.data.data = await validateRequest(
+        payload.envelope.data = await validateRequest(
           payload.tag,
-          payload.data.data,
+          payload.envelope.data,
           schemas.clientRequest,
           true,
         );
-        if (payload.data.data instanceof Error) return;
+        if (payload.envelope.data instanceof Error) return;
         return sResBus.onResponsePayload(payload);
     }
   };
 
-  const sOnPayload = async (payload: WSPayload, ws: WS) => {
+  const sOnPayload = async (payload: SocketPacket, ws: WS) => {
     if (!payload?.__wsBus__) return;
-    payload.data.ws = ws;
+    payload.envelope.ws = ws;
     switch (payload.type) {
       case "push":
-        payload.data.data = await validatePush(payload.tag, payload.data.data, schemas.clientPush);
-        if (payload.data.data instanceof Error) return;
+        payload.envelope.data = await validatePush(
+          payload.tag,
+          payload.envelope.data,
+          schemas.clientPush,
+        );
+        if (payload.envelope.data instanceof Error) return;
         return cPushBus.onPushPayload(payload);
       case "req":
-        payload.data.data = await validateRequest(
+        payload.envelope.data = await validateRequest(
           payload.tag,
-          payload.data.data,
+          payload.envelope.data,
           schemas.clientRequest,
           false,
         );
-        if (payload.data.data instanceof Error) return;
+        if (payload.envelope.data instanceof Error) return;
         return cReqBus.onRequestPayload(payload);
       case "res":
-        payload.data.data = await validateRequest(
+        payload.envelope.data = await validateRequest(
           payload.tag,
-          payload.data.data,
+          payload.envelope.data,
           schemas.serverRequest,
           true,
         );
-        if (payload.data.data instanceof Error) return;
+        if (payload.envelope.data instanceof Error) return;
         return cResBus.onResponsePayload(payload);
     }
   };
@@ -831,3 +833,21 @@ export function createCentralBus<const Schema extends SocketSchemas>(schemas: Sc
     },
   };
 }
+
+export {
+  type StandardSchema,
+  SocketErrorType,
+  SocketError,
+  type SocketEnvelope as WithCorrelationId,
+  type Push,
+  type ReqRes as Request,
+  push,
+  request,
+  type SocketPacket as WSPayload,
+  type WS,
+  type BusSchema,
+  type CreateSchema,
+  type SocketSchemas,
+  createSchema,
+  createCentralBus,
+};
