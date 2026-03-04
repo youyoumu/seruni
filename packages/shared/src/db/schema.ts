@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { z } from "zod/mini";
 
 type AnkiNote = {
   cards: number[];
@@ -31,6 +32,14 @@ export const session = sqliteTable("session", {
 });
 export type Session = typeof session.$inferSelect;
 
+export const zSession = z.object({
+  id: z.number(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  name: z.string(),
+  duration: z.number(),
+});
+
 export const textHistory = sqliteTable("text_history", {
   id: id(),
   createdAt: createdAt(),
@@ -42,6 +51,15 @@ export const textHistory = sqliteTable("text_history", {
   japaneseCharacterCount: integer("japanese_character_count").notNull().default(0),
 });
 export type TextHistory = typeof textHistory.$inferSelect;
+
+export const zTextHistory = z.object({
+  id: z.number(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  sessionId: z.number(),
+  text: z.string(),
+  japaneseCharacterCount: z.number(),
+});
 
 export const notes = sqliteTable("notes", {
   id: id(),

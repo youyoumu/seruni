@@ -1,4 +1,10 @@
+import { type StandardSchemaV1 } from "@standard-schema/spec";
 import { uid } from "uid";
+import { z } from "zod/mini";
+
+export type StandardSchema = StandardSchemaV1;
+
+type InferOutput<Schema extends StandardSchema> = StandardSchemaV1.InferOutput<Schema>;
 
 export class WSBusError extends Error {
   type: "connectionClosed" | "requestTimeout";
@@ -34,6 +40,37 @@ export type Request<TReq = undefined, TRes = undefined> = {
 
 type UnknownPush = Push<unknown>;
 type UnknownRequest = Request<unknown, unknown>;
+
+interface PushSchema<T extends StandardSchema = StandardSchema> {
+  type: "push";
+  schema: T;
+}
+interface RequestSchema<
+  TReq extends StandardSchema = StandardSchema,
+  TRes extends StandardSchema = StandardSchema,
+> {
+  type: "request";
+  requestSchema: TReq;
+  responseSchema: TRes;
+}
+
+export function push<T extends StandardSchema = StandardSchema>(schema?: T): PushSchema<T> {
+  return {
+    type: "push",
+    schema: (schema ?? z.undefined()) as unknown as T,
+  };
+}
+
+export function request<TReq extends StandardSchema, TRes extends StandardSchema>(
+  requestSchema: TReq,
+  responseSchema: TRes,
+): RequestSchema<TReq, TRes> {
+  return {
+    type: "request",
+    requestSchema,
+    responseSchema,
+  };
+}
 
 export interface WSPayload {
   __wsBus__: true;
@@ -613,28 +650,31 @@ export type BusSchema = {
 };
 export type CreateSchema<T extends BusSchema> = T;
 
-export function createCentralBus<Schema extends BusSchema>(schema: {
-  clientPush?: Record<keyof Schema["clientPush"] & string, 0>;
-  serverPush?: Record<keyof Schema["serverPush"] & string, 0>;
-  clientRequest?: Record<keyof Schema["clientRequest"] & string, 0>;
-  serverRequest?: Record<keyof Schema["serverRequest"] & string, 0>;
-}) {
-  type CPush =
-    Schema["clientPush"] extends Record<string, UnknownPush>
-      ? Schema["clientPush"]
-      : Record<string, never>;
-  type SPush =
-    Schema["serverPush"] extends Record<string, UnknownPush>
-      ? Schema["serverPush"]
-      : Record<string, never>;
-  type CReq =
-    Schema["clientRequest"] extends Record<string, UnknownRequest>
-      ? Schema["clientRequest"]
-      : Record<string, never>;
-  type SReq =
-    Schema["serverRequest"] extends Record<string, UnknownRequest>
-      ? Schema["serverRequest"]
-      : Record<string, never>;
+type PushSchemas<T extends Record<string, PushSchema>> = {
+  [K in keyof T]: T[K] extends PushSchema<infer S> ? Push<InferOutput<S>> : never;
+};
+type RequestSchemas<T extends Record<string, RequestSchema>> = {
+  [K in keyof T]: T[K] extends RequestSchema<infer Req, infer Res>
+    ? Request<InferOutput<Req>, InferOutput<Res>>
+    : never;
+};
+
+export type WSBusSchemas = {
+  clientPush?: Record<string, PushSchema>;
+  serverPush?: Record<string, PushSchema>;
+  clientRequest?: Record<string, RequestSchema>;
+  serverRequest?: Record<string, RequestSchema>;
+};
+
+export function createSchema<const T extends WSBusSchemas>(schemas: T): T {
+  return schemas;
+}
+
+export function createCentralBus<const Schema extends WSBusSchemas>(schemas: Schema) {
+  type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
+  type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
+  type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
+  type SReq = RequestSchemas<NonNullable<Schema["serverRequest"]>>;
 
   const clientWS = new ClientWS();
   const serverWS = new ServerWS();
@@ -648,35 +688,124 @@ export function createCentralBus<Schema extends BusSchema>(schema: {
   const cResBus = new ClientResBus();
   const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus, serverWS, clientWS);
 
-  const cOnPayload = (payload: WSPayload) => {
+  const validatePush = async (
+    tag: string,
+    data: unknown,
+    pushSchemas: Schema["clientPush"] | Schema["serverPush"],
+  ) => {
+    const schema = pushSchemas?.[tag];
+    if (!schema || schema.type !== "push") return data;
+    const result = await schema.schema["~standard"].validate(data);
+    if ("issues" in result) {
+      console.error(`Validation failed for push [${tag}]:`, result.issues);
+      return new Error(`Validation failed for push [${tag}]`, { cause: result.issues });
+    }
+    return result.value;
+  };
+
+  const validateRequest = async (
+    tag: string,
+    data: unknown,
+    reqSchemas: Schema["clientRequest"] | Schema["serverRequest"],
+    isResponse: boolean,
+  ) => {
+    const schema = reqSchemas?.[tag];
+    if (!schema || schema.type !== "request") return data;
+    const schemaToUse = isResponse ? schema.responseSchema : schema.requestSchema;
+    const result = await schemaToUse["~standard"].validate(data);
+    if ("issues" in result) {
+      console.error(
+        `Validation failed for ${isResponse ? "response" : "request"} [${tag}]:`,
+        result.issues,
+      );
+      return new Error(`Validation failed for ${isResponse ? "response" : "request"} [${tag}]`, {
+        cause: result.issues,
+      });
+    }
+    return result.value;
+  };
+
+  const cOnPayload = async (payload: WSPayload) => {
     if (!payload?.__wsBus__) return;
     switch (payload.type) {
       case "push":
+        payload.data.data = await validatePush(payload.tag, payload.data.data, schemas.serverPush);
+        if (payload.data.data instanceof Error) return;
         return sPushBus.onPushPayload(payload);
       case "req":
+        payload.data.data = await validateRequest(
+          payload.tag,
+          payload.data.data,
+          schemas.serverRequest,
+          false,
+        );
+        if (payload.data.data instanceof Error) return;
         return sReqBus.onRequestPayload(payload);
       case "res":
+        payload.data.data = await validateRequest(
+          payload.tag,
+          payload.data.data,
+          schemas.clientRequest,
+          true,
+        );
+        if (payload.data.data instanceof Error) return;
         return sResBus.onResponsePayload(payload);
     }
   };
 
-  const sOnPayload = (payload: WSPayload, ws: WS) => {
+  const sOnPayload = async (payload: WSPayload, ws: WS) => {
     if (!payload?.__wsBus__) return;
     payload.data.ws = ws;
     switch (payload.type) {
       case "push":
+        payload.data.data = await validatePush(payload.tag, payload.data.data, schemas.clientPush);
+        if (payload.data.data instanceof Error) return;
         return cPushBus.onPushPayload(payload);
       case "req":
+        payload.data.data = await validateRequest(
+          payload.tag,
+          payload.data.data,
+          schemas.clientRequest,
+          false,
+        );
+        if (payload.data.data instanceof Error) return;
         return cReqBus.onRequestPayload(payload);
       case "res":
+        payload.data.data = await validateRequest(
+          payload.tag,
+          payload.data.data,
+          schemas.serverRequest,
+          true,
+        );
+        if (payload.data.data instanceof Error) return;
         return cResBus.onResponsePayload(payload);
     }
   };
 
-  const clientPushApi = cPushBus.setup((schema.clientPush ?? {}) as Record<keyof CPush, 0>);
-  const clientRequestApi = cReqBus.setup((schema.clientRequest ?? {}) as Record<keyof CReq, 0>);
-  const serverPushApi = sPushBus.setup((schema.serverPush ?? {}) as Record<keyof SPush, 0>);
-  const serverRequestApi = sReqBus.setup((schema.serverRequest ?? {}) as Record<keyof SReq, 0>);
+  const clientPushApi = cPushBus.setup(
+    Object.fromEntries(Object.keys(schemas.clientPush ?? {}).map((k) => [k, 0])) as Record<
+      keyof CPush,
+      0
+    >,
+  );
+  const clientRequestApi = cReqBus.setup(
+    Object.fromEntries(Object.keys(schemas.clientRequest ?? {}).map((k) => [k, 0])) as Record<
+      keyof CReq,
+      0
+    >,
+  );
+  const serverPushApi = sPushBus.setup(
+    Object.fromEntries(Object.keys(schemas.serverPush ?? {}).map((k) => [k, 0])) as Record<
+      keyof SPush,
+      0
+    >,
+  );
+  const serverRequestApi = sReqBus.setup(
+    Object.fromEntries(Object.keys(schemas.serverRequest ?? {}).map((k) => [k, 0])) as Record<
+      keyof SReq,
+      0
+    >,
+  );
 
   return {
     client: {

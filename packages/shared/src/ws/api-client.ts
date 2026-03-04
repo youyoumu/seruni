@@ -1,115 +1,89 @@
-import { type Session, type TextHistory } from "#/db/schema";
-import type { Config } from "#/schema";
-import { createCentralBus } from "#/ws-bus";
-import type { Push, Request, CreateSchema } from "#/ws-bus";
+import { zSession, zTextHistory } from "#/db/schema";
+import { zConfig } from "#/schema";
+import { createCentralBus, createSchema, push, request } from "#/ws-bus";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
+import { z } from "zod/mini";
 export { WSBusError } from "#/ws-bus";
 
-export type ToastPayload = {
-  title?: string;
-  description?: string;
-  variant?: "default" | "accent" | "success" | "warning" | "danger";
-  action?: { id: string; text: string };
-};
+export const zToastVariant = z.enum(["default", "accent", "success", "warning", "danger"]);
 
-export type ToastPayloadFix = Omit<ToastPayload, "variant">;
-export type ToastPromiseConfig = ToastPayloadFix & { id: string };
-export type ToastPromiseResolvePayload = ToastPayloadFix & { id: string };
-export type ToastPromiseRejectPayload = ToastPayloadFix & { id: string };
+export const zToastPayload = z.object({
+  title: z.optional(z.string()),
+  description: z.optional(z.string()),
+  variant: z.optional(zToastVariant),
+  action: z.optional(z.object({ id: z.string(), text: z.string() })),
+});
 
-export type ApiSchema = CreateSchema<{
-  clientPush: {
-    ping: Push;
-    action: Push<string>;
-    refreshAfkTimer: Push;
-  };
-  serverPush: {
-    toast: Push<ToastPayload>;
-    toastPromise: Push<ToastPromiseConfig>;
-    toastPromiseResolve: Push<ToastPromiseResolvePayload>;
-    toastPromiseReject: Push<ToastPromiseRejectPayload>;
-    textHistory: Push<TextHistory>;
-    activeSession: Push<Session | null>;
-    isListeningTextHooker: Push<boolean>;
-    isTextHookerAutoResume: Push<boolean>;
-    textHookerConnected: Push<boolean>;
-    ankiConnectConnected: Push<boolean>;
-    obsConnected: Push<boolean>;
-  };
-  clientRequest: {
-    textHistoryBySessionId: Request<number, TextHistory[]>;
-    deleteTextHistory: Request<number, TextHistory | null>;
-    completedTextHistory: Request<undefined, Record<number, number>>;
-    markTextHistoryAsCompleted: Request<number, TextHistory | null>;
-    session: Request<number, Session | null>;
-    sessions: Request<undefined, Session[]>;
-    createSession: Request<string, Session>;
-    deleteSession: Request<number, Session | null>;
-    updateSession: Request<Partial<Session>, Session | null>;
-    setActiveSession: Request<number, Session | null>;
-    getActiveSession: Request<undefined, Session | null>;
-    isListeningTextHooker: Request<undefined, boolean>;
-    setIsListeningTextHooker: Request<boolean, boolean>;
-    isTextHookerAutoResume: Request<undefined, boolean>;
-    setIsTextHookerAutoResume: Request<boolean, boolean>;
-    textHookerConnected: Request<undefined, boolean>;
-    ankiConnectConnected: Request<undefined, boolean>;
-    obsConnected: Request<undefined, boolean>;
-    config: Request<undefined, Config>;
-    setConfig: Request<Partial<Config>, Config | null>;
-    checkHealth: Request<undefined, undefined>;
-  };
-  serverRequest: {
-    userAgent: Request<undefined, string>;
-  };
-}>;
+export const zToastPayloadFix = z.object({
+  title: z.optional(z.string()),
+  description: z.optional(z.string()),
+  action: z.optional(z.object({ id: z.string(), text: z.string() })),
+});
+
+export const zToastPromiseConfig = z.object({
+  title: z.optional(z.string()),
+  description: z.optional(z.string()),
+  action: z.optional(z.object({ id: z.string(), text: z.string() })),
+  id: z.string(),
+});
+
+export type ToastVariant = z.infer<typeof zToastVariant>;
+export type ToastPayload = z.infer<typeof zToastPayload>;
+export type ToastPayloadFix = z.infer<typeof zToastPayloadFix>;
+export type ToastPromiseConfig = z.infer<typeof zToastPromiseConfig>;
+export type ToastPromiseResolvePayload = ToastPromiseConfig;
+export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
 const createApi = () => {
-  return createCentralBus<ApiSchema>({
-    clientPush: {
-      ping: 0,
-      action: 0,
-      refreshAfkTimer: 0,
-    },
-    serverPush: {
-      toast: 0,
-      toastPromise: 0,
-      toastPromiseResolve: 0,
-      toastPromiseReject: 0,
-      textHistory: 0,
-      activeSession: 0,
-      isListeningTextHooker: 0,
-      isTextHookerAutoResume: 0,
-      textHookerConnected: 0,
-      ankiConnectConnected: 0,
-      obsConnected: 0,
-    },
-    clientRequest: {
-      textHistoryBySessionId: 0,
-      deleteTextHistory: 0,
-      completedTextHistory: 0,
-      markTextHistoryAsCompleted: 0,
-      session: 0,
-      sessions: 0,
-      createSession: 0,
-      deleteSession: 0,
-      updateSession: 0,
-      setActiveSession: 0,
-      getActiveSession: 0,
-      isListeningTextHooker: 0,
-      setIsListeningTextHooker: 0,
-      isTextHookerAutoResume: 0,
-      setIsTextHookerAutoResume: 0,
-      textHookerConnected: 0,
-      ankiConnectConnected: 0,
-      obsConnected: 0,
-      config: 0,
-      setConfig: 0,
-      checkHealth: 0,
-    },
-    serverRequest: { userAgent: 0 },
-  });
+  return createCentralBus(
+    createSchema({
+      clientPush: {
+        ping: push(),
+        action: push(z.string()),
+        refreshAfkTimer: push(),
+      },
+      serverPush: {
+        toast: push(zToastPayload),
+        toastPromise: push(zToastPromiseConfig),
+        toastPromiseResolve: push(zToastPromiseConfig),
+        toastPromiseReject: push(zToastPromiseConfig),
+        textHistory: push(zTextHistory),
+        activeSession: push(z.nullable(zSession)),
+        isListeningTextHooker: push(z.boolean()),
+        isTextHookerAutoResume: push(z.boolean()),
+        textHookerConnected: push(z.boolean()),
+        ankiConnectConnected: push(z.boolean()),
+        obsConnected: push(z.boolean()),
+      },
+      clientRequest: {
+        textHistoryBySessionId: request(z.number(), z.array(zTextHistory)),
+        deleteTextHistory: request(z.number(), z.nullable(zTextHistory)),
+        completedTextHistory: request(z.undefined(), z.record(z.number(), z.number())),
+        markTextHistoryAsCompleted: request(z.number(), z.nullable(zTextHistory)),
+        session: request(z.number(), z.nullable(zSession)),
+        sessions: request(z.undefined(), z.array(zSession)),
+        createSession: request(z.string(), zSession),
+        deleteSession: request(z.number(), z.nullable(zSession)),
+        updateSession: request(z.partial(zSession), z.nullable(zSession)),
+        setActiveSession: request(z.number(), z.nullable(zSession)),
+        getActiveSession: request(z.undefined(), z.nullable(zSession)),
+        isListeningTextHooker: request(z.undefined(), z.boolean()),
+        setIsListeningTextHooker: request(z.boolean(), z.boolean()),
+        isTextHookerAutoResume: request(z.undefined(), z.boolean()),
+        setIsTextHookerAutoResume: request(z.boolean(), z.boolean()),
+        textHookerConnected: request(z.undefined(), z.boolean()),
+        ankiConnectConnected: request(z.undefined(), z.boolean()),
+        obsConnected: request(z.undefined(), z.boolean()),
+        config: request(z.undefined(), zConfig),
+        setConfig: request(zConfig, z.nullable(zConfig)),
+        checkHealth: request(z.undefined(), z.undefined()),
+      },
+      serverRequest: {
+        userAgent: request(z.undefined(), z.string()),
+      },
+    }),
+  );
 };
 
 export type ClientApi = ReturnType<typeof createApi>["client"]["api"];

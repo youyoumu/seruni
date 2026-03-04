@@ -12,7 +12,7 @@ export function useSetConfig() {
   const { api, keyring } = useServices();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (config: Partial<Config>) => {
+    mutationFn: async (config: Config) => {
       const data = await api.request.setConfig(config);
       if (!data) throw Error("Failed to set config");
       return data;
