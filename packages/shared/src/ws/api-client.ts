@@ -1,6 +1,6 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
-import { createCentralBus, push, request } from "#/socket.et";
+import { defineSchema, createClientSocket, createServerSocket } from "#/socket.et";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";
@@ -34,62 +34,59 @@ export type ToastPromiseConfig = z.infer<typeof zToastPromiseConfig>;
 export type ToastPromiseResolvePayload = ToastPromiseConfig;
 export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
-const createApi = () => {
-  return createCentralBus({
-    clientPush: {
-      ping: push(z.undefined()),
-      action: push(z.string()),
-      refreshAfkTimer: push(z.undefined()),
-    },
-    serverPush: {
-      toast: push(zToastPayload),
-      toastPromise: push(zToastPromiseConfig),
-      toastPromiseResolve: push(zToastPromiseConfig),
-      toastPromiseReject: push(zToastPromiseConfig),
-      textHistory: push(zTextHistory),
-      activeSession: push(z.nullable(zSession)),
-      isListeningTextHooker: push(z.boolean()),
-      isTextHookerAutoResume: push(z.boolean()),
-      textHookerConnected: push(z.boolean()),
-      ankiConnectConnected: push(z.boolean()),
-      obsConnected: push(z.boolean()),
-    },
-    clientRequest: {
-      textHistoryBySessionId: request(z.number(), z.array(zTextHistory)),
-      deleteTextHistory: request(z.number(), z.nullable(zTextHistory)),
-      completedTextHistory: request(z.undefined(), z.record(z.number(), z.number())),
-      markTextHistoryAsCompleted: request(z.number(), z.nullable(zTextHistory)),
-      session: request(z.number(), z.nullable(zSession)),
-      sessions: request(z.undefined(), z.array(zSession)),
-      createSession: request(z.string(), zSession),
-      deleteSession: request(z.number(), z.nullable(zSession)),
-      updateSession: request(z.partial(zSession), z.nullable(zSession)),
-      setActiveSession: request(z.number(), z.nullable(zSession)),
-      getActiveSession: request(z.undefined(), z.nullable(zSession)),
-      isListeningTextHooker: request(z.undefined(), z.boolean()),
-      setIsListeningTextHooker: request(z.boolean(), z.boolean()),
-      isTextHookerAutoResume: request(z.undefined(), z.boolean()),
-      setIsTextHookerAutoResume: request(z.boolean(), z.boolean()),
-      textHookerConnected: request(z.undefined(), z.boolean()),
-      ankiConnectConnected: request(z.undefined(), z.boolean()),
-      obsConnected: request(z.undefined(), z.boolean()),
-      config: request(z.undefined(), zConfig),
-      setConfig: request(zConfig, z.nullable(zConfig)),
-      checkHealth: request(z.undefined(), z.undefined()),
-    },
-    serverRequest: {
-      userAgent: request(z.undefined(), z.string()),
-    },
-  });
-};
+const schema = defineSchema({
+  clientPush: {
+    ping: z.undefined(),
+    action: z.string(),
+    refreshAfkTimer: z.undefined(),
+  },
+  serverPush: {
+    toast: zToastPayload,
+    toastPromise: zToastPromiseConfig,
+    toastPromiseResolve: zToastPromiseConfig,
+    toastPromiseReject: zToastPromiseConfig,
+    textHistory: zTextHistory,
+    activeSession: z.nullable(zSession),
+    isListeningTextHooker: z.boolean(),
+    isTextHookerAutoResume: z.boolean(),
+    textHookerConnected: z.boolean(),
+    ankiConnectConnected: z.boolean(),
+    obsConnected: z.boolean(),
+  },
+  clientRequest: {
+    textHistoryBySessionId: [z.number(), z.array(zTextHistory)],
+    deleteTextHistory: [z.number(), z.nullable(zTextHistory)],
+    completedTextHistory: [z.undefined(), z.record(z.number(), z.number())],
+    markTextHistoryAsCompleted: [z.number(), z.nullable(zTextHistory)],
+    session: [z.number(), z.nullable(zSession)],
+    sessions: [z.undefined(), z.array(zSession)],
+    createSession: [z.string(), zSession],
+    deleteSession: [z.number(), z.nullable(zSession)],
+    updateSession: [z.partial(zSession), z.nullable(zSession)],
+    setActiveSession: [z.number(), z.nullable(zSession)],
+    getActiveSession: [z.undefined(), z.nullable(zSession)],
+    isListeningTextHooker: [z.undefined(), z.boolean()],
+    setIsListeningTextHooker: [z.boolean(), z.boolean()],
+    isTextHookerAutoResume: [z.undefined(), z.boolean()],
+    setIsTextHookerAutoResume: [z.boolean(), z.boolean()],
+    textHookerConnected: [z.undefined(), z.boolean()],
+    ankiConnectConnected: [z.undefined(), z.boolean()],
+    obsConnected: [z.undefined(), z.boolean()],
+    config: [z.undefined(), zConfig],
+    setConfig: [zConfig, z.nullable(zConfig)],
+    checkHealth: [z.undefined(), z.undefined()],
+  },
+  serverRequest: {
+    userAgent: [z.undefined(), z.string()],
+  },
+});
 
-export type ClientApi = ReturnType<typeof createApi>["client"]["api"];
+export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
-  const api = createApi();
-  return api.client;
+  return createClientSocket(schema);
 }
 
-export type ServerApi = ReturnType<typeof createApi>["server"]["api"] & {
+export type ServerApi = ReturnType<typeof createServerApi>["api"] & {
   toastPromise: ToastPromiseFn;
 };
 
@@ -103,8 +100,8 @@ type ToastPromiseFn = <TData, TError>(
 ) => Promise<R.Result<TData, TError>>;
 
 export function createServerApi() {
-  const api = createApi();
-  const push = api.server.api.push;
+  const socket = createServerSocket(schema);
+  const push = socket.api.push;
 
   const toastPromise: ToastPromiseFn = async (promise, options) => {
     const { loading, success, error } = options;
@@ -124,9 +121,9 @@ export function createServerApi() {
   };
 
   return {
-    ...api.server,
+    ...socket,
     api: {
-      ...api.server.api,
+      ...socket.api,
       toastPromise,
     },
   };

@@ -11,6 +11,26 @@ type Arg<T1, T2 = undefined> = undefined extends T1
     ? [arg1: T1, arg2?: T2]
     : [arg1: T1, arg2: T2];
 
+type Result<TData, TError> = { type: "success"; value: TData } | { type: "failure"; error: TError };
+const Result = {
+  succeed: <TData, TError>(value: TData): Result<TData, TError> => {
+    return { type: "success", value };
+  },
+  fail: <TData, TError>(error: TError): Result<TData, TError> => {
+    return { type: "failure", error };
+  },
+  isSuccess: <TData, TError>(
+    result: Result<TData, TError>,
+  ): result is { type: "success"; value: TData } => {
+    return result.type === "success";
+  },
+  isFailure: <TData, TError>(
+    result: Result<TData, TError>,
+  ): result is { type: "failure"; error: TError } => {
+    return result.type === "failure";
+  },
+};
+
 type SocketErrorType = typeof SocketError.ConnectionClosed | typeof SocketError.RequestTimeout;
 
 class SocketError extends Error {
@@ -32,7 +52,7 @@ class SocketEnvelope<T extends unknown = unknown> {
 
 class SocketEvent<T extends SocketEnvelope> extends Event {
   constructor(
-    public type: string,
+    type: string,
     public envelope: T,
   ) {
     super(type);
@@ -54,34 +74,6 @@ type ReqRes<TReq = undefined, TRes = undefined> = {
 
 type UnknownPush = Push<unknown>;
 type UnknownReqRes = ReqRes<unknown, unknown>;
-
-interface PushSchema<T extends StandardSchema = StandardSchema> {
-  type: "push";
-  schema: T;
-}
-interface ReqResSchema<
-  TReq extends StandardSchema = StandardSchema,
-  TRes extends StandardSchema = StandardSchema,
-> {
-  type: "reqres";
-  requestSchema: TReq;
-  responseSchema: TRes;
-}
-
-function push<T extends StandardSchema = StandardSchema>(schema: T): PushSchema<T> {
-  return { type: "push", schema };
-}
-
-function request<TReq extends StandardSchema, TRes extends StandardSchema>(
-  requestSchema: TReq,
-  responseSchema: TRes,
-): ReqResSchema<TReq, TRes> {
-  return {
-    type: "reqres",
-    requestSchema,
-    responseSchema,
-  };
-}
 
 interface SocketPacket {
   __wsBus__: true;
@@ -634,35 +626,25 @@ class ServerReqBus<
   }
 }
 
-type BusSchema = {
-  clientPush?: Record<string, UnknownPush>;
-  serverPush?: Record<string, UnknownPush>;
-  clientRequest?: Record<string, UnknownReqRes>;
-  serverRequest?: Record<string, UnknownReqRes>;
+type PushSchemas<T extends Record<string, StandardSchema>> = {
+  [K in keyof T]: Push<InferOutput<T[K]>>;
 };
-type CreateSchema<T extends BusSchema> = T;
-
-type PushSchemas<T extends Record<string, PushSchema>> = {
-  [K in keyof T]: T[K] extends PushSchema<infer S> ? Push<InferOutput<S>> : never;
-};
-type RequestSchemas<T extends Record<string, ReqResSchema>> = {
-  [K in keyof T]: T[K] extends ReqResSchema<infer Req, infer Res>
-    ? ReqRes<InferOutput<Req>, InferOutput<Res>>
-    : never;
+type RequestSchemas<T extends Record<string, [StandardSchema, StandardSchema]>> = {
+  [K in keyof T]: ReqRes<InferOutput<T[K][0]>, InferOutput<T[K][1]>>;
 };
 
 type SocketSchemas = {
-  clientPush?: Record<string, PushSchema>;
-  serverPush?: Record<string, PushSchema>;
-  clientRequest?: Record<string, ReqResSchema>;
-  serverRequest?: Record<string, ReqResSchema>;
+  clientPush?: Record<string, StandardSchema>;
+  serverPush?: Record<string, StandardSchema>;
+  clientRequest?: Record<string, [StandardSchema, StandardSchema]>;
+  serverRequest?: Record<string, [StandardSchema, StandardSchema]>;
 };
 
-function createSchema<const T extends SocketSchemas>(schemas: T): T {
-  return schemas;
+function defineSchema<T extends SocketSchemas>(schema: T) {
+  return schema;
 }
 
-function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
+function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
   type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
   type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
@@ -684,68 +666,67 @@ function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
     tag: string,
     data: unknown,
     pushSchemas: Schema["clientPush"] | Schema["serverPush"],
-  ) => {
+  ): Promise<Result<unknown, Error>> => {
     const schema = pushSchemas?.[tag];
-    if (!schema || schema.type !== "push") return data;
-    const result = await schema.schema["~standard"].validate(data);
+    if (!schema) throw new Error(`No schema found for push [${tag}]`);
+    const result = await schema["~standard"].validate(data);
     if ("issues" in result) {
-      console.error(`Validation failed for push [${tag}]:`, result.issues);
-      return new Error(`Validation failed for push [${tag}]`, { cause: result.issues });
+      const error = new Error(`Validation failed for push [${tag}]`, { cause: result.issues });
+      console.error(error.message, error.cause);
+      return Result.fail(error);
     }
-    return result.value;
+    return Result.succeed(result.value);
   };
 
   const validateRequest = async (
     tag: string,
     data: unknown,
     reqSchemas: Schema["clientRequest"] | Schema["serverRequest"],
-    isResponse: boolean,
+    type: "request" | "response",
   ) => {
     const schema = reqSchemas?.[tag];
-    if (!schema || schema.type !== "reqres") return data;
-    const schemaToUse = isResponse ? schema.responseSchema : schema.requestSchema;
+    if (!schema) throw new Error(`No schema found for request [${tag}]`);
+    const schemaToUse = type === "request" ? schema[0] : schema[1];
     const result = await schemaToUse["~standard"].validate(data);
     if ("issues" in result) {
-      console.error(
-        `Validation failed for ${isResponse ? "response" : "request"} [${tag}]:`,
-        result.issues,
-      );
-      return new Error(`Validation failed for ${isResponse ? "response" : "request"} [${tag}]`, {
-        cause: result.issues,
-      });
+      const error = new Error(`Validation failed for ${type} [${tag}]`, { cause: result.issues });
+      console.error(error.message, error.cause);
+      return Result.fail(error);
     }
-    return result.value;
+    return Result.succeed(result.value);
   };
 
   const cOnPayload = async (payload: SocketPacket) => {
     if (!payload?.__wsBus__) return;
     switch (payload.type) {
-      case "push":
-        payload.envelope.data = await validatePush(
-          payload.tag,
-          payload.envelope.data,
-          schemas.serverPush,
-        );
-        if (payload.envelope.data instanceof Error) return;
+      case "push": {
+        const result = await validatePush(payload.tag, payload.envelope.data, schemas.serverPush);
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return sPushBus.onPushPayload(payload);
-      case "req":
-        payload.envelope.data = await validateRequest(
+      }
+      case "req": {
+        const result = await validateRequest(
           payload.tag,
           payload.envelope.data,
           schemas.serverRequest,
-          false,
+          "request",
         );
-        if (payload.envelope.data instanceof Error) return;
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return sReqBus.onRequestPayload(payload);
-      case "res":
-        payload.envelope.data = await validateRequest(
+      }
+      case "res": {
+        const result = await validateRequest(
           payload.tag,
           payload.envelope.data,
           schemas.clientRequest,
-          true,
+          "response",
         );
-        if (payload.envelope.data instanceof Error) return;
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return sResBus.onResponsePayload(payload);
+      }
     }
   };
 
@@ -753,32 +734,34 @@ function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
     if (!payload?.__wsBus__) return;
     payload.envelope.ws = ws;
     switch (payload.type) {
-      case "push":
-        payload.envelope.data = await validatePush(
-          payload.tag,
-          payload.envelope.data,
-          schemas.clientPush,
-        );
-        if (payload.envelope.data instanceof Error) return;
+      case "push": {
+        const result = await validatePush(payload.tag, payload.envelope.data, schemas.clientPush);
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return cPushBus.onPushPayload(payload);
-      case "req":
-        payload.envelope.data = await validateRequest(
+      }
+      case "req": {
+        const result = await validateRequest(
           payload.tag,
           payload.envelope.data,
           schemas.clientRequest,
-          false,
+          "request",
         );
-        if (payload.envelope.data instanceof Error) return;
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return cReqBus.onRequestPayload(payload);
-      case "res":
-        payload.envelope.data = await validateRequest(
+      }
+      case "res": {
+        const result = await validateRequest(
           payload.tag,
           payload.envelope.data,
           schemas.serverRequest,
-          true,
+          "response",
         );
-        if (payload.envelope.data instanceof Error) return;
+        if (Result.isFailure(result)) return;
+        payload.envelope.data = result.value;
         return cResBus.onResponsePayload(payload);
+      }
     }
   };
 
@@ -812,19 +795,22 @@ function createCentralBus<const Schema extends SocketSchemas>(schemas: Schema) {
   };
 }
 
+function createClientSocket<T extends SocketSchemas>(schemas: T) {
+  return createApi(schemas).client;
+}
+
+function createServerSocket<T extends SocketSchemas>(schemas: T) {
+  return createApi(schemas).server;
+}
+
 export {
   type StandardSchema,
   SocketError,
   type SocketEnvelope,
-  type Push,
-  type ReqRes,
-  push,
-  request,
   type SocketPacket,
   type WS,
-  type BusSchema,
-  type CreateSchema,
   type SocketSchemas,
-  createSchema,
-  createCentralBus,
+  createClientSocket,
+  createServerSocket,
+  defineSchema,
 };
