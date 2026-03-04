@@ -55,8 +55,8 @@ export class Services {
     bindWS(ws);
 
     ws.addListener("message", (detail) => {
-      if (typeof detail !== "string") return;
-      const payload = JSON.parse(detail);
+      if (typeof detail.data !== "string") return;
+      const payload = JSON.parse(detail.data);
       void onPayload(payload);
     });
 

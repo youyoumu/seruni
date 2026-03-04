@@ -33,20 +33,20 @@ export class TextHookerClient extends ReconnectingWebSocket {
       });
     }, 1000);
 
-    this.addListener("message", async (detail) => {
+    this.addListener("message", async (event) => {
       const now = new Date();
-      if (typeof detail === "string") {
+      if (typeof event.data === "string") {
         if (this.state.isTextHookerAutoResume() && !this.state.isListeningTextHooker()) {
           this.state.isListeningTextHooker(true);
         }
         this.setupAfkTimer();
-        const text = detail.replaceAll("\n", " ").trim();
+        const text = event.data.replaceAll("\n", " ").trim();
         const isListeningTextHooker = this.state.isListeningTextHooker();
         if (!isListeningTextHooker) {
           textHookerToastD();
           return;
         }
-        this.log.info(`Message: ${detail}`);
+        this.log.info(`Message: ${event.data}`);
         const activeSessionId = this.state.activeSessionId();
         if (!activeSessionId) return;
         const row = this.db

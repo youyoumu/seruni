@@ -11,18 +11,18 @@ app.get("/", (c, next) => {
 
   return upgradeWebSocket(() => {
     return {
-      onMessage(e: MessageEvent, ws: unknown) {
+      onMessage(e: MessageEvent, ws) {
         const payload = JSON.parse(e.data.toString());
-        void onPayload(payload, ws as Parameters<typeof onPayload>[1]);
+        void onPayload(payload, ws);
       },
-      onOpen: (_: unknown, ws: unknown) => {
+      onOpen: (_, ws) => {
         log.info("Connection opened");
         addWS(ws as Parameters<typeof addWS>[0]);
       },
-      onClose: (_: unknown, ws: unknown) => {
+      onClose: (_, ws) => {
         log.warn("Connection closed");
         state.isListeningTextHooker(false);
-        removeWS(ws as Parameters<typeof removeWS>[0]);
+        removeWS(ws);
       },
     };
   })(c, next);

@@ -8,7 +8,7 @@ interface Logger {
 export type ReconnectingWebSocketEventMap = {
   open: undefined;
   close: undefined;
-  message: unknown;
+  message: MessageEvent<unknown>;
   error: Event;
 };
 
@@ -59,7 +59,7 @@ export class ReconnectingWebSocket<
     };
 
     this.#ws.onmessage = (event) => {
-      this.dispatch("message", event.data);
+      this.dispatch("message", event);
     };
 
     this.#ws.onclose = () => {
