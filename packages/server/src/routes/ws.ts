@@ -13,7 +13,7 @@ app.get("/", (c, next) => {
     return {
       onMessage(e: MessageEvent, ws: unknown) {
         const payload = JSON.parse(e.data.toString());
-        onPayload(payload, ws as Parameters<typeof onPayload>[1]);
+        void onPayload(payload, ws as Parameters<typeof onPayload>[1]);
       },
       onOpen: (_: unknown, ws: unknown) => {
         log.info("Connection opened");

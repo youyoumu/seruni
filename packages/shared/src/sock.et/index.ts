@@ -263,7 +263,7 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
   }
 }
 
-const DEFAULT_TIMEOUT = 5 * 60 * 1000;
+const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 type RequestOption = { timeout?: number } | undefined;
 
 class ServerResBus extends EventTarget {
@@ -283,7 +283,12 @@ class ClientReqBus<
   #serverWS: ServerWS;
   #reqEvents = new Set<string>();
 
-  constructor(sResBus: SResBus, clientWS: ClientWS, serverWS: ServerWS) {
+  constructor(
+    sResBus: SResBus,
+    clientWS: ClientWS,
+    serverWS: ServerWS,
+    private timeout = DEFAULT_TIMEOUT,
+  ) {
     super();
     this.#sResBus = sResBus;
     this.#clientWS = clientWS;
@@ -301,7 +306,7 @@ class ClientReqBus<
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
       const correlationId = uid();
       let timeoutId: ReturnType<typeof setTimeout>;
-      const timeoutDuration = data[1]?.timeout ?? DEFAULT_TIMEOUT;
+      const timeoutDuration = data[1]?.timeout ?? this.timeout;
 
       return new Promise((resolve, reject) => {
         const cleanup = () => {
@@ -456,7 +461,12 @@ class ServerReqBus<
   #clientWS: ClientWS;
   #reqEvents = new Set<string>();
 
-  constructor(cResBus: CResBus, serverWS: ServerWS, clientWS: ClientWS) {
+  constructor(
+    cResBus: CResBus,
+    serverWS: ServerWS,
+    clientWS: ClientWS,
+    private timeout = DEFAULT_TIMEOUT,
+  ) {
     super();
     this.#cResBus = cResBus;
     this.#serverWS = serverWS;
@@ -474,7 +484,7 @@ class ServerReqBus<
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
       return Array.from(this.#serverWS.ws).map((ws) => {
         const correlationId = uid();
-        const timeoutDuration = data[1]?.timeout ?? 5 * 60 * 1000;
+        const timeoutDuration = data[1]?.timeout ?? this.timeout;
         let timeoutId: ReturnType<typeof setTimeout>;
 
         return new Promise((resolve, reject) => {
@@ -633,7 +643,13 @@ function defineSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
 
-function createSocket<const Schema extends SocketSchemas>(schemas: Schema) {
+function createSocket<const Schema extends SocketSchemas>(
+  schemas: Schema,
+  options?: {
+    clientTimeout?: number;
+    serverTimeout?: number;
+  },
+) {
   type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
   type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
@@ -646,10 +662,20 @@ function createSocket<const Schema extends SocketSchemas>(schemas: Schema) {
   const sPushBus = new ServerPushBus<SPush>(serverWS);
 
   const sResBus = new ServerResBus();
-  const cReqBus = new ClientReqBus<CReq, ServerResBus>(sResBus, clientWS, serverWS);
+  const cReqBus = new ClientReqBus<CReq, ServerResBus>(
+    sResBus,
+    clientWS,
+    serverWS,
+    options?.clientTimeout,
+  );
 
   const cResBus = new ClientResBus();
-  const sReqBus = new ServerReqBus<SReq, ClientResBus>(cResBus, serverWS, clientWS);
+  const sReqBus = new ServerReqBus<SReq, ClientResBus>(
+    cResBus,
+    serverWS,
+    clientWS,
+    options?.serverTimeout,
+  );
 
   const validatePush = async (
     tag: string,
@@ -784,12 +810,12 @@ function createSocket<const Schema extends SocketSchemas>(schemas: Schema) {
   };
 }
 
-function createClientSocket<T extends SocketSchemas>(schemas: T) {
-  return createSocket(schemas).client;
+function createClientSocket<T extends SocketSchemas>(schemas: T, options?: { timeout?: number }) {
+  return createSocket(schemas, { clientTimeout: options?.timeout }).client;
 }
 
-function createServerSocket<T extends SocketSchemas>(schemas: T) {
-  return createSocket(schemas).server;
+function createServerSocket<T extends SocketSchemas>(schemas: T, options?: { timeout?: number }) {
+  return createSocket(schemas, { serverTimeout: options?.timeout }).server;
 }
 
 export {

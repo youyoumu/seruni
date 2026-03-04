@@ -57,7 +57,7 @@ export class Services {
     ws.addListener("message", (detail) => {
       if (typeof detail !== "string") return;
       const payload = JSON.parse(detail);
-      onPayload(payload);
+      void onPayload(payload);
     });
 
     this.api.onRequest.userAgent(() => {
