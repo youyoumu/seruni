@@ -7,7 +7,7 @@
     "./types": "./dist/types/index.mjs",
     "./util": "./dist/util/index.mjs",
     "./ws": "./dist/ws/index.mjs",
-    "./socket.et": "./dist/socket.et/index.mjs"
+    "./sock.et": "./dist/sock.et/index.mjs"
   },
   "scripts": {
     "dev": "tsdown --watch",

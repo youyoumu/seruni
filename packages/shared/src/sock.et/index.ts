@@ -66,19 +66,16 @@ class SocketErrorEvent<E extends SocketError> extends SocketEvent<SocketEnvelope
   }
 }
 
-type Push<T = undefined> = { payload: T };
-type ReqRes<TReq = undefined, TRes = undefined> = {
-  request: TReq;
-  response: TRes;
-};
+type Push<T = undefined> = { push: T };
+type ReqRes<TReq = undefined, TRes = undefined> = { req: TReq; res: TRes };
 
 type UnknownPush = Push<unknown>;
 type UnknownReqRes = ReqRes<unknown, unknown>;
 
 interface SocketPacket {
-  __wsBus__: true;
+  __socket__: true;
   type: "push" | "req" | "res";
-  tag: string;
+  name: string;
   envelope: SocketEnvelope<unknown>;
 }
 
@@ -118,13 +115,13 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
     this.#events.add(clientEvent);
 
     /** used on client: to push data to server */
-    const push = (...data: Arg<CPush[T]["payload"]>) => {
+    const push = (...data: Arg<CPush[T]["push"]>) => {
       /** [1] */
       this.dispatchEvent(new SocketEvent(clientEvent, new SocketEnvelope(data[0], uid())));
     };
 
     /** used on server: to handle data from client */
-    const handle = (handler: (payload: CPush[T]["payload"]) => void) => {
+    const handle = (handler: (payload: CPush[T]["push"]) => void) => {
       const handler_ = (e: Event) => {
         if (!(e instanceof SocketEvent)) return;
         handler(e.envelope.data);
@@ -140,9 +137,9 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
       if (!(e instanceof SocketEvent)) return;
       if (this.#clientWS.ws?.readyState !== WebSocket.OPEN) return;
       const payload: SocketPacket = {
-        __wsBus__: true,
+        __socket__: true,
         type: "push",
-        tag: clientEvent,
+        name: clientEvent,
         envelope: e.envelope,
       };
       this.#clientWS.ws.send(JSON.stringify(payload));
@@ -154,13 +151,13 @@ class ClientPushBus<CPush extends Record<string, UnknownPush>> extends EventTarg
   /** used on server: to forward data from WebSocket through events */
   onPushPayload(payload: SocketPacket) {
     /** [2] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 
   setup(clientPush: (keyof CPush & string)[]) {
-    type ClientPush = { [K in keyof CPush]: (...data: Arg<CPush[K]["payload"]>) => void };
+    type ClientPush = { [K in keyof CPush]: (...data: Arg<CPush[K]["push"]>) => void };
     type ServerHandlePush = {
-      [K in keyof CPush]: (handler: (payload: CPush[K]["payload"]) => void) => () => void;
+      [K in keyof CPush]: (handler: (payload: CPush[K]["push"]) => void) => () => void;
     };
 
     const result: {
@@ -198,13 +195,13 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
     this.#events.add(serverEvent);
 
     /** used on server: to push data to all connected clients */
-    const push = (...data: Arg<SPush[T]["payload"]>) => {
+    const push = (...data: Arg<SPush[T]["push"]>) => {
       /** [3] */
       this.dispatchEvent(new SocketEvent(serverEvent, new SocketEnvelope(data[0], uid())));
     };
 
     /** used on client: to handle data from server */
-    const handle = (handler: (payload: SPush[T]["payload"]) => void) => {
+    const handle = (handler: (payload: SPush[T]["push"]) => void) => {
       const handler_ = (e: Event) => {
         if (!(e instanceof SocketEvent)) return;
         handler(e.envelope.data);
@@ -221,9 +218,9 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
       this.#serverWS.ws.forEach((ws) => {
         if (ws.readyState !== WebSocket.OPEN) return;
         const payload: SocketPacket = {
-          __wsBus__: true,
+          __socket__: true,
           type: "push",
-          tag: serverEvent,
+          name: serverEvent,
           envelope: e.envelope,
         };
         ws.send(JSON.stringify(payload));
@@ -236,14 +233,14 @@ class ServerPushBus<SPush extends Record<string, UnknownPush>> extends EventTarg
   /** used on client: to forward data from WebSocket through events */
   onPushPayload(payload: SocketPacket) {
     /** [4] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 
   setup(serverPush: (keyof SPush & string)[]) {
     type ClientHandlePush = {
-      [K in keyof SPush]: (handler: (payload: SPush[K]["payload"]) => void) => () => void;
+      [K in keyof SPush]: (handler: (payload: SPush[K]["push"]) => void) => () => void;
     };
-    type ServerPush = { [K in keyof SPush]: (...data: Arg<SPush[K]["payload"]>) => void };
+    type ServerPush = { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
 
     const result: {
       client: { onPush: Record<string, unknown> };
@@ -273,7 +270,7 @@ class ServerResBus extends EventTarget {
   /** used on client: to forward response data from WebSocket through events */
   onResponsePayload(payload: SocketPacket) {
     /** [7] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 }
 
@@ -297,8 +294,8 @@ class ClientReqBus<
     if (this.#reqEvents.has(clientEvent)) throw new Error(`Event ${clientEvent} is already linked`);
     this.#reqEvents.add(clientEvent);
 
-    type ReqType = CReq[T]["request"];
-    type ResType = CReq[T]["response"];
+    type ReqType = CReq[T]["req"];
+    type ResType = CReq[T]["res"];
 
     /** used on client: to send a request to server and receive response */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType> => {
@@ -366,9 +363,9 @@ class ClientReqBus<
     this.addEventListener(clientEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __wsBus__: true,
+        __socket__: true,
         type: "req",
-        tag: clientEvent,
+        name: clientEvent,
         envelope: e.envelope,
       };
 
@@ -392,9 +389,9 @@ class ClientReqBus<
     this.#sResBus.addEventListener(clientEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __wsBus__: true,
+        __socket__: true,
         type: "res",
-        tag: clientEvent,
+        name: clientEvent,
         envelope: e.envelope,
       };
       this.#serverWS.ws.forEach((ws) => {
@@ -408,20 +405,16 @@ class ClientReqBus<
   /** used on server: to forward request data from WebSocket through events */
   onRequestPayload(payload: SocketPacket) {
     /** [6] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 
   setup(clientRequest: (keyof CReq & string)[]) {
     type ClientRequest = {
-      [K in keyof CReq]: (
-        ...data: Arg<CReq[K]["request"], RequestOption>
-      ) => Promise<CReq[K]["response"]>;
+      [K in keyof CReq]: (...data: Arg<CReq[K]["req"], RequestOption>) => Promise<CReq[K]["res"]>;
     };
     type ServerHandleRequest = {
       [K in keyof CReq]: (
-        handler: (
-          payload: CReq[K]["request"],
-        ) => CReq[K]["response"] | Promise<CReq[K]["response"]>,
+        handler: (payload: CReq[K]["req"]) => CReq[K]["res"] | Promise<CReq[K]["res"]>,
       ) => () => void;
     };
 
@@ -450,7 +443,7 @@ class ClientResBus extends EventTarget {
   /** used on server: to forward response data from WebSocket through events */
   onResponsePayload(payload: SocketPacket) {
     /** [10] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 }
 
@@ -474,8 +467,8 @@ class ServerReqBus<
     if (this.#reqEvents.has(serverEvent)) throw new Error(`Event ${serverEvent} is already linked`);
     this.#reqEvents.add(serverEvent);
 
-    type ReqType = SReq[T]["request"];
-    type ResType = SReq[T]["response"];
+    type ReqType = SReq[T]["req"];
+    type ResType = SReq[T]["res"];
 
     /** used on server: to send a request to all connected clients and receive responses */
     const request = (...data: Arg<ReqType, RequestOption>): Promise<ResType>[] => {
@@ -545,9 +538,9 @@ class ServerReqBus<
     this.addEventListener(serverEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __wsBus__: true,
+        __socket__: true,
         type: "req",
-        tag: serverEvent,
+        name: serverEvent,
         envelope: e.envelope,
       };
       this.#serverWS.ws.forEach((ws) => {
@@ -573,9 +566,9 @@ class ServerReqBus<
     this.#cResBus.addEventListener(serverEvent, (e: Event) => {
       if (!(e instanceof SocketEvent)) return;
       const payload: SocketPacket = {
-        __wsBus__: true,
+        __socket__: true,
         type: "res",
-        tag: serverEvent,
+        name: serverEvent,
         envelope: e.envelope,
       };
       const ws = this.#clientWS.ws;
@@ -588,20 +581,16 @@ class ServerReqBus<
   /** used on client: to forward request data from WebSocket through events */
   onRequestPayload(payload: SocketPacket) {
     /** [9] */
-    this.dispatchEvent(new SocketEvent(payload.tag, payload.envelope));
+    this.dispatchEvent(new SocketEvent(payload.name, payload.envelope));
   }
 
   setup(serverRequest: (keyof SReq & string)[]) {
     type ServerRequest = {
-      [K in keyof SReq]: (
-        ...data: Arg<SReq[K]["request"], RequestOption>
-      ) => Promise<SReq[K]["response"]>[];
+      [K in keyof SReq]: (...data: Arg<SReq[K]["req"], RequestOption>) => Promise<SReq[K]["res"]>[];
     };
     type ClientHandleRequest = {
       [K in keyof SReq]: (
-        handler: (
-          payload: SReq[K]["request"],
-        ) => SReq[K]["response"] | Promise<SReq[K]["response"]>,
+        handler: (payload: SReq[K]["req"]) => SReq[K]["res"] | Promise<SReq[K]["res"]>,
       ) => () => void;
     };
 
@@ -644,7 +633,7 @@ function defineSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
 
-function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
+function createSocket<const Schema extends SocketSchemas>(schemas: Schema) {
   type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
   type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
@@ -697,17 +686,17 @@ function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
   };
 
   const cOnPayload = async (payload: SocketPacket) => {
-    if (!payload?.__wsBus__) return;
+    if (!payload?.__socket__) return;
     switch (payload.type) {
       case "push": {
-        const result = await validatePush(payload.tag, payload.envelope.data, schemas.serverPush);
+        const result = await validatePush(payload.name, payload.envelope.data, schemas.serverPush);
         if (Result.isFailure(result)) return;
         payload.envelope.data = result.value;
         return sPushBus.onPushPayload(payload);
       }
       case "req": {
         const result = await validateRequest(
-          payload.tag,
+          payload.name,
           payload.envelope.data,
           schemas.serverRequest,
           "request",
@@ -718,7 +707,7 @@ function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
       }
       case "res": {
         const result = await validateRequest(
-          payload.tag,
+          payload.name,
           payload.envelope.data,
           schemas.clientRequest,
           "response",
@@ -731,18 +720,18 @@ function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
   };
 
   const sOnPayload = async (payload: SocketPacket, ws: WS) => {
-    if (!payload?.__wsBus__) return;
+    if (!payload?.__socket__) return;
     payload.envelope.ws = ws;
     switch (payload.type) {
       case "push": {
-        const result = await validatePush(payload.tag, payload.envelope.data, schemas.clientPush);
+        const result = await validatePush(payload.name, payload.envelope.data, schemas.clientPush);
         if (Result.isFailure(result)) return;
         payload.envelope.data = result.value;
         return cPushBus.onPushPayload(payload);
       }
       case "req": {
         const result = await validateRequest(
-          payload.tag,
+          payload.name,
           payload.envelope.data,
           schemas.clientRequest,
           "request",
@@ -753,7 +742,7 @@ function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
       }
       case "res": {
         const result = await validateRequest(
-          payload.tag,
+          payload.name,
           payload.envelope.data,
           schemas.serverRequest,
           "response",
@@ -796,11 +785,11 @@ function createApi<const Schema extends SocketSchemas>(schemas: Schema) {
 }
 
 function createClientSocket<T extends SocketSchemas>(schemas: T) {
-  return createApi(schemas).client;
+  return createSocket(schemas).client;
 }
 
 function createServerSocket<T extends SocketSchemas>(schemas: T) {
-  return createApi(schemas).server;
+  return createSocket(schemas).server;
 }
 
 export {

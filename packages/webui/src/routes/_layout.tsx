@@ -2,7 +2,7 @@ import { TextHookerSessionListPopover } from "#/components/SessionList";
 import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
-import { SocketError } from "@repo/shared/socket.et";
+import { SocketError } from "@repo/shared/sock.et";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
   Link,
