@@ -6,7 +6,10 @@
     "dev": "turbo run dev",
     "fmt": "turbo run fmt",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "skills:byethrow": "npx @praha/byethrow-docs init copilot && mkdir -p .agents/skills/ && cp -r .github/skills/* .agents/skills/",
+    "skills:turbo": "npx skills add vercel/turborepo",
+    "skills:install": "pnpm run skills:byethrow && pnpm run skills:turbo"
   },
   "devDependencies": {
     "@praha/byethrow-docs": "^0.10.0",
