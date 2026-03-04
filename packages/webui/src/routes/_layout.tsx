@@ -2,7 +2,7 @@ import { TextHookerSessionListPopover } from "#/components/SessionList";
 import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
-import { SocketError, SocketErrorType } from "@repo/shared/socket.et";
+import { SocketError } from "@repo/shared/socket.et";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
   Link,
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_layout")({
     try {
       await api.request.checkHealth();
     } catch (e) {
-      if (e instanceof SocketError && e.type === SocketErrorType.ConnectionClosed) {
+      if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
         throw redirect({
           to: "/offline",
           search: { redirect: location.pathname },
