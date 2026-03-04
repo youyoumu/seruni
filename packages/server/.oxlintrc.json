@@ -1,12 +1,14 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn"],
+  "jsPlugins": ["eslint-plugin-zod-import"],
   "categories": {},
   "rules": {
     "typescript/no-explicit-any": "warn",
     "typescript/no-non-null-assertion": "warn",
     "unicorn/prefer-node-protocol": "warn",
-    "unicorn/no-nested-ternary": "warn"
+    "unicorn/no-nested-ternary": "warn",
+    "zod-import/zod-import": ["error", { "variant": "zod-mini" }]
   },
   "settings": {
     "jsx-a11y": {

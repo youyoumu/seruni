@@ -47,6 +47,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.17",
     "drizzle-kit": "^0.31.8",
+    "eslint-plugin-zod-import": "^0.3.0",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.15.0",
