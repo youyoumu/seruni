@@ -35,12 +35,12 @@ export type ToastPromiseResolvePayload = ToastPromiseConfig;
 export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
 const schema = defineSocketSchema({
-  clientPush: {
+  clientPushes: {
     ping: z.undefined(),
     action: z.string(),
     refreshAfkTimer: z.undefined(),
   },
-  serverPush: {
+  serverPushes: {
     toast: zToastPayload,
     toastPromise: zToastPromiseConfig,
     toastPromiseResolve: zToastPromiseConfig,
@@ -53,7 +53,7 @@ const schema = defineSocketSchema({
     ankiConnectConnected: z.boolean(),
     obsConnected: z.boolean(),
   },
-  clientRequest: {
+  clientRequests: {
     textHistoryBySessionId: [z.number(), z.array(zTextHistory)],
     deleteTextHistory: [z.number(), z.nullable(zTextHistory)],
     completedTextHistory: [z.undefined(), z.record(z.number(), z.number())],
@@ -76,7 +76,7 @@ const schema = defineSocketSchema({
     setConfig: [zConfig, z.nullable(zConfig)],
     checkHealth: [z.undefined(), z.undefined()],
   },
-  serverRequest: {
+  serverRequests: {
     userAgent: [z.undefined(), z.string()],
   },
 });

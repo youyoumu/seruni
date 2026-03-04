@@ -623,10 +623,10 @@ type RequestSchemas<T extends Record<string, [StandardSchema, StandardSchema]>> 
 };
 
 type SocketSchemas = {
-  clientPush?: Record<string, StandardSchema>;
-  serverPush?: Record<string, StandardSchema>;
-  clientRequest?: Record<string, [StandardSchema, StandardSchema]>;
-  serverRequest?: Record<string, [StandardSchema, StandardSchema]>;
+  clientPushes: Record<string, StandardSchema>;
+  serverPushes: Record<string, StandardSchema>;
+  clientRequests: Record<string, [StandardSchema, StandardSchema]>;
+  serverRequests: Record<string, [StandardSchema, StandardSchema]>;
 };
 
 function defineSocketSchema<T extends SocketSchemas>(schema: T) {
@@ -640,10 +640,10 @@ function createSocket<const Schema extends SocketSchemas>(
     serverTimeout?: number;
   },
 ) {
-  type CPush = PushSchemas<NonNullable<Schema["clientPush"]>>;
-  type SPush = PushSchemas<NonNullable<Schema["serverPush"]>>;
-  type CReq = RequestSchemas<NonNullable<Schema["clientRequest"]>>;
-  type SReq = RequestSchemas<NonNullable<Schema["serverRequest"]>>;
+  type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
+  type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
+  type CReq = RequestSchemas<NonNullable<Schema["clientRequests"]>>;
+  type SReq = RequestSchemas<NonNullable<Schema["serverRequests"]>>;
 
   const clientWS = new ClientWS();
   const serverWS = new ServerWS();
@@ -670,7 +670,7 @@ function createSocket<const Schema extends SocketSchemas>(
   const validatePush = async (
     tag: string,
     data: unknown,
-    pushSchemas: Schema["clientPush"] | Schema["serverPush"],
+    pushSchemas: Schema["clientPushes"] | Schema["serverPushes"],
   ): Promise<Result<unknown, Error>> => {
     const schema = pushSchemas?.[tag];
     if (!schema) throw new Error(`No schema found for push [${tag}]`);
@@ -686,7 +686,7 @@ function createSocket<const Schema extends SocketSchemas>(
   const validateRequest = async (
     tag: string,
     data: unknown,
-    reqSchemas: Schema["clientRequest"] | Schema["serverRequest"],
+    reqSchemas: Schema["clientRequests"] | Schema["serverRequests"],
     type: "request" | "response",
   ) => {
     const schema = reqSchemas?.[tag];
@@ -742,7 +742,11 @@ function createSocket<const Schema extends SocketSchemas>(
     const payload = result.value;
     switch (payload.type) {
       case "push": {
-        const result = await validatePush(payload.name, payload.envelope.data, schemas.serverPush);
+        const result = await validatePush(
+          payload.name,
+          payload.envelope.data,
+          schemas.serverPushes,
+        );
         if (Result.isFailure(result)) return;
         payload.envelope.data = result.value;
         return sPushBus.onPushPayload(payload);
@@ -751,7 +755,7 @@ function createSocket<const Schema extends SocketSchemas>(
         const result = await validateRequest(
           payload.name,
           payload.envelope.data,
-          schemas.serverRequest,
+          schemas.serverRequests,
           "request",
         );
         if (Result.isFailure(result)) return;
@@ -762,7 +766,7 @@ function createSocket<const Schema extends SocketSchemas>(
         const result = await validateRequest(
           payload.name,
           payload.envelope.data,
-          schemas.clientRequest,
+          schemas.clientRequests,
           "response",
         );
         if (Result.isFailure(result)) return;
@@ -779,7 +783,11 @@ function createSocket<const Schema extends SocketSchemas>(
     payload.envelope.ws = ws;
     switch (payload.type) {
       case "push": {
-        const result = await validatePush(payload.name, payload.envelope.data, schemas.clientPush);
+        const result = await validatePush(
+          payload.name,
+          payload.envelope.data,
+          schemas.clientPushes,
+        );
         if (Result.isFailure(result)) return;
         payload.envelope.data = result.value;
         return cPushBus.onPushPayload(payload);
@@ -788,7 +796,7 @@ function createSocket<const Schema extends SocketSchemas>(
         const result = await validateRequest(
           payload.name,
           payload.envelope.data,
-          schemas.clientRequest,
+          schemas.clientRequests,
           "request",
         );
         if (Result.isFailure(result)) return;
@@ -799,7 +807,7 @@ function createSocket<const Schema extends SocketSchemas>(
         const result = await validateRequest(
           payload.name,
           payload.envelope.data,
-          schemas.serverRequest,
+          schemas.serverRequests,
           "response",
         );
         if (Result.isFailure(result)) return;
@@ -809,10 +817,10 @@ function createSocket<const Schema extends SocketSchemas>(
     }
   };
 
-  const clientPushApi = cPushBus.setup(Object.keys(schemas.clientPush ?? {}));
-  const clientRequestApi = cReqBus.setup(Object.keys(schemas.clientRequest ?? {}));
-  const serverPushApi = sPushBus.setup(Object.keys(schemas.serverPush ?? {}));
-  const serverRequestApi = sReqBus.setup(Object.keys(schemas.serverRequest ?? {}));
+  const clientPushApi = cPushBus.setup(Object.keys(schemas.clientPushes ?? {}));
+  const clientRequestApi = cReqBus.setup(Object.keys(schemas.clientRequests ?? {}));
+  const serverPushApi = sPushBus.setup(Object.keys(schemas.serverPushes ?? {}));
+  const serverRequestApi = sReqBus.setup(Object.keys(schemas.serverRequests ?? {}));
 
   return {
     client: {
