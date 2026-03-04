@@ -1,6 +1,4 @@
-import { R } from "@praha/byethrow";
 import { type StandardSchemaV1 } from "@standard-schema/spec";
-import { uid } from "uid";
 
 type StandardSchema = StandardSchemaV1;
 type Infer<T extends StandardSchema> = StandardSchemaV1.InferOutput<T>;
@@ -11,6 +9,8 @@ type Arg<T1, T2 = undefined> = undefined extends T1
   : undefined extends T2
     ? [arg1: T1, arg2?: T2]
     : [arg1: T1, arg2: T2];
+
+const uid = () => Math.random().toString(36).slice(2);
 
 enum SocketErr {
   Closed,
@@ -74,6 +74,8 @@ interface SocketSchemas {
   serverRequests: Record<string, [StandardSchema, StandardSchema]>;
 }
 
+type RequestOption = { timeout?: number } | undefined;
+
 function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
@@ -124,8 +126,6 @@ function createSocket<const Schema extends SocketSchemas>(
     });
     return api;
   };
-
-  type RequestOption = { timeout?: number } | undefined;
 
   const setupReq = (
     names: string[],
@@ -208,9 +208,9 @@ function createSocket<const Schema extends SocketSchemas>(
     const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
       console.error(`Validation failed for ${type} [${name}]`, res.issues);
-      return R.fail();
+      return { success: false as const };
     }
-    return R.succeed(res.value);
+    return { success: true as const, value: res.value };
   };
 
   const onMessage = (isClient: boolean) => async (e: MessageEvent, ws_?: WS) => {
@@ -232,7 +232,7 @@ function createSocket<const Schema extends SocketSchemas>(
           name,
           "push",
         );
-        if (R.isSuccess(res))
+        if (res.success)
           (isClient ? buses.sPush : buses.cPush).dispatchEvent(
             new SocketEvent(name, { ...envelope, data: res.value }),
           );
@@ -243,7 +243,7 @@ function createSocket<const Schema extends SocketSchemas>(
           name,
           "req",
         );
-        if (R.isSuccess(res))
+        if (res.success)
           (isClient ? buses.sReq : buses.cReq).dispatchEvent(
             new SocketEvent(name, { ...envelope, data: res.value }),
           );
@@ -254,7 +254,7 @@ function createSocket<const Schema extends SocketSchemas>(
           name,
           "res",
         );
-        if (R.isSuccess(res))
+        if (res.success)
           (isClient ? buses.sRes : buses.cRes).dispatchEvent(
             new SocketEvent(name, { ...envelope, data: res.value }),
           );
@@ -292,9 +292,7 @@ function createSocket<const Schema extends SocketSchemas>(
   type ClientApi = {
     push: { [K in keyof CPush]: (...data: Arg<CPush[K]["push"]>) => void };
     request: {
-      [K in keyof CReq]: (
-        ...data: Arg<CReq[K]["req"], { timeout?: number } | undefined>
-      ) => Promise<CReq[K]["res"]>;
+      [K in keyof CReq]: (...data: Arg<CReq[K]["req"], RequestOption>) => Promise<CReq[K]["res"]>;
     };
     onPush: { [K in keyof SPush]: (handler: (payload: SPush[K]["push"]) => void) => () => void };
     onRequest: {
@@ -306,9 +304,7 @@ function createSocket<const Schema extends SocketSchemas>(
   type ServerApi = {
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
     request: {
-      [K in keyof SReq]: (
-        ...data: Arg<SReq[K]["req"], { timeout?: number } | undefined>
-      ) => Promise<SReq[K]["res"]>[];
+      [K in keyof SReq]: (...data: Arg<SReq[K]["req"], RequestOption>) => Promise<SReq[K]["res"]>[];
     };
     onPush: { [K in keyof CPush]: (handler: (payload: CPush[K]["push"]) => void) => () => void };
     onRequest: {
@@ -354,9 +350,9 @@ export {
   createSocket,
 };
 
-export function createClientSocket<T extends SocketSchemas>(s: T, o?: { timeout?: number }) {
+export function createClientSocket<T extends SocketSchemas>(s: T, o?: RequestOption) {
   return createSocket(s, { clientTimeout: o?.timeout }).client;
 }
-export function createServerSocket<T extends SocketSchemas>(s: T, o?: { timeout?: number }) {
+export function createServerSocket<T extends SocketSchemas>(s: T, o?: RequestOption) {
   return createSocket(s, { serverTimeout: o?.timeout }).server;
 }
