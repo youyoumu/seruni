@@ -101,6 +101,7 @@ function createSocket<const Schema extends SocketSchemas>(
   };
 
   const send = (payload: SocketPacket, ws?: WS) => {
+    delete payload.envelope.ws;
     const data = JSON.stringify(payload);
     if (ws) ws.send(data);
     else if (clientWS.ws?.readyState === 1) clientWS.ws.send(data);
