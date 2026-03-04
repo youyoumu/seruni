@@ -1,0 +1,15 @@
+{
+  "name": "@repo/oxc-config",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./oxlint": "./oxlintrc.json",
+    "./oxfmt": "./oxfmtrc.json"
+  },
+  "devDependencies": {
+    "eslint-plugin-zod-import": "^0.3.0",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^1.43.0"
+  },
+  "packageManager": "pnpm@10.26.1"
+}

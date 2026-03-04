@@ -25,6 +25,18 @@ importers:
 
   packages/cross-fetch: {}
 
+  packages/oxc-config:
+    devDependencies:
+      eslint-plugin-zod-import:
+        specifier: ^0.3.0
+        version: 0.3.0(eslint@10.0.2(jiti@2.6.1))
+      oxfmt:
+        specifier: ^0.28.0
+        version: 0.28.0
+      oxlint:
+        specifier: ^1.43.0
+        version: 1.43.0(oxlint-tsgolint@0.15.0)
+
   packages/python: {}
 
   packages/server:
@@ -84,6 +96,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@repo/oxc-config':
+        specifier: workspace:*
+        version: link:../oxc-config
       '@repo/webui':
         specifier: workspace:*
         version: file:packages/webui(@libsql/client@0.17.0)(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.158.0)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -136,6 +151,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@repo/oxc-config':
+        specifier: workspace:*
+        version: link:../oxc-config
       '@types/node':
         specifier: ^25.2.1
         version: 25.2.1
@@ -239,6 +257,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@repo/oxc-config':
+        specifier: workspace:*
+        version: link:../oxc-config
       '@tanstack/react-query-devtools':
         specifier: ^5.91.3
         version: 5.91.3(@tanstack/react-query@5.90.20(react@19.2.4))(react@19.2.4)

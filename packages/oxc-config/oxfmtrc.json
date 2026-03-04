@@ -1,0 +1,16 @@
+// https://github.com/oxc-project/oxc/issues/16394 oxfmt: extends option for shareable configurations
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [],
+  "experimentalSortImports": {
+    "groups": [
+      ["side-effect"],
+      ["builtin"],
+      ["external", "type-external"],
+      ["internal", "type-internal"],
+      ["parent", "type-parent"],
+      ["sibling", "type-sibling"],
+      ["index", "type-index"]
+    ]
+  }
+}
