@@ -54,16 +54,22 @@ interface SocketHeaders {
 }
 interface SocketReqHandlerContext<TBody = unknown> {
   req: {
+    method: "REQUEST";
+    event: string;
     body: TBody;
     headers: SocketHeaders;
   };
   res: {
+    method: "RESPONSE" | "ERROR";
+    event: string;
     header: SocketHeaders;
     body?: unknown;
   };
 }
 interface SocketPushHandlerContext<TBody = unknown> {
   push: {
+    method: "PUSH";
+    event: string;
     body: TBody;
     headers: SocketHeaders;
   };
@@ -80,7 +86,7 @@ type SocketRequestMatcher =
   | string
   | string[]
   | RegExp
-  | ((event: string, c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
+  | ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
 interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
@@ -222,7 +228,11 @@ function createSocket<const Schema extends SocketSchemas>(
         });
       };
       api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
-        reverseBus.on(event, (e) => handler({ push: { body: e.body.value, headers: e.headers } }));
+        reverseBus.on(event, (e) =>
+          handler({
+            push: { method: "PUSH", event, body: e.body.value, headers: e.headers },
+          }),
+        );
     });
     return api;
   };
@@ -261,10 +271,10 @@ function createSocket<const Schema extends SocketSchemas>(
 
     const toPredicate = (
       matcher: SocketRequestMatcher,
-    ): ((event: string, c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
-      if (typeof matcher === "string") return (event) => event === matcher;
-      if (Array.isArray(matcher)) return (event) => matcher.includes(event);
-      if (matcher instanceof RegExp) return (event) => matcher.test(event);
+    ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
+      if (typeof matcher === "string") return (c) => c.req.event === matcher;
+      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.event);
+      if (matcher instanceof RegExp) return (c) => matcher.test(c.req.event);
       return matcher;
     };
 
@@ -321,8 +331,8 @@ function createSocket<const Schema extends SocketSchemas>(
       };
       reqBus.on(event, async (e) => {
         const c: SocketReqHandlerContext<unknown> = {
-          req: { body: e.body.value, headers: e.headers },
-          res: { header: {} },
+          req: { method: "REQUEST", event, body: e.body.value, headers: e.headers },
+          res: { method: "RESPONSE", event, header: {} },
         };
         const middlewares = middlewareMap[event] ?? [];
         if (middlewares.length === 0) return;
@@ -387,7 +397,7 @@ function createSocket<const Schema extends SocketSchemas>(
         const register = api.handle[event];
         if (!register) return () => undefined;
         return register(async (c, next) => {
-          if (!(await predicate(event, c))) return next();
+          if (!(await predicate(c))) return next();
           return handler(c, next);
         });
       });
