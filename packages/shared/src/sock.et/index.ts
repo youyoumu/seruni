@@ -648,6 +648,53 @@ function createSocket<const Schema extends SocketSchemas>(
   };
 }
 
+type ClientRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>["client"];
+type ServerRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>["server"];
+
+class ClientSocket<T extends SocketSchemas> {
+  #socket: ClientRuntime<T>;
+
+  constructor(s: T, o?: RequestOption & { uid?: () => string }) {
+    this.#socket = createSocket(s, { clientTimeout: o?.timeout, uid: o?.uid }).client;
+  }
+
+  get api() {
+    return this.#socket.api;
+  }
+
+  onMessage(e: MessageEvent) {
+    return this.#socket.onMessage(e);
+  }
+
+  bindWS(ws: WS) {
+    return this.#socket.bindWS(ws);
+  }
+}
+
+class ServerSocket<T extends SocketSchemas> {
+  #socket: ServerRuntime<T>;
+
+  constructor(s: T, o?: RequestOption & { uid?: () => string }) {
+    this.#socket = createSocket(s, { serverTimeout: o?.timeout, uid: o?.uid }).server;
+  }
+
+  get api() {
+    return this.#socket.api;
+  }
+
+  onMessage(e: MessageEvent, ws?: WS) {
+    return this.#socket.onMessage(e, ws);
+  }
+
+  addWS(ws: WS) {
+    return this.#socket.addWS(ws);
+  }
+
+  removeWS(ws: WS) {
+    return this.#socket.removeWS(ws);
+  }
+}
+
 export {
   type StandardSchema,
   SocketError,
@@ -665,18 +712,6 @@ export {
   type WS,
   type SocketSchemas,
   defineSocketSchema,
-  createSocket,
+  ClientSocket,
+  ServerSocket,
 };
-
-export function createClientSocket<T extends SocketSchemas>(
-  s: T,
-  o?: RequestOption & { uid?: () => string },
-) {
-  return createSocket(s, { clientTimeout: o?.timeout, uid: o?.uid }).client;
-}
-export function createServerSocket<T extends SocketSchemas>(
-  s: T,
-  o?: RequestOption & { uid?: () => string },
-) {
-  return createSocket(s, { serverTimeout: o?.timeout, uid: o?.uid }).server;
-}

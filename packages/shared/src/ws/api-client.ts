@@ -1,6 +1,6 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
-import { defineSocketSchema, createClientSocket, createServerSocket } from "#/sock.et";
+import { ClientSocket, defineSocketSchema, ServerSocket } from "#/sock.et";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";
@@ -83,7 +83,7 @@ const schema = defineSocketSchema({
 
 export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
-  return createClientSocket(schema);
+  return new ClientSocket(schema);
 }
 
 export type ServerApi = ReturnType<typeof createServerApi>["api"] & {
@@ -100,7 +100,7 @@ type ToastPromiseFn = <TData, TError>(
 ) => Promise<R.Result<TData, TError>>;
 
 export function createServerApi() {
-  const socket = createServerSocket(schema);
+  const socket = new ServerSocket(schema);
   const push = socket.api.push;
 
   const toastPromise: ToastPromiseFn = async (promise, options) => {
@@ -121,7 +121,9 @@ export function createServerApi() {
   };
 
   return {
-    ...socket,
+    onMessage: socket.onMessage.bind(socket),
+    addWS: socket.addWS.bind(socket),
+    removeWS: socket.removeWS.bind(socket),
     api: {
       ...socket.api,
       toastPromise,
