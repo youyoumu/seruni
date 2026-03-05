@@ -49,8 +49,8 @@ type SocketPacketPayload = Omit<SocketPacket, "sock.et">;
 interface SocketHeaders {
   cid?: string;
   timestamp?: number;
-  state?: string;
-  "set-state"?: string;
+  state?: Record<string, string>;
+  "set-state"?: Record<string, string>;
 }
 interface SocketReqHandlerContext<TBody = unknown> {
   req: {
@@ -131,7 +131,7 @@ function createSocket<const Schema extends SocketSchemas>(
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
   const clientWS: { ws: WS | undefined } = { ws: undefined };
-  const clientState = { value: "" };
+  const clientState = { value: {} as Record<string, string> };
   const createUid = options?.uid ?? uid;
   const serverWS = { ws: new Set<WS>() };
 
@@ -152,16 +152,26 @@ function createSocket<const Schema extends SocketSchemas>(
     sErr: new Bus(),
   };
 
-  const applySetHeader = (setHeader?: string) => {
-    if (setHeader === undefined) return;
-    clientState.value = setHeader;
+  const sanitizeState = (state: unknown): Record<string, string> | undefined => {
+    if (!state || typeof state !== "object" || Array.isArray(state)) return undefined;
+    const sanitized: Record<string, string> = {};
+    Object.entries(state).forEach(([k, v]) => {
+      if (typeof v === "string") sanitized[k] = v;
+    });
+    return sanitized;
+  };
+
+  const applySetHeader = (setHeader: unknown) => {
+    const sanitized = sanitizeState(setHeader);
+    if (!sanitized) return;
+    clientState.value = sanitized;
   };
 
   const createHeaders = (isClientSender: boolean, cid?: string): SocketHeaders => {
     const timestamp = Date.now();
     const headers: SocketHeaders = { timestamp };
     if (cid) headers.cid = cid;
-    if (isClientSender && clientState.value.length > 0) {
+    if (isClientSender && Object.keys(clientState.value).length > 0) {
       headers.state = clientState.value;
     }
     return headers;
@@ -340,7 +350,13 @@ function createSocket<const Schema extends SocketSchemas>(
         event,
         body: { value },
       } = p;
-      const headers = p.headers ?? {};
+      const headers = (p.headers ?? {}) as SocketHeaders;
+      const state = sanitizeState(headers.state);
+      if (state) headers.state = state;
+      else delete headers.state;
+      const setState = sanitizeState(headers["set-state"]);
+      if (setState) headers["set-state"] = setState;
+      else delete headers["set-state"];
       if ((method === "REQUEST" || method === "RESPONSE" || method === "ERROR") && !headers.cid)
         return;
       const ws = isClient ? undefined : ws_;
