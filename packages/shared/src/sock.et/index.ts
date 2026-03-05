@@ -70,8 +70,7 @@ class Bus extends EventTarget {
     handler: (packet: { body: SocketBody; headers: SocketHeaders; context: SocketContext }) => void,
   ) {
     const fn = (e: Event) =>
-      e instanceof SocketEvent &&
-      handler({ body: e.body, headers: e.headers, context: e.context });
+      e instanceof SocketEvent && handler({ body: e.body, headers: e.headers, context: e.context });
     this.addEventListener(name, fn);
     return () => this.removeEventListener(name, fn);
   }
@@ -143,7 +142,10 @@ function createSocket<const Schema extends SocketSchemas>(
   const setupPush = (names: string[], bus: Bus, reverseBus: Bus, isClient: boolean) => {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
-      handle: Record<string, (handler: (data: unknown) => void) => () => void>;
+      handle: Record<
+        string,
+        (handler: (data: unknown, headers: SocketHeaders) => void) => () => void
+      >;
     } = {
       push: {},
       handle: {},
@@ -159,8 +161,8 @@ function createSocket<const Schema extends SocketSchemas>(
           headers: createHeaders(isClient),
         });
       };
-      api.handle[name] = (handler: (data: unknown) => void) =>
-        reverseBus.on(name, (e) => handler(e.body.value));
+      api.handle[name] = (handler: (data: unknown, headers: SocketHeaders) => void) =>
+        reverseBus.on(name, (e) => handler(e.body.value, e.headers));
     });
     return api;
   };
@@ -177,7 +179,10 @@ function createSocket<const Schema extends SocketSchemas>(
         string,
         (...args: Arg<unknown, RequestOption>) => Promise<unknown> | Promise<unknown>[]
       >;
-      handle: Record<string, (handler: (data: unknown) => unknown) => () => void>;
+      handle: Record<
+        string,
+        (handler: (data: unknown, headers: SocketHeaders) => unknown) => () => void
+      >;
     } = { request: {}, handle: {} };
 
     names.forEach((name) => {
@@ -225,17 +230,21 @@ function createSocket<const Schema extends SocketSchemas>(
               );
             } else {
               resBus.dispatchEvent(
-                new SocketEvent("__error__", {
-                  value: new SocketError(SocketError.ConnectionClosed),
-                }, { cid }),
+                new SocketEvent(
+                  "__error__",
+                  {
+                    value: new SocketError(SocketError.ConnectionClosed),
+                  },
+                  { cid },
+                ),
               );
             }
           });
         return isClient ? exec() : Array.from(serverWS.ws).map(exec);
       };
-      api.handle[name] = (handler: (data: unknown) => unknown) =>
+      api.handle[name] = (handler: (data: unknown, headers: SocketHeaders) => unknown) =>
         reqBus.on(name, async (e) => {
-          const result = await handler(e.body.value);
+          const result = await handler(e.body.value, e.headers);
           const body = { value: result };
           const headers = createHeaders(!isClient, e.headers.cid);
           resBus.dispatchEvent(new SocketEvent(name, body, headers, e.context));
@@ -353,10 +362,17 @@ function createSocket<const Schema extends SocketSchemas>(
     request: {
       [K in keyof CReq]: (...data: Arg<CReq[K]["req"], RequestOption>) => Promise<CReq[K]["res"]>;
     };
-    onPush: { [K in keyof SPush]: (handler: (payload: SPush[K]["push"]) => void) => () => void };
+    onPush: {
+      [K in keyof SPush]: (
+        handler: (payload: SPush[K]["push"], headers: SocketHeaders) => void,
+      ) => () => void;
+    };
     onRequest: {
       [K in keyof SReq]: (
-        handler: (payload: SReq[K]["req"]) => SReq[K]["res"] | Promise<SReq[K]["res"]>,
+        handler: (
+          payload: SReq[K]["req"],
+          headers: SocketHeaders,
+        ) => SReq[K]["res"] | Promise<SReq[K]["res"]>,
       ) => () => void;
     };
   };
@@ -365,10 +381,17 @@ function createSocket<const Schema extends SocketSchemas>(
     request: {
       [K in keyof SReq]: (...data: Arg<SReq[K]["req"], RequestOption>) => Promise<SReq[K]["res"]>[];
     };
-    onPush: { [K in keyof CPush]: (handler: (payload: CPush[K]["push"]) => void) => () => void };
+    onPush: {
+      [K in keyof CPush]: (
+        handler: (payload: CPush[K]["push"], headers: SocketHeaders) => void,
+      ) => () => void;
+    };
     onRequest: {
       [K in keyof CReq]: (
-        handler: (payload: CReq[K]["req"]) => CReq[K]["res"] | Promise<CReq[K]["res"]>,
+        handler: (
+          payload: CReq[K]["req"],
+          headers: SocketHeaders,
+        ) => CReq[K]["res"] | Promise<CReq[K]["res"]>,
       ) => () => void;
     };
   };
@@ -401,6 +424,7 @@ function createSocket<const Schema extends SocketSchemas>(
 export {
   type StandardSchema,
   SocketError,
+  type SocketHeaders,
   type SocketBody,
   type SocketPacket,
   type WS,
