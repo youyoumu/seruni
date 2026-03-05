@@ -76,6 +76,11 @@ type SocketReqMiddleware<TReq = unknown, TRes = unknown> = (
   c: SocketReqHandlerContext<TReq>,
   next: SocketNext,
 ) => TRes | void | Promise<TRes | void>;
+type SocketRequestMatcher =
+  | string
+  | string[]
+  | RegExp
+  | ((event: string, c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
 interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
@@ -247,8 +252,21 @@ function createSocket<const Schema extends SocketSchemas>(
         (...args: Arg<unknown, RequestOption>) => Promise<unknown> | Promise<unknown>[]
       >;
       handle: Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
-    } = { request: {}, handle: {} };
+      use: (
+        matcher: SocketRequestMatcher,
+        handler: SocketReqMiddleware<unknown, unknown>,
+      ) => () => void;
+    } = { request: {}, handle: {}, use: () => () => undefined };
     const middlewareMap: Record<string, SocketReqMiddleware<unknown, unknown>[]> = {};
+
+    const toPredicate = (
+      matcher: SocketRequestMatcher,
+    ): ((event: string, c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
+      if (typeof matcher === "string") return (event) => event === matcher;
+      if (Array.isArray(matcher)) return (event) => matcher.includes(event);
+      if (matcher instanceof RegExp) return (event) => matcher.test(event);
+      return matcher;
+    };
 
     events.forEach((event) => {
       middlewareMap[event] = [];
@@ -306,8 +324,8 @@ function createSocket<const Schema extends SocketSchemas>(
           req: { body: e.body.value, headers: e.headers },
           res: { header: {} },
         };
-        const middlewares = middlewareMap[event];
-        if (!middlewares || middlewares.length === 0) return;
+        const middlewares = middlewareMap[event] ?? [];
+        if (middlewares.length === 0) return;
         try {
           // Tracks the latest middleware index that has started execution.
           // Used to prevent calling next() multiple times from the same middleware.
@@ -362,6 +380,21 @@ function createSocket<const Schema extends SocketSchemas>(
         };
       };
     });
+
+    api.use = (matcher: SocketRequestMatcher, handler: SocketReqMiddleware<unknown, unknown>) => {
+      const predicate = toPredicate(matcher);
+      const offs = events.map((event) => {
+        const register = api.handle[event];
+        if (!register) return () => undefined;
+        return register(async (c, next) => {
+          if (!(await predicate(event, c))) return next();
+          return handler(c, next);
+        });
+      });
+      return () => {
+        offs.forEach((off) => off());
+      };
+    };
     return api;
   };
 
@@ -508,6 +541,10 @@ function createSocket<const Schema extends SocketSchemas>(
         handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"]>,
       ) => () => void;
     };
+    useRequest: (
+      matcher: SocketRequestMatcher,
+      handler: SocketReqMiddleware<unknown, unknown>,
+    ) => () => void;
   };
   type ServerApi = {
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
@@ -524,6 +561,10 @@ function createSocket<const Schema extends SocketSchemas>(
         handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"]>,
       ) => () => void;
     };
+    useRequest: (
+      matcher: SocketRequestMatcher,
+      handler: SocketReqMiddleware<unknown, unknown>,
+    ) => () => void;
   };
 
   return {
@@ -535,6 +576,7 @@ function createSocket<const Schema extends SocketSchemas>(
         request: cReqApi.request,
         onPush: sPushApi.handle,
         onRequest: sReqApi.handle,
+        useRequest: sReqApi.use,
       } as ClientApi,
     },
     server: {
@@ -546,6 +588,7 @@ function createSocket<const Schema extends SocketSchemas>(
         request: sReqApi.request,
         onPush: cPushApi.handle,
         onRequest: cReqApi.handle,
+        useRequest: cReqApi.use,
       } as ServerApi,
     },
   };
@@ -561,6 +604,7 @@ export {
   type SocketNext,
   type SocketPushHandler,
   type SocketReqMiddleware,
+  type SocketRequestMatcher,
   type SocketBody,
   type SocketPacket,
   type WS,
