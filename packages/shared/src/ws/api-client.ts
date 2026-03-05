@@ -36,48 +36,48 @@ export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
 const schema = defineSocketSchema({
   clientPushes: {
-    ping: z.undefined(),
-    action: z.string(),
-    refreshAfkTimer: z.undefined(),
+    "system/ping": z.undefined(),
+    "action/dispatch": z.string(),
+    "timer/afk/refresh": z.undefined(),
   },
   serverPushes: {
-    toast: zToastPayload,
-    toastPromise: zToastPromiseConfig,
-    toastPromiseResolve: zToastPromiseConfig,
-    toastPromiseReject: zToastPromiseConfig,
-    textHistory: zTextHistory,
-    activeSession: z.nullable(zSession),
-    isListeningTextHooker: z.boolean(),
-    isTextHookerAutoResume: z.boolean(),
-    textHookerConnected: z.boolean(),
-    ankiConnectConnected: z.boolean(),
-    obsConnected: z.boolean(),
+    "toast/show": zToastPayload,
+    "toast/promise/start": zToastPromiseConfig,
+    "toast/promise/resolve": zToastPromiseConfig,
+    "toast/promise/reject": zToastPromiseConfig,
+    "text-history/create": zTextHistory,
+    "session/active/set": z.nullable(zSession),
+    "text-hooker/listening/set": z.boolean(),
+    "text-hooker/auto-resume/set": z.boolean(),
+    "text-hooker/connected/set": z.boolean(),
+    "anki-connect/connected/set": z.boolean(),
+    "obs/connected/set": z.boolean(),
   },
   clientRequests: {
-    textHistoryBySessionId: [z.number(), z.array(zTextHistory)],
-    deleteTextHistory: [z.number(), z.nullable(zTextHistory)],
-    completedTextHistory: [z.undefined(), z.record(z.number(), z.number())],
-    markTextHistoryAsCompleted: [z.number(), zTextHistory],
-    session: [z.number(), zSession],
-    sessions: [z.undefined(), z.array(zSession)],
-    createSession: [z.string(), zSession],
-    deleteSession: [z.number(), zSession],
-    updateSession: [z.partial(zSession), zSession],
-    setActiveSession: [z.number(), zSession],
-    getActiveSession: [z.undefined(), z.nullable(zSession)],
-    isListeningTextHooker: [z.undefined(), z.boolean()],
-    setIsListeningTextHooker: [z.boolean(), z.boolean()],
-    isTextHookerAutoResume: [z.undefined(), z.boolean()],
-    setIsTextHookerAutoResume: [z.boolean(), z.boolean()],
-    textHookerConnected: [z.undefined(), z.boolean()],
-    ankiConnectConnected: [z.undefined(), z.boolean()],
-    obsConnected: [z.undefined(), z.boolean()],
-    config: [z.undefined(), zConfig],
-    setConfig: [zConfig, zConfig],
-    checkHealth: [z.undefined(), z.undefined()],
+    "text-history/by-session/get": [z.number(), z.array(zTextHistory)],
+    "text-history/delete": [z.number(), z.nullable(zTextHistory)],
+    "text-history/completed/get": [z.undefined(), z.record(z.number(), z.number())],
+    "text-history/completed/set": [z.number(), zTextHistory],
+    "session/get": [z.number(), zSession],
+    "session/list": [z.undefined(), z.array(zSession)],
+    "session/create": [z.string(), zSession],
+    "session/delete": [z.number(), zSession],
+    "session/update": [z.partial(zSession), zSession],
+    "session/active/set": [z.number(), zSession],
+    "session/active/get": [z.undefined(), z.nullable(zSession)],
+    "text-hooker/listening/get": [z.undefined(), z.boolean()],
+    "text-hooker/listening/set": [z.boolean(), z.boolean()],
+    "text-hooker/auto-resume/get": [z.undefined(), z.boolean()],
+    "text-hooker/auto-resume/set": [z.boolean(), z.boolean()],
+    "text-hooker/connected/get": [z.undefined(), z.boolean()],
+    "anki-connect/connected/get": [z.undefined(), z.boolean()],
+    "obs/connected/get": [z.undefined(), z.boolean()],
+    "config/get": [z.undefined(), zConfig],
+    "config/set": [zConfig, zConfig],
+    "health/check": [z.undefined(), z.undefined()],
   },
   serverRequests: {
-    userAgent: [z.undefined(), z.string()],
+    "user-agent/get": [z.undefined(), z.string()],
   },
 });
 
@@ -106,16 +106,16 @@ export function createServerApi() {
   const toastPromise: ToastPromiseFn = async (promise, options) => {
     const { loading, success, error } = options;
     const id = uid();
-    push.toastPromise({ id, ...loading });
+    push["toast/promise/start"]({ id, ...loading });
 
     const data = await promise();
     if (R.isSuccess(data)) {
       const computedSuccess = typeof success === "function" ? success(data.value) : success;
-      push.toastPromiseResolve({ id, ...computedSuccess });
+      push["toast/promise/resolve"]({ id, ...computedSuccess });
     }
     if (R.isFailure(data)) {
       const computedError = typeof error === "function" ? error(data.error) : error;
-      push.toastPromiseReject({ id, ...computedError });
+      push["toast/promise/reject"]({ id, ...computedError });
     }
     return data;
   };

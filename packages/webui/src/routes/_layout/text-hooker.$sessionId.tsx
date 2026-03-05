@@ -48,9 +48,9 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   async loader({ params, context }) {
     const { sessionId } = params;
     const { api } = context.services;
-    const session = R.unwrap(await api.request.session(sessionId));
+    const session = R.unwrap(await api.request["session/get"](sessionId));
     if (!session) {
-      const sessions = R.unwrap(await api.request.sessions());
+      const sessions = R.unwrap(await api.request["session/list"]());
       const lastSession = sessions[sessions.length - 1];
       if (!lastSession) throw Error("Last session not found");
       throw redirect({
@@ -61,8 +61,8 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   },
   async onLeave({ context }) {
     const { api } = context.services;
-    await api.request.setIsListeningTextHooker(false);
-    await api.request.setIsTextHookerAutoResume(false);
+    await api.request["text-hooker/listening/set"](false);
+    await api.request["text-hooker/auto-resume/set"](false);
   },
 });
 

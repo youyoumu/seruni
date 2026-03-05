@@ -20,7 +20,7 @@ export class WSSHandlers {
     this.setupStateEffect();
     this.setupOnRequest();
 
-    api.onPush.action((c) => {
+    api.onPush["action/dispatch"]((c) => {
       state.actionMap.get(c.push.body)?.();
     });
   }
@@ -28,39 +28,39 @@ export class WSSHandlers {
   setupOnRequest() {
     const { api, state, db } = this;
 
-    api.onRequest.textHookerConnected(() => state.textHookerConnected());
-    api.onRequest.ankiConnectConnected(() => state.ankiConnectConnected());
-    api.onRequest.obsConnected(() => state.obsConnected());
+    api.onRequest["text-hooker/connected/get"](() => state.textHookerConnected());
+    api.onRequest["anki-connect/connected/get"](() => state.ankiConnectConnected());
+    api.onRequest["obs/connected/get"](() => state.obsConnected());
 
-    api.onRequest.isListeningTextHooker(() => state.isListeningTextHooker());
-    api.onRequest.setIsListeningTextHooker(async (c) => {
+    api.onRequest["text-hooker/listening/get"](() => state.isListeningTextHooker());
+    api.onRequest["text-hooker/listening/set"](async (c) => {
       const isListeningTextHooker = c.req.body;
       state.isListeningTextHooker(isListeningTextHooker);
       return isListeningTextHooker;
     });
-    api.onRequest.isTextHookerAutoResume(() => state.isTextHookerAutoResume());
-    api.onRequest.setIsTextHookerAutoResume(async (c) => {
+    api.onRequest["text-hooker/auto-resume/get"](() => state.isTextHookerAutoResume());
+    api.onRequest["text-hooker/auto-resume/set"](async (c) => {
       const isTextHookerAutoResume = c.req.body;
       state.isTextHookerAutoResume(isTextHookerAutoResume);
       return isTextHookerAutoResume;
     });
 
-    api.onRequest.textHistoryBySessionId(async (c) => {
+    api.onRequest["text-history/by-session/get"](async (c) => {
       const id = c.req.body;
       return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
     });
 
-    api.onRequest.deleteTextHistory(async (c) => {
+    api.onRequest["text-history/delete"](async (c) => {
       const id = c.req.body;
       const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
       return result ?? null;
     });
 
-    api.onRequest.completedTextHistory(async () => {
+    api.onRequest["text-history/completed/get"](async () => {
       return state.completedTextHistory();
     });
 
-    api.onRequest.markTextHistoryAsCompleted(async (c) => {
+    api.onRequest["text-history/completed/set"](async (c) => {
       const id = c.req.body;
       const [result] = await db.select().from(textHistory).where(eq(textHistory.id, id));
       if (!result) throw "INVALID_ID";
@@ -68,7 +68,7 @@ export class WSSHandlers {
       return result;
     });
 
-    api.onRequest.session(async (c) => {
+    api.onRequest["session/get"](async (c) => {
       const id = c.req.body;
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
@@ -77,18 +77,18 @@ export class WSSHandlers {
       return result;
     });
 
-    api.onRequest.sessions(async () => {
+    api.onRequest["session/list"](async () => {
       return await db.select().from(session);
     });
 
-    api.onRequest.createSession(async (c) => {
+    api.onRequest["session/create"](async (c) => {
       const name = c.req.body;
       const result = db.insert(session).values({ name }).returning().get();
       state.activeSessionId(result.id);
       return result;
     });
 
-    api.onRequest.deleteSession(async (c) => {
+    api.onRequest["session/delete"](async (c) => {
       const id = c.req.body;
       const [result] = await db.delete(session).where(eq(session.id, id)).returning();
       if (!result) throw "INVALID_ID";
@@ -96,7 +96,7 @@ export class WSSHandlers {
       return result;
     });
 
-    api.onRequest.setActiveSession(async (c) => {
+    api.onRequest["session/active/set"](async (c) => {
       const id = c.req.body;
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
@@ -106,7 +106,7 @@ export class WSSHandlers {
       return result;
     });
 
-    api.onRequest.getActiveSession(async () => {
+    api.onRequest["session/active/get"](async () => {
       const activeSessionId = state.activeSessionId();
       if (!activeSessionId) return null;
       const result = await db.query.session.findFirst({
@@ -115,7 +115,7 @@ export class WSSHandlers {
       return result ?? null;
     });
 
-    api.onRequest.updateSession(async (c) => {
+    api.onRequest["session/update"](async (c) => {
       const payload = c.req.body;
       const [result] = await db
         .update(session)
@@ -128,8 +128,8 @@ export class WSSHandlers {
       return result;
     });
 
-    api.onRequest.config(() => state.config());
-    api.onRequest.setConfig(async (c) => {
+    api.onRequest["config/get"](() => state.config());
+    api.onRequest["config/set"](async (c) => {
       const payload = c.req.body;
       const currentConfig = state.config();
       const newConfig = zConfig.safeParse({ ...currentConfig, ...payload });
@@ -138,9 +138,9 @@ export class WSSHandlers {
       return state.config();
     });
 
-    api.onRequest.checkHealth(() => undefined);
+    api.onRequest["health/check"](() => undefined);
 
-    api.onPush.refreshAfkTimer(() => {
+    api.onPush["timer/afk/refresh"](() => {
       this.textHookerClient.setupAfkTimer();
     });
   }
@@ -154,32 +154,32 @@ export class WSSHandlers {
       const result = await db.query.session.findFirst({
         where: eq(session.id, activeSessionId),
       });
-      api.push.activeSession(result ?? null);
+      api.push["session/active/set"](result ?? null);
     });
 
     effect(() => {
       const isListeningTextHooker = state.isListeningTextHooker();
-      api.push.isListeningTextHooker(isListeningTextHooker);
+      api.push["text-hooker/listening/set"](isListeningTextHooker);
     });
 
     effect(() => {
       const isTextHookerAutoResume = state.isTextHookerAutoResume();
-      api.push.isTextHookerAutoResume(isTextHookerAutoResume);
+      api.push["text-hooker/auto-resume/set"](isTextHookerAutoResume);
     });
 
     effect(() => {
       const textHookerConnected = state.textHookerConnected();
-      api.push.textHookerConnected(textHookerConnected);
+      api.push["text-hooker/connected/set"](textHookerConnected);
     });
 
     effect(() => {
       const ankiConnectConnected = state.ankiConnectConnected();
-      api.push.ankiConnectConnected(ankiConnectConnected);
+      api.push["anki-connect/connected/set"](ankiConnectConnected);
     });
 
     effect(() => {
       const obsConnected = state.obsConnected();
-      api.push.obsConnected(obsConnected);
+      api.push["obs/connected/set"](obsConnected);
     });
   }
 }

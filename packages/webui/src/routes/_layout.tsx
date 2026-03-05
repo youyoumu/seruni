@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_layout")({
     if (location.pathname === "/offline") return;
     const { api } = context.services;
     try {
-      await api.request.checkHealth();
+      await api.request["health/check"]();
     } catch (e) {
       if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
         throw redirect({

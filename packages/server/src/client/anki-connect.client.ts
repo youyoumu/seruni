@@ -69,7 +69,7 @@ export class AnkiConnectClient extends ReconnectingAnkiConnect {
       this.getNote(noteId),
       R.andThrough((note) => this.validateField(note)),
       R.inspectError((e) => {
-        this.api.push.toast({
+        this.api.push["toast/show"]({
           title: "Error when updating note",
           description: e.message,
           variant: "danger",

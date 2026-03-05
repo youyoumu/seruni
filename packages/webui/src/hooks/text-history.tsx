@@ -23,7 +23,7 @@ export function useDeleteTextHistory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      return R.unwrap(await api.request.deleteTextHistory(id));
+      return R.unwrap(await api.request["text-history/delete"](id));
     },
     onSuccess: async (data) => {
       if (data) {
@@ -51,7 +51,7 @@ export function useMarkTextHistoryAsCompleted() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      return R.unwrap(await api.request.markTextHistoryAsCompleted(id));
+      return R.unwrap(await api.request["text-history/completed/set"](id));
     },
     onSuccess: async (data) => {
       if (data) {

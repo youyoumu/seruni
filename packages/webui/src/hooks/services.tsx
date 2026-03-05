@@ -58,26 +58,26 @@ export class Services {
       void onMessage(event);
     });
 
-    this.api.onRequest.userAgent(() => {
+    this.api.onRequest["user-agent/get"](() => {
       return navigator.userAgent;
     });
 
-    this.api.onPush.activeSession((c) => {
+    this.api.onPush["session/active/set"]((c) => {
       const data = c.push.body;
       queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
-    this.api.onPush.isListeningTextHooker((c) => {
+    this.api.onPush["text-hooker/listening/set"]((c) => {
       const data = c.push.body;
       queryClient.setQueryData(this.keyring.isListeningTextHooker.isListening.queryKey, data);
     });
 
-    this.api.onPush.isTextHookerAutoResume((c) => {
+    this.api.onPush["text-hooker/auto-resume/set"]((c) => {
       const data = c.push.body;
       queryClient.setQueryData(this.keyring.isTextHookerAutoResume.isAutoResume.queryKey, data);
     });
 
-    this.api.onPush.textHistory((c) => {
+    this.api.onPush["text-history/create"]((c) => {
       const data = c.push.body;
       const old = queryClient.getQueryData(
         this.keyring.textHistory.bySession(data.sessionId).queryKey,
@@ -93,17 +93,17 @@ export class Services {
       }
     });
 
-    this.api.onPush.textHookerConnected((c) => {
+    this.api.onPush["text-hooker/connected/set"]((c) => {
       const data = c.push.body;
       queryClient.setQueryData(this.keyring.client.textHookerConnected.queryKey, data);
     });
 
-    this.api.onPush.obsConnected((c) => {
+    this.api.onPush["obs/connected/set"]((c) => {
       const data = c.push.body;
       queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
     });
 
-    const refreshAfkTimerT = throttle(() => this.api.push.refreshAfkTimer(), 5000);
+    const refreshAfkTimerT = throttle(() => this.api.push["timer/afk/refresh"](), 5000);
     document.addEventListener("mousemove", refreshAfkTimerT);
 
     const createActionProps = (action?: { text: string; id: string }) => {
@@ -111,12 +111,12 @@ export class Services {
       return {
         children: action.text,
         onClick: () => {
-          this.api.push.action(action.id);
+          this.api.push["action/dispatch"](action.id);
         },
       };
     };
 
-    this.api.onPush.toast((c) => {
+    this.api.onPush["toast/show"]((c) => {
       const data = c.push.body as ToastPayload;
       this.toast(data.title ?? "", {
         description: data.description,
@@ -125,7 +125,7 @@ export class Services {
       });
     });
 
-    this.api.onPush.toastPromise((c) => {
+    this.api.onPush["toast/promise/start"]((c) => {
       const data = c.push.body as ToastPromiseConfig;
       const { promise, resolve, reject } = Promise.withResolvers<void>();
       this.#deferredPromises.set(data.id, { resolve, reject, success: {}, error: {} });
@@ -171,7 +171,7 @@ export class Services {
         });
     });
 
-    this.api.onPush.toastPromiseResolve((c) => {
+    this.api.onPush["toast/promise/resolve"]((c) => {
       const data = c.push.body as ToastPromiseResolvePayload;
       const result = this.#deferredPromises.get(data.id);
       if (result) {
@@ -182,7 +182,7 @@ export class Services {
       }
     });
 
-    this.api.onPush.toastPromiseReject((c) => {
+    this.api.onPush["toast/promise/reject"]((c) => {
       const data = c.push.body as ToastPromiseRejectPayload;
       const result = this.#deferredPromises.get(data.id);
       if (result) {

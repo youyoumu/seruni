@@ -14,7 +14,7 @@ export function useSetConfig() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (config: Config) => {
-      const data = R.unwrap(await api.request.setConfig(config));
+      const data = R.unwrap(await api.request["config/set"](config));
       return data;
     },
     onSuccess: async () => {

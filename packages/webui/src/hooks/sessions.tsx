@@ -23,7 +23,7 @@ export function useSetActiveSession() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (id: number) => {
-      return R.unwrap(await api.request.setActiveSession(id));
+      return R.unwrap(await api.request["session/active/set"](id));
     },
   });
 }
@@ -34,7 +34,7 @@ export function useCreateNewSession() {
   const navigate = useNavigate();
   return useMutation({
     mutationFn: async (name: string) => {
-      return R.unwrap(await api.request.createSession(name));
+      return R.unwrap(await api.request["session/create"](name));
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
@@ -60,7 +60,7 @@ export function useDeleteSession() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      return R.unwrap(await api.request.deleteSession(id));
+      return R.unwrap(await api.request["session/delete"](id));
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
@@ -80,7 +80,7 @@ export function useUpdateSessionDuration() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ sessionId, duration }: { sessionId: number; duration: number }) => {
-      return R.unwrap(await api.request.updateSession({ id: sessionId, duration }));
+      return R.unwrap(await api.request["session/update"]({ id: sessionId, duration }));
     },
     onSuccess: async (data) => {
       if (data) {
@@ -101,7 +101,7 @@ export function useSetIsListeningTextHooker() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (isListening: boolean) => {
-      return R.unwrap(await api.request.setIsListeningTextHooker(isListening));
+      return R.unwrap(await api.request["text-hooker/listening/set"](isListening));
     },
   });
 }
@@ -115,7 +115,7 @@ export function useSetIsTextHookerAutoResume() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (isAutoResume: boolean) => {
-      return R.unwrap(await api.request.setIsTextHookerAutoResume(isAutoResume));
+      return R.unwrap(await api.request["text-hooker/auto-resume/set"](isAutoResume));
     },
   });
 }

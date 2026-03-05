@@ -27,7 +27,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
     this.log = log.child({ name: "text-hooker" });
 
     const textHookerToastD = debounce(() => {
-      this.api.push.toast({
+      this.api.push["toast/show"]({
         title: "Text Hooker",
         description: "Received a message but timer is paused.",
       });
@@ -59,7 +59,7 @@ export class TextHookerClient extends ReconnectingWebSocket {
           })
           .returning()
           .get();
-        this.api.push.textHistory(row);
+        this.api.push["text-history/create"](row);
       }
     });
 
