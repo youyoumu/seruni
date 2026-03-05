@@ -2,6 +2,13 @@ import { type StandardSchemaV1 } from "@standard-schema/spec";
 
 type StandardSchema = StandardSchemaV1;
 type Infer<T extends StandardSchema> = StandardSchemaV1.InferOutput<T>;
+type InferReqRes<T extends StandardSchema | undefined> = T extends StandardSchema
+  ? StandardSchemaV1.InferOutput<T>
+  : undefined;
+type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
+  ? StandardSchemaV1.InferOutput<T>
+  : undefined;
+type ReqSchemaTuple = [(StandardSchema | undefined)?, (StandardSchema | undefined)?, (StandardSchema | undefined)?];
 type Arg<T1, T2 = undefined> = undefined extends T1
   ? undefined extends T2
     ? [arg1?: T1, arg2?: T2]
@@ -12,10 +19,14 @@ type Arg<T1, T2 = undefined> = undefined extends T1
 
 const uid = () => Math.random().toString(36).slice(2);
 
-type SocketErr = typeof SocketError.ConnectionClosed | typeof SocketError.RequestTimeout;
+type SocketErr =
+  | typeof SocketError.ConnectionClosed
+  | typeof SocketError.RequestTimeout
+  | typeof SocketError.InvalidResponse;
 class SocketError extends Error {
   static ConnectionClosed = "ConnectionClosed" as const;
   static RequestTimeout = "RequestTimeout" as const;
+  static InvalidResponse = "InvalidResponse" as const;
   constructor(public readonly type: SocketErr) {
     super();
     this.name = "SocketError";
@@ -27,9 +38,9 @@ class SocketFailure {
     public readonly headers?: SocketHeaders,
   ) {}
 }
-type SocketResponse<T = unknown> =
+type SocketResponse<T = unknown, E = unknown> =
   | { type: "Success"; value: T }
-  | { type: "Failure"; error: unknown };
+  | { type: "Failure"; error: E };
 
 interface SocketBody<T = unknown> {
   value?: T;
@@ -58,7 +69,7 @@ interface SocketHeaders {
   cookie?: Record<string, string>;
   "set-cookie"?: Record<string, string>;
 }
-interface SocketReqHandlerContext<TBody = unknown> {
+interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
   req: Readonly<{
     method: "REQ";
     event: string;
@@ -71,7 +82,7 @@ interface SocketReqHandlerContext<TBody = unknown> {
     header: SocketHeaders;
     body?: unknown;
   };
-  fail: (error: unknown, headers?: SocketHeaders) => never;
+  fail: (error: TErr, headers?: SocketHeaders) => never;
 }
 interface SocketPushHandlerContext<TBody = unknown> {
   push: Readonly<{
@@ -85,8 +96,8 @@ type SocketNext = () => Promise<void>;
 type SocketPushHandler<TBody = unknown> = (
   c: SocketPushHandlerContext<TBody>,
 ) => void | Promise<void>;
-type SocketReqMiddleware<TReq = unknown, TRes = unknown> = (
-  c: SocketReqHandlerContext<TReq>,
+type SocketReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
+  c: SocketReqHandlerContext<TReq, TErr>,
   next: SocketNext,
 ) => TRes | void | Promise<TRes | void>;
 type SocketRequestMatcher =
@@ -129,14 +140,14 @@ class ET extends EventTarget {
 type PushSchemas<T extends Record<string, StandardSchema>> = {
   [K in keyof T]: { push: Infer<T[K]> };
 };
-type ReqSchemas<T extends Record<string, [StandardSchema, StandardSchema]>> = {
-  [K in keyof T]: { req: Infer<T[K][0]>; res: Infer<T[K][1]> };
+type ReqSchemas<T extends Record<string, ReqSchemaTuple>> = {
+  [K in keyof T]: { req: InferReqRes<T[K][0]>; res: InferReqRes<T[K][1]>; err: InferErr<T[K][2]> };
 };
 interface SocketSchemas {
   clientPushes: Record<string, StandardSchema>;
   serverPushes: Record<string, StandardSchema>;
-  clientRequests: Record<string, [StandardSchema, StandardSchema]>;
-  serverRequests: Record<string, [StandardSchema, StandardSchema]>;
+  clientRequests: Record<string, ReqSchemaTuple>;
+  serverRequests: Record<string, ReqSchemaTuple>;
 }
 
 type RequestOption = { timeout?: number } | undefined;
@@ -208,7 +219,13 @@ class SocketCore<const Schema extends SocketSchemas> {
   }
 
   async #validate(schema: StandardSchema | undefined, data: unknown, event: string, type: string) {
-    if (!schema) throw new Error(`No schema for ${type} [${event}]`);
+    if (!schema) {
+      if (data === undefined) return { success: true as const, value: undefined };
+      return {
+        success: false as const,
+        error: [`Validation failed for ${type} [${event}]: expected undefined`],
+      };
+    }
     const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
       console.error(`Validation failed for ${type} [${event}]`, res.issues);
@@ -307,6 +324,9 @@ class SocketCore<const Schema extends SocketSchemas> {
         const data = args[0];
         const cid = this.#uid();
         const t = args[1]?.timeout ?? timeout;
+        const errSchema = (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
+          event
+        ]?.[2];
         const exec = (ws?: WS): Promise<SocketResponse<unknown>> =>
           new Promise((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout>;
@@ -321,10 +341,15 @@ class SocketCore<const Schema extends SocketSchemas> {
                 resolve({ type: "Success", value: e.body.value });
               }
             });
-            const offErr = errET.on(event, (e) => {
+            const offErr = errET.on(event, async (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
-                resolve({ type: "Failure", error: e.body.value });
+                const errRes = await this.#validate(errSchema, e.body.value, event, "err");
+                if (!errRes.success) {
+                  reject(new SocketError(SocketError.InvalidResponse));
+                  return;
+                }
+                resolve({ type: "Failure", error: errRes.value });
               }
             });
             timer = setTimeout(() => {
@@ -393,8 +418,9 @@ class SocketCore<const Schema extends SocketSchemas> {
             e.context.ws,
           );
         } catch (error) {
+          const isSocketFailure = error instanceof SocketFailure;
           let failure: SocketFailure;
-          if (error instanceof SocketFailure) {
+          if (isSocketFailure) {
             failure = error;
           } else if (this.#onError) {
             try {
@@ -416,6 +442,13 @@ class SocketCore<const Schema extends SocketSchemas> {
             }
           } else {
             failure = new SocketFailure("InternalError");
+          }
+          const errSchema = (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
+            event
+          ]?.[2];
+          if (isSocketFailure) {
+            const errValidation = await this.#validate(errSchema, failure.error, event, "err");
+            if (!errValidation.success) failure = new SocketFailure("InternalError");
           }
           const headers = {
             ...c.res.header,
@@ -581,14 +614,14 @@ function createSocket<const Schema extends SocketSchemas>(
     request: {
       [K in keyof CReq]: (
         ...data: Arg<CReq[K]["req"], RequestOption>
-      ) => Promise<SocketResponse<CReq[K]["res"]>>;
+      ) => Promise<SocketResponse<CReq[K]["res"], CReq[K]["err"]>>;
     };
     onPush: {
       [K in keyof SPush]: (handler: SocketPushHandler<SPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof SReq]: (
-        handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"]>,
+        handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>,
       ) => () => void;
     };
     useRequest: (
@@ -601,14 +634,14 @@ function createSocket<const Schema extends SocketSchemas>(
     request: {
       [K in keyof SReq]: (
         ...data: Arg<SReq[K]["req"], RequestOption>
-      ) => Promise<SocketResponse<SReq[K]["res"]>>[];
+      ) => Promise<SocketResponse<SReq[K]["res"], SReq[K]["err"]>>[];
     };
     onPush: {
       [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof CReq]: (
-        handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"]>,
+        handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
       ) => () => void;
     };
     useRequest: (

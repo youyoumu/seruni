@@ -63,7 +63,7 @@ export class WSSHandlers {
     api.onRequest["text-history/completed/set"](async (c) => {
       const id = c.req.body;
       const [result] = await db.select().from(textHistory).where(eq(textHistory.id, id));
-      if (!result) throw "INVALID_ID";
+      if (!result) return c.fail("INVALID_ID");
       state.completedTextHistory()[result.id] = Date.now();
       return result;
     });
@@ -73,7 +73,7 @@ export class WSSHandlers {
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
       });
-      if (!result) throw "INVALID_ID";
+      if (!result) return c.fail("INVALID_ID");
       return result;
     });
 
@@ -91,7 +91,7 @@ export class WSSHandlers {
     api.onRequest["session/delete"](async (c) => {
       const id = c.req.body;
       const [result] = await db.delete(session).where(eq(session.id, id)).returning();
-      if (!result) throw "INVALID_ID";
+      if (!result) return c.fail("INVALID_ID");
       if (result?.id === state.activeSessionId()) state.activeSessionId(null);
       return result;
     });
@@ -101,7 +101,7 @@ export class WSSHandlers {
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
       });
-      if (!result) throw "INVALID_ID";
+      if (!result) return c.fail("INVALID_ID");
       state.activeSessionId(result.id);
       return result;
     });
@@ -124,7 +124,7 @@ export class WSSHandlers {
         })
         .where(eq(session.id, payload.id ?? 0))
         .returning();
-      if (!result) throw "INVALID_ID";
+      if (!result) return c.fail("INVALID_ID");
       return result;
     });
 
@@ -133,7 +133,7 @@ export class WSSHandlers {
       const payload = c.req.body;
       const currentConfig = state.config();
       const newConfig = zConfig.safeParse({ ...currentConfig, ...payload });
-      if (!newConfig.success) throw "INVALID_CONFIG";
+      if (!newConfig.success) return c.fail("INVALID_CONFIG");
       state.config(newConfig.data);
       return state.config();
     });
