@@ -24,6 +24,9 @@ class SocketError extends Error {
     this.name = "SocketError";
   }
 }
+type SocketResponse<T = unknown> =
+  | { type: "Success"; value: T }
+  | { type: "Failure"; error: unknown };
 
 interface SocketBody<T = unknown> {
   value: T;
@@ -37,7 +40,7 @@ interface SocketBody<T = unknown> {
  */
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
-  method: "PUSH" | "REQUEST" | "RESPONSE";
+  method: "PUSH" | "REQUEST" | "RESPONSE" | "ERROR";
   event: string;
   body: SocketBody;
   headers?: SocketHeaders;
@@ -121,7 +124,7 @@ function createSocket<const Schema extends SocketSchemas>(
    * Internal event buses by direction + packet kind:
    * - c*: events received/initiated by client side
    * - s*: events received/initiated by server side
-   * - Push/Req/Res: method lanes
+   * - Push/Req/Res/Err: method lanes
    */
   const buses = {
     cPush: new Bus(),
@@ -130,6 +133,8 @@ function createSocket<const Schema extends SocketSchemas>(
     sReq: new Bus(),
     cRes: new Bus(),
     sRes: new Bus(),
+    cErr: new Bus(),
+    sErr: new Bus(),
   };
 
   const applySetHeader = (setHeader?: string) => {
@@ -187,14 +192,17 @@ function createSocket<const Schema extends SocketSchemas>(
     events: string[],
     reqBus: Bus,
     resBus: Bus,
+    errBus: Bus,
     timeout: number,
     isClient: boolean,
   ) => {
     /**
      * Request lane model:
      * 1) `request(...)` sends packet over WS and waits on `resBus`.
-     * 2) Remote `onMessage(...)` parses `RESPONSE` packets and dispatches into `resBus`.
-     * 3) Waiters resolve/reject by `headers.cid` (+ `ws` on server broadcast mode).
+     * 2) Remote `onMessage(...)` parses `RESPONSE`/`ERROR` packets and dispatches into `resBus`/`errBus`.
+     * 3) Waiters map packet method to result:
+     *    - RESPONSE -> `{ type: "Success", value }`
+     *    - ERROR -> `{ type: "Failure", error }`
      *
      * `reqBus` is consumed only by `handle(...)` and fed by incoming `REQUEST` packets
      * from `onMessage(...)`.
@@ -216,7 +224,7 @@ function createSocket<const Schema extends SocketSchemas>(
           cid = createUid(),
           t = args[1]?.timeout ?? timeout;
 
-        const exec = (ws?: WS): Promise<unknown> =>
+        const exec = (ws?: WS): Promise<SocketResponse<unknown>> =>
           new Promise((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout>;
             const clean = () => {
@@ -228,13 +236,13 @@ function createSocket<const Schema extends SocketSchemas>(
             const off = resBus.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
-                resolve(e.body.value);
+                resolve({ type: "Success", value: e.body.value });
               }
             });
-            const offErr = resBus.on("__error__", (e) => {
+            const offErr = errBus.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
-                reject(e.body.value);
+                resolve({ type: "Failure", error: e.body.value });
               }
             });
             timer = setTimeout(() => {
@@ -254,33 +262,40 @@ function createSocket<const Schema extends SocketSchemas>(
                 ws,
               );
             } else {
-              resBus.dispatchEvent(
-                new SocketEvent(
-                  "__error__",
-                  {
-                    value: new SocketError(SocketError.ConnectionClosed),
-                  },
-                  { cid },
-                ),
-              );
+              clean();
+              reject(new SocketError(SocketError.ConnectionClosed));
             }
           });
         return isClient ? exec() : Array.from(serverWS.ws).map(exec);
       };
       api.handle[event] = (handler: (data: unknown, headers: SocketHeaders) => unknown) =>
         reqBus.on(event, async (e) => {
-          const result = await handler(e.body.value, e.headers);
-          const body = { value: result };
-          const headers = createHeaders(!isClient, e.headers.cid);
-          send(
-            {
-              method: "RESPONSE",
-              event,
-              body,
-              headers,
-            },
-            e.context.ws,
-          );
+          try {
+            const result = await handler(e.body.value, e.headers);
+            const body = { value: result };
+            const headers = createHeaders(!isClient, e.headers.cid);
+            send(
+              {
+                method: "RESPONSE",
+                event,
+                body,
+                headers,
+              },
+              e.context.ws,
+            );
+          } catch (error) {
+            const body = { value: error };
+            const headers = createHeaders(!isClient, e.headers.cid);
+            send(
+              {
+                method: "ERROR",
+                event,
+                body,
+                headers,
+              },
+              e.context.ws,
+            );
+          }
         });
     });
     return api;
@@ -313,7 +328,8 @@ function createSocket<const Schema extends SocketSchemas>(
         body: { value },
       } = p;
       const headers = p.headers ?? {};
-      if ((method === "REQUEST" || method === "RESPONSE") && !headers.cid) return;
+      if ((method === "REQUEST" || method === "RESPONSE" || method === "ERROR") && !headers.cid)
+        return;
       const ws = isClient ? undefined : ws_;
       const body = { value };
       const context = { ws };
@@ -323,6 +339,7 @@ function createSocket<const Schema extends SocketSchemas>(
        * - PUSH -> opposite-side push bus
        * - REQUEST -> opposite-side request bus (consumed by `setupReq.handle`)
        * - RESPONSE -> opposite-side response bus (consumed by `setupReq.request` waiters)
+       * - ERROR -> opposite-side error bus (consumed by `setupReq.request` waiters)
        *
        * "Opposite-side" means:
        * - when parsing on client, dispatch to server-side buses (`s*`)
@@ -337,7 +354,7 @@ function createSocket<const Schema extends SocketSchemas>(
         );
         if (res.success)
           (isClient ? buses.sPush : buses.cPush).dispatchEvent(
-            new SocketEvent(event, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { value: res.value }, headers, context),
           );
       } else if (method === "REQUEST") {
         const res = await validate(
@@ -348,7 +365,7 @@ function createSocket<const Schema extends SocketSchemas>(
         );
         if (res.success)
           (isClient ? buses.sReq : buses.cReq).dispatchEvent(
-            new SocketEvent(event, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { value: res.value }, headers, context),
           );
       } else if (method === "RESPONSE") {
         const res = await validate(
@@ -359,8 +376,12 @@ function createSocket<const Schema extends SocketSchemas>(
         );
         if (res.success)
           (isClient ? buses.sRes : buses.cRes).dispatchEvent(
-            new SocketEvent(event, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { value: res.value }, headers, context),
           );
+      } else if (method === "ERROR") {
+        (isClient ? buses.sErr : buses.cErr).dispatchEvent(
+          new SocketEvent(event, body, headers, context),
+        );
       }
     } catch {}
   };
@@ -381,6 +402,7 @@ function createSocket<const Schema extends SocketSchemas>(
     Object.keys(schemas.clientRequests ?? {}),
     buses.cReq,
     buses.sRes,
+    buses.sErr,
     options?.clientTimeout ?? DEFAULT_TIMEOUT,
     true,
   );
@@ -388,6 +410,7 @@ function createSocket<const Schema extends SocketSchemas>(
     Object.keys(schemas.serverRequests ?? {}),
     buses.sReq,
     buses.cRes,
+    buses.cErr,
     options?.serverTimeout ?? DEFAULT_TIMEOUT,
     false,
   );
@@ -395,7 +418,9 @@ function createSocket<const Schema extends SocketSchemas>(
   type ClientApi = {
     push: { [K in keyof CPush]: (...data: Arg<CPush[K]["push"]>) => void };
     request: {
-      [K in keyof CReq]: (...data: Arg<CReq[K]["req"], RequestOption>) => Promise<CReq[K]["res"]>;
+      [K in keyof CReq]: (
+        ...data: Arg<CReq[K]["req"], RequestOption>
+      ) => Promise<SocketResponse<CReq[K]["res"]>>;
     };
     onPush: {
       [K in keyof SPush]: (
@@ -414,7 +439,9 @@ function createSocket<const Schema extends SocketSchemas>(
   type ServerApi = {
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
     request: {
-      [K in keyof SReq]: (...data: Arg<SReq[K]["req"], RequestOption>) => Promise<SReq[K]["res"]>[];
+      [K in keyof SReq]: (
+        ...data: Arg<SReq[K]["req"], RequestOption>
+      ) => Promise<SocketResponse<SReq[K]["res"]>>[];
     };
     onPush: {
       [K in keyof CPush]: (
@@ -459,6 +486,7 @@ function createSocket<const Schema extends SocketSchemas>(
 export {
   type StandardSchema,
   SocketError,
+  type SocketResponse,
   type SocketHeaders,
   type SocketBody,
   type SocketPacket,
