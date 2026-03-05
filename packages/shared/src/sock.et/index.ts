@@ -140,6 +140,23 @@ interface SocketSchemas {
 }
 
 type RequestOption = { timeout?: number } | undefined;
+type SocketErrorHandlerContext = {
+  req: Readonly<{
+    method: "REQ";
+    event: string;
+    headers: Readonly<SocketHeaders>;
+  }>;
+  res: Readonly<{
+    method: "ERR";
+    event: string;
+    header: SocketHeaders;
+  }>;
+  error: unknown;
+};
+type SocketErrorHandlerResult = { error: unknown; headers?: SocketHeaders } | void;
+type SocketErrorHandler = (
+  ctx: SocketErrorHandlerContext,
+) => SocketErrorHandlerResult | Promise<SocketErrorHandlerResult>;
 
 function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
@@ -149,6 +166,7 @@ class SocketCore<const Schema extends SocketSchemas> {
   #schemas: Schema;
   #clientCookie = { value: {} as Record<string, string> };
   #uid: () => string;
+  #onError?: SocketErrorHandler;
   readonly clientWS: { ws: WS | undefined } = { ws: undefined };
   readonly serverWS = { ws: new Set<WS>() };
   readonly ets = {
@@ -166,10 +184,16 @@ class SocketCore<const Schema extends SocketSchemas> {
 
   constructor(
     schemas: Schema,
-    options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
+    options?: {
+      clientTimeout?: number;
+      serverTimeout?: number;
+      uid?: () => string;
+      onError?: SocketErrorHandler;
+    },
   ) {
     this.#schemas = schemas;
     this.#uid = options?.uid ?? uid;
+    this.#onError = options?.onError;
     this.clientTimeout = options?.clientTimeout ?? DEFAULT_TIMEOUT;
     this.serverTimeout = options?.serverTimeout ?? DEFAULT_TIMEOUT;
   }
@@ -369,8 +393,30 @@ class SocketCore<const Schema extends SocketSchemas> {
             e.context.ws,
           );
         } catch (error) {
-          const failure =
-            error instanceof SocketFailure ? error : new SocketFailure("InternalError");
+          let failure: SocketFailure;
+          if (error instanceof SocketFailure) {
+            failure = error;
+          } else if (this.#onError) {
+            try {
+              const handled = await this.#onError({
+                error,
+                req: c.req,
+                res: Object.freeze({
+                  method: "ERR" as const,
+                  event: c.res.event,
+                  header: c.res.header,
+                }),
+              });
+              failure =
+                handled && "error" in handled
+                  ? new SocketFailure(handled.error, handled.headers)
+                  : new SocketFailure("InternalError");
+            } catch {
+              failure = new SocketFailure("InternalError");
+            }
+          } else {
+            failure = new SocketFailure("InternalError");
+          }
           const headers = {
             ...c.res.header,
             ...failure.headers,
@@ -487,7 +533,12 @@ class SocketCore<const Schema extends SocketSchemas> {
 
 function createSocket<const Schema extends SocketSchemas>(
   schemas: Schema,
-  options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
+  options?: {
+    clientTimeout?: number;
+    serverTimeout?: number;
+    uid?: () => string;
+    onError?: SocketErrorHandler;
+  },
 ) {
   type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
@@ -598,8 +649,12 @@ type ServerRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>
 
 class ClientSocket<T extends SocketSchemas> {
   #socket: ClientRuntime<T>;
-  constructor(s: T, o?: RequestOption & { uid?: () => string }) {
-    this.#socket = createSocket(s, { clientTimeout: o?.timeout, uid: o?.uid }).client;
+  constructor(s: T, o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler }) {
+    this.#socket = createSocket(s, {
+      clientTimeout: o?.timeout,
+      uid: o?.uid,
+      onError: o?.onError,
+    }).client;
   }
   get api() {
     return this.#socket.api;
@@ -610,8 +665,12 @@ class ClientSocket<T extends SocketSchemas> {
 
 class ServerSocket<T extends SocketSchemas> {
   #socket: ServerRuntime<T>;
-  constructor(s: T, o?: RequestOption & { uid?: () => string }) {
-    this.#socket = createSocket(s, { serverTimeout: o?.timeout, uid: o?.uid }).server;
+  constructor(s: T, o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler }) {
+    this.#socket = createSocket(s, {
+      serverTimeout: o?.timeout,
+      uid: o?.uid,
+      onError: o?.onError,
+    }).server;
   }
   get api() {
     return this.#socket.api;
@@ -637,6 +696,9 @@ export {
   type SocketPacket,
   type WS,
   type SocketSchemas,
+  type SocketErrorHandler,
+  type SocketErrorHandlerContext,
+  type SocketErrorHandlerResult,
   defineSocketSchema,
   ClientSocket,
   ServerSocket,
