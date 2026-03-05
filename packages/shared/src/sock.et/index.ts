@@ -28,6 +28,13 @@ class SocketError extends Error {
 interface SocketBody<T = unknown> {
   value: T;
 }
+/**
+ * Wire-level packet exchanged between client and server.
+ * - `method`: packet intent
+ * - `event`: schema key/event name
+ * - `body`: validated payload container
+ * - `headers`: protocol metadata (correlation/state/timestamp)
+ */
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
   method: "PUSH" | "REQUEST" | "RESPONSE";
@@ -65,6 +72,7 @@ class SocketEvent extends Event {
 }
 
 class Bus extends EventTarget {
+  /** Subscribe to a named event; returns an unsubscribe function. */
   on(
     event: string,
     handler: (packet: { body: SocketBody; headers: SocketHeaders; context: SocketContext }) => void,
@@ -108,6 +116,13 @@ function createSocket<const Schema extends SocketSchemas>(
   const clientState = { value: "" };
   const createUid = options?.uid ?? uid;
   const serverWS = { ws: new Set<WS>() };
+
+  /**
+   * Internal event buses by direction + packet kind:
+   * - c*: events received/initiated by client side
+   * - s*: events received/initiated by server side
+   * - Push/Req/Res: method lanes
+   */
   const buses = {
     cPush: new Bus(),
     sPush: new Bus(),
@@ -132,6 +147,7 @@ function createSocket<const Schema extends SocketSchemas>(
     return headers;
   };
 
+  /** Serialize a payload to socket packet and deliver to one/all active sockets. */
   const send = (payload: SocketPacketPayload, ws?: WS) => {
     const packet: SocketPacket = { "sock.et": SOCKET_MAGIC_NUMBER, ...payload };
     const data = JSON.stringify(packet);
@@ -140,7 +156,7 @@ function createSocket<const Schema extends SocketSchemas>(
     else serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
   };
 
-  const setupPush = (events: string[], bus: Bus, reverseBus: Bus, isClient: boolean) => {
+  const setupPush = (events: string[], _bus: Bus, reverseBus: Bus, isClient: boolean) => {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
       handle: Record<
@@ -154,7 +170,6 @@ function createSocket<const Schema extends SocketSchemas>(
     events.forEach((event) => {
       api.push[event] = (data: unknown) => {
         const body = { value: data };
-        bus.dispatchEvent(new SocketEvent(event, body));
         send({
           method: "PUSH",
           event,
@@ -175,6 +190,15 @@ function createSocket<const Schema extends SocketSchemas>(
     timeout: number,
     isClient: boolean,
   ) => {
+    /**
+     * Request lane model:
+     * 1) `request(...)` sends packet over WS and waits on `resBus`.
+     * 2) Remote `onMessage(...)` parses `RESPONSE` packets and dispatches into `resBus`.
+     * 3) Waiters resolve/reject by `headers.cid` (+ `ws` on server broadcast mode).
+     *
+     * `reqBus` is consumed only by `handle(...)` and fed by incoming `REQUEST` packets
+     * from `onMessage(...)`.
+     */
     const api: {
       request: Record<
         string,
@@ -200,6 +224,7 @@ function createSocket<const Schema extends SocketSchemas>(
               off();
               offErr();
             };
+            // Match by cid (+ ws on server broadcast mode) to resolve only the target response.
             const off = resBus.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
@@ -218,7 +243,6 @@ function createSocket<const Schema extends SocketSchemas>(
             }, t);
             const body = { value: data };
             const headers = createHeaders(isClient, cid);
-            reqBus.dispatchEvent(new SocketEvent(event, body, headers, { ws }));
             if (!isClient || clientWS.ws?.readyState === 1) {
               send(
                 {
@@ -248,7 +272,6 @@ function createSocket<const Schema extends SocketSchemas>(
           const result = await handler(e.body.value, e.headers);
           const body = { value: result };
           const headers = createHeaders(!isClient, e.headers.cid);
-          resBus.dispatchEvent(new SocketEvent(event, body, headers, e.context));
           send(
             {
               method: "RESPONSE",
@@ -282,6 +305,7 @@ function createSocket<const Schema extends SocketSchemas>(
     try {
       const p = JSON.parse(e.data);
       if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
+      // Client-only state mutation sent by server.
       if (isClient) applySetHeader(p.headers?.["set-state"]);
       const {
         method,
@@ -294,6 +318,16 @@ function createSocket<const Schema extends SocketSchemas>(
       const body = { value };
       const context = { ws };
 
+      /**
+       * Incoming routing rule:
+       * - PUSH -> opposite-side push bus
+       * - REQUEST -> opposite-side request bus (consumed by `setupReq.handle`)
+       * - RESPONSE -> opposite-side response bus (consumed by `setupReq.request` waiters)
+       *
+       * "Opposite-side" means:
+       * - when parsing on client, dispatch to server-side buses (`s*`)
+       * - when parsing on server, dispatch to client-side buses (`c*`)
+       */
       if (method === "PUSH") {
         const res = await validate(
           (isClient ? schemas.serverPushes : schemas.clientPushes)?.[event],
