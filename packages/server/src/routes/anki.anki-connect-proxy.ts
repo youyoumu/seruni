@@ -74,8 +74,9 @@ app.post("/", async (c, next) => {
   const { state, ankiConnectClient } = c.get("ctx");
   const { bodyJson, log, forward } = c.get("proxyCtx");
   const expressionField = state.config().ankiExpressionField;
-  const { success, data } = zAnkiConnectCanAddNotes(expressionField).safeParse(bodyJson);
-  if (!success) return await next();
+  const result = R.parse(zAnkiConnectCanAddNotes(expressionField))(bodyJson);
+  if (R.isFailure(result)) return await next();
+  const data = result.value;
   log.trace("AnkiConnect proxy received CanAddNotes request, tracking duplicate note");
 
   const deckName = data.params.notes[0]?.deckName;
@@ -104,8 +105,9 @@ app.post("/", async (c, next) => {
   const { bodyJson, log, forward } = c.get("proxyCtx");
   const expressionField = state.config().ankiExpressionField;
   const sentenceField = state.config().ankiSentenceField;
-  const { success, data } = zAnkiConnectAddNote.safeParse(bodyJson);
-  if (!success) return await next();
+  const result = R.parse(zAnkiConnectAddNote)(bodyJson);
+  if (R.isFailure(result)) return await next();
+  const data = result.value;
 
   //TODO: inject payload instead of listening
   log.debug("AnkiConnect proxy received AddNote request, processing new note");
