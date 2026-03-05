@@ -35,6 +35,7 @@ interface SocketPacket {
   body: SocketBody;
   headers?: SocketHeaders;
 }
+type SocketPacketPayload = Omit<SocketPacket, "sock.et">;
 interface SocketHeaders {
   cid?: string;
   timestamp?: number;
@@ -131,8 +132,9 @@ function createSocket<const Schema extends SocketSchemas>(
     return headers;
   };
 
-  const send = (payload: SocketPacket, ws?: WS) => {
-    const data = JSON.stringify(payload);
+  const send = (payload: SocketPacketPayload, ws?: WS) => {
+    const packet: SocketPacket = { "sock.et": SOCKET_MAGIC_NUMBER, ...payload };
+    const data = JSON.stringify(packet);
     if (ws) ws.send(data);
     else if (clientWS.ws?.readyState === 1) clientWS.ws.send(data);
     else serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
@@ -151,7 +153,6 @@ function createSocket<const Schema extends SocketSchemas>(
         const body = { value: data };
         bus.dispatchEvent(new SocketEvent(name, body));
         send({
-          "sock.et": SOCKET_MAGIC_NUMBER,
           method: "PUSH",
           name,
           body,
@@ -215,7 +216,6 @@ function createSocket<const Schema extends SocketSchemas>(
             if (!isClient || clientWS.ws?.readyState === 1) {
               send(
                 {
-                  "sock.et": SOCKET_MAGIC_NUMBER,
                   method: "REQUEST",
                   name,
                   body,
@@ -241,7 +241,6 @@ function createSocket<const Schema extends SocketSchemas>(
           resBus.dispatchEvent(new SocketEvent(name, body, headers, e.context));
           send(
             {
-              "sock.et": SOCKET_MAGIC_NUMBER,
               method: "RESPONSE",
               name,
               body,
