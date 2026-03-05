@@ -32,7 +32,7 @@ interface SocketEnvelope<T = unknown> {
 }
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
-  type: "push" | "req" | "res";
+  method: "PUSH" | "REQUEST" | "RESPONSE";
   name: string;
   envelope: SocketEnvelope;
   headers?: SocketHeaders;
@@ -143,7 +143,7 @@ function createSocket<const Schema extends SocketSchemas>(
         bus.dispatchEvent(new SocketEvent(name, envelope));
         send({
           "sock.et": SOCKET_MAGIC_NUMBER,
-          type: "push",
+          method: "PUSH",
           name,
           envelope,
           headers: createHeaders(timestamp, isClient),
@@ -207,7 +207,7 @@ function createSocket<const Schema extends SocketSchemas>(
               send(
                 {
                   "sock.et": SOCKET_MAGIC_NUMBER,
-                  type: "req",
+                  method: "REQUEST",
                   name,
                   envelope,
                   headers: createHeaders(timestamp, isClient),
@@ -234,7 +234,7 @@ function createSocket<const Schema extends SocketSchemas>(
           send(
             {
               "sock.et": SOCKET_MAGIC_NUMBER,
-              type: "res",
+              method: "RESPONSE",
               name,
               envelope,
               headers: createHeaders(timestamp, !isClient),
@@ -267,14 +267,14 @@ function createSocket<const Schema extends SocketSchemas>(
       if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
       if (isClient) applySetHeader(p.headers?.["set-state"]);
       const {
-        type,
+        method,
         name,
         envelope: { data, cid },
       } = p;
       const ws = isClient ? undefined : ws_;
       const envelope = { data, cid, ws };
 
-      if (type === "push") {
+      if (method === "PUSH") {
         const res = await validate(
           (isClient ? schemas.serverPushes : schemas.clientPushes)?.[name],
           data,
@@ -285,7 +285,7 @@ function createSocket<const Schema extends SocketSchemas>(
           (isClient ? buses.sPush : buses.cPush).dispatchEvent(
             new SocketEvent(name, { ...envelope, data: res.value }),
           );
-      } else if (type === "req") {
+      } else if (method === "REQUEST") {
         const res = await validate(
           (isClient ? schemas.serverRequests : schemas.clientRequests)?.[name]?.[0],
           data,
@@ -296,7 +296,7 @@ function createSocket<const Schema extends SocketSchemas>(
           (isClient ? buses.sReq : buses.cReq).dispatchEvent(
             new SocketEvent(name, { ...envelope, data: res.value }),
           );
-      } else if (type === "res") {
+      } else if (method === "RESPONSE") {
         const res = await validate(
           (isClient ? schemas.clientRequests : schemas.serverRequests)?.[name]?.[1],
           data,
