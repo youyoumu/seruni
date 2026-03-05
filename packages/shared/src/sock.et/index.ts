@@ -24,6 +24,12 @@ class SocketError extends Error {
     this.name = "SocketError";
   }
 }
+class SocketFailure {
+  constructor(
+    public readonly error: unknown,
+    public readonly headers?: SocketHeaders,
+  ) {}
+}
 type SocketResponse<T = unknown> =
   | { type: "Success"; value: T }
   | { type: "Failure"; error: unknown };
@@ -65,6 +71,7 @@ interface SocketReqHandlerContext<TBody = unknown> {
     header: SocketHeaders;
     body?: unknown;
   };
+  fail: (error: unknown, headers?: SocketHeaders) => never;
 }
 interface SocketPushHandlerContext<TBody = unknown> {
   push: Readonly<{
@@ -335,6 +342,9 @@ function createSocket<const Schema extends SocketSchemas>(
         return isClient ? exec() : Array.from(serverWS.ws).map(exec);
       };
       reqBus.on(event, async (e) => {
+        const fail = (error: unknown, headers?: SocketHeaders): never => {
+          throw new SocketFailure(error, headers);
+        };
         const c: SocketReqHandlerContext<unknown> = {
           req: Object.freeze({
             method: "REQUEST" as const,
@@ -343,6 +353,7 @@ function createSocket<const Schema extends SocketSchemas>(
             headers: Object.freeze({ ...e.headers }),
           }),
           res: { method: "RESPONSE", event, header: {} },
+          fail: fail,
         };
         const middlewares = middlewareMap[event] ?? [];
         if (middlewares.length === 0) return;
@@ -369,7 +380,7 @@ function createSocket<const Schema extends SocketSchemas>(
           const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
           send(
             {
-              method: "RESPONSE",
+              method: c.res.method,
               event,
               body: { value: c.res.body },
               headers,
@@ -377,12 +388,18 @@ function createSocket<const Schema extends SocketSchemas>(
             e.context.ws,
           );
         } catch (error) {
-          const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
+          const failure =
+            error instanceof SocketFailure ? error : new SocketFailure("InternalError");
+          const headers = {
+            ...c.res.header,
+            ...failure.headers,
+            ...createHeaders(!isClient, e.headers.cid),
+          };
           send(
             {
               method: "ERROR",
-              event,
-              body: { value: error },
+              event: c.res.event,
+              body: { value: failure.error },
               headers,
             },
             e.context.ws,
@@ -617,6 +634,7 @@ function createSocket<const Schema extends SocketSchemas>(
 export {
   type StandardSchema,
   SocketError,
+  SocketFailure,
   type SocketResponse,
   type SocketHeaders,
   type SocketPushHandlerContext,
