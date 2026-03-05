@@ -311,7 +311,7 @@ function createSocket<const Schema extends SocketSchemas>(
     const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
       console.error(`Validation failed for ${type} [${name}]`, res.issues);
-      return { success: false as const };
+      return { success: false as const, error: res.issues };
     }
     return { success: true as const, value: res.value };
   };
@@ -363,10 +363,18 @@ function createSocket<const Schema extends SocketSchemas>(
           event,
           "req",
         );
-        if (res.success)
+        if (res.success) {
           (isClient ? buses.sReq : buses.cReq).dispatchEvent(
             new SocketEvent(event, { value: res.value }, headers, context),
           );
+        } else {
+          send({
+            method: "ERROR",
+            event,
+            body: { value: res.error },
+            headers: createHeaders(!isClient, headers.cid),
+          });
+        }
       } else if (method === "RESPONSE") {
         const res = await validate(
           (isClient ? schemas.clientRequests : schemas.serverRequests)?.[event]?.[1],
