@@ -345,6 +345,23 @@ function createSocket<const Schema extends SocketSchemas>(
         const fail = (error: unknown, headers?: SocketHeaders): never => {
           throw new SocketFailure(error, headers);
         };
+        const res: SocketReqHandlerContext<unknown>["res"] = {
+          method: "RESPONSE",
+          event,
+          header: {},
+        };
+        Object.defineProperty(res, "method", {
+          value: "RESPONSE",
+          writable: false,
+          enumerable: true,
+          configurable: false,
+        });
+        Object.defineProperty(res, "event", {
+          value: event,
+          writable: false,
+          enumerable: true,
+          configurable: false,
+        });
         const c: SocketReqHandlerContext<unknown> = {
           req: Object.freeze({
             method: "REQUEST" as const,
@@ -352,7 +369,7 @@ function createSocket<const Schema extends SocketSchemas>(
             body: e.body.value,
             headers: Object.freeze({ ...e.headers }),
           }),
-          res: { method: "RESPONSE", event, header: {} },
+          res,
           fail: fail,
         };
         const middlewares = middlewareMap[event] ?? [];
