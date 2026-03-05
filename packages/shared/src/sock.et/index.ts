@@ -12,14 +12,11 @@ type Arg<T1, T2 = undefined> = undefined extends T1
 
 const uid = () => Math.random().toString(36).slice(2);
 
-const SocketErr = {
-  ConnectionClosed: "ConnectionClosed",
-  RequestTimeout: "RequestTimeout",
-};
+type SocketErr = typeof SocketError.ConnectionClosed | typeof SocketError.RequestTimeout;
 class SocketError extends Error {
-  static ConnectionClosed = SocketErr.ConnectionClosed;
-  static RequestTimeout = SocketErr.RequestTimeout;
-  constructor(public readonly type: (typeof SocketErr)[keyof typeof SocketErr]) {
+  static ConnectionClosed = "ConnectionClosed" as const;
+  static RequestTimeout = "RequestTimeout" as const;
+  constructor(public readonly type: SocketErr) {
     super();
     this.name = "SocketError";
   }
@@ -37,6 +34,9 @@ type SocketResponse<T = unknown> =
 interface SocketBody<T = unknown> {
   value?: T;
 }
+
+const SOCKET_MAGIC_NUMBER = 16777619;
+const DEFAULT_TIMEOUT = 300000;
 /**
  * Wire-level packet exchanged between client and server.
  * - `method`: packet intent
@@ -102,9 +102,6 @@ interface SocketContext {
   ws?: WS;
 }
 
-const SOCKET_MAGIC_NUMBER = 16777619;
-const DEFAULT_TIMEOUT = 300000;
-
 class SocketEvent extends Event {
   constructor(
     type: string,
@@ -148,27 +145,13 @@ function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
 
-function createSocket<const Schema extends SocketSchemas>(
-  schemas: Schema,
-  options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
-) {
-  type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
-  type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
-  type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
-  type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
-
-  const clientWS: { ws: WS | undefined } = { ws: undefined };
-  const clientCookie = { value: {} as Record<string, string> };
-  const createUid = options?.uid ?? uid;
-  const serverWS = { ws: new Set<WS>() };
-
-  /**
-   * Internal event buses by direction + packet kind:
-   * - c*: events received/initiated by client side
-   * - s*: events received/initiated by server side
-   * - Push/Req/Res/Err: method lanes
-   */
-  const buses = {
+class SocketCore<const Schema extends SocketSchemas> {
+  #schemas: Schema;
+  #clientCookie = { value: {} as Record<string, string> };
+  #uid: () => string;
+  readonly clientWS: { ws: WS | undefined } = { ws: undefined };
+  readonly serverWS = { ws: new Set<WS>() };
+  readonly buses = {
     cPush: new Bus(),
     sPush: new Bus(),
     cReq: new Bus(),
@@ -178,60 +161,76 @@ function createSocket<const Schema extends SocketSchemas>(
     cErr: new Bus(),
     sErr: new Bus(),
   };
+  readonly clientTimeout: number;
+  readonly serverTimeout: number;
 
-  const sanitizeCookie = (cookie: unknown): Record<string, string> | undefined => {
+  constructor(
+    schemas: Schema,
+    options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
+  ) {
+    this.#schemas = schemas;
+    this.#uid = options?.uid ?? uid;
+    this.clientTimeout = options?.clientTimeout ?? DEFAULT_TIMEOUT;
+    this.serverTimeout = options?.serverTimeout ?? DEFAULT_TIMEOUT;
+  }
+
+  #sanitizeCookie(cookie: unknown): Record<string, string> | undefined {
     if (!cookie || typeof cookie !== "object" || Array.isArray(cookie)) return undefined;
     const sanitized: Record<string, string> = {};
     Object.entries(cookie).forEach(([k, v]) => {
       if (typeof v === "string") sanitized[k] = v;
     });
     return sanitized;
-  };
+  }
 
-  const applySetCookie = (setCookie: unknown) => {
-    const sanitized = sanitizeCookie(setCookie);
+  async #validate(schema: StandardSchema | undefined, data: unknown, event: string, type: string) {
+    if (!schema) throw new Error(`No schema for ${type} [${event}]`);
+    const res = await schema["~standard"].validate(data);
+    if ("issues" in res) {
+      console.error(`Validation failed for ${type} [${event}]`, res.issues);
+      return { success: false as const, error: res.issues };
+    }
+    return { success: true as const, value: res.value };
+  }
+
+  #applySetCookie(setCookie: unknown) {
+    const sanitized = this.#sanitizeCookie(setCookie);
     if (!sanitized) return;
-    clientCookie.value = sanitized;
-  };
+    this.#clientCookie.value = sanitized;
+  }
 
-  const createHeaders = (isClientSender: boolean, cid?: string): SocketHeaders => {
-    const timestamp = Date.now();
-    const headers: SocketHeaders = { timestamp };
+  #createHeaders(isClientSender: boolean, cid?: string): SocketHeaders {
+    const headers: SocketHeaders = { timestamp: Date.now() };
     if (cid) headers.cid = cid;
-    if (isClientSender && Object.keys(clientCookie.value).length > 0) {
-      headers.cookie = clientCookie.value;
+    if (isClientSender && Object.keys(this.#clientCookie.value).length > 0) {
+      headers.cookie = this.#clientCookie.value;
     }
     return headers;
-  };
+  }
 
-  /** Serialize a payload to socket packet and deliver to one/all active sockets. */
-  const send = (payload: SocketPacketPayload, ws?: WS) => {
-    const packet: SocketPacket = { "sock.et": SOCKET_MAGIC_NUMBER, ...payload };
+  #send(payload: SocketPacketPayload, ws?: WS) {
+    const packet: SocketPacket = { ...payload, "sock.et": SOCKET_MAGIC_NUMBER };
     const data = JSON.stringify(packet);
     if (ws) ws.send(data);
-    else if (clientWS.ws?.readyState === 1) clientWS.ws.send(data);
-    else serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
-  };
+    else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
+    else this.serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
+  }
 
-  const setupPush = (events: string[], _bus: Bus, reverseBus: Bus, isClient: boolean) => {
+  createPushLane(events: string[], reverseBus: Bus, isClient: boolean) {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
       handle: Record<
         string,
         (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void
       >;
-    } = {
-      push: {},
-      handle: {},
-    };
+    } = { push: {}, handle: {} };
     events.forEach((event) => {
       api.push[event] = (data: unknown) => {
-        const body = { value: data };
-        send({
+        this.#send({
           method: "PUSH",
           event,
-          body,
-          headers: createHeaders(isClient),
+          body: { value: data },
+          headers: this.#createHeaders(isClient),
         });
       };
       api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
@@ -247,27 +246,16 @@ function createSocket<const Schema extends SocketSchemas>(
         );
     });
     return api;
-  };
+  }
 
-  const setupReq = (
+  createReqLane(
     events: string[],
     reqBus: Bus,
     resBus: Bus,
     errBus: Bus,
     timeout: number,
     isClient: boolean,
-  ) => {
-    /**
-     * Request lane model:
-     * 1) `request(...)` sends packet over WS and waits on `resBus`.
-     * 2) Remote `onMessage(...)` parses `RESPONSE`/`ERROR` packets and dispatches into `resBus`/`errBus`.
-     * 3) Waiters map packet method to result:
-     *    - RESPONSE -> `{ type: "Success", value }`
-     *    - ERROR -> `{ type: "Failure", error }`
-     *
-     * `reqBus` is consumed only by `handle(...)` and fed by incoming `REQUEST` packets
-     * from `onMessage(...)`.
-     */
+  ) {
     const api: {
       request: Record<
         string,
@@ -280,7 +268,6 @@ function createSocket<const Schema extends SocketSchemas>(
       ) => () => void;
     } = { request: {}, handle: {}, use: () => () => undefined };
     const middlewareMap: Record<string, SocketReqMiddleware<unknown, unknown>[]> = {};
-
     const toPredicate = (
       matcher: SocketRequestMatcher,
     ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
@@ -293,10 +280,9 @@ function createSocket<const Schema extends SocketSchemas>(
     events.forEach((event) => {
       middlewareMap[event] = [];
       api.request[event] = (...args) => {
-        const data = args[0],
-          cid = createUid(),
-          t = args[1]?.timeout ?? timeout;
-
+        const data = args[0];
+        const cid = this.#uid();
+        const t = args[1]?.timeout ?? timeout;
         const exec = (ws?: WS): Promise<SocketResponse<unknown>> =>
           new Promise((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout>;
@@ -305,7 +291,6 @@ function createSocket<const Schema extends SocketSchemas>(
               off();
               offErr();
             };
-            // Match by cid (+ ws on server broadcast mode) to resolve only the target response.
             const off = resBus.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
@@ -322,25 +307,17 @@ function createSocket<const Schema extends SocketSchemas>(
               clean();
               reject(new SocketError(SocketError.RequestTimeout));
             }, t);
-            const body = { value: data };
-            const headers = createHeaders(isClient, cid);
-            if (!isClient || clientWS.ws?.readyState === 1) {
-              send(
-                {
-                  method: "REQUEST",
-                  event,
-                  body,
-                  headers,
-                },
-                ws,
-              );
+            const headers = this.#createHeaders(isClient, cid);
+            if (!isClient || this.clientWS.ws?.readyState === 1) {
+              this.#send({ method: "REQUEST", event, body: { value: data }, headers }, ws);
             } else {
               clean();
               reject(new SocketError(SocketError.ConnectionClosed));
             }
           });
-        return isClient ? exec() : Array.from(serverWS.ws).map(exec);
+        return isClient ? exec() : Array.from(this.serverWS.ws).map(exec);
       };
+
       reqBus.on(event, async (e) => {
         const fail = (error: unknown, headers?: SocketHeaders): never => {
           throw new SocketFailure(error, headers);
@@ -370,38 +347,25 @@ function createSocket<const Schema extends SocketSchemas>(
             headers: Object.freeze({ ...e.headers }),
           }),
           res,
-          fail: fail,
+          fail,
         };
         const middlewares = middlewareMap[event] ?? [];
         if (middlewares.length === 0) return;
         try {
-          // Tracks the latest middleware index that has started execution.
-          // Used to prevent calling next() multiple times from the same middleware.
           let i = -1;
           const dispatch = async (idx: number): Promise<void> => {
-            // next() must move forward exactly once.
             if (idx <= i) throw new Error("next() called multiple times");
             i = idx;
             const middleware = middlewares[idx];
-            // End of middleware chain.
             if (!middleware) return;
-            // Middleware can either:
-            // 1) return a response body directly, or
-            // 2) mutate c.res.body and/or await next() for downstream processing.
             const result = await middleware(c, () => dispatch(idx + 1));
             if (result !== undefined) c.res.body = result;
           };
-          // Start middleware chain at index 0.
           await dispatch(0);
           if (c.res.body === undefined) return;
-          const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
-          send(
-            {
-              method: c.res.method,
-              event,
-              body: { value: c.res.body },
-              headers,
-            },
+          const headers = { ...c.res.header, ...this.#createHeaders(!isClient, e.headers.cid) };
+          this.#send(
+            { method: c.res.method, event, body: { value: c.res.body }, headers },
             e.context.ws,
           );
         } catch (error) {
@@ -410,25 +374,20 @@ function createSocket<const Schema extends SocketSchemas>(
           const headers = {
             ...c.res.header,
             ...failure.headers,
-            ...createHeaders(!isClient, e.headers.cid),
+            ...this.#createHeaders(!isClient, e.headers.cid),
           };
-          send(
-            {
-              method: "ERROR",
-              event: c.res.event,
-              body: { value: failure.error },
-              headers,
-            },
+          this.#send(
+            { method: "ERROR", event: c.res.event, body: { value: failure.error }, headers },
             e.context.ws,
           );
         }
       });
+
       api.handle[event] = (handler: SocketReqMiddleware<unknown, unknown>) => {
         const middlewares = middlewareMap[event];
         if (!middlewares) return () => undefined;
         middlewares.push(handler);
         return () => {
-          // Unsubscribe this middleware from the event pipeline.
           const idx = middlewares.indexOf(handler);
           if (idx >= 0) middlewares.splice(idx, 1);
         };
@@ -445,140 +404,127 @@ function createSocket<const Schema extends SocketSchemas>(
           return handler(c, next);
         });
       });
-      return () => {
-        offs.forEach((off) => off());
-      };
+      return () => offs.forEach((off) => off());
     };
+
     return api;
-  };
+  }
 
-  const validate = async (
-    schema: StandardSchema | undefined,
-    data: unknown,
-    name: string,
-    type: string,
-  ) => {
-    if (!schema) throw new Error(`No schema for ${type} [${name}]`);
-    const res = await schema["~standard"].validate(data);
-    if ("issues" in res) {
-      console.error(`Validation failed for ${type} [${name}]`, res.issues);
-      return { success: false as const, error: res.issues };
-    }
-    return { success: true as const, value: res.value };
-  };
-
-  const onMessage = (isClient: boolean) => async (e: MessageEvent, ws_?: WS) => {
-    try {
-      const p = JSON.parse(e.data);
-      if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
-      // Client-only cookie mutation sent by server.
-      if (isClient) applySetCookie(p.headers?.["set-cookie"]);
-      const {
-        method,
-        event,
-        body: { value },
-      } = p;
-      const headers = (p.headers ?? {}) as SocketHeaders;
-      const cookie = sanitizeCookie(headers.cookie);
-      if (cookie) headers.cookie = cookie;
-      else delete headers.cookie;
-      const setCookie = sanitizeCookie(headers["set-cookie"]);
-      if (setCookie) headers["set-cookie"] = setCookie;
-      else delete headers["set-cookie"];
-      if ((method === "REQUEST" || method === "RESPONSE" || method === "ERROR") && !headers.cid)
-        return;
-      const ws = isClient ? undefined : ws_;
-      const body = { value };
-      const context = { ws };
-
-      /**
-       * Incoming routing rule:
-       * - PUSH -> opposite-side push bus
-       * - REQUEST -> opposite-side request bus (consumed by `setupReq.handle`)
-       * - RESPONSE -> opposite-side response bus (consumed by `setupReq.request` waiters)
-       * - ERROR -> opposite-side error bus (consumed by `setupReq.request` waiters)
-       *
-       * "Opposite-side" means:
-       * - when parsing on client, dispatch to server-side buses (`s*`)
-       * - when parsing on server, dispatch to client-side buses (`c*`)
-       */
-      if (method === "PUSH") {
-        const res = await validate(
-          (isClient ? schemas.serverPushes : schemas.clientPushes)?.[event],
-          value,
+  createOnMessage(isClient: boolean) {
+    return async (e: MessageEvent, ws_?: WS) => {
+      try {
+        const p = JSON.parse(e.data);
+        if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
+        if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
+        const {
+          method,
           event,
-          "push",
-        );
-        if (res.success)
-          (isClient ? buses.sPush : buses.cPush).dispatchEvent(
-            new SocketEvent(event, { value: res.value }, headers, context),
-          );
-      } else if (method === "REQUEST") {
-        const res = await validate(
-          (isClient ? schemas.serverRequests : schemas.clientRequests)?.[event]?.[0],
-          value,
-          event,
-          "req",
-        );
-        if (res.success) {
-          (isClient ? buses.sReq : buses.cReq).dispatchEvent(
-            new SocketEvent(event, { value: res.value }, headers, context),
-          );
-        } else {
-          send({
-            method: "ERROR",
+          body: { value },
+        } = p;
+        const headers = (p.headers ?? {}) as SocketHeaders;
+        const cookie = this.#sanitizeCookie(headers.cookie);
+        if (cookie) headers.cookie = cookie;
+        else delete headers.cookie;
+        const setCookie = this.#sanitizeCookie(headers["set-cookie"]);
+        if (setCookie) headers["set-cookie"] = setCookie;
+        else delete headers["set-cookie"];
+        if ((method === "REQUEST" || method === "RESPONSE" || method === "ERROR") && !headers.cid)
+          return;
+        const context = { ws: isClient ? undefined : ws_ };
+        const body = { value };
+
+        if (method === "PUSH") {
+          const res = await this.#validate(
+            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[event],
+            value,
             event,
-            body: { value: res.error },
-            headers: createHeaders(!isClient, headers.cid),
-          });
-        }
-      } else if (method === "RESPONSE") {
-        const res = await validate(
-          (isClient ? schemas.clientRequests : schemas.serverRequests)?.[event]?.[1],
-          value,
-          event,
-          "res",
-        );
-        if (res.success)
-          (isClient ? buses.sRes : buses.cRes).dispatchEvent(
-            new SocketEvent(event, { value: res.value }, headers, context),
+            "push",
           );
-      } else if (method === "ERROR") {
-        (isClient ? buses.sErr : buses.cErr).dispatchEvent(
-          new SocketEvent(event, body, headers, context),
-        );
-      }
-    } catch {}
-  };
+          if (res.success) {
+            (isClient ? this.buses.sPush : this.buses.cPush).dispatchEvent(
+              new SocketEvent(event, { value: res.value }, headers, context),
+            );
+          }
+        } else if (method === "REQUEST") {
+          const res = await this.#validate(
+            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[event]?.[0],
+            value,
+            event,
+            "req",
+          );
+          if (res.success) {
+            (isClient ? this.buses.sReq : this.buses.cReq).dispatchEvent(
+              new SocketEvent(event, { value: res.value }, headers, context),
+            );
+          } else {
+            this.#send({
+              method: "ERROR",
+              event,
+              body: { value: res.error },
+              headers: this.#createHeaders(!isClient, headers.cid),
+            });
+          }
+        } else if (method === "RESPONSE") {
+          const res = await this.#validate(
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[1],
+            value,
+            event,
+            "res",
+          );
+          if (res.success) {
+            (isClient ? this.buses.sRes : this.buses.cRes).dispatchEvent(
+              new SocketEvent(event, { value: res.value }, headers, context),
+            );
+          }
+        } else if (method === "ERROR") {
+          (isClient ? this.buses.sErr : this.buses.cErr).dispatchEvent(
+            new SocketEvent(event, body, headers, context),
+          );
+        }
+      } catch {}
+    };
+  }
+}
 
-  const cPushApi = setupPush(
+function createSocket<const Schema extends SocketSchemas>(
+  schemas: Schema,
+  options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
+) {
+  type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
+  type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
+  type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
+  type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
+
+  const core = new SocketCore(schemas, options);
+
+  const cPushApi = core.createPushLane(
     Object.keys(schemas.clientPushes ?? {}),
-    buses.sPush,
-    buses.cPush,
+    core.buses.cPush,
     true,
   );
-  const sPushApi = setupPush(
+  const sPushApi = core.createPushLane(
     Object.keys(schemas.serverPushes ?? {}),
-    buses.cPush,
-    buses.sPush,
+    core.buses.sPush,
     false,
   );
-  const cReqApi = setupReq(
+  const cReqApi = core.createReqLane(
     Object.keys(schemas.clientRequests ?? {}),
-    buses.cReq,
-    buses.sRes,
-    buses.sErr,
-    options?.clientTimeout ?? DEFAULT_TIMEOUT,
+    core.buses.cReq,
+    core.buses.sRes,
+    core.buses.sErr,
+    core.clientTimeout,
     true,
   );
-  const sReqApi = setupReq(
+  const sReqApi = core.createReqLane(
     Object.keys(schemas.serverRequests ?? {}),
-    buses.sReq,
-    buses.cRes,
-    buses.cErr,
-    options?.serverTimeout ?? DEFAULT_TIMEOUT,
+    core.buses.sReq,
+    core.buses.cRes,
+    core.buses.cErr,
+    core.serverTimeout,
     false,
   );
+  const clientOnMessage = core.createOnMessage(true);
+  const serverOnMessage = core.createOnMessage(false);
 
   type ClientApi = {
     push: { [K in keyof CPush]: (...data: Arg<CPush[K]["push"]>) => void };
@@ -623,8 +569,8 @@ function createSocket<const Schema extends SocketSchemas>(
 
   return {
     client: {
-      onMessage: onMessage(true),
-      bindWS: (ws: WS) => (clientWS.ws = ws),
+      onMessage: clientOnMessage,
+      bindWS: (ws: WS) => (core.clientWS.ws = ws),
       api: {
         push: cPushApi.push,
         request: cReqApi.request,
@@ -634,9 +580,9 @@ function createSocket<const Schema extends SocketSchemas>(
       } as ClientApi,
     },
     server: {
-      onMessage: onMessage(false),
-      addWS: (ws: WS) => serverWS.ws.add(ws),
-      removeWS: (ws: WS) => serverWS.ws.delete(ws),
+      onMessage: serverOnMessage,
+      addWS: (ws: WS) => core.serverWS.ws.add(ws),
+      removeWS: (ws: WS) => core.serverWS.ws.delete(ws),
       api: {
         push: sPushApi.push,
         request: sReqApi.request,
@@ -653,46 +599,37 @@ type ServerRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>
 
 class ClientSocket<T extends SocketSchemas> {
   #socket: ClientRuntime<T>;
-
   constructor(s: T, o?: RequestOption & { uid?: () => string }) {
     this.#socket = createSocket(s, { clientTimeout: o?.timeout, uid: o?.uid }).client;
   }
-
   get api() {
     return this.#socket.api;
   }
-
-  onMessage(e: MessageEvent) {
+  onMessage = (e: MessageEvent) => {
     return this.#socket.onMessage(e);
-  }
-
-  bindWS(ws: WS) {
+  };
+  bindWS = (ws: WS) => {
     return this.#socket.bindWS(ws);
-  }
+  };
 }
 
 class ServerSocket<T extends SocketSchemas> {
   #socket: ServerRuntime<T>;
-
   constructor(s: T, o?: RequestOption & { uid?: () => string }) {
     this.#socket = createSocket(s, { serverTimeout: o?.timeout, uid: o?.uid }).server;
   }
-
   get api() {
     return this.#socket.api;
   }
-
-  onMessage(e: MessageEvent, ws?: WS) {
+  onMessage = (e: MessageEvent, ws?: WS) => {
     return this.#socket.onMessage(e, ws);
-  }
-
-  addWS(ws: WS) {
+  };
+  addWS = (ws: WS) => {
     return this.#socket.addWS(ws);
-  }
-
-  removeWS(ws: WS) {
+  };
+  removeWS = (ws: WS) => {
     return this.#socket.removeWS(ws);
-  }
+  };
 }
 
 export {
