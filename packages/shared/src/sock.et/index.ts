@@ -28,6 +28,7 @@ class SocketError extends Error {
 interface SocketEnvelope<T = unknown> {
   data: T;
   cid: string;
+  timestamp: number;
   ws?: WS;
 }
 interface SocketPacket {
@@ -35,6 +36,7 @@ interface SocketPacket {
   type: "push" | "req" | "res";
   name: string;
   envelope: SocketEnvelope;
+  timestamp: number;
 }
 interface WS {
   send: (data: string) => void;
@@ -118,9 +120,10 @@ function createSocket<const Schema extends SocketSchemas>(
     };
     names.forEach((name) => {
       api.push[name] = (data: unknown) => {
-        const envelope = { data, cid: uid() };
+        const timestamp = Date.now();
+        const envelope = { data, cid: uid(), timestamp };
         bus.dispatchEvent(new SocketEvent(name, envelope));
-        send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "push", name, envelope });
+        send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "push", name, envelope, timestamp });
       };
       api.handle[name] = (handler: (data: unknown) => void) =>
         reverseBus.on(name, (e) => handler(e.data));
@@ -173,15 +176,17 @@ function createSocket<const Schema extends SocketSchemas>(
               clean();
               reject(new SocketError(SocketError.RequestTimeout));
             }, t);
-            const envelope = { data, cid, ws };
+            const timestamp = Date.now();
+            const envelope = { data, cid, ws, timestamp };
             reqBus.dispatchEvent(new SocketEvent(name, envelope));
             if (!isClient || clientWS.ws?.readyState === 1) {
-              send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "req", name, envelope }, ws);
+              send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "req", name, envelope, timestamp }, ws);
             } else {
               resBus.dispatchEvent(
                 new SocketEvent("__error__", {
                   data: new SocketError(SocketError.ConnectionClosed),
                   cid,
+                  timestamp: Date.now(),
                 }),
               );
             }
@@ -191,9 +196,10 @@ function createSocket<const Schema extends SocketSchemas>(
       api.handle[name] = (handler: (data: unknown) => unknown) =>
         reqBus.on(name, async (e) => {
           const result = await handler(e.data);
-          const envelope = { data: result, cid: e.cid, ws: e.ws };
+          const timestamp = Date.now();
+          const envelope = { data: result, cid: e.cid, ws: e.ws, timestamp };
           resBus.dispatchEvent(new SocketEvent(name, envelope));
-          send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "res", name, envelope }, e.ws);
+          send({ "sock.et": SOCKET_MAGIC_NUMBER, type: "res", name, envelope, timestamp }, e.ws);
         });
     });
     return api;
@@ -221,10 +227,10 @@ function createSocket<const Schema extends SocketSchemas>(
       const {
         type,
         name,
-        envelope: { data, cid },
+        envelope: { data, cid, timestamp },
       } = p;
       const ws = isClient ? undefined : ws_;
-      const envelope = { data, cid, ws };
+      const envelope = { data, cid, ws, timestamp };
 
       if (type === "push") {
         const res = await validate(
