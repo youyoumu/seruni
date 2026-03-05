@@ -1,66 +1,63 @@
 import type { Services } from "#/hooks/services";
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
+import { R } from "@praha/byethrow";
 
 export const createKeyring = (api: Services["api"]) =>
   createQueryKeyStore({
     sessions: {
       all: {
         queryKey: null,
-        queryFn: () => api.request.sessions(),
+        queryFn: async () => R.unwrap(await api.request.sessions()),
       },
       active: {
         queryKey: null,
-        queryFn: () => api.request.getActiveSession(),
+        queryFn: async () => R.unwrap(await api.request.getActiveSession()),
       },
       byId: (sessionId: number) => ({
         queryKey: [{ sessionId }],
-        queryFn: async () => {
-          const result = await api.request.session(sessionId);
-          if (!result) throw Error("Session not found");
-          return result;
-        },
+        queryFn: async () => R.unwrap(await api.request.session(sessionId)),
       }),
     },
     textHistory: {
       bySession: (sessionId: number) => ({
         queryKey: [{ sessionId }],
-        queryFn: () => api.request.textHistoryBySessionId(sessionId),
+        queryFn: async () => R.unwrap(await api.request.textHistoryBySessionId(sessionId)),
       }),
       completed: {
         queryKey: null,
-        queryFn: () => api.request.completedTextHistory(),
+        queryFn: async () => R.unwrap(await api.request.completedTextHistory()),
       },
     },
     isListeningTextHooker: {
       isListening: {
         queryKey: null,
-        queryFn: () => api.request.isListeningTextHooker(),
+        queryFn: async () => R.unwrap(await api.request.isListeningTextHooker()),
       },
     },
     isTextHookerAutoResume: {
       isAutoResume: {
         queryKey: null,
-        queryFn: () => api.request.isTextHookerAutoResume(),
+        queryFn: async () => R.unwrap(await api.request.isTextHookerAutoResume()),
       },
     },
     client: {
       textHookerConnected: {
         queryKey: null,
-        queryFn: () => api.request.textHookerConnected(),
+        queryFn: async () => R.unwrap(await api.request.textHookerConnected()),
       },
       ankiConnectConnected: {
         queryKey: null,
-        queryFn: () => api.request.ankiConnectConnected(),
+        queryFn: async () => R.unwrap(await api.request.ankiConnectConnected()),
       },
       obsConnected: {
         queryKey: null,
-        queryFn: () => api.request.obsConnected(),
+        queryFn: async () => R.unwrap(await api.request.obsConnected()),
       },
     },
     config: {
       detail: {
         queryKey: null,
-        queryFn: () => api.request.config(),
+        queryFn: async () => R.unwrap(await api.request.config()),
       },
     },
   });

@@ -1,3 +1,4 @@
+import { R } from "@praha/byethrow";
 import type { Config } from "@repo/shared/schema";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
@@ -13,8 +14,7 @@ export function useSetConfig() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (config: Config) => {
-      const data = await api.request.setConfig(config);
-      if (!data) throw Error("Failed to set config");
+      const data = R.unwrap(await api.request.setConfig(config));
       return data;
     },
     onSuccess: async () => {

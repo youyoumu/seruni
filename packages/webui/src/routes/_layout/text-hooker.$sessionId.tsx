@@ -11,6 +11,7 @@ import {
 import { useReadingSpeed, useSessionTimer } from "#/hooks/timer";
 import { useInterval } from "#/hooks/util";
 import { Button, cn, Popover, Separator, Skeleton, Tooltip } from "@heroui/react";
+import { R } from "@praha/byethrow";
 import { type TextHistory } from "@repo/shared/db";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
@@ -47,9 +48,9 @@ export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
   async loader({ params, context }) {
     const { sessionId } = params;
     const { api } = context.services;
-    const session = await api.request.session(sessionId);
+    const session = R.unwrap(await api.request.session(sessionId));
     if (!session) {
-      const sessions = await api.request.sessions();
+      const sessions = R.unwrap(await api.request.sessions());
       const lastSession = sessions[sessions.length - 1];
       if (!lastSession) throw Error("Last session not found");
       throw redirect({

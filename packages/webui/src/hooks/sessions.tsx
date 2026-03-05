@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
+import { R } from "@praha/byethrow";
 
 import { useServices } from "./services";
 
@@ -22,7 +23,7 @@ export function useSetActiveSession() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (id: number) => {
-      return await api.request.setActiveSession(id);
+      return R.unwrap(await api.request.setActiveSession(id));
     },
   });
 }
@@ -33,7 +34,7 @@ export function useCreateNewSession() {
   const navigate = useNavigate();
   return useMutation({
     mutationFn: async (name: string) => {
-      return await api.request.createSession(name);
+      return R.unwrap(await api.request.createSession(name));
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
@@ -59,7 +60,7 @@ export function useDeleteSession() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      return await api.request.deleteSession(id);
+      return R.unwrap(await api.request.deleteSession(id));
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
@@ -79,7 +80,7 @@ export function useUpdateSessionDuration() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ sessionId, duration }: { sessionId: number; duration: number }) => {
-      return await api.request.updateSession({ id: sessionId, duration });
+      return R.unwrap(await api.request.updateSession({ id: sessionId, duration }));
     },
     onSuccess: async (data) => {
       if (data) {
@@ -100,7 +101,7 @@ export function useSetIsListeningTextHooker() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (isListening: boolean) => {
-      return await api.request.setIsListeningTextHooker(isListening);
+      return R.unwrap(await api.request.setIsListeningTextHooker(isListening));
     },
   });
 }
@@ -114,7 +115,7 @@ export function useSetIsTextHookerAutoResume() {
   const { api } = useServices();
   return useMutation({
     mutationFn: async (isAutoResume: boolean) => {
-      return await api.request.setIsTextHookerAutoResume(isAutoResume);
+      return R.unwrap(await api.request.setIsTextHookerAutoResume(isAutoResume));
     },
   });
 }

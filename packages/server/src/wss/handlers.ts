@@ -58,8 +58,9 @@ export class WSSHandlers {
 
     api.onRequest.markTextHistoryAsCompleted(async (id) => {
       const [result] = await db.select().from(textHistory).where(eq(textHistory.id, id));
-      if (result) state.completedTextHistory()[result.id] = Date.now();
-      return result ?? null;
+      if (!result) throw "INVALID_ID";
+      state.completedTextHistory()[result.id] = Date.now();
+      return result;
     });
 
     api.onRequest.session(async (id) => {
@@ -81,20 +82,18 @@ export class WSSHandlers {
 
     api.onRequest.deleteSession(async (id) => {
       const [result] = await db.delete(session).where(eq(session.id, id)).returning();
+      if (!result) throw "INVALID_ID";
       if (result?.id === state.activeSessionId()) state.activeSessionId(null);
-      return result ?? null;
+      return result;
     });
 
     api.onRequest.setActiveSession(async (id) => {
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
       });
-      if (result) {
-        state.activeSessionId(result.id);
-      } else {
-        state.activeSessionId(null);
-      }
-      return result ?? null;
+      if (!result) throw "INVALID_ID";
+      state.activeSessionId(result.id);
+      return result;
     });
 
     api.onRequest.getActiveSession(async () => {
@@ -107,26 +106,24 @@ export class WSSHandlers {
     });
 
     api.onRequest.updateSession(async (payload) => {
-      if (!payload.id) return null;
       const [result] = await db
         .update(session)
         .set({
           ...payload,
         })
-        .where(eq(session.id, payload.id))
+        .where(eq(session.id, payload.id ?? 0))
         .returning();
-      return result ?? null;
+      if (!result) throw "INVALID_ID";
+      return result;
     });
 
     api.onRequest.config(() => state.config());
     api.onRequest.setConfig(async (payload) => {
       const currentConfig = state.config();
       const newConfig = zConfig.safeParse({ ...currentConfig, ...payload });
-      if (newConfig.success) {
-        state.config(newConfig.data);
-        return state.config();
-      }
-      return null;
+      if (!newConfig.success) throw "INVALID_CONFIG";
+      state.config(newConfig.data);
+      return state.config();
     });
 
     api.onRequest.checkHealth(() => undefined);

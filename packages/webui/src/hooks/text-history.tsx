@@ -1,5 +1,6 @@
 import type { TextHistory } from "@repo/shared/db";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { R } from "@praha/byethrow";
 import { useEffect } from "react";
 
 import { useServices } from "./services";
@@ -22,7 +23,7 @@ export function useDeleteTextHistory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      return await api.request.deleteTextHistory(id);
+      return R.unwrap(await api.request.deleteTextHistory(id));
     },
     onSuccess: async (data) => {
       if (data) {
@@ -50,7 +51,7 @@ export function useMarkTextHistoryAsCompleted() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      return await api.request.markTextHistoryAsCompleted(id);
+      return R.unwrap(await api.request.markTextHistoryAsCompleted(id));
     },
     onSuccess: async (data) => {
       if (data) {
