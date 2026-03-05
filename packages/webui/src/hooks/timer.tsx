@@ -27,7 +27,7 @@ export function useSessionTimer({ sessionId }: { sessionId: number }) {
   const { data: isListeningTextHooker } = useIsListeningTextHooker$();
 
   const isRunning = isListeningTextHooker && activeSession?.id === sessionId;
-  const initialDuration = session.duration;
+  const initialDuration = session?.duration ?? 0;
   const [seconds, setSeconds] = useState(initialDuration);
   const seconds$ = useRef<number>(initialDuration);
   const lastAutoSync$ = useRef<number>(Date.now());

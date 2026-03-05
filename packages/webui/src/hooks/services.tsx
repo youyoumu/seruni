@@ -62,19 +62,23 @@ export class Services {
       return navigator.userAgent;
     });
 
-    this.api.onPush.activeSession((data) => {
+    this.api.onPush.activeSession((c) => {
+      const data = c.req.body;
       queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
     });
 
-    this.api.onPush.isListeningTextHooker((data) => {
+    this.api.onPush.isListeningTextHooker((c) => {
+      const data = c.req.body;
       queryClient.setQueryData(this.keyring.isListeningTextHooker.isListening.queryKey, data);
     });
 
-    this.api.onPush.isTextHookerAutoResume((data) => {
+    this.api.onPush.isTextHookerAutoResume((c) => {
+      const data = c.req.body;
       queryClient.setQueryData(this.keyring.isTextHookerAutoResume.isAutoResume.queryKey, data);
     });
 
-    this.api.onPush.textHistory((data) => {
+    this.api.onPush.textHistory((c) => {
+      const data = c.req.body;
       const old = queryClient.getQueryData(
         this.keyring.textHistory.bySession(data.sessionId).queryKey,
       );
@@ -89,11 +93,13 @@ export class Services {
       }
     });
 
-    this.api.onPush.textHookerConnected((data) => {
+    this.api.onPush.textHookerConnected((c) => {
+      const data = c.req.body;
       queryClient.setQueryData(this.keyring.client.textHookerConnected.queryKey, data);
     });
 
-    this.api.onPush.obsConnected((data) => {
+    this.api.onPush.obsConnected((c) => {
+      const data = c.req.body;
       queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
     });
 
@@ -110,7 +116,8 @@ export class Services {
       };
     };
 
-    this.api.onPush.toast((data: ToastPayload) => {
+    this.api.onPush.toast((c) => {
+      const data = c.req.body as ToastPayload;
       this.toast(data.title ?? "", {
         description: data.description,
         variant: data.variant ?? "default",
@@ -118,7 +125,8 @@ export class Services {
       });
     });
 
-    this.api.onPush.toastPromise((data: ToastPromiseConfig) => {
+    this.api.onPush.toastPromise((c) => {
+      const data = c.req.body as ToastPromiseConfig;
       const { promise, resolve, reject } = Promise.withResolvers<void>();
       this.#deferredPromises.set(data.id, { resolve, reject, success: {}, error: {} });
 
@@ -163,7 +171,8 @@ export class Services {
         });
     });
 
-    this.api.onPush.toastPromiseResolve((data: ToastPromiseResolvePayload) => {
+    this.api.onPush.toastPromiseResolve((c) => {
+      const data = c.req.body as ToastPromiseResolvePayload;
       const result = this.#deferredPromises.get(data.id);
       if (result) {
         result.success.title = data.title;
@@ -173,7 +182,8 @@ export class Services {
       }
     });
 
-    this.api.onPush.toastPromiseReject((data: ToastPromiseRejectPayload) => {
+    this.api.onPush.toastPromiseReject((c) => {
+      const data = c.req.body as ToastPromiseRejectPayload;
       const result = this.#deferredPromises.get(data.id);
       if (result) {
         result.error.title = data.title;

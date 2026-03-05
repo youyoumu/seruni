@@ -58,7 +58,7 @@ const schema = defineSocketSchema({
     deleteTextHistory: [z.number(), z.nullable(zTextHistory)],
     completedTextHistory: [z.undefined(), z.record(z.number(), z.number())],
     markTextHistoryAsCompleted: [z.number(), zTextHistory],
-    session: [z.number(), z.nullable(zSession)],
+    session: [z.number(), zSession],
     sessions: [z.undefined(), z.array(zSession)],
     createSession: [z.string(), zSession],
     deleteSession: [z.number(), zSession],

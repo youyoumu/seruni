@@ -20,8 +20,8 @@ export class WSSHandlers {
     this.setupStateEffect();
     this.setupOnRequest();
 
-    api.onPush.action((id) => {
-      state.actionMap.get(id)?.();
+    api.onPush.action((c) => {
+      state.actionMap.get(c.req.body)?.();
     });
   }
 
@@ -33,21 +33,25 @@ export class WSSHandlers {
     api.onRequest.obsConnected(() => state.obsConnected());
 
     api.onRequest.isListeningTextHooker(() => state.isListeningTextHooker());
-    api.onRequest.setIsListeningTextHooker(async (isListeningTextHooker) => {
+    api.onRequest.setIsListeningTextHooker(async (c) => {
+      const isListeningTextHooker = c.req.body;
       state.isListeningTextHooker(isListeningTextHooker);
       return isListeningTextHooker;
     });
     api.onRequest.isTextHookerAutoResume(() => state.isTextHookerAutoResume());
-    api.onRequest.setIsTextHookerAutoResume(async (isTextHookerAutoResume) => {
+    api.onRequest.setIsTextHookerAutoResume(async (c) => {
+      const isTextHookerAutoResume = c.req.body;
       state.isTextHookerAutoResume(isTextHookerAutoResume);
       return isTextHookerAutoResume;
     });
 
-    api.onRequest.textHistoryBySessionId(async (id) => {
+    api.onRequest.textHistoryBySessionId(async (c) => {
+      const id = c.req.body;
       return await db.select().from(textHistory).where(eq(textHistory.sessionId, id));
     });
 
-    api.onRequest.deleteTextHistory(async (id) => {
+    api.onRequest.deleteTextHistory(async (c) => {
+      const id = c.req.body;
       const [result] = await db.delete(textHistory).where(eq(textHistory.id, id)).returning();
       return result ?? null;
     });
@@ -56,38 +60,44 @@ export class WSSHandlers {
       return state.completedTextHistory();
     });
 
-    api.onRequest.markTextHistoryAsCompleted(async (id) => {
+    api.onRequest.markTextHistoryAsCompleted(async (c) => {
+      const id = c.req.body;
       const [result] = await db.select().from(textHistory).where(eq(textHistory.id, id));
       if (!result) throw "INVALID_ID";
       state.completedTextHistory()[result.id] = Date.now();
       return result;
     });
 
-    api.onRequest.session(async (id) => {
+    api.onRequest.session(async (c) => {
+      const id = c.req.body;
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
       });
-      return result ?? null;
+      if (!result) throw "INVALID_ID";
+      return result;
     });
 
     api.onRequest.sessions(async () => {
       return await db.select().from(session);
     });
 
-    api.onRequest.createSession(async (name) => {
+    api.onRequest.createSession(async (c) => {
+      const name = c.req.body;
       const result = db.insert(session).values({ name }).returning().get();
       state.activeSessionId(result.id);
       return result;
     });
 
-    api.onRequest.deleteSession(async (id) => {
+    api.onRequest.deleteSession(async (c) => {
+      const id = c.req.body;
       const [result] = await db.delete(session).where(eq(session.id, id)).returning();
       if (!result) throw "INVALID_ID";
       if (result?.id === state.activeSessionId()) state.activeSessionId(null);
       return result;
     });
 
-    api.onRequest.setActiveSession(async (id) => {
+    api.onRequest.setActiveSession(async (c) => {
+      const id = c.req.body;
       const result = await db.query.session.findFirst({
         where: eq(session.id, id),
       });
@@ -105,7 +115,8 @@ export class WSSHandlers {
       return result ?? null;
     });
 
-    api.onRequest.updateSession(async (payload) => {
+    api.onRequest.updateSession(async (c) => {
+      const payload = c.req.body;
       const [result] = await db
         .update(session)
         .set({
@@ -118,7 +129,8 @@ export class WSSHandlers {
     });
 
     api.onRequest.config(() => state.config());
-    api.onRequest.setConfig(async (payload) => {
+    api.onRequest.setConfig(async (c) => {
+      const payload = c.req.body;
       const currentConfig = state.config();
       const newConfig = zConfig.safeParse({ ...currentConfig, ...payload });
       if (!newConfig.success) throw "INVALID_CONFIG";
