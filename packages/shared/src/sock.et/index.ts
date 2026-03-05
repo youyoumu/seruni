@@ -8,7 +8,11 @@ type InferReqRes<T extends StandardSchema | undefined> = T extends StandardSchem
 type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : undefined;
-type ReqSchemaTuple = [(StandardSchema | undefined)?, (StandardSchema | undefined)?, (StandardSchema | undefined)?];
+type ReqSchemaTuple = [
+  (StandardSchema | undefined)?,
+  (StandardSchema | undefined)?,
+  (StandardSchema | undefined)?,
+];
 type Arg<T1, T2 = undefined> = undefined extends T1
   ? undefined extends T2
     ? [arg1?: T1, arg2?: T2]
@@ -111,6 +115,7 @@ interface WS {
 }
 interface SocketContext {
   ws?: WS;
+  invalidResponse?: true;
 }
 
 class SocketEvent extends Event {
@@ -324,9 +329,6 @@ class SocketCore<const Schema extends SocketSchemas> {
         const data = args[0];
         const cid = this.#uid();
         const t = args[1]?.timeout ?? timeout;
-        const errSchema = (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
-          event
-        ]?.[2];
         const exec = (ws?: WS): Promise<SocketResponse<unknown>> =>
           new Promise((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout>;
@@ -344,12 +346,11 @@ class SocketCore<const Schema extends SocketSchemas> {
             const offErr = errET.on(event, async (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
-                const errRes = await this.#validate(errSchema, e.body.value, event, "err");
-                if (!errRes.success) {
+                if (e.context.invalidResponse) {
                   reject(new SocketError(SocketError.InvalidResponse));
                   return;
                 }
-                resolve({ type: "Failure", error: errRes.value });
+                resolve({ type: "Failure", error: e.body.value });
               }
             });
             timer = setTimeout(() => {
@@ -443,9 +444,9 @@ class SocketCore<const Schema extends SocketSchemas> {
           } else {
             failure = new SocketFailure("InternalError");
           }
-          const errSchema = (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
-            event
-          ]?.[2];
+          const errSchema = (
+            isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests
+          )?.[event]?.[2];
           if (isSocketFailure) {
             const errValidation = await this.#validate(errSchema, failure.error, event, "err");
             if (!errValidation.success) failure = new SocketFailure("InternalError");
@@ -555,9 +556,21 @@ class SocketCore<const Schema extends SocketSchemas> {
             );
           }
         } else if (method === "ERR") {
-          (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
-            new SocketEvent(event, body, headers, context),
+          const res = await this.#validate(
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[2],
+            value,
+            event,
+            "err",
           );
+          if (res.success) {
+            (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
+              new SocketEvent(event, { value: res.value }, headers, context),
+            );
+          } else {
+            (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
+              new SocketEvent(event, body, headers, { ...context, invalidResponse: true }),
+            );
+          }
         }
       } catch {}
     };
