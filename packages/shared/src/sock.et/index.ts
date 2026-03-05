@@ -97,7 +97,7 @@ function defineSocketSchema<T extends SocketSchemas>(schema: T) {
 
 function createSocket<const Schema extends SocketSchemas>(
   schemas: Schema,
-  options?: { clientTimeout?: number; serverTimeout?: number },
+  options?: { clientTimeout?: number; serverTimeout?: number; uid?: () => string },
 ) {
   type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
@@ -106,6 +106,7 @@ function createSocket<const Schema extends SocketSchemas>(
 
   const clientWS: { ws: WS | undefined } = { ws: undefined };
   const clientState = { value: "" };
+  const createUid = options?.uid ?? uid;
   const serverWS = { ws: new Set<WS>() };
   const buses = {
     cPush: new Bus(),
@@ -188,7 +189,7 @@ function createSocket<const Schema extends SocketSchemas>(
     events.forEach((event) => {
       api.request[event] = (...args) => {
         const data = args[0],
-          cid = uid(),
+          cid = createUid(),
           t = args[1]?.timeout ?? timeout;
 
         const exec = (ws?: WS): Promise<unknown> =>
@@ -433,9 +434,15 @@ export {
   createSocket,
 };
 
-export function createClientSocket<T extends SocketSchemas>(s: T, o?: RequestOption) {
-  return createSocket(s, { clientTimeout: o?.timeout }).client;
+export function createClientSocket<T extends SocketSchemas>(
+  s: T,
+  o?: RequestOption & { uid?: () => string },
+) {
+  return createSocket(s, { clientTimeout: o?.timeout, uid: o?.uid }).client;
 }
-export function createServerSocket<T extends SocketSchemas>(s: T, o?: RequestOption) {
-  return createSocket(s, { serverTimeout: o?.timeout }).server;
+export function createServerSocket<T extends SocketSchemas>(
+  s: T,
+  o?: RequestOption & { uid?: () => string },
+) {
+  return createSocket(s, { serverTimeout: o?.timeout, uid: o?.uid }).server;
 }
