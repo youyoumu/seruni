@@ -36,7 +36,7 @@ interface SocketBody<T = unknown> {
  * - `method`: packet intent
  * - `event`: schema key/event name
  * - `body`: validated payload container
- * - `headers`: protocol metadata (correlation/state/timestamp)
+ * - `headers`: protocol metadata (correlation/cookie/timestamp)
  */
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
@@ -49,8 +49,8 @@ type SocketPacketPayload = Omit<SocketPacket, "sock.et">;
 interface SocketHeaders {
   cid?: string;
   timestamp?: number;
-  state?: Record<string, string>;
-  "set-state"?: Record<string, string>;
+  cookie?: Record<string, string>;
+  "set-cookie"?: Record<string, string>;
 }
 interface SocketReqHandlerContext<TBody = unknown> {
   req: {
@@ -131,7 +131,7 @@ function createSocket<const Schema extends SocketSchemas>(
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
   const clientWS: { ws: WS | undefined } = { ws: undefined };
-  const clientState = { value: {} as Record<string, string> };
+  const clientCookie = { value: {} as Record<string, string> };
   const createUid = options?.uid ?? uid;
   const serverWS = { ws: new Set<WS>() };
 
@@ -152,27 +152,27 @@ function createSocket<const Schema extends SocketSchemas>(
     sErr: new Bus(),
   };
 
-  const sanitizeState = (state: unknown): Record<string, string> | undefined => {
-    if (!state || typeof state !== "object" || Array.isArray(state)) return undefined;
+  const sanitizeCookie = (cookie: unknown): Record<string, string> | undefined => {
+    if (!cookie || typeof cookie !== "object" || Array.isArray(cookie)) return undefined;
     const sanitized: Record<string, string> = {};
-    Object.entries(state).forEach(([k, v]) => {
+    Object.entries(cookie).forEach(([k, v]) => {
       if (typeof v === "string") sanitized[k] = v;
     });
     return sanitized;
   };
 
-  const applySetHeader = (setHeader: unknown) => {
-    const sanitized = sanitizeState(setHeader);
+  const applySetCookie = (setCookie: unknown) => {
+    const sanitized = sanitizeCookie(setCookie);
     if (!sanitized) return;
-    clientState.value = sanitized;
+    clientCookie.value = sanitized;
   };
 
   const createHeaders = (isClientSender: boolean, cid?: string): SocketHeaders => {
     const timestamp = Date.now();
     const headers: SocketHeaders = { timestamp };
     if (cid) headers.cid = cid;
-    if (isClientSender && Object.keys(clientState.value).length > 0) {
-      headers.state = clientState.value;
+    if (isClientSender && Object.keys(clientCookie.value).length > 0) {
+      headers.cookie = clientCookie.value;
     }
     return headers;
   };
@@ -343,20 +343,20 @@ function createSocket<const Schema extends SocketSchemas>(
     try {
       const p = JSON.parse(e.data);
       if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
-      // Client-only state mutation sent by server.
-      if (isClient) applySetHeader(p.headers?.["set-state"]);
+      // Client-only cookie mutation sent by server.
+      if (isClient) applySetCookie(p.headers?.["set-cookie"]);
       const {
         method,
         event,
         body: { value },
       } = p;
       const headers = (p.headers ?? {}) as SocketHeaders;
-      const state = sanitizeState(headers.state);
-      if (state) headers.state = state;
-      else delete headers.state;
-      const setState = sanitizeState(headers["set-state"]);
-      if (setState) headers["set-state"] = setState;
-      else delete headers["set-state"];
+      const cookie = sanitizeCookie(headers.cookie);
+      if (cookie) headers.cookie = cookie;
+      else delete headers.cookie;
+      const setCookie = sanitizeCookie(headers["set-cookie"]);
+      if (setCookie) headers["set-cookie"] = setCookie;
+      else delete headers["set-cookie"];
       if ((method === "REQUEST" || method === "RESPONSE" || method === "ERROR") && !headers.cid)
         return;
       const ws = isClient ? undefined : ws_;
