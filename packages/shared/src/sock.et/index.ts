@@ -115,7 +115,6 @@ interface WS {
 }
 interface SocketContext {
   ws?: WS;
-  invalidResponse?: true;
 }
 
 class SocketEvent extends Event {
@@ -124,6 +123,7 @@ class SocketEvent extends Event {
     public body: SocketBody,
     public headers: SocketHeaders = {},
     public context: SocketContext = {},
+    public issues?: unknown,
   ) {
     super(type);
   }
@@ -133,10 +133,16 @@ class ET extends EventTarget {
   /** Subscribe to a named event; returns an unsubscribe function. */
   on(
     event: string,
-    handler: (packet: { body: SocketBody; headers: SocketHeaders; context: SocketContext }) => void,
+    handler: (packet: {
+      body: SocketBody;
+      headers: SocketHeaders;
+      context: SocketContext;
+      issues?: unknown;
+    }) => void,
   ) {
     const fn = (e: Event) =>
-      e instanceof SocketEvent && handler({ body: e.body, headers: e.headers, context: e.context });
+      e instanceof SocketEvent &&
+      handler({ body: e.body, headers: e.headers, context: e.context, issues: e.issues });
     this.addEventListener(event, fn);
     return () => this.removeEventListener(event, fn);
   }
@@ -340,13 +346,17 @@ class SocketCore<const Schema extends SocketSchemas> {
             const off = resET.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
+                if (e.issues) {
+                  reject(new SocketError(SocketError.InvalidResponse));
+                  return;
+                }
                 resolve({ type: "Success", value: e.body.value });
               }
             });
             const offErr = errET.on(event, async (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
-                if (e.context.invalidResponse) {
+                if (e.issues) {
                   reject(new SocketError(SocketError.InvalidResponse));
                   return;
                 }
@@ -369,6 +379,18 @@ class SocketCore<const Schema extends SocketSchemas> {
       };
 
       reqET.on(event, async (e) => {
+        if (e.issues) {
+          this.#send(
+            {
+              method: "ERR",
+              event,
+              body: { value: e.issues },
+              headers: this.#createHeaders(!isClient, e.headers.cid),
+            },
+            e.context.ws,
+          );
+          return;
+        }
         const fail = (error: unknown, headers?: SocketHeaders): never => {
           throw new SocketFailure(error, headers);
         };
@@ -531,18 +553,15 @@ class SocketCore<const Schema extends SocketSchemas> {
             event,
             "req",
           );
-          if (res.success) {
-            (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
-              new SocketEvent(event, { value: res.value }, headers, context),
-            );
-          } else {
-            this.#send({
-              method: "ERR",
+          (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
+            new SocketEvent(
               event,
-              body: { value: res.error },
-              headers: this.#createHeaders(!isClient, headers.cid),
-            });
-          }
+              res.success ? { value: res.value } : body,
+              headers,
+              context,
+              res.success ? undefined : res.error,
+            ),
+          );
         } else if (method === "RES") {
           const res = await this.#validate(
             (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[1],
@@ -550,11 +569,15 @@ class SocketCore<const Schema extends SocketSchemas> {
             event,
             "res",
           );
-          if (res.success) {
-            (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
-              new SocketEvent(event, { value: res.value }, headers, context),
-            );
-          }
+          (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
+            new SocketEvent(
+              event,
+              res.success ? { value: res.value } : body,
+              headers,
+              context,
+              res.success ? undefined : res.error,
+            ),
+          );
         } else if (method === "ERR") {
           const res = await this.#validate(
             (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[2],
@@ -562,15 +585,15 @@ class SocketCore<const Schema extends SocketSchemas> {
             event,
             "err",
           );
-          if (res.success) {
-            (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
-              new SocketEvent(event, { value: res.value }, headers, context),
-            );
-          } else {
-            (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
-              new SocketEvent(event, body, headers, { ...context, invalidResponse: true }),
-            );
-          }
+          (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
+            new SocketEvent(
+              event,
+              res.success ? { value: res.value } : body,
+              headers,
+              context,
+              res.success ? undefined : res.error,
+            ),
+          );
         }
       } catch {}
     };
