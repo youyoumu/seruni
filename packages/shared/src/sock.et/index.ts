@@ -53,12 +53,12 @@ interface SocketHeaders {
   "set-cookie"?: Record<string, string>;
 }
 interface SocketReqHandlerContext<TBody = unknown> {
-  req: {
+  req: Readonly<{
     method: "REQUEST";
     event: string;
     body: TBody;
-    headers: SocketHeaders;
-  };
+    headers: Readonly<SocketHeaders>;
+  }>;
   res: {
     method: "RESPONSE" | "ERROR";
     event: string;
@@ -67,12 +67,12 @@ interface SocketReqHandlerContext<TBody = unknown> {
   };
 }
 interface SocketPushHandlerContext<TBody = unknown> {
-  push: {
+  push: Readonly<{
     method: "PUSH";
     event: string;
     body: TBody;
-    headers: SocketHeaders;
-  };
+    headers: Readonly<SocketHeaders>;
+  }>;
 }
 type SocketNext = () => Promise<void>;
 type SocketPushHandler<TBody = unknown> = (
@@ -230,7 +230,12 @@ function createSocket<const Schema extends SocketSchemas>(
       api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
         reverseBus.on(event, (e) =>
           handler({
-            push: { method: "PUSH", event, body: e.body.value, headers: e.headers },
+            push: Object.freeze({
+              method: "PUSH" as const,
+              event,
+              body: e.body.value,
+              headers: Object.freeze({ ...e.headers }),
+            }),
           }),
         );
     });
@@ -331,7 +336,12 @@ function createSocket<const Schema extends SocketSchemas>(
       };
       reqBus.on(event, async (e) => {
         const c: SocketReqHandlerContext<unknown> = {
-          req: { method: "REQUEST", event, body: e.body.value, headers: e.headers },
+          req: Object.freeze({
+            method: "REQUEST" as const,
+            event,
+            body: e.body.value,
+            headers: Object.freeze({ ...e.headers }),
+          }),
           res: { method: "RESPONSE", event, header: {} },
         };
         const middlewares = middlewareMap[event] ?? [];
