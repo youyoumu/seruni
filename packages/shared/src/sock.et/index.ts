@@ -57,6 +57,9 @@ interface SocketReqHandlerContext<TBody = unknown> {
     body: TBody;
     headers: SocketHeaders;
   };
+  res: {
+    header: SocketHeaders;
+  };
 }
 interface SocketPushHandlerContext<TBody = unknown> {
   push: {
@@ -276,10 +279,14 @@ function createSocket<const Schema extends SocketSchemas>(
       };
       api.handle[event] = (handler: (c: SocketReqHandlerContext<unknown>) => unknown) =>
         reqBus.on(event, async (e) => {
+          const c: SocketReqHandlerContext<unknown> = {
+            req: { body: e.body.value, headers: e.headers },
+            res: { header: {} },
+          };
           try {
-            const result = await handler({ req: { body: e.body.value, headers: e.headers } });
+            const result = await handler(c);
             const body = { value: result };
-            const headers = createHeaders(!isClient, e.headers.cid);
+            const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
             send(
               {
                 method: "RESPONSE",
@@ -291,7 +298,7 @@ function createSocket<const Schema extends SocketSchemas>(
             );
           } catch (error) {
             const body = { value: error };
-            const headers = createHeaders(!isClient, e.headers.cid);
+            const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
             send(
               {
                 method: "ERROR",
