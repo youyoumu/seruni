@@ -16,12 +16,34 @@ import {
   ZapIcon,
   ZapOffIcon,
 } from "lucide-react";
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 const statusTv = tv({
   slots: { statusPair: "flex items-center gap-2" },
 });
 
 export function StatusBar() {
+  return (
+    <div className="flex h-8 justify-end gap-4 border-t border-border bg-surface-calm px-2 py-1">
+      <ErrorBoundary fallback={null}>
+        <Suspense>
+          <StatusBarContent />
+        </Suspense>
+      </ErrorBoundary>
+
+      <div className="flex items-center gap-2">
+        <ToastHistoryPopover
+          slot={{
+            trigger: <BellIcon className="size-4" />,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function StatusBarContent() {
   const { data: textHookerConnected } = useTextHookerConnected$();
   const { data: ankiConnectConnected } = useAnkiConnectConnected$();
   const { data: obsConnected } = useObsConnected$();
@@ -29,7 +51,7 @@ export function StatusBar() {
   const { statusPair } = statusTv();
 
   return (
-    <div className="flex justify-end gap-4 border-t border-border bg-surface-calm px-2 py-1">
+    <>
       <div className="flex justify-end gap-2 text-sm">
         <div className={statusPair()}>
           <StatusIcon status={textHookerConnected ? "connected" : "connecting"} />
@@ -44,15 +66,7 @@ export function StatusBar() {
           <div>OBS</div>
         </div>
       </div>
-
-      <div className="flex items-center gap-2">
-        <ToastHistoryPopover
-          slot={{
-            trigger: <BellIcon className="size-4" />,
-          }}
-        />
-      </div>
-    </div>
+    </>
   );
 }
 

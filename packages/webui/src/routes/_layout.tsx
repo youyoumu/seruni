@@ -2,6 +2,7 @@ import { TextHookerSessionListPopover } from "#/components/SessionList";
 import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
+import { R } from "@praha/byethrow";
 import { SocketError } from "@repo/shared/sock.et";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
@@ -15,7 +16,6 @@ import {
 import { Terminal, FileText, Settings, BugIcon } from "lucide-react";
 import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { R } from "@praha/byethrow";
 
 const navLinkTv = tv({
   base: [
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_layout")({
     if (location.pathname === "/offline") return;
     const { api } = context.services;
     try {
-      R.unwrap(await api.request.checkHealth());
+      await api.request.checkHealth();
     } catch (e) {
       if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
         throw redirect({
