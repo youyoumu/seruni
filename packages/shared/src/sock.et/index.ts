@@ -69,9 +69,8 @@ interface SocketPushHandlerContext<TBody = unknown> {
   };
 }
 type SocketNext = () => Promise<void>;
-type SocketPushMiddleware<TBody = unknown> = (
+type SocketPushHandler<TBody = unknown> = (
   c: SocketPushHandlerContext<TBody>,
-  next: SocketNext,
 ) => void | Promise<void>;
 type SocketReqMiddleware<TReq = unknown, TRes = unknown> = (
   c: SocketReqHandlerContext<TReq>,
@@ -199,14 +198,15 @@ function createSocket<const Schema extends SocketSchemas>(
   const setupPush = (events: string[], _bus: Bus, reverseBus: Bus, isClient: boolean) => {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
-      handle: Record<string, (handler: SocketPushMiddleware<unknown>) => () => void>;
+      handle: Record<
+        string,
+        (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void
+      >;
     } = {
       push: {},
       handle: {},
     };
-    const middlewareMap: Record<string, SocketPushMiddleware<unknown>[]> = {};
     events.forEach((event) => {
-      middlewareMap[event] = [];
       api.push[event] = (data: unknown) => {
         const body = { value: data };
         send({
@@ -216,39 +216,8 @@ function createSocket<const Schema extends SocketSchemas>(
           headers: createHeaders(isClient),
         });
       };
-      reverseBus.on(event, async (e) => {
-        const c: SocketPushHandlerContext<unknown> = {
-          push: { body: e.body.value, headers: e.headers },
-        };
-        const middlewares = middlewareMap[event];
-        if (!middlewares || middlewares.length === 0) return;
-        // Tracks the latest middleware index that has started execution.
-        // Used to prevent calling next() multiple times from the same middleware.
-        let i = -1;
-        const dispatch = async (idx: number): Promise<void> => {
-          // next() must move forward exactly once.
-          if (idx <= i) throw new Error("next() called multiple times");
-          i = idx;
-          const middleware = middlewares[idx];
-          // End of middleware chain.
-          if (!middleware) return;
-          // Run current middleware and provide a next() that advances to idx + 1.
-          // If middleware awaits next(), it can continue with post-processing after downstream finishes.
-          await middleware(c, () => dispatch(idx + 1));
-        };
-        // Start middleware chain at index 0.
-        await dispatch(0);
-      });
-      api.handle[event] = (handler: SocketPushMiddleware<unknown>) => {
-        const middlewares = middlewareMap[event];
-        if (!middlewares) return () => undefined;
-        middlewares.push(handler);
-        return () => {
-          // Unsubscribe this middleware from the event pipeline.
-          const idx = middlewares.indexOf(handler);
-          if (idx >= 0) middlewares.splice(idx, 1);
-        };
-      };
+      api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
+        reverseBus.on(event, (e) => handler({ push: { body: e.body.value, headers: e.headers } }));
     });
     return api;
   };
@@ -532,7 +501,7 @@ function createSocket<const Schema extends SocketSchemas>(
       ) => Promise<SocketResponse<CReq[K]["res"]>>;
     };
     onPush: {
-      [K in keyof SPush]: (handler: SocketPushMiddleware<SPush[K]["push"]>) => () => void;
+      [K in keyof SPush]: (handler: SocketPushHandler<SPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof SReq]: (
@@ -548,7 +517,7 @@ function createSocket<const Schema extends SocketSchemas>(
       ) => Promise<SocketResponse<SReq[K]["res"]>>[];
     };
     onPush: {
-      [K in keyof CPush]: (handler: SocketPushMiddleware<CPush[K]["push"]>) => () => void;
+      [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof CReq]: (
@@ -590,7 +559,7 @@ export {
   type SocketPushHandlerContext,
   type SocketReqHandlerContext,
   type SocketNext,
-  type SocketPushMiddleware,
+  type SocketPushHandler,
   type SocketReqMiddleware,
   type SocketBody,
   type SocketPacket,
