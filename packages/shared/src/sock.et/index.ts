@@ -29,7 +29,7 @@ type SocketResponse<T = unknown> =
   | { type: "Failure"; error: unknown };
 
 interface SocketBody<T = unknown> {
-  value: T;
+  value?: T;
 }
 /**
  * Wire-level packet exchanged between client and server.
@@ -59,6 +59,7 @@ interface SocketReqHandlerContext<TBody = unknown> {
   };
   res: {
     header: SocketHeaders;
+    body?: unknown;
   };
 }
 interface SocketPushHandlerContext<TBody = unknown> {
@@ -67,6 +68,15 @@ interface SocketPushHandlerContext<TBody = unknown> {
     headers: SocketHeaders;
   };
 }
+type SocketNext = () => Promise<void>;
+type SocketPushMiddleware<TBody = unknown> = (
+  c: SocketPushHandlerContext<TBody>,
+  next: SocketNext,
+) => void | Promise<void>;
+type SocketReqMiddleware<TReq = unknown, TRes = unknown> = (
+  c: SocketReqHandlerContext<TReq>,
+  next: SocketNext,
+) => TRes | void | Promise<TRes | void>;
 interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
@@ -189,12 +199,14 @@ function createSocket<const Schema extends SocketSchemas>(
   const setupPush = (events: string[], _bus: Bus, reverseBus: Bus, isClient: boolean) => {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
-      handle: Record<string, (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void>;
+      handle: Record<string, (handler: SocketPushMiddleware<unknown>) => () => void>;
     } = {
       push: {},
       handle: {},
     };
+    const middlewareMap: Record<string, SocketPushMiddleware<unknown>[]> = {};
     events.forEach((event) => {
+      middlewareMap[event] = [];
       api.push[event] = (data: unknown) => {
         const body = { value: data };
         send({
@@ -204,8 +216,39 @@ function createSocket<const Schema extends SocketSchemas>(
           headers: createHeaders(isClient),
         });
       };
-      api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
-        reverseBus.on(event, (e) => handler({ push: { body: e.body.value, headers: e.headers } }));
+      reverseBus.on(event, async (e) => {
+        const c: SocketPushHandlerContext<unknown> = {
+          push: { body: e.body.value, headers: e.headers },
+        };
+        const middlewares = middlewareMap[event];
+        if (!middlewares || middlewares.length === 0) return;
+        // Tracks the latest middleware index that has started execution.
+        // Used to prevent calling next() multiple times from the same middleware.
+        let i = -1;
+        const dispatch = async (idx: number): Promise<void> => {
+          // next() must move forward exactly once.
+          if (idx <= i) throw new Error("next() called multiple times");
+          i = idx;
+          const middleware = middlewares[idx];
+          // End of middleware chain.
+          if (!middleware) return;
+          // Run current middleware and provide a next() that advances to idx + 1.
+          // If middleware awaits next(), it can continue with post-processing after downstream finishes.
+          await middleware(c, () => dispatch(idx + 1));
+        };
+        // Start middleware chain at index 0.
+        await dispatch(0);
+      });
+      api.handle[event] = (handler: SocketPushMiddleware<unknown>) => {
+        const middlewares = middlewareMap[event];
+        if (!middlewares) return () => undefined;
+        middlewares.push(handler);
+        return () => {
+          // Unsubscribe this middleware from the event pipeline.
+          const idx = middlewares.indexOf(handler);
+          if (idx >= 0) middlewares.splice(idx, 1);
+        };
+      };
     });
     return api;
   };
@@ -234,10 +277,12 @@ function createSocket<const Schema extends SocketSchemas>(
         string,
         (...args: Arg<unknown, RequestOption>) => Promise<unknown> | Promise<unknown>[]
       >;
-      handle: Record<string, (handler: (c: SocketReqHandlerContext<unknown>) => unknown) => () => void>;
+      handle: Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
     } = { request: {}, handle: {} };
+    const middlewareMap: Record<string, SocketReqMiddleware<unknown, unknown>[]> = {};
 
     events.forEach((event) => {
+      middlewareMap[event] = [];
       api.request[event] = (...args) => {
         const data = args[0],
           cid = createUid(),
@@ -287,39 +332,66 @@ function createSocket<const Schema extends SocketSchemas>(
           });
         return isClient ? exec() : Array.from(serverWS.ws).map(exec);
       };
-      api.handle[event] = (handler: (c: SocketReqHandlerContext<unknown>) => unknown) =>
-        reqBus.on(event, async (e) => {
-          const c: SocketReqHandlerContext<unknown> = {
-            req: { body: e.body.value, headers: e.headers },
-            res: { header: {} },
+      reqBus.on(event, async (e) => {
+        const c: SocketReqHandlerContext<unknown> = {
+          req: { body: e.body.value, headers: e.headers },
+          res: { header: {} },
+        };
+        const middlewares = middlewareMap[event];
+        if (!middlewares || middlewares.length === 0) return;
+        try {
+          // Tracks the latest middleware index that has started execution.
+          // Used to prevent calling next() multiple times from the same middleware.
+          let i = -1;
+          const dispatch = async (idx: number): Promise<void> => {
+            // next() must move forward exactly once.
+            if (idx <= i) throw new Error("next() called multiple times");
+            i = idx;
+            const middleware = middlewares[idx];
+            // End of middleware chain.
+            if (!middleware) return;
+            // Middleware can either:
+            // 1) return a response body directly, or
+            // 2) mutate c.res.body and/or await next() for downstream processing.
+            const result = await middleware(c, () => dispatch(idx + 1));
+            if (result !== undefined) c.res.body = result;
           };
-          try {
-            const result = await handler(c);
-            const body = { value: result };
-            const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
-            send(
-              {
-                method: "RESPONSE",
-                event,
-                body,
-                headers,
-              },
-              e.context.ws,
-            );
-          } catch (error) {
-            const body = { value: error };
-            const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
-            send(
-              {
-                method: "ERROR",
-                event,
-                body,
-                headers,
-              },
-              e.context.ws,
-            );
-          }
-        });
+          // Start middleware chain at index 0.
+          await dispatch(0);
+          if (c.res.body === undefined) return;
+          const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
+          send(
+            {
+              method: "RESPONSE",
+              event,
+              body: { value: c.res.body },
+              headers,
+            },
+            e.context.ws,
+          );
+        } catch (error) {
+          const headers = { ...c.res.header, ...createHeaders(!isClient, e.headers.cid) };
+          send(
+            {
+              method: "ERROR",
+              event,
+              body: { value: error },
+              headers,
+            },
+            e.context.ws,
+          );
+        }
+      });
+      api.handle[event] = (handler: SocketReqMiddleware<unknown, unknown>) => {
+        const middlewares = middlewareMap[event];
+        if (!middlewares) return () => undefined;
+        middlewares.push(handler);
+        return () => {
+          // Unsubscribe this middleware from the event pipeline.
+          const idx = middlewares.indexOf(handler);
+          if (idx >= 0) middlewares.splice(idx, 1);
+        };
+      };
     });
     return api;
   };
@@ -425,14 +497,14 @@ function createSocket<const Schema extends SocketSchemas>(
 
   const cPushApi = setupPush(
     Object.keys(schemas.clientPushes ?? {}),
-    buses.cPush,
     buses.sPush,
+    buses.cPush,
     true,
   );
   const sPushApi = setupPush(
     Object.keys(schemas.serverPushes ?? {}),
-    buses.sPush,
     buses.cPush,
+    buses.sPush,
     false,
   );
   const cReqApi = setupReq(
@@ -460,13 +532,11 @@ function createSocket<const Schema extends SocketSchemas>(
       ) => Promise<SocketResponse<CReq[K]["res"]>>;
     };
     onPush: {
-      [K in keyof SPush]: (
-        handler: (c: SocketPushHandlerContext<SPush[K]["push"]>) => void,
-      ) => () => void;
+      [K in keyof SPush]: (handler: SocketPushMiddleware<SPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof SReq]: (
-        handler: (c: SocketReqHandlerContext<SReq[K]["req"]>) => SReq[K]["res"] | Promise<SReq[K]["res"]>,
+        handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"]>,
       ) => () => void;
     };
   };
@@ -478,13 +548,11 @@ function createSocket<const Schema extends SocketSchemas>(
       ) => Promise<SocketResponse<SReq[K]["res"]>>[];
     };
     onPush: {
-      [K in keyof CPush]: (
-        handler: (c: SocketPushHandlerContext<CPush[K]["push"]>) => void,
-      ) => () => void;
+      [K in keyof CPush]: (handler: SocketPushMiddleware<CPush[K]["push"]>) => () => void;
     };
     onRequest: {
       [K in keyof CReq]: (
-        handler: (c: SocketReqHandlerContext<CReq[K]["req"]>) => CReq[K]["res"] | Promise<CReq[K]["res"]>,
+        handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"]>,
       ) => () => void;
     };
   };
@@ -521,6 +589,9 @@ export {
   type SocketHeaders,
   type SocketPushHandlerContext,
   type SocketReqHandlerContext,
+  type SocketNext,
+  type SocketPushMiddleware,
+  type SocketReqMiddleware,
   type SocketBody,
   type SocketPacket,
   type WS,
