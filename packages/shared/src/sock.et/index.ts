@@ -31,7 +31,7 @@ interface SocketBody<T = unknown> {
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
   method: "PUSH" | "REQUEST" | "RESPONSE";
-  name: string;
+  event: string;
   body: SocketBody;
   headers?: SocketHeaders;
 }
@@ -66,13 +66,13 @@ class SocketEvent extends Event {
 
 class Bus extends EventTarget {
   on(
-    name: string,
+    event: string,
     handler: (packet: { body: SocketBody; headers: SocketHeaders; context: SocketContext }) => void,
   ) {
     const fn = (e: Event) =>
       e instanceof SocketEvent && handler({ body: e.body, headers: e.headers, context: e.context });
-    this.addEventListener(name, fn);
-    return () => this.removeEventListener(name, fn);
+    this.addEventListener(event, fn);
+    return () => this.removeEventListener(event, fn);
   }
 }
 
@@ -139,7 +139,7 @@ function createSocket<const Schema extends SocketSchemas>(
     else serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
   };
 
-  const setupPush = (names: string[], bus: Bus, reverseBus: Bus, isClient: boolean) => {
+  const setupPush = (events: string[], bus: Bus, reverseBus: Bus, isClient: boolean) => {
     const api: {
       push: Record<string, (...data: unknown[]) => void>;
       handle: Record<
@@ -150,25 +150,25 @@ function createSocket<const Schema extends SocketSchemas>(
       push: {},
       handle: {},
     };
-    names.forEach((name) => {
-      api.push[name] = (data: unknown) => {
+    events.forEach((event) => {
+      api.push[event] = (data: unknown) => {
         const body = { value: data };
-        bus.dispatchEvent(new SocketEvent(name, body));
+        bus.dispatchEvent(new SocketEvent(event, body));
         send({
           method: "PUSH",
-          name,
+          event,
           body,
           headers: createHeaders(isClient),
         });
       };
-      api.handle[name] = (handler: (data: unknown, headers: SocketHeaders) => void) =>
-        reverseBus.on(name, (e) => handler(e.body.value, e.headers));
+      api.handle[event] = (handler: (data: unknown, headers: SocketHeaders) => void) =>
+        reverseBus.on(event, (e) => handler(e.body.value, e.headers));
     });
     return api;
   };
 
   const setupReq = (
-    names: string[],
+    events: string[],
     reqBus: Bus,
     resBus: Bus,
     timeout: number,
@@ -185,8 +185,8 @@ function createSocket<const Schema extends SocketSchemas>(
       >;
     } = { request: {}, handle: {} };
 
-    names.forEach((name) => {
-      api.request[name] = (...args) => {
+    events.forEach((event) => {
+      api.request[event] = (...args) => {
         const data = args[0],
           cid = uid(),
           t = args[1]?.timeout ?? timeout;
@@ -199,7 +199,7 @@ function createSocket<const Schema extends SocketSchemas>(
               off();
               offErr();
             };
-            const off = resBus.on(name, (e) => {
+            const off = resBus.on(event, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
                 resolve(e.body.value);
@@ -217,12 +217,12 @@ function createSocket<const Schema extends SocketSchemas>(
             }, t);
             const body = { value: data };
             const headers = createHeaders(isClient, cid);
-            reqBus.dispatchEvent(new SocketEvent(name, body, headers, { ws }));
+            reqBus.dispatchEvent(new SocketEvent(event, body, headers, { ws }));
             if (!isClient || clientWS.ws?.readyState === 1) {
               send(
                 {
                   method: "REQUEST",
-                  name,
+                  event,
                   body,
                   headers,
                 },
@@ -242,16 +242,16 @@ function createSocket<const Schema extends SocketSchemas>(
           });
         return isClient ? exec() : Array.from(serverWS.ws).map(exec);
       };
-      api.handle[name] = (handler: (data: unknown, headers: SocketHeaders) => unknown) =>
-        reqBus.on(name, async (e) => {
+      api.handle[event] = (handler: (data: unknown, headers: SocketHeaders) => unknown) =>
+        reqBus.on(event, async (e) => {
           const result = await handler(e.body.value, e.headers);
           const body = { value: result };
           const headers = createHeaders(!isClient, e.headers.cid);
-          resBus.dispatchEvent(new SocketEvent(name, body, headers, e.context));
+          resBus.dispatchEvent(new SocketEvent(event, body, headers, e.context));
           send(
             {
               method: "RESPONSE",
-              name,
+              event,
               body,
               headers,
             },
@@ -284,7 +284,7 @@ function createSocket<const Schema extends SocketSchemas>(
       if (isClient) applySetHeader(p.headers?.["set-state"]);
       const {
         method,
-        name,
+        event,
         body: { value },
       } = p;
       const headers = p.headers ?? {};
@@ -295,36 +295,36 @@ function createSocket<const Schema extends SocketSchemas>(
 
       if (method === "PUSH") {
         const res = await validate(
-          (isClient ? schemas.serverPushes : schemas.clientPushes)?.[name],
+          (isClient ? schemas.serverPushes : schemas.clientPushes)?.[event],
           value,
-          name,
+          event,
           "push",
         );
         if (res.success)
           (isClient ? buses.sPush : buses.cPush).dispatchEvent(
-            new SocketEvent(name, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { ...body, value: res.value }, headers, context),
           );
       } else if (method === "REQUEST") {
         const res = await validate(
-          (isClient ? schemas.serverRequests : schemas.clientRequests)?.[name]?.[0],
+          (isClient ? schemas.serverRequests : schemas.clientRequests)?.[event]?.[0],
           value,
-          name,
+          event,
           "req",
         );
         if (res.success)
           (isClient ? buses.sReq : buses.cReq).dispatchEvent(
-            new SocketEvent(name, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { ...body, value: res.value }, headers, context),
           );
       } else if (method === "RESPONSE") {
         const res = await validate(
-          (isClient ? schemas.clientRequests : schemas.serverRequests)?.[name]?.[1],
+          (isClient ? schemas.clientRequests : schemas.serverRequests)?.[event]?.[1],
           value,
-          name,
+          event,
           "res",
         );
         if (res.success)
           (isClient ? buses.sRes : buses.cRes).dispatchEvent(
-            new SocketEvent(name, { ...body, value: res.value }, headers, context),
+            new SocketEvent(event, { ...body, value: res.value }, headers, context),
           );
       }
     } catch {}
