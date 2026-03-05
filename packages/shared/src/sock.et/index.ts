@@ -12,14 +12,14 @@ type Arg<T1, T2 = undefined> = undefined extends T1
 
 const uid = () => Math.random().toString(36).slice(2);
 
-enum SocketErr {
-  Closed,
-  Timeout,
-}
+const SocketErr = {
+  ConnectionClosed: "ConnectionClosed",
+  RequestTimeout: "RequestTimeout",
+};
 class SocketError extends Error {
-  static ConnectionClosed = SocketErr.Closed;
-  static RequestTimeout = SocketErr.Timeout;
-  constructor(public readonly type: SocketErr) {
+  static ConnectionClosed = SocketErr.ConnectionClosed;
+  static RequestTimeout = SocketErr.RequestTimeout;
+  constructor(public readonly type: (typeof SocketErr)[keyof typeof SocketErr]) {
     super();
     this.name = "SocketError";
   }
