@@ -21,7 +21,7 @@ export class WSSHandlers {
     this.setupOnRequest();
 
     api.onPush.action((c) => {
-      state.actionMap.get(c.req.body)?.();
+      state.actionMap.get(c.push.body)?.();
     });
   }
 
