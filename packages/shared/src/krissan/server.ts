@@ -4,6 +4,7 @@ import {
   type PushSchemas,
   type ReqSchemas,
   type ServerRequestTargetOption,
+  type ServerPushOption,
   type SocketClientMeta,
   type SocketConstructOption,
   type SocketReqMiddleware,
@@ -68,12 +69,10 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
    * API for interacting with the server socket.
    */
   type ServerApi = {
-    //TODO: specific client
-    //
     /**
      * Push a message to all connected clients or a specific set of clients.
      */
-    push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
+    push: { [K in keyof SPush]: (...args: Arg<SPush[K]["push"], ServerPushOption>) => void };
     /**
      * Send a request to clients and wait for responses.
      */

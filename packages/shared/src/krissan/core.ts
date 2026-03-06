@@ -202,8 +202,6 @@ interface SocketSchemas {
   serverRequests: Record<string, ReqSchemaTuple>;
 }
 
-type ServerTargetPicker = (clients: WS[]) => WS | undefined;
-
 /**
  * Options for a single request.
  */
@@ -214,9 +212,18 @@ type RequestOption = { timeout?: number } | undefined;
  */
 type ServerRequestTargetOption =
   | ({ timeout?: number } & { ws: WS; pick?: undefined })
-  | ({ timeout?: number } & { pick: ServerTargetPicker; ws?: undefined });
-
+  | ({ timeout?: number } & { pick: ServerRequestTargetPicker; ws?: undefined });
+type ServerRequestTargetPicker = (clients: WS[]) => WS | undefined;
 type ServerRequestOption = RequestOption | ServerRequestTargetOption;
+
+/**
+ * Options for a server-to-client push, allowing targeting specific clients.
+ */
+type ServerPushTargetOption =
+  | { ws: WS; pick?: undefined }
+  | { pick: ServerPushTargetPicker; ws?: undefined };
+type ServerPushTargetPicker = (clients: WS[]) => WS | WS[] | undefined;
+type ServerPushOption = ServerPushTargetOption | undefined;
 
 /**
  * Context provided to global error handlers.
@@ -455,22 +462,44 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return c;
   }
 
-  createPushLane(events: string[], reverseET: ET, isClient: boolean) {
+  createPushLane<IsClient extends boolean>(
+    events: readonly string[],
+    reverseET: ET,
+    isClient: IsClient,
+  ) {
     const api: {
-      push: Record<string, (...data: unknown[]) => void>;
-      handle: Record<
-        string,
-        (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void
+      push: Partial<Record<string, (...args: Arg<unknown, ServerPushOption>) => void>>;
+      handle: Partial<
+        Record<string, (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void>
       >;
     } = { push: {}, handle: {} };
     events.forEach((route) => {
-      api.push[route] = (data: unknown) => {
-        this.#send({
-          method: "PUSH",
-          route,
-          body: { value: data },
-          headers: this.#createHeaders(isClient),
-        });
+      api.push[route] = (...args) => {
+        const data = args[0];
+        const options = args[1];
+
+        const exec = (ws?: WS) => {
+          this.#send(
+            {
+              method: "PUSH",
+              route,
+              body: { value: data },
+              headers: this.#createHeaders(isClient),
+            },
+            ws,
+          );
+        };
+
+        if (isClient) return exec(this.clientWS.ws);
+        if (options && "ws" in options) return exec(options.ws);
+        if (options && "pick" in options) {
+          const clients = Array.from(this.serverWS.ws.keys());
+          const target = options.pick(clients);
+          if (Array.isArray(target)) return target.forEach(exec);
+          if (target) return exec(target);
+          return;
+        }
+        exec();
       };
       api.handle[route] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
         reverseET.on(route, (e) =>
@@ -791,6 +820,10 @@ export {
   type RequestOption,
   type ServerRequestOption,
   type ServerRequestTargetOption,
+  type ServerRequestTargetPicker,
+  type ServerPushOption,
+  type ServerPushTargetOption,
+  type ServerPushTargetPicker,
   type SocketConstructOption,
   type PushSchemas,
   type ReqSchemas,

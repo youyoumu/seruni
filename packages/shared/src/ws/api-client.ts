@@ -1,7 +1,7 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
 import { ClientSocket } from "#/krissan/client";
-import { ServerSocket } from "#/krissan/server";
+import { ServerSocket, type ServerPushOption } from "#/krissan/server";
 import { defineSocketSchema } from "#/krissan/client";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
@@ -98,6 +98,7 @@ type ToastPromiseFn = <TData, TError>(
     loading: ToastPayloadFix;
     success: ToastPayloadFix | ((data: TData) => ToastPayloadFix);
     error: ToastPayloadFix | ((error: TError) => ToastPayloadFix);
+    target?: ServerPushOption;
   },
 ) => Promise<R.Result<TData, TError>>;
 
@@ -106,18 +107,18 @@ export function createServerApi() {
   const push = socket.api.push;
 
   const toastPromise: ToastPromiseFn = async (promise, options) => {
-    const { loading, success, error } = options;
+    const { loading, success, error, target } = options;
     const id = uid();
-    push["toast/promise/start"]({ id, ...loading });
+    push["toast/promise/start"]({ id, ...loading }, target);
 
     const data = await promise();
     if (R.isSuccess(data)) {
       const computedSuccess = typeof success === "function" ? success(data.value) : success;
-      push["toast/promise/resolve"]({ id, ...computedSuccess });
+      push["toast/promise/resolve"]({ id, ...computedSuccess }, target);
     }
     if (R.isFailure(data)) {
       const computedError = typeof error === "function" ? error(data.error) : error;
-      push["toast/promise/reject"]({ id, ...computedError });
+      push["toast/promise/reject"]({ id, ...computedError }, target);
     }
     return data;
   };
