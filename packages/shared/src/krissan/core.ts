@@ -342,39 +342,34 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return api;
   }
 
-  createReqLane<IsClient extends boolean, Route extends string>(
-    events: readonly Route[],
+  createReqLane<IsClient extends boolean>(
+    events: readonly string[],
     reqET: ET,
     resET: ET,
     errET: ET,
     timeout: number,
     isClient: IsClient,
   ) {
-    type LaneRequestOption = IsClient extends true ? RequestOption : ServerRequestOption;
-    type RequestReturn = IsClient extends true
-      ? Promise<SocketResponse<unknown>>
-      : Promise<SocketResponse<unknown>> | Promise<SocketResponse<unknown>>[];
     const api: {
-      request: Record<Route, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>;
-      handle: Record<Route, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
+      request: Partial<Record<string, (...args: Arg<unknown, ServerRequestOption>) => unknown>>;
+      handle: Partial<
+        Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>
+      >;
       use: (
-        matcher: SocketRequestMatcher<Route>,
+        matcher: SocketRequestMatcher<string>,
         handler: SocketReqMiddleware<unknown, unknown>,
       ) => () => void;
     } = {
-      request: {} as Record<Route, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>,
-      handle: {} as Record<Route, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>,
+      request: {},
+      handle: {},
       use: () => () => undefined,
     };
-    const middlewareMap: Record<Route, SocketReqMiddleware<unknown, unknown>[]> = {} as Record<
-      Route,
-      SocketReqMiddleware<unknown, unknown>[]
-    >;
+    const middlewareMap: Partial<Record<string, SocketReqMiddleware<unknown, unknown>[]>> = {};
     const toPredicate = (
-      matcher: SocketRequestMatcher<Route>,
+      matcher: SocketRequestMatcher<string>,
     ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
       if (typeof matcher === "string") return (c) => c.req.route === matcher;
-      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route as Route);
+      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
       if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
       return matcher;
     };
@@ -428,17 +423,11 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             }
           });
         };
-        if (isClient) return exec(this.clientWS.ws) as RequestReturn;
-        const serverOptions = options as ServerRequestOption | undefined;
-        if (serverOptions && "ws" in serverOptions && serverOptions.ws) {
-          return exec(serverOptions.ws) as RequestReturn;
-        }
+        if (isClient) return exec(this.clientWS.ws);
+        if (options && "ws" in options) return exec(options.ws);
         const clients = Array.from(this.serverWS.ws.keys());
-        if (serverOptions && "pick" in serverOptions && serverOptions.pick) {
-          const picked = serverOptions.pick(clients);
-          if (picked) return exec(picked) as RequestReturn;
-        }
-        return clients.map(exec) as RequestReturn;
+        if (options && "pick" in options) return exec(options.pick(clients));
+        return clients.map(exec);
       };
 
       reqET.on(route, async (e) => {
@@ -559,7 +548,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     });
 
     api.use = (
-      matcher: SocketRequestMatcher<Route>,
+      matcher: SocketRequestMatcher<string>,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => {
       const predicate = toPredicate(matcher);
@@ -581,14 +570,14 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return async (e: MessageEvent, ws: WS) => {
       try {
         if (typeof e.data !== "string" || !e.data.startsWith(this.#prefix)) return;
-        const p = JSON.parse(e.data.slice(this.#prefix.length)) as SocketPacket;
+        const p: SocketPacket = JSON.parse(e.data.slice(this.#prefix.length));
         if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
         const {
           method,
           route,
           body: { value },
         } = p;
-        const headers = (p.headers ?? {}) as SocketHeaders;
+        const headers: SocketHeaders = p.headers ?? {};
         const cookie = this.#sanitizeCookie(headers.cookie);
         if (cookie) headers.cookie = cookie;
         else delete headers.cookie;

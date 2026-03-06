@@ -40,12 +40,8 @@ function createClientRuntime<const Schema extends SocketSchemas>(
     core.ets.sPush,
     false,
   );
-  type ClientRoutes = Extract<keyof CReq, string>;
-  type ServerRoutes = Extract<keyof SReq, string>;
-  const clientRequestRoutes = Object.keys(schemas.clientRequests ?? {}) as ClientRoutes[];
-  const sReqRoutes = Object.keys(schemas.serverRequests ?? {}) as ServerRoutes[];
   const cReqApi = core.createReqLane(
-    clientRequestRoutes,
+    Object.keys(schemas.clientRequests ?? {}),
     core.ets.cReq,
     core.ets.sRes,
     core.ets.sErr,
@@ -53,7 +49,7 @@ function createClientRuntime<const Schema extends SocketSchemas>(
     true,
   );
   const sReqApi = core.createReqLane(
-    sReqRoutes,
+    Object.keys(schemas.serverRequests ?? {}),
     core.ets.sReq,
     core.ets.cRes,
     core.ets.cErr,
@@ -65,20 +61,18 @@ function createClientRuntime<const Schema extends SocketSchemas>(
   type ClientApi = {
     push: { [K in keyof CPush]: (...data: Arg<CPush[K]["push"]>) => void };
     request: {
-      [K in ClientRoutes]: (
+      [K in keyof CReq]: (
         ...data: Arg<CReq[K]["req"], RequestOption>
       ) => Promise<SocketResponse<CReq[K]["res"], CReq[K]["err"]>>;
     };
-    onPush: {
-      [K in keyof SPush]: (handler: SocketPushHandler<SPush[K]["push"]>) => () => void;
-    };
+    onPush: { [K in keyof SPush]: (handler: SocketPushHandler<SPush[K]["push"]>) => () => void };
     onRequest: {
-      [K in ServerRoutes]: (
+      [K in keyof SReq]: (
         handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>,
       ) => () => void;
     };
     useRequest: (
-      matcher: SocketRequestMatcher<ServerRoutes>,
+      matcher: SocketRequestMatcher<keyof CReq & string>,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => () => void;
   };
