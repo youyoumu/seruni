@@ -52,7 +52,9 @@ export class Services {
     this.api = clientApi;
     this.keyring = createKeyring(clientApi);
 
-    onOpen(ws);
+    ws.addListener("open", () => {
+      onOpen(ws);
+    });
 
     ws.addListener("close", () => {
       onClose(ws);

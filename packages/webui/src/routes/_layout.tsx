@@ -2,17 +2,8 @@ import { TextHookerSessionListPopover } from "#/components/SessionList";
 import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
-import { R } from "@praha/byethrow";
-import { SocketError } from "@repo/shared/krissan/client";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
-import {
-  Link,
-  Outlet,
-  createFileRoute,
-  redirect,
-  useLocation,
-  useMatchRoute,
-} from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useLocation, useMatchRoute } from "@tanstack/react-router";
 import { Terminal, FileText, Settings, BugIcon } from "lucide-react";
 import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -27,22 +18,6 @@ const navLinkTv = tv({
 
 export const Route = createFileRoute("/_layout")({
   component: LayoutComponent,
-  async loader({ context, location }) {
-    if (location.pathname === "/offline") return;
-    const { api } = context.services;
-    try {
-      await api.request["health/check"]();
-    } catch (e) {
-      if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
-        throw redirect({
-          to: "/offline",
-          search: { redirect: location.pathname },
-        });
-      } else {
-        throw new Error("checkHealth fail");
-      }
-    }
-  },
 });
 
 function LayoutComponent() {

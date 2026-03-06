@@ -18,6 +18,7 @@ function RouteComponent() {
   const { ws } = useServices();
   const location = useLocation();
   const timeoutId = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const redirected = useRef<boolean>(false);
 
   const getRedirectPath = () => {
     if (!redirect) return "/";
@@ -28,14 +29,16 @@ function RouteComponent() {
 
   useEffect(() => {
     const redirectBack = () => {
+      if (redirected.current) return;
       if (timeoutId.current) clearTimeout(timeoutId.current);
       timeoutId.current = setTimeout(async () => {
+        redirected.current = true;
         await navigate({
           to: redirectPath,
           //@ts-expect-error dynamic
           search: search,
         });
-      }, 1000);
+      }, 500);
     };
     if (ws.readyState === WebSocket.OPEN) redirectBack();
     else {
