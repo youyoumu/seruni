@@ -8,6 +8,8 @@ export default defineConfig({
     "./src/util/index.ts",
     "./src/ws/index.ts",
     "./src/sock.et/index.ts",
+    "./src/sock.et/client.ts",
+    "./src/sock.et/server.ts",
   ],
   format: ["es"],
   dts: true,

@@ -3,7 +3,7 @@ import { StatusBar } from "#/components/StatusBar";
 import { useServices } from "#/hooks/services";
 import { Button, cn, tv } from "@heroui/react";
 import { R } from "@praha/byethrow";
-import { SocketError } from "@repo/shared/sock.et";
+import { SocketError } from "@repo/shared/sock.et/client";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import {
   Link,
