@@ -92,6 +92,7 @@ interface SocketHeaders {
   "set-cookie"?: Record<string, string>;
 }
 interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
+  ws: WS;
   req: Readonly<{
     method: "REQ";
     route: string;
@@ -107,6 +108,7 @@ interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
   fail: (error: TErr, headers?: SocketHeaders) => never;
 }
 interface SocketPushHandlerContext<TBody = unknown> {
+  ws: WS;
   push: Readonly<{
     method: "PUSH";
     route: string;
@@ -127,12 +129,17 @@ type SocketRequestMatcher =
   | string[]
   | RegExp
   | ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
+interface SocketClientMeta {
+  readonly connectedAt: number;
+  messageCount: number;
+  lastMessageAt: number | null;
+}
 interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
 }
 interface SocketContext {
-  ws?: WS;
+  ws: WS;
 }
 
 class SocketEvent extends Event {
@@ -140,7 +147,7 @@ class SocketEvent extends Event {
     type: string,
     public body: SocketBody,
     public headers: SocketHeaders = {},
-    public context: SocketContext = {},
+    public context: SocketContext,
     public issues?: unknown,
   ) {
     super(type);
@@ -200,15 +207,15 @@ function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
 }
 
-class SocketCore<const Schema extends SocketSchemas> {
+class SocketCore<const Schema extends SocketSchemas, ClientState extends object = {}> {
   #schemas: Schema;
-  #clientCookie = { value: {} as Record<string, string> };
+  #clientCookie: { value: Record<string, string> } = { value: {} };
   #uid: () => string;
   #onError?: SocketErrorHandler;
   #protocolId: number;
   #prefix: string;
   readonly clientWS: { ws: WS | undefined } = { ws: undefined };
-  readonly serverWS = { ws: new Set<WS>() };
+  readonly serverWS = { ws: new Map<WS, { meta: SocketClientMeta } & ClientState>() };
   readonly ets = {
     cPush: new ET(),
     sPush: new ET(),
@@ -285,7 +292,7 @@ class SocketCore<const Schema extends SocketSchemas> {
     const data = `${this.#prefix}${JSON.stringify(payload)}`;
     if (ws) ws.send(data);
     else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
-    else this.serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
+    else this.serverWS.ws.forEach((_, s) => s.readyState === 1 && s.send(data));
   }
 
   createPushLane(events: string[], reverseET: ET, isClient: boolean) {
@@ -308,6 +315,7 @@ class SocketCore<const Schema extends SocketSchemas> {
       api.handle[route] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
         reverseET.on(route, (e) =>
           handler({
+            ws: e.context.ws,
             push: Object.freeze({
               method: "PUSH" as const,
               route,
@@ -355,7 +363,7 @@ class SocketCore<const Schema extends SocketSchemas> {
         const data = args[0];
         const cid = this.#uid();
         const t = args[1]?.timeout ?? timeout;
-        const exec = (ws?: WS): Promise<SocketResponse<unknown>> =>
+        const exec = (ws: WS): Promise<SocketResponse<unknown>> =>
           new Promise((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout>;
             const clean = () => {
@@ -364,7 +372,7 @@ class SocketCore<const Schema extends SocketSchemas> {
               offErr();
             };
             const off = resET.on(route, (e) => {
-              if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
+              if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) {
                   reject(new SocketError(SocketError.InvalidResponse));
@@ -374,7 +382,7 @@ class SocketCore<const Schema extends SocketSchemas> {
               }
             });
             const offErr = errET.on(route, async (e) => {
-              if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
+              if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) {
                   reject(new SocketError(SocketError.InvalidResponse));
@@ -395,7 +403,12 @@ class SocketCore<const Schema extends SocketSchemas> {
               reject(new SocketError(SocketError.ConnectionClosed));
             }
           });
-        return isClient ? exec() : Array.from(this.serverWS.ws).map(exec);
+        if (isClient) {
+          if (!this.clientWS.ws) throw Error("Missing ws");
+          return exec(this.clientWS.ws);
+        } else {
+          return Array.from(this.serverWS.ws.keys()).map(exec);
+        }
       };
 
       reqET.on(route, async (e) => {
@@ -432,6 +445,7 @@ class SocketCore<const Schema extends SocketSchemas> {
           configurable: false,
         });
         const c: SocketReqHandlerContext<unknown> = {
+          ws: e.context.ws,
           req: Object.freeze({
             method: "REQ" as const,
             route,
@@ -549,8 +563,18 @@ class SocketCore<const Schema extends SocketSchemas> {
         if (setCookie) headers["set-cookie"] = setCookie;
         else delete headers["set-cookie"];
         if ((method === "REQ" || method === "RES" || method === "ERR") && !headers.cid) return;
-        const context = { ws: isClient ? undefined : ws_ };
+        const ws = isClient ? this.clientWS.ws : ws_;
+        if (!ws) throw Error("Missing ws");
+        const context: SocketContext = { ws };
         const body = { value };
+
+        if (!isClient && ws_) {
+          const clientData = this.serverWS.ws.get(ws_);
+          if (clientData) {
+            clientData.meta.messageCount++;
+            clientData.meta.lastMessageAt = Date.now();
+          }
+        }
 
         if (method === "PUSH") {
           const res = await this.#validate(
@@ -618,7 +642,7 @@ class SocketCore<const Schema extends SocketSchemas> {
   }
 }
 
-function createSocket<const Schema extends SocketSchemas>(
+function createSocket<const Schema extends SocketSchemas, ClientState extends object = {}>(
   schemas: Schema,
   options?: {
     clientTimeout?: number;
@@ -633,7 +657,7 @@ function createSocket<const Schema extends SocketSchemas>(
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
-  const core = new SocketCore(schemas, options);
+  const core = new SocketCore<Schema, ClientState>(schemas, options);
 
   const cPushApi = core.createPushLane(
     Object.keys(schemas.clientPushes ?? {}),
@@ -703,6 +727,7 @@ function createSocket<const Schema extends SocketSchemas>(
       matcher: SocketRequestMatcher,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => () => void;
+    clients: Map<WS, { meta: SocketClientMeta } & ClientState>;
   };
 
   return {
@@ -725,7 +750,9 @@ function createSocket<const Schema extends SocketSchemas>(
     server: {
       onMessage: serverOnMessage,
       onOpen: (ws: WS) => {
-        core.serverWS.ws.add(ws);
+        core.serverWS.ws.set(ws, {
+          meta: { connectedAt: Date.now(), messageCount: 0, lastMessageAt: null },
+        } as { meta: SocketClientMeta } & ClientState);
       },
       onClose: (ws: WS) => {
         core.serverWS.ws.delete(ws);
@@ -736,13 +763,16 @@ function createSocket<const Schema extends SocketSchemas>(
         onPush: cPushApi.handle,
         onRequest: cReqApi.handle,
         useRequest: cReqApi.use,
+        clients: core.serverWS.ws,
       } as ServerApi,
     },
   };
 }
 
 type ClientRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>["client"];
-type ServerRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>["server"];
+type ServerRuntime<T extends SocketSchemas, ClientState extends object = {}> = ReturnType<
+  typeof createSocket<T, ClientState>
+>["server"];
 
 class ClientSocket<T extends SocketSchemas> {
   #socket: ClientRuntime<T>;
@@ -765,13 +795,13 @@ class ClientSocket<T extends SocketSchemas> {
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 
-class ServerSocket<T extends SocketSchemas> {
-  #socket: ServerRuntime<T>;
+class ServerSocket<T extends SocketSchemas, ClientState extends object = {}> {
+  #socket: ServerRuntime<T, ClientState>;
   constructor(
     s: T,
     o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler; protocolId?: number },
   ) {
-    this.#socket = createSocket(s, {
+    this.#socket = createSocket<T, ClientState>(s, {
       serverTimeout: o?.timeout,
       uid: o?.uid,
       onError: o?.onError,
@@ -801,6 +831,7 @@ export {
   type SocketBody,
   type SocketPacket,
   type WS,
+  type SocketClientMeta,
   type SocketSchemas,
   type SocketErrorHandler,
   type SocketErrorHandlerContext,
