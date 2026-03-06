@@ -55,14 +55,14 @@ const DEFAULT_TIMEOUT = 300000;
 /**
  * Wire-level packet exchanged between client and server.
  * - `method`: packet intent
- * - `event`: schema key/event name
+ * - `route`: schema key/route name
  * - `body`: validated payload container
  * - `headers`: protocol metadata (correlation/cookie/timestamp)
  */
 interface SocketPacket {
   "sock.et": typeof SOCKET_MAGIC_NUMBER;
   method: "PUSH" | "REQ" | "RES" | "ERR";
-  event: string;
+  route: string;
   body: SocketBody;
   headers?: SocketHeaders;
 }
@@ -76,13 +76,13 @@ interface SocketHeaders {
 interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
   req: Readonly<{
     method: "REQ";
-    event: string;
+    route: string;
     body: TBody;
     headers: Readonly<SocketHeaders>;
   }>;
   res: {
     method: "RES" | "ERR";
-    event: string;
+    route: string;
     header: SocketHeaders;
     body?: unknown;
   };
@@ -91,7 +91,7 @@ interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
 interface SocketPushHandlerContext<TBody = unknown> {
   push: Readonly<{
     method: "PUSH";
-    event: string;
+    route: string;
     body: TBody;
     headers: Readonly<SocketHeaders>;
   }>;
@@ -130,9 +130,9 @@ class SocketEvent extends Event {
 }
 
 class ET extends EventTarget {
-  /** Subscribe to a named event; returns an unsubscribe function. */
+  /** Subscribe to a named route; returns an unsubscribe function. */
   on(
-    event: string,
+    route: string,
     handler: (packet: {
       body: SocketBody;
       headers: SocketHeaders;
@@ -143,8 +143,8 @@ class ET extends EventTarget {
     const fn = (e: Event) =>
       e instanceof SocketEvent &&
       handler({ body: e.body, headers: e.headers, context: e.context, issues: e.issues });
-    this.addEventListener(event, fn);
-    return () => this.removeEventListener(event, fn);
+    this.addEventListener(route, fn);
+    return () => this.removeEventListener(route, fn);
   }
 }
 
@@ -165,12 +165,12 @@ type RequestOption = { timeout?: number } | undefined;
 type SocketErrorHandlerContext = {
   req: Readonly<{
     method: "REQ";
-    event: string;
+    route: string;
     headers: Readonly<SocketHeaders>;
   }>;
   res: Readonly<{
     method: "ERR";
-    event: string;
+    route: string;
     header: SocketHeaders;
   }>;
   error: unknown;
@@ -229,17 +229,17 @@ class SocketCore<const Schema extends SocketSchemas> {
     return sanitized;
   }
 
-  async #validate(schema: StandardSchema | undefined, data: unknown, event: string, type: string) {
+  async #validate(schema: StandardSchema | undefined, data: unknown, route: string, type: string) {
     if (!schema) {
       if (data === undefined) return { success: true as const, value: undefined };
       return {
         success: false as const,
-        error: [`Validation failed for ${type} [${event}]: expected undefined`],
+        error: [`Validation failed for ${type} [${route}]: expected undefined`],
       };
     }
     const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
-      console.error(`Validation failed for ${type} [${event}]`, res.issues);
+      console.error(`Validation failed for ${type} [${route}]`, res.issues);
       return { success: false as const, error: res.issues };
     }
     return { success: true as const, value: res.value };
@@ -276,21 +276,21 @@ class SocketCore<const Schema extends SocketSchemas> {
         (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void
       >;
     } = { push: {}, handle: {} };
-    events.forEach((event) => {
-      api.push[event] = (data: unknown) => {
+    events.forEach((route) => {
+      api.push[route] = (data: unknown) => {
         this.#send({
           method: "PUSH",
-          event,
+          route,
           body: { value: data },
           headers: this.#createHeaders(isClient),
         });
       };
-      api.handle[event] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
-        reverseET.on(event, (e) =>
+      api.handle[route] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
+        reverseET.on(route, (e) =>
           handler({
             push: Object.freeze({
               method: "PUSH" as const,
-              event,
+              route,
               body: e.body.value,
               headers: Object.freeze({ ...e.headers }),
             }),
@@ -323,15 +323,15 @@ class SocketCore<const Schema extends SocketSchemas> {
     const toPredicate = (
       matcher: SocketRequestMatcher,
     ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
-      if (typeof matcher === "string") return (c) => c.req.event === matcher;
-      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.event);
-      if (matcher instanceof RegExp) return (c) => matcher.test(c.req.event);
+      if (typeof matcher === "string") return (c) => c.req.route === matcher;
+      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
+      if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
       return matcher;
     };
 
-    events.forEach((event) => {
-      middlewareMap[event] = [];
-      api.request[event] = (...args) => {
+    events.forEach((route) => {
+      middlewareMap[route] = [];
+      api.request[route] = (...args) => {
         const data = args[0];
         const cid = this.#uid();
         const t = args[1]?.timeout ?? timeout;
@@ -343,7 +343,7 @@ class SocketCore<const Schema extends SocketSchemas> {
               off();
               offErr();
             };
-            const off = resET.on(event, (e) => {
+            const off = resET.on(route, (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
                 if (e.issues) {
@@ -353,7 +353,7 @@ class SocketCore<const Schema extends SocketSchemas> {
                 resolve({ type: "Success", value: e.body.value });
               }
             });
-            const offErr = errET.on(event, async (e) => {
+            const offErr = errET.on(route, async (e) => {
               if (e.headers.cid === cid && (!ws || e.context.ws === ws)) {
                 clean();
                 if (e.issues) {
@@ -369,7 +369,7 @@ class SocketCore<const Schema extends SocketSchemas> {
             }, t);
             const headers = this.#createHeaders(isClient, cid);
             if (!isClient || this.clientWS.ws?.readyState === 1) {
-              this.#send({ method: "REQ", event, body: { value: data }, headers }, ws);
+              this.#send({ method: "REQ", route, body: { value: data }, headers }, ws);
             } else {
               clean();
               reject(new SocketError(SocketError.ConnectionClosed));
@@ -378,12 +378,12 @@ class SocketCore<const Schema extends SocketSchemas> {
         return isClient ? exec() : Array.from(this.serverWS.ws).map(exec);
       };
 
-      reqET.on(event, async (e) => {
+      reqET.on(route, async (e) => {
         if (e.issues) {
           this.#send(
             {
               method: "ERR",
-              event,
+              route,
               body: { value: e.issues },
               headers: this.#createHeaders(!isClient, e.headers.cid),
             },
@@ -396,7 +396,7 @@ class SocketCore<const Schema extends SocketSchemas> {
         };
         const res: SocketReqHandlerContext<unknown>["res"] = {
           method: "RES",
-          event,
+          route,
           header: {},
         };
         Object.defineProperty(res, "method", {
@@ -405,8 +405,8 @@ class SocketCore<const Schema extends SocketSchemas> {
           enumerable: true,
           configurable: false,
         });
-        Object.defineProperty(res, "event", {
-          value: event,
+        Object.defineProperty(res, "route", {
+          value: route,
           writable: false,
           enumerable: true,
           configurable: false,
@@ -414,14 +414,14 @@ class SocketCore<const Schema extends SocketSchemas> {
         const c: SocketReqHandlerContext<unknown> = {
           req: Object.freeze({
             method: "REQ" as const,
-            event,
+            route,
             body: e.body.value,
             headers: Object.freeze({ ...e.headers }),
           }),
           res,
           fail,
         };
-        const middlewares = middlewareMap[event] ?? [];
+        const middlewares = middlewareMap[route] ?? [];
         if (middlewares.length === 0) return;
         try {
           let i = -1;
@@ -437,7 +437,7 @@ class SocketCore<const Schema extends SocketSchemas> {
           if (c.res.body === undefined) return;
           const headers = { ...c.res.header, ...this.#createHeaders(!isClient, e.headers.cid) };
           this.#send(
-            { method: c.res.method, event, body: { value: c.res.body }, headers },
+            { method: c.res.method, route, body: { value: c.res.body }, headers },
             e.context.ws,
           );
         } catch (error) {
@@ -452,7 +452,7 @@ class SocketCore<const Schema extends SocketSchemas> {
                 req: c.req,
                 res: Object.freeze({
                   method: "ERR" as const,
-                  event: c.res.event,
+                  route: c.res.route,
                   header: c.res.header,
                 }),
               });
@@ -468,9 +468,9 @@ class SocketCore<const Schema extends SocketSchemas> {
           }
           const errSchema = (
             isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests
-          )?.[event]?.[2];
+          )?.[route]?.[2];
           if (isSocketFailure) {
-            const errValidation = await this.#validate(errSchema, failure.error, event, "err");
+            const errValidation = await this.#validate(errSchema, failure.error, route, "err");
             if (!errValidation.success) failure = new SocketFailure("InternalError");
           }
           const headers = {
@@ -479,14 +479,14 @@ class SocketCore<const Schema extends SocketSchemas> {
             ...this.#createHeaders(!isClient, e.headers.cid),
           };
           this.#send(
-            { method: "ERR", event: c.res.event, body: { value: failure.error }, headers },
+            { method: "ERR", route: c.res.route, body: { value: failure.error }, headers },
             e.context.ws,
           );
         }
       });
 
-      api.handle[event] = (handler: SocketReqMiddleware<unknown, unknown>) => {
-        const middlewares = middlewareMap[event];
+      api.handle[route] = (handler: SocketReqMiddleware<unknown, unknown>) => {
+        const middlewares = middlewareMap[route];
         if (!middlewares) return () => undefined;
         middlewares.push(handler);
         return () => {
@@ -498,8 +498,8 @@ class SocketCore<const Schema extends SocketSchemas> {
 
     api.use = (matcher: SocketRequestMatcher, handler: SocketReqMiddleware<unknown, unknown>) => {
       const predicate = toPredicate(matcher);
-      const offs = events.map((event) => {
-        const register = api.handle[event];
+      const offs = events.map((route) => {
+        const register = api.handle[route];
         if (!register) return () => undefined;
         return register(async (c, next) => {
           if (!(await predicate(c))) return next();
@@ -520,7 +520,7 @@ class SocketCore<const Schema extends SocketSchemas> {
         if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
         const {
           method,
-          event,
+          route,
           body: { value },
         } = p;
         const headers = (p.headers ?? {}) as SocketHeaders;
@@ -536,26 +536,26 @@ class SocketCore<const Schema extends SocketSchemas> {
 
         if (method === "PUSH") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[event],
+            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[route],
             value,
-            event,
+            route,
             "push",
           );
           if (res.success) {
             (isClient ? this.ets.sPush : this.ets.cPush).dispatchEvent(
-              new SocketEvent(event, { value: res.value }, headers, context),
+              new SocketEvent(route, { value: res.value }, headers, context),
             );
           }
         } else if (method === "REQ") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[event]?.[0],
+            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[route]?.[0],
             value,
-            event,
+            route,
             "req",
           );
           (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
             new SocketEvent(
-              event,
+              route,
               res.success ? { value: res.value } : body,
               headers,
               context,
@@ -564,14 +564,14 @@ class SocketCore<const Schema extends SocketSchemas> {
           );
         } else if (method === "RES") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[1],
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[1],
             value,
-            event,
+            route,
             "res",
           );
           (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
             new SocketEvent(
-              event,
+              route,
               res.success ? { value: res.value } : body,
               headers,
               context,
@@ -580,14 +580,14 @@ class SocketCore<const Schema extends SocketSchemas> {
           );
         } else if (method === "ERR") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[event]?.[2],
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[2],
             value,
-            event,
+            route,
             "err",
           );
           (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
             new SocketEvent(
-              event,
+              route,
               res.success ? { value: res.value } : body,
               headers,
               context,
