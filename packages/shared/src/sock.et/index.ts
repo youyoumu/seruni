@@ -1,13 +1,14 @@
 import { type StandardSchemaV1 } from "@standard-schema/spec";
 
 type StandardSchema = StandardSchemaV1;
+type StandardValidator = Pick<StandardSchema, "~standard">;
 type Infer<T extends StandardSchema> = StandardSchemaV1.InferOutput<T>;
 type InferReqRes<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : undefined;
 type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
-  : undefined;
+  : never;
 type ReqSchemaTuple = [
   (StandardSchema | undefined)?,
   (StandardSchema | undefined)?,
@@ -42,9 +43,9 @@ class SocketFailure {
     public readonly headers?: SocketHeaders,
   ) {}
 }
-type SocketResponse<T = unknown, E = unknown> =
-  | { type: "Success"; value: T }
-  | { type: "Failure"; error: E };
+type SocketResponse<T = unknown, E = unknown> = [E] extends [never]
+  ? { type: "Success"; value: T }
+  : { type: "Success"; value: T } | { type: "Failure"; error: E };
 
 interface SocketBody<T = unknown> {
   value?: T;
@@ -52,6 +53,25 @@ interface SocketBody<T = unknown> {
 
 const SOCKET_MAGIC_NUMBER = 16777619;
 const DEFAULT_TIMEOUT = 300000;
+const undefinedSchema: StandardValidator = {
+  "~standard": {
+    version: 1,
+    vendor: "sock.et",
+    async validate(data: unknown) {
+      if (data === undefined) return { value: undefined } as const;
+      return { issues: [{ message: "Invalid input: expected undefined" }] } as const;
+    },
+  },
+};
+const neverSchema: StandardValidator = {
+  "~standard": {
+    version: 1,
+    vendor: "sock.et",
+    async validate(_data: unknown) {
+      return { issues: [{ message: "Invalid input: expected never" }] } as const;
+    },
+  },
+};
 /**
  * Wire-level packet exchanged between client and server.
  * - `method`: packet intent
@@ -229,17 +249,17 @@ class SocketCore<const Schema extends SocketSchemas> {
     return sanitized;
   }
 
-  async #validate(schema: StandardSchema | undefined, data: unknown, route: string, type: string) {
-    if (!schema) {
-      if (data === undefined) return { success: true as const, value: undefined };
-      return {
-        success: false as const,
-        error: [`Validation failed for ${type} [${route}]: expected undefined`],
-      };
-    }
-    const res = await schema["~standard"].validate(data);
+  async #validate(
+    schema: StandardSchema | undefined,
+    data: unknown,
+    route: string,
+    method: SocketPacket["method"],
+  ) {
+    const effectiveSchema: StandardValidator =
+      schema ?? (method === "ERR" ? neverSchema : undefinedSchema);
+    const res = await effectiveSchema["~standard"].validate(data);
     if ("issues" in res) {
-      console.error(`Validation failed for ${type} [${route}]`, res.issues);
+      console.error(`Validation failed for ${method} [${route}]`, res.issues);
       return { success: false as const, error: res.issues };
     }
     return { success: true as const, value: res.value };
@@ -441,11 +461,10 @@ class SocketCore<const Schema extends SocketSchemas> {
             e.context.ws,
           );
         } catch (error) {
-          const isSocketFailure = error instanceof SocketFailure;
+          const isExpected = error instanceof SocketFailure;
           let failure: SocketFailure;
-          if (isSocketFailure) {
-            failure = error;
-          } else if (this.#onError) {
+          if (isExpected) failure = error;
+          else if (this.#onError) {
             try {
               const handled = await this.#onError({
                 error,
@@ -469,8 +488,8 @@ class SocketCore<const Schema extends SocketSchemas> {
           const errSchema = (
             isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests
           )?.[route]?.[2];
-          if (isSocketFailure) {
-            const errValidation = await this.#validate(errSchema, failure.error, route, "err");
+          if (isExpected) {
+            const errValidation = await this.#validate(errSchema, failure.error, route, "ERR");
             if (!errValidation.success) failure = new SocketFailure("InternalError");
           }
           const headers = {
@@ -539,7 +558,7 @@ class SocketCore<const Schema extends SocketSchemas> {
             (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[route],
             value,
             route,
-            "push",
+            "PUSH",
           );
           if (res.success) {
             (isClient ? this.ets.sPush : this.ets.cPush).dispatchEvent(
@@ -551,7 +570,7 @@ class SocketCore<const Schema extends SocketSchemas> {
             (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[route]?.[0],
             value,
             route,
-            "req",
+            "REQ",
           );
           (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
             new SocketEvent(
@@ -567,7 +586,7 @@ class SocketCore<const Schema extends SocketSchemas> {
             (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[1],
             value,
             route,
-            "res",
+            "RES",
           );
           (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
             new SocketEvent(
@@ -583,7 +602,7 @@ class SocketCore<const Schema extends SocketSchemas> {
             (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[2],
             value,
             route,
-            "err",
+            "ERR",
           );
           (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
             new SocketEvent(
