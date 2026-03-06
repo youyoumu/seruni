@@ -86,7 +86,7 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
   // migrate database
   await dbSvc.migrate();
 
-  const { api, onMessage, addWS, removeWS } = createServerApi();
+  const { api, onMessage, onOpen, onClose } = createServerApi();
   const app = new Hono<{ Variables: { ctx: AppContext } }>();
   const nodews = createNodeWebSocket({ app });
 
@@ -125,8 +125,8 @@ async function start(options: { dataDir: string; logLevel: pino.Level }) {
     log: log,
     api,
     onMessage,
-    addWS,
-    removeWS,
+    onOpen,
+    onClose,
     upgradeWebSocket: nodews.upgradeWebSocket,
     ankiConnectClient,
   };

@@ -689,7 +689,12 @@ function createSocket<const Schema extends SocketSchemas>(
   return {
     client: {
       onMessage: clientOnMessage,
-      bindWS: (ws: WS) => (core.clientWS.ws = ws),
+      onOpen: (ws: WS) => {
+        core.clientWS.ws = ws;
+      },
+      onClose: (ws: WS) => {
+        if (core.clientWS.ws === ws) core.clientWS.ws = undefined;
+      },
       api: {
         push: cPushApi.push,
         request: cReqApi.request,
@@ -700,8 +705,12 @@ function createSocket<const Schema extends SocketSchemas>(
     },
     server: {
       onMessage: serverOnMessage,
-      addWS: (ws: WS) => core.serverWS.ws.add(ws),
-      removeWS: (ws: WS) => core.serverWS.ws.delete(ws),
+      onOpen: (ws: WS) => {
+        core.serverWS.ws.add(ws);
+      },
+      onClose: (ws: WS) => {
+        core.serverWS.ws.delete(ws);
+      },
       api: {
         push: sPushApi.push,
         request: sReqApi.request,
@@ -729,7 +738,8 @@ class ClientSocket<T extends SocketSchemas> {
     return this.#socket.api;
   }
   onMessage = (e: MessageEvent) => this.#socket.onMessage(e);
-  bindWS = (ws: WS) => this.#socket.bindWS(ws);
+  onOpen = (ws: WS) => this.#socket.onOpen(ws);
+  onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 
 class ServerSocket<T extends SocketSchemas> {
@@ -745,8 +755,8 @@ class ServerSocket<T extends SocketSchemas> {
     return this.#socket.api;
   }
   onMessage = (e: MessageEvent, ws?: WS) => this.#socket.onMessage(e, ws);
-  addWS = (ws: WS) => this.#socket.addWS(ws);
-  removeWS = (ws: WS) => this.#socket.removeWS(ws);
+  onOpen = (ws: WS) => this.#socket.onOpen(ws);
+  onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 
 export {

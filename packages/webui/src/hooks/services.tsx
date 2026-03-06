@@ -20,7 +20,7 @@ type ServicesEventMap = {
   "textHistory:new": TextHistory;
 };
 
-const { api: clientApi, onMessage, bindWS } = createClientApi();
+const { api: clientApi, onMessage, onOpen, onClose } = createClientApi();
 
 export class Services {
   api: typeof clientApi;
@@ -52,7 +52,11 @@ export class Services {
     this.api = clientApi;
     this.keyring = createKeyring(clientApi);
 
-    bindWS(ws);
+    onOpen(ws);
+
+    ws.addListener("close", () => {
+      onClose(ws);
+    });
 
     ws.addListener("message", (event) => {
       void onMessage(event);

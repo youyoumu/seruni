@@ -12,8 +12,8 @@ export interface AppContext {
   log: Logger;
   api: ServerApi;
   onMessage: ReturnType<typeof createServerApi>["onMessage"];
-  addWS: ReturnType<typeof createServerApi>["addWS"];
-  removeWS: ReturnType<typeof createServerApi>["removeWS"];
+  onOpen: ReturnType<typeof createServerApi>["onOpen"];
+  onClose: ReturnType<typeof createServerApi>["onClose"];
   upgradeWebSocket: UpgradeWebSocket;
   ankiConnectClient: AnkiConnectClient;
 }

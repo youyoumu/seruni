@@ -122,8 +122,8 @@ export function createServerApi() {
 
   return {
     onMessage: socket.onMessage.bind(socket),
-    addWS: socket.addWS.bind(socket),
-    removeWS: socket.removeWS.bind(socket),
+    onOpen: socket.onOpen.bind(socket),
+    onClose: socket.onClose.bind(socket),
     api: {
       ...socket.api,
       toastPromise,
