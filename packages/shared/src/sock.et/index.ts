@@ -51,7 +51,7 @@ interface SocketBody<T = unknown> {
   value?: T;
 }
 
-const SOCKET_MAGIC_NUMBER = 16777619;
+const DEFAULT_PROTOCOL_ID = 16777619;
 const DEFAULT_TIMEOUT = 300000;
 const undefinedSchema: StandardValidator = {
   "~standard": {
@@ -80,13 +80,11 @@ const neverSchema: StandardValidator = {
  * - `headers`: protocol metadata (correlation/cookie/timestamp)
  */
 interface SocketPacket {
-  "sock.et": typeof SOCKET_MAGIC_NUMBER;
   method: "PUSH" | "REQ" | "RES" | "ERR";
   route: string;
   body: SocketBody;
   headers?: SocketHeaders;
 }
-type SocketPacketPayload = Omit<SocketPacket, "sock.et">;
 interface SocketHeaders {
   cid?: string;
   timestamp?: number;
@@ -207,6 +205,8 @@ class SocketCore<const Schema extends SocketSchemas> {
   #clientCookie = { value: {} as Record<string, string> };
   #uid: () => string;
   #onError?: SocketErrorHandler;
+  #protocolId: number;
+  #prefix: string;
   readonly clientWS: { ws: WS | undefined } = { ws: undefined };
   readonly serverWS = { ws: new Set<WS>() };
   readonly ets = {
@@ -229,6 +229,7 @@ class SocketCore<const Schema extends SocketSchemas> {
       serverTimeout?: number;
       uid?: () => string;
       onError?: SocketErrorHandler;
+      protocolId?: number;
     },
   ) {
     this.#schemas = schemas;
@@ -236,6 +237,8 @@ class SocketCore<const Schema extends SocketSchemas> {
     this.#onError = options?.onError;
     this.clientTimeout = options?.clientTimeout ?? DEFAULT_TIMEOUT;
     this.serverTimeout = options?.serverTimeout ?? DEFAULT_TIMEOUT;
+    this.#protocolId = options?.protocolId ?? DEFAULT_PROTOCOL_ID;
+    this.#prefix = `sock.et:${this.#protocolId}:`;
   }
 
   #sanitizeCookie(cookie: unknown): Record<string, string> | undefined {
@@ -278,9 +281,8 @@ class SocketCore<const Schema extends SocketSchemas> {
     return headers;
   }
 
-  #send(payload: SocketPacketPayload, ws?: WS) {
-    const packet: SocketPacket = { ...payload, "sock.et": SOCKET_MAGIC_NUMBER };
-    const data = JSON.stringify(packet);
+  #send(payload: SocketPacket, ws?: WS) {
+    const data = `${this.#prefix}${JSON.stringify(payload)}`;
     if (ws) ws.send(data);
     else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
     else this.serverWS.ws.forEach((s) => s.readyState === 1 && s.send(data));
@@ -531,8 +533,8 @@ class SocketCore<const Schema extends SocketSchemas> {
   createOnMessage(isClient: boolean) {
     return async (e: MessageEvent, ws_?: WS) => {
       try {
-        const p = JSON.parse(e.data);
-        if (p["sock.et"] !== SOCKET_MAGIC_NUMBER) return;
+        if (typeof e.data !== "string" || !e.data.startsWith(this.#prefix)) return;
+        const p = JSON.parse(e.data.slice(this.#prefix.length)) as SocketPacket;
         if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
         const {
           method,
@@ -623,6 +625,7 @@ function createSocket<const Schema extends SocketSchemas>(
     serverTimeout?: number;
     uid?: () => string;
     onError?: SocketErrorHandler;
+    protocolId?: number;
   },
 ) {
   type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
@@ -743,11 +746,15 @@ type ServerRuntime<T extends SocketSchemas> = ReturnType<typeof createSocket<T>>
 
 class ClientSocket<T extends SocketSchemas> {
   #socket: ClientRuntime<T>;
-  constructor(s: T, o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler }) {
+  constructor(
+    s: T,
+    o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler; protocolId?: number },
+  ) {
     this.#socket = createSocket(s, {
       clientTimeout: o?.timeout,
       uid: o?.uid,
       onError: o?.onError,
+      protocolId: o?.protocolId,
     }).client;
   }
   get api() {
@@ -760,11 +767,15 @@ class ClientSocket<T extends SocketSchemas> {
 
 class ServerSocket<T extends SocketSchemas> {
   #socket: ServerRuntime<T>;
-  constructor(s: T, o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler }) {
+  constructor(
+    s: T,
+    o?: RequestOption & { uid?: () => string; onError?: SocketErrorHandler; protocolId?: number },
+  ) {
     this.#socket = createSocket(s, {
       serverTimeout: o?.timeout,
       uid: o?.uid,
       onError: o?.onError,
+      protocolId: o?.protocolId,
     }).server;
   }
   get api() {
