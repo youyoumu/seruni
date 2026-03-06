@@ -44,10 +44,7 @@ class SocketError extends Error {
   }
 }
 class SocketFailure {
-  constructor(
-    public readonly error: unknown,
-    public readonly headers?: SocketHeaders,
-  ) {}
+  constructor(public readonly error: unknown) {}
 }
 /**
  * Represents the response from a socket request.
@@ -112,14 +109,11 @@ interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
     header: SocketHeaders;
     body?: unknown;
   };
-  //TODO: remove headers
-  //
   /**
    * Immediately fails the request with the provided error.
    * @param error The error to return to the requester.
-   * @param headers Optional headers to include in the error response.
    */
-  fail: (error: TErr, headers?: SocketHeaders) => never;
+  fail: (error: TErr) => never;
 }
 
 /**
@@ -549,8 +543,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           );
           return;
         }
-        const fail = (error: unknown, headers?: SocketHeaders): never => {
-          throw new SocketFailure(error, headers);
+        const fail = (error: unknown): never => {
+          throw new SocketFailure(error);
         };
         const res: SocketReqHandlerContext<unknown>["res"] = {
           method: "RES",
@@ -616,7 +610,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             try {
               const errBody = await this.#onError(errCtx);
               const body = errBody !== undefined ? errBody : errCtx.res.body;
-              failure = new SocketFailure(body, errCtx.res.header);
+              failure = new SocketFailure(body);
             } catch {
               failure = new SocketFailure("InternalError");
             }
@@ -632,7 +626,6 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           }
           const headers = {
             ...c.res.header,
-            ...failure.headers,
             ...this.#createHeaders(!isClient, e.headers.cid),
           };
           this.#send(
