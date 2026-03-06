@@ -213,7 +213,7 @@ type RequestOption = { timeout?: number } | undefined;
 /**
  * Options for a server-to-client request, allowing targeting specific clients.
  */
-type ServerRequestTargetOption = { timeout?: number } & { ws: WS | ServerRequestTargetPicker };
+type ServerRequestTargetOption = { timeout?: number; ws: WS | ServerRequestTargetPicker };
 type ServerRequestOption = RequestOption | ServerRequestTargetOption;
 
 /**

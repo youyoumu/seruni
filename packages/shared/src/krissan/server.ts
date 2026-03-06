@@ -62,7 +62,7 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
 
   type ServerRequestFn<Req, Res, Err> = {
     (...args: Arg<Req, ServerRequestTargetOption>): Promise<SocketResponse<Res, Err>>;
-    (...args: Arg<Req, RequestOption>): Promise<SocketResponse<Res, Err>>[];
+    (...args: Arg<Req, RequestOption & { ws: undefined }>): Promise<SocketResponse<Res, Err>>[];
   };
 
   /**
