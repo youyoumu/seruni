@@ -202,6 +202,9 @@ interface SocketSchemas {
   serverRequests: Record<string, ReqSchemaTuple>;
 }
 
+type ServerRequestTargetPicker = (clients: WS[]) => WS | undefined;
+type ServerPushTargetPicker = (clients: WS[]) => WS | WS[] | undefined;
+
 /**
  * Options for a single request.
  */
@@ -210,19 +213,13 @@ type RequestOption = { timeout?: number } | undefined;
 /**
  * Options for a server-to-client request, allowing targeting specific clients.
  */
-type ServerRequestTargetOption =
-  | ({ timeout?: number } & { ws: WS; pick?: undefined })
-  | ({ timeout?: number } & { pick: ServerRequestTargetPicker; ws?: undefined });
-type ServerRequestTargetPicker = (clients: WS[]) => WS | undefined;
+type ServerRequestTargetOption = { timeout?: number } & { ws: WS | ServerRequestTargetPicker };
 type ServerRequestOption = RequestOption | ServerRequestTargetOption;
 
 /**
  * Options for a server-to-client push, allowing targeting specific clients.
  */
-type ServerPushTargetOption =
-  | { ws: WS; pick?: undefined }
-  | { pick: ServerPushTargetPicker; ws?: undefined };
-type ServerPushTargetPicker = (clients: WS[]) => WS | WS[] | undefined;
+type ServerPushTargetOption = { ws: WS | WS[] | ServerPushTargetPicker };
 type ServerPushOption = ServerPushTargetOption | undefined;
 
 /**
@@ -491,10 +488,15 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         };
 
         if (isClient) return exec(this.clientWS.ws);
-        if (options && "ws" in options) return exec(options.ws);
-        if (options && "pick" in options) {
-          const clients = Array.from(this.serverWS.ws.keys());
-          const target = options.pick(clients);
+        if (options && "ws" in options) {
+          const target = options.ws;
+          if (typeof target === "function") {
+            const clients = Array.from(this.serverWS.ws.keys());
+            const picked = target(clients);
+            if (Array.isArray(picked)) return picked.forEach(exec);
+            if (picked) return exec(picked);
+            return;
+          }
           if (Array.isArray(target)) return target.forEach(exec);
           if (target) return exec(target);
           return;
@@ -591,9 +593,14 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           });
         };
         if (isClient) return exec(this.clientWS.ws);
-        if (options && "ws" in options) return exec(options.ws);
         const clients = Array.from(this.serverWS.ws.keys());
-        if (options && "pick" in options) return exec(options.pick(clients));
+        if (options && "ws" in options) {
+          const target = options.ws;
+          if (typeof target === "function") {
+            return exec(target(clients));
+          }
+          return exec(target);
+        }
         return clients.map(exec);
       };
 
