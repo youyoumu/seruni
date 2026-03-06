@@ -188,17 +188,15 @@ type SocketErrorHandlerContext = {
     route: string;
     headers: Readonly<SocketHeaders>;
   }>;
-  res: Readonly<{
+  res: {
     method: "ERR";
     route: string;
     header: SocketHeaders;
-  }>;
+    body?: unknown;
+  };
   error: unknown;
 };
-type SocketErrorHandlerResult = { error: unknown; headers?: SocketHeaders } | void;
-type SocketErrorHandler = (
-  ctx: SocketErrorHandlerContext,
-) => SocketErrorHandlerResult | Promise<SocketErrorHandlerResult>;
+type SocketErrorHandler<T = unknown> = (ctx: SocketErrorHandlerContext) => T | Promise<T>;
 
 function defineSocketSchema<T extends SocketSchemas>(schema: T) {
   return schema;
@@ -465,20 +463,19 @@ class SocketCore<const Schema extends SocketSchemas> {
           let failure: SocketFailure;
           if (isExpected) failure = error;
           else if (this.#onError) {
+            const errCtx: SocketErrorHandlerContext = {
+              error,
+              req: c.req,
+              res: {
+                method: "ERR",
+                route: c.res.route,
+                header: c.res.header,
+              },
+            };
             try {
-              const handled = await this.#onError({
-                error,
-                req: c.req,
-                res: Object.freeze({
-                  method: "ERR" as const,
-                  route: c.res.route,
-                  header: c.res.header,
-                }),
-              });
-              failure =
-                handled && "error" in handled
-                  ? new SocketFailure(handled.error, handled.headers)
-                  : new SocketFailure("InternalError");
+              const errBody = await this.#onError(errCtx);
+              const body = errBody !== undefined ? errBody : errCtx.res.body;
+              failure = new SocketFailure(body, errCtx.res.header);
             } catch {
               failure = new SocketFailure("InternalError");
             }
@@ -796,7 +793,6 @@ export {
   type SocketSchemas,
   type SocketErrorHandler,
   type SocketErrorHandlerContext,
-  type SocketErrorHandlerResult,
   defineSocketSchema,
   ClientSocket,
   ServerSocket,
