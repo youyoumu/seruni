@@ -7,9 +7,9 @@
     "./types": "./dist/types/index.mjs",
     "./util": "./dist/util/index.mjs",
     "./ws": "./dist/ws/index.mjs",
-    "./sock.et": "./dist/sock.et/index.mjs",
-    "./sock.et/client": "./dist/sock.et/client.mjs",
-    "./sock.et/server": "./dist/sock.et/server.mjs"
+    "./krissan": "./dist/krissan/index.mjs",
+    "./krissan/client": "./dist/krissan/client.mjs",
+    "./krissan/server": "./dist/krissan/server.mjs"
   },
   "scripts": {
     "dev": "tsdown --watch",

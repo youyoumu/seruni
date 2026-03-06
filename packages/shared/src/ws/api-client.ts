@@ -1,8 +1,8 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { zConfig } from "#/schema";
-import { ClientSocket } from "#/sock.et/client";
-import { ServerSocket } from "#/sock.et/server";
-import { defineSocketSchema } from "#/sock.et/client";
+import { ClientSocket } from "#/krissan/client";
+import { ServerSocket } from "#/krissan/server";
+import { defineSocketSchema } from "#/krissan/client";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";

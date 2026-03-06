@@ -170,7 +170,7 @@ const DEFAULT_TIMEOUT = 300000;
 const undefinedSchema: StandardValidator = {
   "~standard": {
     version: 1,
-    vendor: "sock.et",
+    vendor: "krissan",
     async validate(data: unknown) {
       if (data === undefined) return { value: undefined } as const;
       return { issues: [{ message: "Invalid input: expected undefined" }] } as const;
@@ -180,7 +180,7 @@ const undefinedSchema: StandardValidator = {
 const neverSchema: StandardValidator = {
   "~standard": {
     version: 1,
-    vendor: "sock.et",
+    vendor: "krissan",
     async validate(_data: unknown) {
       return { issues: [{ message: "Invalid input: expected never" }] } as const;
     },
@@ -259,7 +259,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     this.clientTimeout = options?.clientTimeout ?? DEFAULT_TIMEOUT;
     this.serverTimeout = options?.serverTimeout ?? DEFAULT_TIMEOUT;
     this.#protocolId = options?.protocolId ?? DEFAULT_PROTOCOL_ID;
-    this.#prefix = `sock.et:${this.#protocolId}:`;
+    this.#prefix = `krissan:${this.#protocolId}:`;
   }
 
   #sanitizeCookie(cookie: unknown): Record<string, string> | undefined {
