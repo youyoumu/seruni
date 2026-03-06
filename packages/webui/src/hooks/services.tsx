@@ -68,17 +68,17 @@ export class Services {
 
     this.api.onPush["session/active/set"]((c) => {
       const data = c.push.body;
-      queryClient.setQueryData(this.keyring.sessions.active.queryKey, data);
+      queryClient.setQueryData(this.keyring.session.active.queryKey, data);
     });
 
     this.api.onPush["text-hooker/listening/set"]((c) => {
       const data = c.push.body;
-      queryClient.setQueryData(this.keyring.isListeningTextHooker.isListening.queryKey, data);
+      queryClient.setQueryData(this.keyring.textHooker.listening.queryKey, data);
     });
 
     this.api.onPush["text-hooker/auto-resume/set"]((c) => {
       const data = c.push.body;
-      queryClient.setQueryData(this.keyring.isTextHookerAutoResume.isAutoResume.queryKey, data);
+      queryClient.setQueryData(this.keyring.textHooker.autoResume.queryKey, data);
     });
 
     this.api.onPush["text-history/create"]((c) => {
@@ -99,12 +99,12 @@ export class Services {
 
     this.api.onPush["text-hooker/connected/set"]((c) => {
       const data = c.push.body;
-      queryClient.setQueryData(this.keyring.client.textHookerConnected.queryKey, data);
+      queryClient.setQueryData(this.keyring.textHooker.connected.queryKey, data);
     });
 
     this.api.onPush["obs/connected/set"]((c) => {
       const data = c.push.body;
-      queryClient.setQueryData(this.keyring.client.obsConnected.queryKey, data);
+      queryClient.setQueryData(this.keyring.obs.connected.queryKey, data);
     });
 
     const refreshAfkTimerT = throttle(() => this.api.push["timer/afk/refresh"](), 5000);

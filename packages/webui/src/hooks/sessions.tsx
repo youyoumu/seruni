@@ -6,17 +6,17 @@ import { useServices } from "./services";
 
 export function useSessions$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.sessions.all);
+  return useSuspenseQuery(keyring.session.list);
 }
 
 export function useActiveSession$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.sessions.active);
+  return useSuspenseQuery(keyring.session.active);
 }
 
 export function useSession$(sessionId: number) {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.sessions.byId(sessionId));
+  return useSuspenseQuery(keyring.session.get(sessionId));
 }
 
 export function useSetActiveSession() {
@@ -38,7 +38,7 @@ export function useCreateNewSession() {
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
-        queryKey: keyring.sessions.all.queryKey,
+        queryKey: keyring.session.list.queryKey,
       });
       await navigate({
         to: "/text-hooker/$sessionId",
@@ -64,7 +64,7 @@ export function useDeleteSession() {
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
-        queryKey: keyring.sessions.all.queryKey,
+        queryKey: keyring.session.list.queryKey,
       });
       if (typeof active === "object" && Number(active.sessionId) === data?.id) {
         await navigate({
@@ -85,7 +85,7 @@ export function useUpdateSessionDuration() {
     onSuccess: async (data) => {
       if (data) {
         await queryClient.invalidateQueries({
-          queryKey: keyring.sessions.byId(data.id).queryKey,
+          queryKey: keyring.session.get(data.id).queryKey,
         });
       }
     },
@@ -94,7 +94,7 @@ export function useUpdateSessionDuration() {
 
 export function useIsListeningTextHooker$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.isListeningTextHooker.isListening);
+  return useSuspenseQuery(keyring.textHooker.listening);
 }
 
 export function useSetIsListeningTextHooker() {
@@ -108,7 +108,7 @@ export function useSetIsListeningTextHooker() {
 
 export function useIsTextHookerAutoResume$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.isTextHookerAutoResume.isAutoResume);
+  return useSuspenseQuery(keyring.textHooker.autoResume);
 }
 
 export function useSetIsTextHookerAutoResume() {

@@ -1,6 +1,6 @@
+import { R } from "@praha/byethrow";
 import type { TextHistory } from "@repo/shared/db";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { R } from "@praha/byethrow";
 import { useEffect } from "react";
 
 import { useServices } from "./services";
@@ -41,8 +41,8 @@ export function useCompletedTextHistory$() {
 }
 
 export function useIsTextHistoryCompleted$(textHistory: TextHistory) {
-  const completedTextHistory = useCompletedTextHistory$();
-  if (completedTextHistory.data[textHistory.id]) return true;
+  const { data } = useCompletedTextHistory$();
+  if (data[textHistory.id]) return true;
   return false;
 }
 

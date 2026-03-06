@@ -6,7 +6,7 @@ import { useServices } from "./services";
 
 export function useConfig$() {
   const { keyring } = useServices();
-  return useSuspenseQuery(keyring.config.detail);
+  return useSuspenseQuery(keyring.config.get);
 }
 
 export function useSetConfig() {
@@ -19,7 +19,7 @@ export function useSetConfig() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: keyring.config.detail.queryKey,
+        queryKey: keyring.config.get.queryKey,
       });
     },
   });
