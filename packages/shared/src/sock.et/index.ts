@@ -363,8 +363,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         const data = args[0];
         const cid = this.#uid();
         const t = args[1]?.timeout ?? timeout;
-        const exec = (ws: WS): Promise<SocketResponse<unknown>> =>
-          new Promise((resolve, reject) => {
+        const exec = (ws?: WS): Promise<SocketResponse<unknown>> => {
+          return new Promise((resolve, reject) => {
+            if (!ws) return reject(new SocketError(SocketError.ConnectionClosed));
             let timer: ReturnType<typeof setTimeout>;
             const clean = () => {
               clearTimeout(timer);
@@ -403,8 +404,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
               reject(new SocketError(SocketError.ConnectionClosed));
             }
           });
+        };
         if (isClient) {
-          if (!this.clientWS.ws) throw Error("Missing ws");
           return exec(this.clientWS.ws);
         } else {
           return Array.from(this.serverWS.ws.keys()).map(exec);
@@ -545,7 +546,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
   }
 
   createOnMessage(isClient: boolean) {
-    return async (e: MessageEvent, ws_?: WS) => {
+    return async (e: MessageEvent, ws: WS) => {
       try {
         if (typeof e.data !== "string" || !e.data.startsWith(this.#prefix)) return;
         const p = JSON.parse(e.data.slice(this.#prefix.length)) as SocketPacket;
@@ -563,13 +564,11 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         if (setCookie) headers["set-cookie"] = setCookie;
         else delete headers["set-cookie"];
         if ((method === "REQ" || method === "RES" || method === "ERR") && !headers.cid) return;
-        const ws = isClient ? this.clientWS.ws : ws_;
-        if (!ws) throw Error("Missing ws");
         const context: SocketContext = { ws };
         const body = { value };
 
-        if (!isClient && ws_) {
-          const clientData = this.serverWS.ws.get(ws_);
+        if (!isClient) {
+          const clientData = this.serverWS.ws.get(ws);
           if (clientData) {
             clientData.meta.messageCount++;
             clientData.meta.lastMessageAt = Date.now();
@@ -790,7 +789,7 @@ class ClientSocket<T extends SocketSchemas> {
   get api() {
     return this.#socket.api;
   }
-  onMessage = (e: MessageEvent) => this.#socket.onMessage(e);
+  onMessage = (e: MessageEvent, ws: WS) => this.#socket.onMessage(e, ws);
   onOpen = (ws: WS) => this.#socket.onOpen(ws);
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }
@@ -811,7 +810,7 @@ class ServerSocket<T extends SocketSchemas, ClientState extends object = {}> {
   get api() {
     return this.#socket.api;
   }
-  onMessage = (e: MessageEvent, ws?: WS) => this.#socket.onMessage(e, ws);
+  onMessage = (e: MessageEvent, ws: WS) => this.#socket.onMessage(e, ws);
   onOpen = (ws: WS) => this.#socket.onOpen(ws);
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }

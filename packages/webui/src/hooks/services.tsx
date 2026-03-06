@@ -59,7 +59,7 @@ export class Services {
     });
 
     ws.addListener("message", (event) => {
-      void onMessage(event);
+      void onMessage(event, ws);
     });
 
     this.api.onRequest["user-agent/get"](() => {
