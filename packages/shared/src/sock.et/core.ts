@@ -129,7 +129,13 @@ interface SocketSchemas {
   serverRequests: Record<string, ReqSchemaTuple>;
 }
 
+type ServerTargetPicker = (clients: WS[]) => WS | undefined;
+
 type RequestOption = { timeout?: number } | undefined;
+type ServerRequestTargetOption =
+  | ({ timeout?: number } & { ws: WS; pick?: undefined })
+  | ({ timeout?: number } & { pick: ServerTargetPicker; ws?: undefined });
+type ServerRequestOption = RequestOption | ServerRequestTargetOption;
 type SocketErrorHandlerContext = {
   req: Readonly<{
     method: "REQ";
@@ -336,19 +342,20 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return api;
   }
 
-  createReqLane(
+  createReqLane<IsClient extends boolean>(
     events: string[],
     reqET: ET,
     resET: ET,
     errET: ET,
     timeout: number,
-    isClient: boolean,
+    isClient: IsClient,
   ) {
+    type LaneRequestOption = IsClient extends true ? RequestOption : ServerRequestOption;
+    type RequestReturn = IsClient extends true
+      ? Promise<SocketResponse<unknown>>
+      : Promise<SocketResponse<unknown>> | Promise<SocketResponse<unknown>>[];
     const api: {
-      request: Record<
-        string,
-        (...args: Arg<unknown, RequestOption>) => Promise<unknown> | Promise<unknown>[]
-      >;
+      request: Record<string, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>;
       handle: Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
       use: (
         matcher: SocketRequestMatcher,
@@ -370,7 +377,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       api.request[route] = (...args) => {
         const data = args[0];
         const cid = this.#uid();
-        const t = args[1]?.timeout ?? timeout;
+        const options = args[1];
+        const t = options?.timeout ?? timeout;
         const exec = (ws?: WS): Promise<SocketResponse<unknown>> => {
           return new Promise((resolve, reject) => {
             if (!ws) return reject(new SocketError(SocketError.ConnectionClosed));
@@ -413,11 +421,17 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             }
           });
         };
-        if (isClient) {
-          return exec(this.clientWS.ws);
-        } else {
-          return Array.from(this.serverWS.ws.keys()).map(exec);
+        if (isClient) return exec(this.clientWS.ws) as RequestReturn;
+        const serverOptions = options as ServerRequestOption | undefined;
+        if (serverOptions && "ws" in serverOptions && serverOptions.ws) {
+          return exec(serverOptions.ws) as RequestReturn;
         }
+        const clients = Array.from(this.serverWS.ws.keys());
+        if (serverOptions && "pick" in serverOptions && serverOptions.pick) {
+          const picked = serverOptions.pick(clients);
+          if (picked) return exec(picked) as RequestReturn;
+        }
+        return clients.map(exec) as RequestReturn;
       };
 
       reqET.on(route, async (e) => {
@@ -672,6 +686,8 @@ export {
   type SocketErrorHandler,
   type SocketErrorHandlerContext,
   type RequestOption,
+  type ServerRequestOption,
+  type ServerRequestTargetOption,
   type SocketConstructOption,
   type PushSchemas,
   type ReqSchemas,

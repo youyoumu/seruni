@@ -4,6 +4,7 @@ import {
   type PushSchemas,
   type ReqSchemas,
   type RequestOption,
+  type ServerRequestTargetOption,
   type SocketClientMeta,
   type SocketConstructOption,
   type SocketReqMiddleware,
@@ -59,12 +60,15 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
   );
   const serverOnMessage = core.createOnMessage(false);
 
+  type ServerRequestFn<Req, Res, Err> = {
+    (...args: Arg<Req, ServerRequestTargetOption>): Promise<SocketResponse<Res, Err>>;
+    (...args: Arg<Req, RequestOption>): Promise<SocketResponse<Res, Err>>[];
+  };
+
   type ServerApi = {
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
     request: {
-      [K in keyof SReq]: (
-        ...data: Arg<SReq[K]["req"], RequestOption>
-      ) => Promise<SocketResponse<SReq[K]["res"], SReq[K]["err"]>>[];
+      [K in keyof SReq]: ServerRequestFn<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>;
     };
     onPush: {
       [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void;
