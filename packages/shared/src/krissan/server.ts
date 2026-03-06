@@ -64,19 +64,42 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     (...args: Arg<Req, RequestOption>): Promise<SocketResponse<Res, Err>>[];
   };
 
+  /**
+   * API for interacting with the server socket.
+   */
   type ServerApi = {
+    //TODO: specific client
+    //
+    /**
+     * Push a message to all connected clients or a specific set of clients.
+     */
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
+    /**
+     * Send a request to clients and wait for responses.
+     */
     request: { [K in keyof SReq]: ServerRequestFn<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]> };
+    /**
+     * Handle push messages from clients.
+     */
     onPush: { [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void };
+    /**
+     * Handle requests from clients.
+     */
     onRequest: {
       [K in keyof CReq]: (
         handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
       ) => () => void;
     };
+    /**
+     * Register a middleware for client requests that matches a pattern.
+     */
     useRequest: (
       matcher: SocketRequestMatcher<keyof CReq & string>,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => () => void;
+    /**
+     * Map of connected clients and their state.
+     */
     clients: Map<WS, { meta: SocketClientMeta } & ClientState>;
   };
 
@@ -101,19 +124,39 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
   };
 }
 
+/**
+ * A server-side socket implementation using Krissan protocol.
+ */
 class ServerSocket<T extends SocketSchemas, ClientState extends object = {}> {
   #socket: ReturnType<typeof createServerRuntime<T, ClientState>>;
 
+  /**
+   * Creates a new ServerSocket instance.
+   * @param schemas The socket schema definition.
+   * @param options Configuration options.
+   */
   constructor(schemas: T, options?: SocketConstructOption) {
     this.#socket = createServerRuntime<T, ClientState>(schemas, options);
   }
 
+  /**
+   * Access to the typed socket API.
+   */
   get api() {
     return this.#socket.api;
   }
 
+  /**
+   * Should be called when a message is received on a WebSocket.
+   */
   onMessage = (e: MessageEvent, ws: WS) => this.#socket.onMessage(e, ws);
+  /**
+   * Should be called when a WebSocket is opened.
+   */
   onOpen = (ws: WS) => this.#socket.onOpen(ws);
+  /**
+   * Should be called when a WebSocket is closed.
+   */
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 

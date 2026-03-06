@@ -9,11 +9,19 @@ type InferReqRes<T extends StandardSchema | undefined> = T extends StandardSchem
 type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : never;
+/**
+ * Tuple representing the schemas for a request-response pair: [request, response, error].
+ */
 type ReqSchemaTuple = [
   (StandardSchema | undefined)?,
   (StandardSchema | undefined)?,
   (StandardSchema | undefined)?,
 ];
+
+/**
+ * Utility type to infer function arguments from schema and options.
+ * Handles optional arguments correctly.
+ */
 type Arg<T1, T2 = undefined> = undefined extends T1
   ? undefined extends T2
     ? [arg1?: T1, arg2?: T2]
@@ -41,51 +49,86 @@ class SocketFailure {
     public readonly headers?: SocketHeaders,
   ) {}
 }
+/**
+ * Represents the response from a socket request.
+ * It can either be a Success with a value or a Failure with an error.
+ */
 type SocketResponse<T = unknown, E = unknown> = [E] extends [never]
   ? { type: "Success"; value: T }
   : { type: "Success"; value: T } | { type: "Failure"; error: E };
 
+/**
+ * Container for the payload value in a socket packet.
+ */
 interface SocketBody<T = unknown> {
   value?: T;
 }
 
 /**
  * Wire-level packet exchanged between client and server.
- * - `method`: packet intent
- * - `route`: schema key/route name
- * - `body`: validated payload container
- * - `headers`: protocol metadata (correlation/cookie/timestamp)
  */
 interface SocketPacket {
+  /** Packet intent: PUSH, REQ, RES, or ERR */
   method: "PUSH" | "REQ" | "RES" | "ERR";
+  /** Schema key or route name */
   route: string;
+  /** Validated payload container */
   body: SocketBody;
+  /** Protocol metadata (correlation ID, timestamp, cookies) */
   headers?: SocketHeaders;
 }
+
+/**
+ * Protocol metadata for socket packets.
+ */
 interface SocketHeaders {
+  /** Correlation ID for requests and responses */
   cid?: string;
+  /** Timestamp when the packet was created */
   timestamp?: number;
+  /** Cookies sent from client to server */
   cookie?: Record<string, string>;
+  /** Cookies to be set on the client */
   "set-cookie"?: Record<string, string>;
 }
+
+/**
+ * Context provided to request handlers.
+ */
 interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
+  /** The WebSocket instance that received the request */
   ws: WS;
+  /** The incoming request packet */
   req: Readonly<{
     method: "REQ";
     route: string;
     body: TBody;
     headers: Readonly<SocketHeaders>;
   }>;
+  /** The response being prepared */
   res: {
     method: "RES" | "ERR";
     route: string;
     header: SocketHeaders;
     body?: unknown;
   };
+  //TODO: remove headers
+  //
+  /**
+   * Immediately fails the request with the provided error.
+   * @param error The error to return to the requester.
+   * @param headers Optional headers to include in the error response.
+   */
   fail: (error: TErr, headers?: SocketHeaders) => never;
 }
+
+/**
+ * Context provided to push handlers.
+ */
 interface SocketPushHandlerContext<TBody = unknown> {
+  /** The WebSocket instance that received the push */
   ws: WS;
+  /** The incoming push packet */
   push: Readonly<{
     method: "PUSH";
     route: string;
@@ -93,24 +136,52 @@ interface SocketPushHandlerContext<TBody = unknown> {
     headers: Readonly<SocketHeaders>;
   }>;
 }
+
+/**
+ * Continues to the next middleware in the chain.
+ */
 type SocketNext = () => Promise<void>;
+
+/**
+ * Handler for push messages.
+ */
 type SocketPushHandler<TBody = unknown> = (
   c: SocketPushHandlerContext<TBody>,
 ) => void | Promise<void>;
+
+/**
+ * Middleware or handler for request messages.
+ * Return a value to set the response body, or use `c.res.body`.
+ */
 type SocketReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
   c: SocketReqHandlerContext<TReq, TErr>,
   next: SocketNext,
 ) => TRes | void | Promise<TRes | void>;
+
+/**
+ * Defines which routes a middleware should apply to.
+ */
 type SocketRequestMatcher<Route extends string> =
   | Route
   | Route[]
   | RegExp
   | ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
+
+/**
+ * Metadata tracked for each connected client.
+ */
 interface SocketClientMeta {
+  /** When the client connected */
   readonly connectedAt: number;
+  /** Total number of messages received from this client */
   messageCount: number;
+  /** Timestamp of the last message received from this client */
   lastMessageAt: number | null;
 }
+
+/**
+ * Minimal WebSocket interface required by the library.
+ */
 interface WS {
   send: (data: string) => void;
   readyState: WebSocket["readyState"];
@@ -122,40 +193,75 @@ type PushSchemas<T extends Record<string, StandardSchema>> = {
 type ReqSchemas<T extends Record<string, ReqSchemaTuple>> = {
   [K in keyof T]: { req: InferReqRes<T[K][0]>; res: InferReqRes<T[K][1]>; err: InferErr<T[K][2]> };
 };
+
+/**
+ * Schema definition for the socket communication.
+ */
 interface SocketSchemas {
+  /** Pushes initiated by the client */
   clientPushes: Record<string, StandardSchema>;
+  /** Pushes initiated by the server */
   serverPushes: Record<string, StandardSchema>;
+  /** Requests initiated by the client */
   clientRequests: Record<string, ReqSchemaTuple>;
+  /** Requests initiated by the server */
   serverRequests: Record<string, ReqSchemaTuple>;
 }
 
 type ServerTargetPicker = (clients: WS[]) => WS | undefined;
 
+/**
+ * Options for a single request.
+ */
 type RequestOption = { timeout?: number } | undefined;
+
+/**
+ * Options for a server-to-client request, allowing targeting specific clients.
+ */
 type ServerRequestTargetOption =
   | ({ timeout?: number } & { ws: WS; pick?: undefined })
   | ({ timeout?: number } & { pick: ServerTargetPicker; ws?: undefined });
+
 type ServerRequestOption = RequestOption | ServerRequestTargetOption;
+
+/**
+ * Context provided to global error handlers.
+ */
 type SocketErrorHandlerContext = {
+  /** The request that caused the error */
   req: Readonly<{
     method: "REQ";
     route: string;
     headers: Readonly<SocketHeaders>;
   }>;
+  /** The error response being prepared */
   res: {
     method: "ERR";
     route: string;
     header: SocketHeaders;
     body?: unknown;
   };
+  /** The original error that occurred */
   error: unknown;
 };
+
+/**
+ * Global error handler for unhandled exceptions in request processing.
+ */
 type SocketErrorHandler<T = unknown> = (ctx: SocketErrorHandlerContext) => T | Promise<T>;
+
+/**
+ * Options for constructing a socket.
+ */
 type SocketConstructOption =
   | {
+      /** Default timeout for requests in milliseconds */
       timeout?: number;
+      /** Function to generate unique IDs for requests */
       uid?: () => string;
+      /** Global error handler */
       onError?: SocketErrorHandler;
+      /** Protocol version ID to prevent cross-talk between different applications */
       protocolId?: number;
     }
   | undefined;
