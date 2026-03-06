@@ -402,11 +402,57 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return headers;
   }
 
+  #toPredicate(
+    matcher: SocketRequestMatcher<string>,
+  ): (c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean> {
+    if (typeof matcher === "string") return (c) => c.req.route === matcher;
+    if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
+    if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
+    return matcher;
+  }
+
   #send(payload: SocketPacket, ws?: WS) {
     const data = `${this.#prefix}${JSON.stringify(payload)}`;
     if (ws) ws.send(data);
     else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
     else this.serverWS.ws.forEach((_, s) => s.readyState === 1 && s.send(data));
+  }
+
+  createRequestContext(
+    route: string,
+    e: { body: SocketBody; headers: SocketHeaders; context: SocketContext; issues?: unknown },
+  ) {
+    const res: SocketReqHandlerContext<unknown>["res"] = {
+      method: "RES",
+      route,
+      header: {},
+    };
+    Object.defineProperty(res, "method", {
+      value: "RES",
+      writable: false,
+      enumerable: true,
+      configurable: false,
+    });
+    Object.defineProperty(res, "route", {
+      value: route,
+      writable: false,
+      enumerable: true,
+      configurable: false,
+    });
+    const c: SocketReqHandlerContext<unknown> = {
+      ws: e.context.ws,
+      req: Object.freeze({
+        method: "REQ" as const,
+        route,
+        body: e.body.value,
+        headers: Object.freeze({ ...e.headers }),
+      }),
+      res,
+      fail: (error: unknown): never => {
+        throw new SocketFailure(error);
+      },
+    };
+    return c;
   }
 
   createPushLane(events: string[], reverseET: ET, isClient: boolean) {
@@ -465,14 +511,6 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       use: () => () => undefined,
     };
     const middlewareMap: Partial<Record<string, SocketReqMiddleware<unknown, unknown>[]>> = {};
-    const toPredicate = (
-      matcher: SocketRequestMatcher<string>,
-    ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
-      if (typeof matcher === "string") return (c) => c.req.route === matcher;
-      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
-      if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
-      return matcher;
-    };
 
     events.forEach((route) => {
       middlewareMap[route] = [];
@@ -543,39 +581,10 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           );
           return;
         }
-        const fail = (error: unknown): never => {
-          throw new SocketFailure(error);
-        };
-        const res: SocketReqHandlerContext<unknown>["res"] = {
-          method: "RES",
-          route,
-          header: {},
-        };
-        Object.defineProperty(res, "method", {
-          value: "RES",
-          writable: false,
-          enumerable: true,
-          configurable: false,
-        });
-        Object.defineProperty(res, "route", {
-          value: route,
-          writable: false,
-          enumerable: true,
-          configurable: false,
-        });
-        const c: SocketReqHandlerContext<unknown> = {
-          ws: e.context.ws,
-          req: Object.freeze({
-            method: "REQ" as const,
-            route,
-            body: e.body.value,
-            headers: Object.freeze({ ...e.headers }),
-          }),
-          res,
-          fail,
-        };
         const middlewares = middlewareMap[route] ?? [];
         if (middlewares.length === 0) return;
+
+        const c = this.createRequestContext(route, e);
         try {
           let i = -1;
           const dispatch = async (idx: number): Promise<void> => {
@@ -601,11 +610,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             const errCtx: SocketErrorHandlerContext = {
               error,
               req: c.req,
-              res: {
-                method: "ERR",
-                route: c.res.route,
-                header: c.res.header,
-              },
+              res: { method: "ERR", route: c.res.route, header: c.res.header },
             };
             try {
               const errBody = await this.#onError(errCtx);
@@ -650,7 +655,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       matcher: SocketRequestMatcher<string>,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => {
-      const predicate = toPredicate(matcher);
+      const predicate = this.#toPredicate(matcher);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
