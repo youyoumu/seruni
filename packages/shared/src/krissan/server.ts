@@ -1,9 +1,8 @@
-import { SocketCore } from "./core";
+import { SocketCore, type RequestOption } from "./core";
 import {
   type Arg,
   type PushSchemas,
   type ReqSchemas,
-  type RequestOption,
   type ServerRequestTargetOption,
   type SocketClientMeta,
   type SocketConstructOption,
@@ -24,6 +23,8 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
   type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
+  type ClientRoutes = Extract<keyof CReq, string>;
+  type ServerRoutes = Extract<keyof SReq, string>;
 
   const core = new SocketCore<Schema, ClientState>(schemas, {
     serverTimeout: options?.timeout,
@@ -32,6 +33,8 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     protocolId: options?.protocolId,
   });
 
+  const clientRequestRoutes = Object.keys(schemas.clientRequests ?? {}) as ClientRoutes[];
+  const serverRequestRoutes = Object.keys(schemas.serverRequests ?? {}) as ServerRoutes[];
   const cPushApi = core.createPushLane(
     Object.keys(schemas.clientPushes ?? {}),
     core.ets.cPush,
@@ -43,7 +46,7 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     false,
   );
   const cReqApi = core.createReqLane(
-    Object.keys(schemas.clientRequests ?? {}),
+    clientRequestRoutes,
     core.ets.cReq,
     core.ets.sRes,
     core.ets.sErr,
@@ -51,7 +54,7 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     true,
   );
   const sReqApi = core.createReqLane(
-    Object.keys(schemas.serverRequests ?? {}),
+    serverRequestRoutes,
     core.ets.sReq,
     core.ets.cRes,
     core.ets.cErr,
@@ -68,18 +71,18 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
   type ServerApi = {
     push: { [K in keyof SPush]: (...data: Arg<SPush[K]["push"]>) => void };
     request: {
-      [K in keyof SReq]: ServerRequestFn<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>;
+      [K in ServerRoutes]: ServerRequestFn<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>;
     };
     onPush: {
       [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void;
     };
     onRequest: {
-      [K in keyof CReq]: (
+      [K in ClientRoutes]: (
         handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
       ) => () => void;
     };
     useRequest: (
-      matcher: SocketRequestMatcher,
+      matcher: SocketRequestMatcher<ClientRoutes>,
       handler: SocketReqMiddleware<unknown, unknown>,
     ) => () => void;
     clients: Map<WS, { meta: SocketClientMeta } & ClientState>;

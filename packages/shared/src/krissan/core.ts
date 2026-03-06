@@ -101,9 +101,9 @@ type SocketReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
   c: SocketReqHandlerContext<TReq, TErr>,
   next: SocketNext,
 ) => TRes | void | Promise<TRes | void>;
-type SocketRequestMatcher =
-  | string
-  | string[]
+type SocketRequestMatcher<Route extends string> =
+  | Route
+  | Route[]
   | RegExp
   | ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
 interface SocketClientMeta {
@@ -342,8 +342,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return api;
   }
 
-  createReqLane<IsClient extends boolean>(
-    events: string[],
+  createReqLane<IsClient extends boolean, Route extends string>(
+    events: readonly Route[],
     reqET: ET,
     resET: ET,
     errET: ET,
@@ -355,19 +355,26 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       ? Promise<SocketResponse<unknown>>
       : Promise<SocketResponse<unknown>> | Promise<SocketResponse<unknown>>[];
     const api: {
-      request: Record<string, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>;
-      handle: Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
+      request: Record<Route, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>;
+      handle: Record<Route, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>;
       use: (
-        matcher: SocketRequestMatcher,
+        matcher: SocketRequestMatcher<Route>,
         handler: SocketReqMiddleware<unknown, unknown>,
       ) => () => void;
-    } = { request: {}, handle: {}, use: () => () => undefined };
-    const middlewareMap: Record<string, SocketReqMiddleware<unknown, unknown>[]> = {};
+    } = {
+      request: {} as Record<Route, (...args: Arg<unknown, LaneRequestOption>) => RequestReturn>,
+      handle: {} as Record<Route, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>,
+      use: () => () => undefined,
+    };
+    const middlewareMap: Record<Route, SocketReqMiddleware<unknown, unknown>[]> = {} as Record<
+      Route,
+      SocketReqMiddleware<unknown, unknown>[]
+    >;
     const toPredicate = (
-      matcher: SocketRequestMatcher,
+      matcher: SocketRequestMatcher<Route>,
     ): ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>) => {
       if (typeof matcher === "string") return (c) => c.req.route === matcher;
-      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
+      if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route as Route);
       if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
       return matcher;
     };
@@ -551,7 +558,10 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       };
     });
 
-    api.use = (matcher: SocketRequestMatcher, handler: SocketReqMiddleware<unknown, unknown>) => {
+    api.use = (
+      matcher: SocketRequestMatcher<Route>,
+      handler: SocketReqMiddleware<unknown, unknown>,
+    ) => {
       const predicate = toPredicate(matcher);
       const offs = events.map((route) => {
         const register = api.handle[route];
