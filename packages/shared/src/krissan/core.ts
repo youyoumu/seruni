@@ -281,39 +281,27 @@ function defineKrissanSchema<T extends KrissanSchemas>(schema: T) {
   return schema;
 }
 
+const def = Object.defineProperty;
+const frz = Object.freeze;
+const createValidator = (v: StandardValidator["~standard"]["validate"]): StandardValidator => ({
+  "~standard": { version: 1, vendor: "krissan", validate: v },
+});
+
 const noop = () => {};
 const uid = () => Math.random().toString(36).slice(2);
 const DEFAULT_PROTOCOL_ID = 16777619;
 const DEFAULT_TIMEOUT = 300000;
-const undefinedSchema: StandardValidator = {
-  "~standard": {
-    version: 1,
-    vendor: "krissan",
-    async validate(data: unknown) {
-      if (data === undefined) return { value: undefined } as const;
-      return { issues: [{ message: "Invalid input: expected undefined" }] } as const;
-    },
-  },
-};
-const nullSchema: StandardValidator = {
-  "~standard": {
-    version: 1,
-    vendor: "krissan",
-    async validate(data: unknown) {
-      if (data === null) return { value: null } as const;
-      return { issues: [{ message: "Invalid input: expected null" }] } as const;
-    },
-  },
-};
-const neverSchema: StandardValidator = {
-  "~standard": {
-    version: 1,
-    vendor: "krissan",
-    async validate(_data: unknown) {
-      return { issues: [{ message: "Invalid input: expected never" }] } as const;
-    },
-  },
-};
+const undefinedSchema = createValidator(async (data: unknown) => {
+  if (data === undefined) return { value: undefined } as const;
+  return { issues: [{ message: "Invalid input: expected undefined" }] } as const;
+});
+const nullSchema = createValidator(async (data: unknown) => {
+  if (data === null) return { value: null } as const;
+  return { issues: [{ message: "Invalid input: expected null" }] } as const;
+});
+const neverSchema = createValidator(async (_data: unknown) => {
+  return { issues: [{ message: "Invalid input: expected never" }] } as const;
+});
 
 interface KrissanContext {
   ws: WS;
@@ -407,6 +395,29 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     return { success: true as const, value: res.value };
   }
 
+  protected async emit(
+    et: ET,
+    schema: StandardSchema,
+    body: unknown,
+    route: string,
+    method: KrissanPacket["method"],
+    headers: KrissanHeaders,
+    context: KrissanContext,
+  ) {
+    const res = await this.validate(schema, body, route, method);
+    if (method === PUSH && !res.success) return;
+    const success = res.success;
+    et.dispatchEvent(
+      new KrissanEvent(
+        route,
+        success ? res.value : body,
+        headers,
+        context,
+        success ? undefined : res.error,
+      ),
+    );
+  }
+
   protected abstract createHeaders(cid?: string): KrissanHeaders;
 
   protected toPredicate<T extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
@@ -434,29 +445,19 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       route,
       headers: {},
     };
-    Object.defineProperty(res, "method", {
-      value: RES,
-      writable: false,
-      enumerable: true,
-      configurable: false,
-    });
-    Object.defineProperty(res, "route", {
-      value: route,
-      writable: false,
-      enumerable: true,
-      configurable: false,
-    });
+    def(res, "method", { value: RES, enumerable: true });
+    def(res, "route", { value: route, enumerable: true });
     const c: KrissanReqHandlerContext<unknown, unknown, State | undefined> = {
       ws,
       state,
       setState: (newState: Record<string, unknown>) => {
         if (state && typeof state === "object") Object.assign(state, newState);
       },
-      req: Object.freeze({
+      req: frz({
         method: REQ,
         route,
         body: e.body,
-        headers: Object.freeze({ ...e.headers }),
+        headers: frz({ ...e.headers }),
       }),
       res,
       fail: (error: unknown): never => {
@@ -478,11 +479,11 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       setState: (newState: Record<string, unknown>) => {
         if (state && typeof state === "object") Object.assign(state, newState);
       },
-      push: Object.freeze({
+      push: frz({
         method: PUSH,
         route,
         body: e.body,
-        headers: Object.freeze({ ...e.headers }),
+        headers: frz({ ...e.headers }),
       }),
     };
   }

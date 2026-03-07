@@ -1,6 +1,5 @@
 import {
   KrissanBase,
-  KrissanEvent,
   undefinedSchema,
   nullSchema,
   neverSchema,
@@ -54,8 +53,9 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
 
   async onMessage(e: MessageEvent, ws: WS) {
     try {
-      if (typeof e.data !== "string" || !e.data.startsWith(this.prefix)) return;
-      const p: KrissanPacket = JSON.parse(e.data.slice(this.prefix.length));
+      const pre = this.prefix;
+      if (typeof e.data !== "string" || !e.data.startsWith(pre)) return;
+      const p: KrissanPacket = JSON.parse(e.data.slice(pre.length));
 
       const setCookie = p.headers?.["set-cookie"];
       if (setCookie) {
@@ -66,35 +66,49 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
       const { method, route, body } = p;
       const headers: KrissanHeaders = p.headers ?? {};
       const context: KrissanContext = { ws };
+      const s = this.schemas;
+      const ets = this.ets;
 
       if (method === PUSH) {
-        const schema = this.schemas.serverPushes[route] ?? undefinedSchema;
-        const res = await this.validate(schema, body, route, PUSH);
-        if (res.success) {
-          const event = new KrissanEvent(route, res.value, headers, context);
-          this.ets.sPush.dispatchEvent(event);
-        }
+        await this.emit(
+          ets.sPush,
+          s.serverPushes[route] ?? undefinedSchema,
+          body,
+          route,
+          PUSH,
+          headers,
+          context,
+        );
       } else if (method === REQ) {
-        const schema = this.schemas.serverRequests[route]?.[0] ?? undefinedSchema;
-        const res = await this.validate(schema, body, route, REQ);
-        const eBody = res.success ? res.value : body;
-        const eErr = res.success ? undefined : res.error;
-        const event = new KrissanEvent(route, eBody, headers, context, eErr);
-        this.ets.sReq.dispatchEvent(event);
+        await this.emit(
+          ets.sReq,
+          s.serverRequests[route]?.[0] ?? undefinedSchema,
+          body,
+          route,
+          REQ,
+          headers,
+          context,
+        );
       } else if (method === RES) {
-        const schema = this.schemas.clientRequests[route]?.[1] ?? nullSchema;
-        const res = await this.validate(schema, body, route, RES);
-        const eBody = res.success ? res.value : body;
-        const eErr = res.success ? undefined : res.error;
-        const event = new KrissanEvent(route, eBody, headers, context, eErr);
-        this.ets.sRes.dispatchEvent(event);
+        await this.emit(
+          ets.sRes,
+          s.clientRequests[route]?.[1] ?? nullSchema,
+          body,
+          route,
+          RES,
+          headers,
+          context,
+        );
       } else if (method === ERR) {
-        const schema = this.schemas.clientRequests[route]?.[2] ?? neverSchema;
-        const res = await this.validate(schema, body, route, ERR);
-        const eBody = res.success ? res.value : body;
-        const eErr = res.success ? undefined : res.error;
-        const event = new KrissanEvent(route, eBody, headers, context, eErr);
-        this.ets.sErr.dispatchEvent(event);
+        await this.emit(
+          ets.sErr,
+          s.clientRequests[route]?.[2] ?? neverSchema,
+          body,
+          route,
+          ERR,
+          headers,
+          context,
+        );
       }
     } catch {}
   }
