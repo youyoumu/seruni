@@ -1,7 +1,7 @@
 import { zSession, zTextHistory } from "#/db/schema";
 import { KrissanClient } from "#/krissan/client";
 import { defineKrissanSchema } from "#/krissan/client";
-import { KrissanServer, type ServerPushOption } from "#/krissan/server";
+import { KrissanServer, type ServerPushTargetPicker } from "#/krissan/server";
 import { zConfig } from "#/schema";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
@@ -98,7 +98,7 @@ type ToastPromiseFn = <TData, TError>(
     loading: ToastPayloadFix;
     success: ToastPayloadFix | ((data: TData) => ToastPayloadFix);
     error: ToastPayloadFix | ((error: TError) => ToastPayloadFix);
-    target?: ServerPushOption;
+    target?: ServerPushTargetPicker;
   },
 ) => Promise<R.Result<TData, TError>>;
 

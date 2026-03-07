@@ -1,10 +1,9 @@
-import { KrissanCore, type RequestOption } from "./core";
+import { KrissanCore, type RequestOption, type ServerPushTargetPicker } from "./core";
 import {
   type Arg,
   type PushSchemas,
   type ReqSchemas,
-  type ServerRequestTargetOption,
-  type ServerPushOption,
+  type ServerRequestTargetPicker,
   type KrissanClientMeta,
   type KrissanConstructOption,
   type KrissanPushMatcher,
@@ -62,8 +61,10 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
   const serverOnMessage = core.createOnMessage(false);
 
   type ServerRequestFn<Req, Res, Err> = {
-    (...args: Arg<Req, ServerRequestTargetOption>): Promise<KrissanResponse<Res, Err>>;
-    (...args: Arg<Req, RequestOption & { ws: undefined }>): Promise<KrissanResponse<Res, Err>>[];
+    (
+      ...args: Arg<Req, RequestOption, NonNullable<ServerRequestTargetPicker>>
+    ): Promise<KrissanResponse<Res, Err>>;
+    (...args: Arg<Req, RequestOption>): Promise<KrissanResponse<Res, Err>>[];
   };
 
   /**
@@ -73,7 +74,7 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
     /**
      * Push a message to all connected clients or a specific set of clients.
      */
-    push: { [K in keyof SPush]: (...args: Arg<SPush[K]["push"], ServerPushOption>) => void };
+    push: { [K in keyof SPush]: (...args: Arg<SPush[K]["push"], ServerPushTargetPicker>) => void };
     /**
      * Send a request to clients and wait for responses.
      */

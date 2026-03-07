@@ -26,13 +26,21 @@ type ReqSchemaTuple = [
  * Utility type to infer function arguments from schema and options.
  * Handles optional arguments correctly.
  */
-type Arg<T1, T2 = undefined> = undefined extends T1
+type Arg<T1 = undefined, T2 = undefined, T3 = undefined> = undefined extends T1
   ? undefined extends T2
-    ? [arg1?: T1, arg2?: T2]
-    : [arg1: T1 | undefined, arg2: T2]
+    ? undefined extends T3
+      ? [arg1?: T1, arg2?: T2, arg3?: T3] // All optional
+      : [arg1: T1 | undefined, arg2: T2 | undefined, arg3: T3] // T3 required
+    : undefined extends T3
+      ? [arg1: T1 | undefined, arg2: T2, arg3?: T3] // T2 required
+      : [arg1: T1 | undefined, arg2: T2, arg3: T3] // T2 & T3 required
   : undefined extends T2
-    ? [arg1: T1, arg2?: T2]
-    : [arg1: T1, arg2: T2];
+    ? undefined extends T3
+      ? [arg1: T1, arg2?: T2, arg3?: T3] // Only T1 required
+      : [arg1: T1, arg2: T2 | undefined, arg3: T3] // T1 & T3 required
+    : undefined extends T3
+      ? [arg1: T1, arg2: T2, arg3?: T3] // T1 & T2 required
+      : [arg1: T1, arg2: T2, arg3: T3]; // All required
 
 type KrissanErr =
   | typeof KrissanError.ConnectionClosed
@@ -198,9 +206,6 @@ interface KrissanSchemas {
   serverRequests: Record<string, ReqSchemaTuple>;
 }
 
-type ServerRequestTargetPicker = (clients: WS[]) => WS | undefined;
-type ServerPushTargetPicker = (clients: WS[]) => WS | WS[] | undefined;
-
 /**
  * Options for a single request.
  */
@@ -209,14 +214,12 @@ type RequestOption = { timeout?: number } | undefined;
 /**
  * Options for a server-to-client request, allowing targeting specific clients.
  */
-type ServerRequestTargetOption = { timeout?: number; ws: WS | ServerRequestTargetPicker };
-type ServerRequestOption = RequestOption | ServerRequestTargetOption;
+type ServerRequestTargetPicker = undefined | WS | ((clients: WS[]) => WS | undefined);
 
 /**
  * Options for a server-to-client push, allowing targeting specific clients.
  */
-type ServerPushTargetOption = { ws: WS | WS[] | ServerPushTargetPicker };
-type ServerPushOption = ServerPushTargetOption | undefined;
+type ServerPushTargetPicker = undefined | WS | WS[] | ((clients: WS[]) => WS | WS[] | undefined);
 
 /**
  * Context provided to global error handlers.
@@ -479,7 +482,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     isClient: IsClient,
   ) {
     const api: {
-      push: Partial<Record<string, (...args: Arg<unknown, ServerPushOption>) => void>>;
+      push: Partial<Record<string, (...args: Arg<unknown, ServerPushTargetPicker>) => void>>;
       handle: Partial<
         Record<string, (handler: (c: KrissanPushHandlerContext) => void) => () => void>
       >;
@@ -491,7 +494,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     events.forEach((route) => {
       api.push[route] = (...args) => {
         const data = args[0];
-        const options = args[1];
+        const target = args[1];
 
         const exec = (ws?: WS) => {
           this.#send(
@@ -506,8 +509,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         };
 
         if (isClient) return exec(this.clientWS.ws);
-        if (options && "ws" in options) {
-          const target = options.ws;
+        if (target) {
           if (typeof target === "function") {
             const clients = Array.from(this.serverWS.ws.keys());
             const picked = target(clients);
@@ -563,7 +565,9 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     isClient: IsClient,
   ) {
     const api: {
-      request: Partial<Record<string, (...args: Arg<unknown, ServerRequestOption>) => unknown>>;
+      request: Partial<
+        Record<string, (...args: Arg<unknown, RequestOption, ServerRequestTargetPicker>) => unknown>
+      >;
       handle: Partial<Record<string, (handler: KrissanReqMiddleware) => () => void>>;
       use: (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => () => void;
     } = {
@@ -577,8 +581,9 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
       middlewareMap[route] = [];
       api.request[route] = (...args) => {
         const data = args[0];
-        const cid = this.#uid();
         const options = args[1];
+        const target = args[2];
+        const cid = this.#uid();
         const t = options?.timeout ?? timeout;
         const exec = (ws?: WS): Promise<KrissanResponse> => {
           return new Promise((resolve, reject) => {
@@ -624,11 +629,8 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         };
         if (isClient) return exec(this.clientWS.ws);
         const clients = Array.from(this.serverWS.ws.keys());
-        if (options && "ws" in options) {
-          const target = options.ws;
-          if (typeof target === "function") {
-            return exec(target(clients));
-          }
+        if (target) {
+          if (typeof target === "function") return exec(target(clients));
           return exec(target);
         }
         return clients.map(exec);
@@ -861,11 +863,7 @@ export {
   type KrissanErrorHandler,
   type KrissanErrorHandlerContext,
   type RequestOption,
-  type ServerRequestOption,
-  type ServerRequestTargetOption,
   type ServerRequestTargetPicker,
-  type ServerPushOption,
-  type ServerPushTargetOption,
   type ServerPushTargetPicker,
   type KrissanConstructOption,
   type PushSchemas,
