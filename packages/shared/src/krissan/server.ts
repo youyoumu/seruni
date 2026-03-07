@@ -5,6 +5,10 @@ import {
   nullSchema,
   neverSchema,
   KrissanError,
+  PUSH,
+  REQ,
+  RES,
+  ERR,
   type Arg,
   type PushSchemas,
   type ReqSchemas,
@@ -70,30 +74,30 @@ class KrissanServerCore<
       const headers: KrissanHeaders = p.headers ?? {};
       const context: KrissanContext = { ws };
 
-      if (method === "PUSH") {
+      if (method === PUSH) {
         const schema = this.schemas.clientPushes[route] ?? undefinedSchema;
-        const res = await this.validate(schema, body, route, "PUSH");
+        const res = await this.validate(schema, body, route, PUSH);
         if (res.success) {
           const event = new KrissanEvent(route, res.value, headers, context);
           this.ets.cPush.dispatchEvent(event);
         }
-      } else if (method === "REQ") {
+      } else if (method === REQ) {
         const schema = this.schemas.clientRequests[route]?.[0] ?? undefinedSchema;
-        const res = await this.validate(schema, body, route, "REQ");
+        const res = await this.validate(schema, body, route, REQ);
         const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
         this.ets.cReq.dispatchEvent(event);
-      } else if (method === "RES") {
+      } else if (method === RES) {
         const schema = this.schemas.serverRequests[route]?.[1] ?? nullSchema;
-        const res = await this.validate(schema, body, route, "RES");
+        const res = await this.validate(schema, body, route, RES);
         const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
         this.ets.cRes.dispatchEvent(event);
-      } else if (method === "ERR") {
+      } else if (method === ERR) {
         const schema = this.schemas.serverRequests[route]?.[2] ?? neverSchema;
-        const res = await this.validate(schema, body, route, "ERR");
+        const res = await this.validate(schema, body, route, ERR);
         const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
@@ -114,7 +118,7 @@ class KrissanServerCore<
       (route, data, target) => {
         const exec = (ws: WS) => {
           const headers = this.createHeaders();
-          const payload = { method: "PUSH" as const, route, body: data, headers };
+          const payload = { method: PUSH, route, body: data, headers };
           this.send(payload, ws);
         };
 
@@ -175,7 +179,7 @@ class KrissanServerCore<
             }, t);
 
             const headers = this.createHeaders(cid);
-            const payload = { method: "REQ" as const, route, body: data, headers };
+            const payload = { method: REQ, route, body: data, headers };
             this.send(payload, ws);
           });
         };

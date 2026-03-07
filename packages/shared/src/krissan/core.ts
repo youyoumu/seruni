@@ -14,6 +14,11 @@ type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : never;
 
+const PUSH = "PUSH" as const;
+const REQ = "REQ" as const;
+const RES = "RES" as const;
+const ERR = "ERR" as const;
+
 /**
  * Tuple representing the schemas for a request-response pair: [request, response, error].
  */
@@ -77,7 +82,7 @@ type KrissanBody<T = unknown> = T;
  * Wire-level packet exchanged between client and server.
  */
 interface KrissanPacket {
-  method: "PUSH" | "REQ" | "RES" | "ERR";
+  method: typeof PUSH | typeof REQ | typeof RES | typeof ERR;
   route: string;
   body: KrissanBody;
   headers?: KrissanHeaders;
@@ -99,13 +104,13 @@ interface KrissanHeaders {
 interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown, TState = unknown> {
   ws: WS;
   req: Readonly<{
-    method: "REQ";
+    method: typeof REQ;
     route: string;
     body: TBody;
     headers: Readonly<KrissanHeaders>;
   }>;
   res: {
-    method: "RES" | "ERR";
+    method: typeof RES | typeof ERR;
     route: string;
     headers: KrissanHeaders;
     body?: unknown;
@@ -121,7 +126,7 @@ interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown, TState = unk
 interface KrissanPushHandlerContext<TBody = unknown, TState = unknown> {
   ws: WS;
   push: Readonly<{
-    method: "PUSH";
+    method: typeof PUSH;
     route: string;
     body: TBody;
     headers: Readonly<KrissanHeaders>;
@@ -236,13 +241,13 @@ type ServerPushTargetPicker = undefined | WS | WS[] | ((clients: WS[]) => WS | W
 type KrissanErrorHandlerContext = {
   /** The request that caused the error */
   req: Readonly<{
-    method: "REQ";
+    method: typeof REQ;
     route: string;
     headers: Readonly<KrissanHeaders>;
   }>;
   /** The error response being prepared */
   res: {
-    method: "ERR";
+    method: typeof ERR;
     route: string;
     headers: KrissanHeaders;
     body?: unknown;
@@ -425,12 +430,12 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     const ws = e.context.ws;
     const state = this.getState(ws);
     const res: KrissanReqHandlerContext["res"] = {
-      method: "RES",
+      method: RES,
       route,
       headers: {},
     };
     Object.defineProperty(res, "method", {
-      value: "RES",
+      value: RES,
       writable: false,
       enumerable: true,
       configurable: false,
@@ -448,7 +453,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
         if (state && typeof state === "object") Object.assign(state, newState);
       },
       req: Object.freeze({
-        method: "REQ" as const,
+        method: REQ,
         route,
         body: e.body,
         headers: Object.freeze({ ...e.headers }),
@@ -474,7 +479,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
         if (state && typeof state === "object") Object.assign(state, newState);
       },
       push: Object.freeze({
-        method: "PUSH" as const,
+        method: PUSH,
         route,
         body: e.body,
         headers: Object.freeze({ ...e.headers }),
@@ -487,7 +492,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     req: KrissanReqHandlerContext["req"],
     headers: KrissanHeaders,
   ): KrissanErrorHandlerContext {
-    return { error, req, res: { method: "ERR", route: req.route, headers } };
+    return { error, req, res: { method: ERR, route: req.route, headers } };
   }
 
   protected createPushLane<TTarget = unknown>(
@@ -555,7 +560,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     } else failure = new KrissanFailure("InternalError");
     const schema = reqSchemas?.[route]?.[2] ?? neverSchema;
     if (isExpected) {
-      const validation = await this.validate(schema, failure.error, route, "ERR");
+      const validation = await this.validate(schema, failure.error, route, ERR);
       if (!validation.success) failure = new KrissanFailure("InternalError");
     }
     return failure;
@@ -595,7 +600,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       reqET.on(route, async (e) => {
         if (e.issues) {
           const headers = this.createHeaders(e.headers.cid);
-          const payload = { method: "ERR" as const, route, body: e.issues, headers };
+          const payload = { method: ERR, route, body: e.issues, headers };
           return this.send(payload, e.context.ws);
         }
 
@@ -622,7 +627,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
           const failure = await this.decideFailure(c, error, route, reqSchemas);
           const headers = { ...c.res.headers, ...this.createHeaders(e.headers.cid) };
           this.send(
-            { method: "ERR", route: c.res.route, body: failure.error, headers },
+            { method: ERR, route: c.res.route, body: failure.error, headers },
             e.context.ws,
           );
         }
@@ -661,6 +666,10 @@ export {
   type StandardValidator,
   type ReqSchemaTuple,
   type Arg,
+  PUSH,
+  REQ,
+  RES,
+  ERR,
   KrissanError,
   KrissanFailure,
   type KrissanResponse,
