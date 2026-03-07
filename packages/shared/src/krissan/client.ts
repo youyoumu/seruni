@@ -1,29 +1,29 @@
-import { SocketCore } from "./core";
+import { KrissanCore } from "./core";
 import {
   type Arg,
   type PushSchemas,
   type ReqSchemas,
   type RequestOption,
-  type SocketConstructOption,
-  type SocketReqMiddleware,
-  type SocketRequestMatcher,
-  type SocketResponse,
-  type SocketSchemas,
-  type SocketPushHandler,
+  type KrissanConstructOption,
+  type KrissanReqMiddleware,
+  type KrissanRequestMatcher,
+  type KrissanResponse,
+  type KrissanSchemas,
+  type KrissanPushHandler,
   type WS,
 } from "./core";
 export * from "./core";
 
-function createClientRuntime<const Schema extends SocketSchemas>(
+function createClientRuntime<const Schema extends KrissanSchemas>(
   schemas: Schema,
-  options?: SocketConstructOption,
+  options?: KrissanConstructOption,
 ) {
   type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
-  const core = new SocketCore<Schema>(schemas, {
+  const core = new KrissanCore<Schema>(schemas, {
     clientTimeout: options?.timeout,
     uid: options?.uid,
     onError: options?.onError,
@@ -72,26 +72,26 @@ function createClientRuntime<const Schema extends SocketSchemas>(
     request: {
       [K in keyof CReq]: (
         ...data: Arg<CReq[K]["req"], RequestOption>
-      ) => Promise<SocketResponse<CReq[K]["res"], CReq[K]["err"]>>;
+      ) => Promise<KrissanResponse<CReq[K]["res"], CReq[K]["err"]>>;
     };
     /**
      * Listen for push messages from the server.
      */
-    onPush: { [K in keyof SPush]: (handler: SocketPushHandler<SPush[K]["push"]>) => () => void };
+    onPush: { [K in keyof SPush]: (handler: KrissanPushHandler<SPush[K]["push"]>) => () => void };
     /**
      * Handle requests from the server.
      */
     onRequest: {
       [K in keyof SReq]: (
-        handler: SocketReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>,
+        handler: KrissanReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>,
       ) => () => void;
     };
     /**
      * Register a middleware for server requests that matches a pattern.
      */
     useRequest: (
-      matcher: SocketRequestMatcher<keyof CReq & string>,
-      handler: SocketReqMiddleware<unknown, unknown>,
+      matcher: KrissanRequestMatcher<keyof CReq & string>,
+      handler: KrissanReqMiddleware<unknown, unknown>,
     ) => () => void;
   };
 
@@ -116,15 +116,15 @@ function createClientRuntime<const Schema extends SocketSchemas>(
 /**
  * A client-side socket implementation using Krissan protocol.
  */
-class ClientSocket<T extends SocketSchemas> {
+class KrissanClient<T extends KrissanSchemas> {
   #socket: ReturnType<typeof createClientRuntime<T>>;
 
   /**
-   * Creates a new ClientSocket instance.
+   * Creates a new KrissanClient instance.
    * @param schemas The socket schema definition.
    * @param options Configuration options.
    */
-  constructor(schemas: T, options?: SocketConstructOption) {
+  constructor(schemas: T, options?: KrissanConstructOption) {
     this.#socket = createClientRuntime(schemas, options);
   }
 
@@ -149,4 +149,4 @@ class ClientSocket<T extends SocketSchemas> {
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 
-export { ClientSocket };
+export { KrissanClient };

@@ -1,7 +1,7 @@
 import { zSession, zTextHistory } from "#/db/schema";
-import { ClientSocket } from "#/krissan/client";
-import { defineSocketSchema } from "#/krissan/client";
-import { ServerSocket, type ServerPushOption } from "#/krissan/server";
+import { KrissanClient } from "#/krissan/client";
+import { defineKrissanSchema } from "#/krissan/client";
+import { KrissanServer, type ServerPushOption } from "#/krissan/server";
 import { zConfig } from "#/schema";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
@@ -36,7 +36,7 @@ export type ToastPromiseConfig = z.infer<typeof zToastPromiseConfig>;
 export type ToastPromiseResolvePayload = ToastPromiseConfig;
 export type ToastPromiseRejectPayload = ToastPromiseConfig;
 
-const schema = defineSocketSchema({
+const schema = defineKrissanSchema({
   clientPushes: {
     "system/ping": z.undefined(),
     "action/dispatch": z.string(),
@@ -85,7 +85,7 @@ const schema = defineSocketSchema({
 
 export type ClientApi = ReturnType<typeof createClientApi>["api"];
 export function createClientApi() {
-  return new ClientSocket(schema);
+  return new KrissanClient(schema);
 }
 
 export type ServerApi = ReturnType<typeof createServerApi>["api"] & {
@@ -103,7 +103,7 @@ type ToastPromiseFn = <TData, TError>(
 ) => Promise<R.Result<TData, TError>>;
 
 export function createServerApi() {
-  const socket = new ServerSocket(schema);
+  const socket = new KrissanServer(schema);
   const push = socket.api.push;
 
   const toastPromise: ToastPromiseFn = async (promise, options) => {

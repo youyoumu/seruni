@@ -1,8 +1,7 @@
 import type { Services } from "#/hooks/services";
-import { SocketError } from "@repo/shared/krissan/client";
+import { KrissanError } from "@repo/shared/krissan/client";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, redirect } from "@tanstack/react-router";
-// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 const RootLayout = () => (
   <>
@@ -22,7 +21,7 @@ export const Route = createRootRouteWithContext<{
     try {
       const _a = await api.request["health/check"]();
     } catch (e) {
-      if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
+      if (e instanceof KrissanError && e.type === KrissanError.ConnectionClosed) {
         throw redirect({
           to: "/offline",
           search: { redirect: location.pathname },

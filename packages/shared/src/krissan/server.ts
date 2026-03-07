@@ -1,31 +1,31 @@
-import { SocketCore, type RequestOption } from "./core";
+import { KrissanCore, type RequestOption } from "./core";
 import {
   type Arg,
   type PushSchemas,
   type ReqSchemas,
   type ServerRequestTargetOption,
   type ServerPushOption,
-  type SocketClientMeta,
-  type SocketConstructOption,
-  type SocketReqMiddleware,
-  type SocketRequestMatcher,
-  type SocketResponse,
-  type SocketSchemas,
-  type SocketPushHandler,
+  type KrissanClientMeta,
+  type KrissanConstructOption,
+  type KrissanReqMiddleware,
+  type KrissanRequestMatcher,
+  type KrissanResponse,
+  type KrissanSchemas,
+  type KrissanPushHandler,
   type WS,
 } from "./core";
 export * from "./core";
 
-function createServerRuntime<const Schema extends SocketSchemas, ClientState extends object = {}>(
+function createServerRuntime<const Schema extends KrissanSchemas, ClientState extends object = {}>(
   schemas: Schema,
-  options?: SocketConstructOption,
+  options?: KrissanConstructOption,
 ) {
   type CPush = PushSchemas<NonNullable<Schema["clientPushes"]>>;
   type SPush = PushSchemas<NonNullable<Schema["serverPushes"]>>;
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
-  const core = new SocketCore<Schema, ClientState>(schemas, {
+  const core = new KrissanCore<Schema, ClientState>(schemas, {
     serverTimeout: options?.timeout,
     uid: options?.uid,
     onError: options?.onError,
@@ -61,8 +61,8 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
   const serverOnMessage = core.createOnMessage(false);
 
   type ServerRequestFn<Req, Res, Err> = {
-    (...args: Arg<Req, ServerRequestTargetOption>): Promise<SocketResponse<Res, Err>>;
-    (...args: Arg<Req, RequestOption & { ws: undefined }>): Promise<SocketResponse<Res, Err>>[];
+    (...args: Arg<Req, ServerRequestTargetOption>): Promise<KrissanResponse<Res, Err>>;
+    (...args: Arg<Req, RequestOption & { ws: undefined }>): Promise<KrissanResponse<Res, Err>>[];
   };
 
   /**
@@ -80,26 +80,26 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     /**
      * Handle push messages from clients.
      */
-    onPush: { [K in keyof CPush]: (handler: SocketPushHandler<CPush[K]["push"]>) => () => void };
+    onPush: { [K in keyof CPush]: (handler: KrissanPushHandler<CPush[K]["push"]>) => () => void };
     /**
      * Handle requests from clients.
      */
     onRequest: {
       [K in keyof CReq]: (
-        handler: SocketReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
+        handler: KrissanReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
       ) => () => void;
     };
     /**
      * Register a middleware for client requests that matches a pattern.
      */
     useRequest: (
-      matcher: SocketRequestMatcher<keyof CReq & string>,
-      handler: SocketReqMiddleware<unknown, unknown>,
+      matcher: KrissanRequestMatcher<keyof CReq & string>,
+      handler: KrissanReqMiddleware<unknown, unknown>,
     ) => () => void;
     /**
      * Map of connected clients and their state.
      */
-    clients: Map<WS, { meta: SocketClientMeta } & ClientState>;
+    clients: Map<WS, { meta: KrissanClientMeta } & ClientState>;
   };
 
   return {
@@ -107,7 +107,7 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
     onOpen: (ws: WS) => {
       core.serverWS.ws.set(ws, {
         meta: { connectedAt: Date.now(), messageCount: 0, lastMessageAt: null },
-      } as { meta: SocketClientMeta } & ClientState);
+      } as { meta: KrissanClientMeta } & ClientState);
     },
     onClose: (ws: WS) => {
       core.serverWS.ws.delete(ws);
@@ -126,15 +126,15 @@ function createServerRuntime<const Schema extends SocketSchemas, ClientState ext
 /**
  * A server-side socket implementation using Krissan protocol.
  */
-class ServerSocket<T extends SocketSchemas, ClientState extends object = {}> {
+class KrissanServer<T extends KrissanSchemas, ClientState extends object = {}> {
   #socket: ReturnType<typeof createServerRuntime<T, ClientState>>;
 
   /**
-   * Creates a new ServerSocket instance.
+   * Creates a new KrissanServer instance.
    * @param schemas The socket schema definition.
    * @param options Configuration options.
    */
-  constructor(schemas: T, options?: SocketConstructOption) {
+  constructor(schemas: T, options?: KrissanConstructOption) {
     this.#socket = createServerRuntime<T, ClientState>(schemas, options);
   }
 
@@ -159,4 +159,4 @@ class ServerSocket<T extends SocketSchemas, ClientState extends object = {}> {
   onClose = (ws: WS) => this.#socket.onClose(ws);
 }
 
-export { ServerSocket };
+export { KrissanServer };

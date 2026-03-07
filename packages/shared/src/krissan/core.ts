@@ -34,141 +34,124 @@ type Arg<T1, T2 = undefined> = undefined extends T1
     ? [arg1: T1, arg2?: T2]
     : [arg1: T1, arg2: T2];
 
-type SocketErr =
-  | typeof SocketError.ConnectionClosed
-  | typeof SocketError.RequestTimeout
-  | typeof SocketError.InvalidResponse;
-class SocketError extends Error {
+type KrissanErr =
+  | typeof KrissanError.ConnectionClosed
+  | typeof KrissanError.RequestTimeout
+  | typeof KrissanError.InvalidResponse;
+class KrissanError extends Error {
   static ConnectionClosed = "ConnectionClosed" as const;
   static RequestTimeout = "RequestTimeout" as const;
   static InvalidResponse = "InvalidResponse" as const;
-  constructor(public readonly type: SocketErr) {
+  constructor(public readonly type: KrissanErr) {
     super();
-    this.name = "SocketError";
+    this.name = "KrissanError";
   }
 }
-class SocketFailure {
+class KrissanFailure {
   constructor(public readonly error: unknown) {}
 }
 /**
  * Represents the response from a socket request.
  * It can either be a Success with a value or a Failure with an error.
  */
-type SocketResponse<T = unknown, E = unknown> = [E] extends [never]
+type KrissanResponse<T = unknown, E = unknown> = [E] extends [never]
   ? { type: "Success"; value: T }
   : { type: "Success"; value: T } | { type: "Failure"; error: E };
 
 /**
  * Container for the payload value in a socket packet.
  */
-interface SocketBody<T = unknown> {
+interface KrissanBody<T = unknown> {
   value?: T;
 }
 
 /**
  * Wire-level packet exchanged between client and server.
  */
-interface SocketPacket {
-  /** Packet intent: PUSH, REQ, RES, or ERR */
+interface KrissanPacket {
   method: "PUSH" | "REQ" | "RES" | "ERR";
-  /** Schema key or route name */
   route: string;
-  /** Validated payload container */
-  body: SocketBody;
-  /** Protocol metadata (correlation ID, timestamp, cookies) */
-  headers?: SocketHeaders;
+  body: KrissanBody;
+  headers?: KrissanHeaders;
 }
 
 /**
  * Protocol metadata for socket packets.
  */
-interface SocketHeaders {
-  /** Correlation ID for requests and responses */
+interface KrissanHeaders {
   cid?: string;
-  /** Timestamp when the packet was created */
   timestamp?: number;
-  /** Cookies sent from client to server */
   cookie?: Record<string, string>;
-  /** Cookies to be set on the client */
   "set-cookie"?: Record<string, string>;
 }
 
 /**
  * Context provided to request handlers.
  */
-interface SocketReqHandlerContext<TBody = unknown, TErr = unknown> {
-  /** The WebSocket instance that received the request */
+interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown> {
   ws: WS;
-  /** The incoming request packet */
   req: Readonly<{
     method: "REQ";
     route: string;
     body: TBody;
-    headers: Readonly<SocketHeaders>;
+    headers: Readonly<KrissanHeaders>;
   }>;
-  /** The response being prepared */
   res: {
     method: "RES" | "ERR";
     route: string;
-    header: SocketHeaders;
+    header: KrissanHeaders;
     body?: unknown;
   };
-  /**
-   * Immediately fails the request with the provided error.
-   * @param error The error to return to the requester.
-   */
   fail: (error: TErr) => never;
 }
 
 /**
  * Context provided to push handlers.
  */
-interface SocketPushHandlerContext<TBody = unknown> {
-  /** The WebSocket instance that received the push */
+interface KrissanPushHandlerContext<TBody = unknown> {
   ws: WS;
-  /** The incoming push packet */
   push: Readonly<{
     method: "PUSH";
     route: string;
     body: TBody;
-    headers: Readonly<SocketHeaders>;
+    headers: Readonly<KrissanHeaders>;
   }>;
 }
 
 /**
  * Continues to the next middleware in the chain.
  */
-type SocketNext = () => Promise<void>;
+type KrissanNext = () => Promise<void>;
 
 /**
  * Handler for push messages.
  */
-type SocketPushHandler<TBody = unknown> = (
-  c: SocketPushHandlerContext<TBody>,
+type KrissanPushHandler<TBody = unknown> = (
+  c: KrissanPushHandlerContext<TBody>,
 ) => void | Promise<void>;
 
 /**
  * Middleware or handler for request messages.
  * Return a value to set the response body, or use `c.res.body`.
  */
-type SocketReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
-  c: SocketReqHandlerContext<TReq, TErr>,
-  next: SocketNext,
+type KrissanReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
+  c: KrissanReqHandlerContext<TReq, TErr>,
+  next: KrissanNext,
 ) => TRes | void | Promise<TRes | void>;
 
 /**
  * Defines which routes a middleware should apply to.
  */
-type SocketRequestMatcher<Route extends string> =
+type KrissanRequestMatcher<Route extends string> =
   | Route
   | Route[]
   | RegExp
-  | ((c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean>);
+  | ((c: KrissanReqHandlerContext<unknown>) => boolean | Promise<boolean>);
 
 /**
  * Metadata tracked for each connected client.
  */
-interface SocketClientMeta {
+interface KrissanClientMeta {
   /** When the client connected */
   readonly connectedAt: number;
   /** Total number of messages received from this client */
@@ -195,7 +178,7 @@ type ReqSchemas<T extends Record<string, ReqSchemaTuple>> = {
 /**
  * Schema definition for the socket communication.
  */
-interface SocketSchemas {
+interface KrissanSchemas {
   /** Pushes initiated by the client */
   clientPushes: Record<string, StandardSchema>;
   /** Pushes initiated by the server */
@@ -229,18 +212,18 @@ type ServerPushOption = ServerPushTargetOption | undefined;
 /**
  * Context provided to global error handlers.
  */
-type SocketErrorHandlerContext = {
+type KrissanErrorHandlerContext = {
   /** The request that caused the error */
   req: Readonly<{
     method: "REQ";
     route: string;
-    headers: Readonly<SocketHeaders>;
+    headers: Readonly<KrissanHeaders>;
   }>;
   /** The error response being prepared */
   res: {
     method: "ERR";
     route: string;
-    header: SocketHeaders;
+    header: KrissanHeaders;
     body?: unknown;
   };
   /** The original error that occurred */
@@ -250,25 +233,25 @@ type SocketErrorHandlerContext = {
 /**
  * Global error handler for unhandled exceptions in request processing.
  */
-type SocketErrorHandler<T = unknown> = (ctx: SocketErrorHandlerContext) => T | Promise<T>;
+type KrissanErrorHandler<T = unknown> = (ctx: KrissanErrorHandlerContext) => T | Promise<T>;
 
 /**
  * Options for constructing a socket.
  */
-type SocketConstructOption =
+type KrissanConstructOption =
   | {
       /** Default timeout for requests in milliseconds */
       timeout?: number;
       /** Function to generate unique IDs for requests */
       uid?: () => string;
       /** Global error handler */
-      onError?: SocketErrorHandler;
+      onError?: KrissanErrorHandler;
       /** Protocol version ID to prevent cross-talk between different applications */
       protocolId?: number;
     }
   | undefined;
 
-function defineSocketSchema<T extends SocketSchemas>(schema: T) {
+function defineKrissanSchema<T extends KrissanSchemas>(schema: T) {
   return schema;
 }
 
@@ -305,16 +288,16 @@ const neverSchema: StandardValidator = {
   },
 };
 
-interface SocketContext {
+interface KrissanContext {
   ws: WS;
 }
 
-class SocketEvent extends Event {
+class KrissanEvent extends Event {
   constructor(
     type: string,
-    public body: SocketBody,
-    public headers: SocketHeaders = {},
-    public context: SocketContext,
+    public body: KrissanBody,
+    public headers: KrissanHeaders = {},
+    public context: KrissanContext,
     public issues?: unknown,
   ) {
     super(type);
@@ -325,29 +308,29 @@ class ET extends EventTarget {
   on(
     route: string,
     handler: (packet: {
-      body: SocketBody;
-      headers: SocketHeaders;
-      context: SocketContext;
+      body: KrissanBody;
+      headers: KrissanHeaders;
+      context: KrissanContext;
       issues?: unknown;
     }) => void,
   ) {
     const fn = (e: Event) =>
-      e instanceof SocketEvent &&
+      e instanceof KrissanEvent &&
       handler({ body: e.body, headers: e.headers, context: e.context, issues: e.issues });
     this.addEventListener(route, fn);
     return () => this.removeEventListener(route, fn);
   }
 }
 
-class SocketCore<const Schema extends SocketSchemas, ClientState extends object = {}> {
+class KrissanCore<const Schema extends KrissanSchemas, ClientState extends object = {}> {
   #schemas: Schema;
   #clientCookie: { value: Record<string, string> } = { value: {} };
   #uid: () => string;
-  #onError?: SocketErrorHandler;
+  #onError?: KrissanErrorHandler;
   #protocolId: number;
   #prefix: string;
   readonly clientWS: { ws: WS | undefined } = { ws: undefined };
-  readonly serverWS = { ws: new Map<WS, { meta: SocketClientMeta } & ClientState>() };
+  readonly serverWS = { ws: new Map<WS, { meta: KrissanClientMeta } & ClientState>() };
   readonly ets = {
     cPush: new ET(),
     sPush: new ET(),
@@ -367,7 +350,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       clientTimeout?: number;
       serverTimeout?: number;
       uid?: () => string;
-      onError?: SocketErrorHandler;
+      onError?: KrissanErrorHandler;
       protocolId?: number;
     },
   ) {
@@ -393,7 +376,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     schema: StandardSchema,
     data: unknown,
     route: string,
-    method: SocketPacket["method"],
+    method: KrissanPacket["method"],
   ) {
     const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
@@ -409,8 +392,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     this.#clientCookie.value = sanitized;
   }
 
-  #createHeaders(isClientSender: boolean, cid?: string): SocketHeaders {
-    const headers: SocketHeaders = { timestamp: Date.now() };
+  #createHeaders(isClientSender: boolean, cid?: string): KrissanHeaders {
+    const headers: KrissanHeaders = { timestamp: Date.now() };
     if (cid) headers.cid = cid;
     if (isClientSender && Object.keys(this.#clientCookie.value).length > 0) {
       headers.cookie = this.#clientCookie.value;
@@ -419,15 +402,15 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
   }
 
   #toPredicate(
-    matcher: SocketRequestMatcher<string>,
-  ): (c: SocketReqHandlerContext<unknown>) => boolean | Promise<boolean> {
+    matcher: KrissanRequestMatcher<string>,
+  ): (c: KrissanReqHandlerContext<unknown>) => boolean | Promise<boolean> {
     if (typeof matcher === "string") return (c) => c.req.route === matcher;
     if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
     if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
     return matcher;
   }
 
-  #send(payload: SocketPacket, ws?: WS) {
+  #send(payload: KrissanPacket, ws?: WS) {
     const data = `${this.#prefix}${JSON.stringify(payload)}`;
     if (ws) ws.send(data);
     else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
@@ -436,9 +419,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
 
   createRequestContext(
     route: string,
-    e: { body: SocketBody; headers: SocketHeaders; context: SocketContext; issues?: unknown },
+    e: { body: KrissanBody; headers: KrissanHeaders; context: KrissanContext; issues?: unknown },
   ) {
-    const res: SocketReqHandlerContext<unknown>["res"] = {
+    const res: KrissanReqHandlerContext<unknown>["res"] = {
       method: "RES",
       route,
       header: {},
@@ -455,7 +438,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       enumerable: true,
       configurable: false,
     });
-    const c: SocketReqHandlerContext<unknown> = {
+    const c: KrissanReqHandlerContext<unknown> = {
       ws: e.context.ws,
       req: Object.freeze({
         method: "REQ" as const,
@@ -465,7 +448,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
       }),
       res,
       fail: (error: unknown): never => {
-        throw new SocketFailure(error);
+        throw new KrissanFailure(error);
       },
     };
     return c;
@@ -479,7 +462,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     const api: {
       push: Partial<Record<string, (...args: Arg<unknown, ServerPushOption>) => void>>;
       handle: Partial<
-        Record<string, (handler: (c: SocketPushHandlerContext<unknown>) => void) => () => void>
+        Record<string, (handler: (c: KrissanPushHandlerContext<unknown>) => void) => () => void>
       >;
     } = { push: {}, handle: {} };
     events.forEach((route) => {
@@ -515,7 +498,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         }
         exec();
       };
-      api.handle[route] = (handler: (c: SocketPushHandlerContext<unknown>) => void) =>
+      api.handle[route] = (handler: (c: KrissanPushHandlerContext<unknown>) => void) =>
         reverseET.on(route, (e) =>
           handler({
             ws: e.context.ws,
@@ -542,18 +525,18 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     const api: {
       request: Partial<Record<string, (...args: Arg<unknown, ServerRequestOption>) => unknown>>;
       handle: Partial<
-        Record<string, (handler: SocketReqMiddleware<unknown, unknown>) => () => void>
+        Record<string, (handler: KrissanReqMiddleware<unknown, unknown>) => () => void>
       >;
       use: (
-        matcher: SocketRequestMatcher<string>,
-        handler: SocketReqMiddleware<unknown, unknown>,
+        matcher: KrissanRequestMatcher<string>,
+        handler: KrissanReqMiddleware<unknown, unknown>,
       ) => () => void;
     } = {
       request: {},
       handle: {},
       use: () => () => undefined,
     };
-    const middlewareMap: Partial<Record<string, SocketReqMiddleware<unknown, unknown>[]>> = {};
+    const middlewareMap: Partial<Record<string, KrissanReqMiddleware<unknown, unknown>[]>> = {};
 
     events.forEach((route) => {
       middlewareMap[route] = [];
@@ -562,9 +545,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         const cid = this.#uid();
         const options = args[1];
         const t = options?.timeout ?? timeout;
-        const exec = (ws?: WS): Promise<SocketResponse<unknown>> => {
+        const exec = (ws?: WS): Promise<KrissanResponse<unknown>> => {
           return new Promise((resolve, reject) => {
-            if (!ws) return reject(new SocketError(SocketError.ConnectionClosed));
+            if (!ws) return reject(new KrissanError(KrissanError.ConnectionClosed));
             let timer: ReturnType<typeof setTimeout>;
             const clean = () => {
               clearTimeout(timer);
@@ -575,7 +558,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
               if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) {
-                  reject(new SocketError(SocketError.InvalidResponse));
+                  reject(new KrissanError(KrissanError.InvalidResponse));
                   return;
                 }
                 resolve({ type: "Success", value: e.body.value });
@@ -585,7 +568,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
               if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) {
-                  reject(new SocketError(SocketError.InvalidResponse));
+                  reject(new KrissanError(KrissanError.InvalidResponse));
                   return;
                 }
                 resolve({ type: "Failure", error: e.body.value });
@@ -593,14 +576,14 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             });
             timer = setTimeout(() => {
               clean();
-              reject(new SocketError(SocketError.RequestTimeout));
+              reject(new KrissanError(KrissanError.RequestTimeout));
             }, t);
             const headers = this.#createHeaders(isClient, cid);
             if (!isClient || this.clientWS.ws?.readyState === 1) {
               this.#send({ method: "REQ", route, body: { value: data }, headers }, ws);
             } else {
               clean();
-              reject(new SocketError(SocketError.ConnectionClosed));
+              reject(new KrissanError(KrissanError.ConnectionClosed));
             }
           });
         };
@@ -651,11 +634,11 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             e.context.ws,
           );
         } catch (error) {
-          const isExpected = error instanceof SocketFailure;
-          let failure: SocketFailure;
+          const isExpected = error instanceof KrissanFailure;
+          let failure: KrissanFailure;
           if (isExpected) failure = error;
           else if (this.#onError) {
-            const errCtx: SocketErrorHandlerContext = {
+            const errCtx: KrissanErrorHandlerContext = {
               error,
               req: c.req,
               res: { method: "ERR", route: c.res.route, header: c.res.header },
@@ -663,12 +646,12 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             try {
               const errBody = await this.#onError(errCtx);
               const body = errBody !== undefined ? errBody : errCtx.res.body;
-              failure = new SocketFailure(body);
+              failure = new KrissanFailure(body);
             } catch {
-              failure = new SocketFailure("InternalError");
+              failure = new KrissanFailure("InternalError");
             }
           } else {
-            failure = new SocketFailure("InternalError");
+            failure = new KrissanFailure("InternalError");
           }
           const errSchema =
             (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
@@ -676,7 +659,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             ]?.[2] ?? neverSchema;
           if (isExpected) {
             const errValidation = await this.#validate(errSchema, failure.error, route, "ERR");
-            if (!errValidation.success) failure = new SocketFailure("InternalError");
+            if (!errValidation.success) failure = new KrissanFailure("InternalError");
           }
           const headers = {
             ...c.res.header,
@@ -689,7 +672,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         }
       });
 
-      api.handle[route] = (handler: SocketReqMiddleware<unknown, unknown>) => {
+      api.handle[route] = (handler: KrissanReqMiddleware<unknown, unknown>) => {
         const middlewares = middlewareMap[route];
         if (!middlewares) return () => undefined;
         middlewares.push(handler);
@@ -701,8 +684,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     });
 
     api.use = (
-      matcher: SocketRequestMatcher<string>,
-      handler: SocketReqMiddleware<unknown, unknown>,
+      matcher: KrissanRequestMatcher<string>,
+      handler: KrissanReqMiddleware<unknown, unknown>,
     ) => {
       const predicate = this.#toPredicate(matcher);
       const offs = events.map((route) => {
@@ -723,14 +706,14 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
     return async (e: MessageEvent, ws: WS) => {
       try {
         if (typeof e.data !== "string" || !e.data.startsWith(this.#prefix)) return;
-        const p: SocketPacket = JSON.parse(e.data.slice(this.#prefix.length));
+        const p: KrissanPacket = JSON.parse(e.data.slice(this.#prefix.length));
         if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
         const {
           method,
           route,
           body: { value },
         } = p;
-        const headers: SocketHeaders = p.headers ?? {};
+        const headers: KrissanHeaders = p.headers ?? {};
         const cookie = this.#sanitizeCookie(headers.cookie);
         if (cookie) headers.cookie = cookie;
         else delete headers.cookie;
@@ -738,7 +721,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
         if (setCookie) headers["set-cookie"] = setCookie;
         else delete headers["set-cookie"];
         if ((method === "REQ" || method === "RES" || method === "ERR") && !headers.cid) return;
-        const context: SocketContext = { ws };
+        const context: KrissanContext = { ws };
         const body = { value };
 
         if (!isClient) {
@@ -759,7 +742,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           );
           if (res.success) {
             (isClient ? this.ets.sPush : this.ets.cPush).dispatchEvent(
-              new SocketEvent(route, { value: res.value }, headers, context),
+              new KrissanEvent(route, { value: res.value }, headers, context),
             );
           }
         } else if (method === "REQ") {
@@ -772,7 +755,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             "REQ",
           );
           (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
-            new SocketEvent(
+            new KrissanEvent(
               route,
               res.success ? { value: res.value } : body,
               headers,
@@ -790,7 +773,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             "RES",
           );
           (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
-            new SocketEvent(
+            new KrissanEvent(
               route,
               res.success ? { value: res.value } : body,
               headers,
@@ -808,7 +791,7 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
             "ERR",
           );
           (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
-            new SocketEvent(
+            new KrissanEvent(
               route,
               res.success ? { value: res.value } : body,
               headers,
@@ -827,23 +810,23 @@ export {
   type StandardValidator,
   type ReqSchemaTuple,
   type Arg,
-  SocketError,
-  SocketFailure,
-  type SocketResponse,
-  type SocketHeaders,
-  type SocketPushHandlerContext,
-  type SocketReqHandlerContext,
-  type SocketNext,
-  type SocketPushHandler,
-  type SocketReqMiddleware,
-  type SocketRequestMatcher,
-  type SocketBody,
-  type SocketPacket,
+  KrissanError,
+  KrissanFailure,
+  type KrissanResponse,
+  type KrissanHeaders,
+  type KrissanPushHandlerContext,
+  type KrissanReqHandlerContext,
+  type KrissanNext,
+  type KrissanPushHandler,
+  type KrissanReqMiddleware,
+  type KrissanRequestMatcher,
+  type KrissanBody,
+  type KrissanPacket,
   type WS,
-  type SocketClientMeta,
-  type SocketSchemas,
-  type SocketErrorHandler,
-  type SocketErrorHandlerContext,
+  type KrissanClientMeta,
+  type KrissanSchemas,
+  type KrissanErrorHandler,
+  type KrissanErrorHandlerContext,
   type RequestOption,
   type ServerRequestOption,
   type ServerRequestTargetOption,
@@ -851,9 +834,9 @@ export {
   type ServerPushOption,
   type ServerPushTargetOption,
   type ServerPushTargetPicker,
-  type SocketConstructOption,
+  type KrissanConstructOption,
   type PushSchemas,
   type ReqSchemas,
-  defineSocketSchema,
-  SocketCore,
+  defineKrissanSchema,
+  KrissanCore,
 };
