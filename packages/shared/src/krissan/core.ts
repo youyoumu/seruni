@@ -96,7 +96,7 @@ interface KrissanHeaders {
 /**
  * Context provided to request handlers.
  */
-interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown> {
+interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown, TState = unknown> {
   ws: WS;
   req: Readonly<{
     method: "REQ";
@@ -110,13 +110,15 @@ interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown> {
     header: KrissanHeaders;
     body?: unknown;
   };
+  state: TState;
+  setState: (state: Record<string, unknown>) => void;
   fail: (error: TErr) => never;
 }
 
 /**
  * Context provided to push handlers.
  */
-interface KrissanPushHandlerContext<TBody = unknown> {
+interface KrissanPushHandlerContext<TBody = unknown, TState = unknown> {
   ws: WS;
   push: Readonly<{
     method: "PUSH";
@@ -124,6 +126,8 @@ interface KrissanPushHandlerContext<TBody = unknown> {
     body: TBody;
     headers: Readonly<KrissanHeaders>;
   }>;
+  state: TState;
+  setState: (state: Record<string, unknown>) => void;
 }
 
 /**
@@ -134,36 +138,36 @@ type KrissanNext = () => Promise<void>;
 /**
  * Handler for push messages.
  */
-type KrissanPushHandler<TBody = unknown> = (
-  c: KrissanPushHandlerContext<TBody>,
+type KrissanPushHandler<TBody = unknown, TState = unknown> = (
+  c: KrissanPushHandlerContext<TBody, TState>,
 ) => void | Promise<void>;
 
 /**
  * Middleware or handler for request messages.
  * Return a value to set the response body, or use `c.res.body`.
  */
-type KrissanReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
-  c: KrissanReqHandlerContext<TReq, TErr>,
+type KrissanReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown, TState = unknown> = (
+  c: KrissanReqHandlerContext<TReq, TErr, TState>,
   next: KrissanNext,
 ) => TRes | void | Promise<TRes | void>;
 
 /**
  * Defines which routes a middleware should apply to.
  */
-type KrissanRequestMatcher<Route extends string = string> =
+type KrissanRequestMatcher<Route extends string = string, TState = unknown> =
   | Route
   | Route[]
   | RegExp
-  | ((c: KrissanReqHandlerContext) => boolean | Promise<boolean>);
+  | ((c: KrissanReqHandlerContext<unknown, unknown, TState>) => boolean | Promise<boolean>);
 
 /**
  * Defines which routes a push handler should apply to.
  */
-type KrissanPushMatcher<Route extends string = string> =
+type KrissanPushMatcher<Route extends string = string, TState = unknown> =
   | Route
   | Route[]
   | RegExp
-  | ((c: KrissanPushHandlerContext) => boolean | Promise<boolean>);
+  | ((c: KrissanPushHandlerContext<unknown, TState>) => boolean | Promise<boolean>);
 
 /**
  * Metadata tracked for each connected client.
@@ -339,7 +343,7 @@ class ET extends EventTarget {
   }
 }
 
-class KrissanCore<const Schema extends KrissanSchemas, ClientState extends object = {}> {
+class KrissanCore<const Schema extends KrissanSchemas> {
   #schemas: Schema;
   #clientCookie: { value: Record<string, string> } = { value: {} };
   #uid: () => string;
@@ -347,7 +351,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
   #protocolId: number;
   #prefix: string;
   readonly clientWS: { ws: WS | undefined } = { ws: undefined };
-  readonly serverWS = { ws: new Map<WS, { meta: KrissanClientMeta } & ClientState>() };
+  readonly serverWS = { ws: new Map<WS, { meta: KrissanClientMeta } & {}>() };
   readonly ets = {
     cPush: new ET(),
     sPush: new ET(),
@@ -439,6 +443,8 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     route: string,
     e: { body: KrissanBody; headers: KrissanHeaders; context: KrissanContext; issues?: unknown },
   ) {
+    const ws = e.context.ws;
+    const state = this.serverWS.ws.get(ws);
     const res: KrissanReqHandlerContext["res"] = {
       method: "RES",
       route,
@@ -457,7 +463,11 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
       configurable: false,
     });
     const c: KrissanReqHandlerContext = {
-      ws: e.context.ws,
+      ws,
+      state,
+      setState: (newState: Record<string, unknown>) => {
+        if (state) Object.assign(state, newState);
+      },
       req: Object.freeze({
         method: "REQ" as const,
         route,
@@ -520,17 +530,23 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         exec();
       };
       api.handle[route] = (handler: (c: KrissanPushHandlerContext) => void) =>
-        reverseET.on(route, (e) =>
+        reverseET.on(route, (e) => {
+          const ws = e.context.ws;
+          const state = this.serverWS.ws.get(ws);
           handler({
-            ws: e.context.ws,
+            ws,
+            state: state,
+            setState: (newState: Record<string, unknown>) => {
+              if (state) Object.assign(state, newState);
+            },
             push: Object.freeze({
               method: "PUSH" as const,
               route,
               body: e.body.value,
               headers: Object.freeze({ ...e.headers }),
             }),
-          }),
-        );
+          });
+        });
     });
 
     api.use = (
@@ -761,10 +777,10 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
 
         if (!isClient) {
           const clientData = this.serverWS.ws.get(ws);
-          if (clientData) {
-            clientData.meta.messageCount++;
-            clientData.meta.lastMessageAt = Date.now();
-          }
+          if (!clientData) return;
+          const meta = clientData.meta;
+          meta.messageCount++;
+          meta.lastMessageAt = Date.now();
         }
 
         if (method === "PUSH") {

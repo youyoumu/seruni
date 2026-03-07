@@ -28,7 +28,7 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
-  const core = new KrissanCore<Schema, ClientState>(schemas, {
+  const core = new KrissanCore<Schema>(schemas, {
     serverTimeout: options?.timeout,
     uid: options?.uid,
     onError: options?.onError,
@@ -86,30 +86,47 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
      */
     request: { [K in keyof SReq]: ServerRequestFn<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]> };
     /**
-     * Handle push messages from clients.
+     * Listen for push messages from clients.
      */
-    onPush: { [K in keyof CPush]: (handler: KrissanPushHandler<CPush[K]["push"]>) => () => void };
+    onPush: {
+      [K in keyof CPush]: (
+        handler: KrissanPushHandler<CPush[K]["push"], { meta: KrissanClientMeta } & ClientState>,
+      ) => () => void;
+    };
     /**
      * Handle requests from clients.
      */
     onRequest: {
       [K in keyof CReq]: (
-        handler: KrissanReqMiddleware<CReq[K]["req"], CReq[K]["res"], CReq[K]["err"]>,
+        handler: KrissanReqMiddleware<
+          CReq[K]["req"],
+          CReq[K]["res"],
+          CReq[K]["err"],
+          { meta: KrissanClientMeta } & ClientState
+        >,
       ) => () => void;
     };
     /**
      * Register a middleware for client requests that matches a pattern.
      */
     useRequest: (
-      matcher: KrissanRequestMatcher<keyof CReq & string>,
-      handler: KrissanReqMiddleware,
+      matcher: KrissanRequestMatcher<
+        keyof CReq & string,
+        { meta: KrissanClientMeta } & ClientState
+      >,
+      handler: KrissanReqMiddleware<
+        unknown,
+        unknown,
+        unknown,
+        { meta: KrissanClientMeta } & ClientState
+      >,
     ) => () => void;
     /**
      * Register a handler for push messages that matches a pattern.
      */
     usePush: (
-      matcher: KrissanPushMatcher<keyof CPush & string>,
-      handler: KrissanPushHandler,
+      matcher: KrissanPushMatcher<keyof CPush & string, { meta: KrissanClientMeta } & ClientState>,
+      handler: KrissanPushHandler<unknown, { meta: KrissanClientMeta } & ClientState>,
     ) => () => void;
     /**
      * Map of connected clients and their state.
@@ -134,7 +151,7 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
       onRequest: cReqApi.handle,
       useRequest: cReqApi.use,
       usePush: cPushApi.use,
-      clients: core.serverWS.ws,
+      clients: core.serverWS.ws as Map<WS, { meta: KrissanClientMeta } & ClientState>,
     } as ServerApi,
   };
 }
