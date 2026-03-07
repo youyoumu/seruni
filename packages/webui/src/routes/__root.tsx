@@ -20,7 +20,7 @@ export const Route = createRootRouteWithContext<{
     if (location.pathname === "/offline") return;
     const { api } = context.services;
     try {
-      await api.request["health/check"]();
+      const _a = await api.request["health/check"]();
     } catch (e) {
       if (e instanceof SocketError && e.type === SocketError.ConnectionClosed) {
         throw redirect({

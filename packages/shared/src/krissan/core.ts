@@ -3,9 +3,13 @@ import { type StandardSchemaV1 } from "@standard-schema/spec";
 type StandardSchema = StandardSchemaV1;
 type StandardValidator = Pick<StandardSchema, "~standard">;
 type Infer<T extends StandardSchema> = StandardSchemaV1.InferOutput<T>;
-type InferReqRes<T extends StandardSchema | undefined> = T extends StandardSchema
+
+type InferReq<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : undefined;
+type InferRes<T extends StandardSchema | undefined> = T extends StandardSchema
+  ? StandardSchemaV1.InferOutput<T>
+  : null;
 type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : never;
@@ -185,7 +189,7 @@ type PushSchemas<T extends Record<string, StandardSchema>> = {
   [K in keyof T]: { push: Infer<T[K]> };
 };
 type ReqSchemas<T extends Record<string, ReqSchemaTuple>> = {
-  [K in keyof T]: { req: InferReqRes<T[K][0]>; res: InferReqRes<T[K][1]>; err: InferErr<T[K][2]> };
+  [K in keyof T]: { req: InferReq<T[K][0]>; res: InferRes<T[K][1]>; err: InferErr<T[K][2]> };
 };
 
 /**
@@ -278,6 +282,16 @@ const undefinedSchema: StandardValidator = {
     async validate(data: unknown) {
       if (data === undefined) return { value: undefined } as const;
       return { issues: [{ message: "Invalid input: expected undefined" }] } as const;
+    },
+  },
+};
+const nullSchema: StandardValidator = {
+  "~standard": {
+    version: 1,
+    vendor: "krissan",
+    async validate(data: unknown) {
+      if (data === null) return { value: null } as const;
+      return { issues: [{ message: "Invalid input: expected null" }] } as const;
     },
   },
 };
@@ -376,14 +390,12 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
   }
 
   async #validate(
-    schema: StandardSchema | undefined,
+    schema: StandardSchema,
     data: unknown,
     route: string,
     method: SocketPacket["method"],
   ) {
-    const effectiveSchema: StandardValidator =
-      schema ?? (method === "ERR" ? neverSchema : undefinedSchema);
-    const res = await effectiveSchema["~standard"].validate(data);
+    const res = await schema["~standard"].validate(data);
     if ("issues" in res) {
       console.error(`Validation failed for ${method} [${route}]`, res.issues);
       return { success: false as const, error: res.issues };
@@ -658,9 +670,10 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           } else {
             failure = new SocketFailure("InternalError");
           }
-          const errSchema = (
-            isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests
-          )?.[route]?.[2];
+          const errSchema =
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
+              route
+            ]?.[2] ?? neverSchema;
           if (isExpected) {
             const errValidation = await this.#validate(errSchema, failure.error, route, "ERR");
             if (!errValidation.success) failure = new SocketFailure("InternalError");
@@ -738,7 +751,8 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
 
         if (method === "PUSH") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[route],
+            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[route] ??
+              undefinedSchema,
             value,
             route,
             "PUSH",
@@ -750,7 +764,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           }
         } else if (method === "REQ") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[route]?.[0],
+            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[
+              route
+            ]?.[0] ?? undefinedSchema,
             value,
             route,
             "REQ",
@@ -766,7 +782,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           );
         } else if (method === "RES") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[1],
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
+              route
+            ]?.[1] ?? nullSchema,
             value,
             route,
             "RES",
@@ -782,7 +800,9 @@ class SocketCore<const Schema extends SocketSchemas, ClientState extends object 
           );
         } else if (method === "ERR") {
           const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[route]?.[2],
+            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
+              route
+            ]?.[2] ?? neverSchema,
             value,
             route,
             "ERR",

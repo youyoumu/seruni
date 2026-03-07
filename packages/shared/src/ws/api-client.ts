@@ -1,8 +1,8 @@
 import { zSession, zTextHistory } from "#/db/schema";
-import { zConfig } from "#/schema";
 import { ClientSocket } from "#/krissan/client";
-import { ServerSocket, type ServerPushOption } from "#/krissan/server";
 import { defineSocketSchema } from "#/krissan/client";
+import { ServerSocket, type ServerPushOption } from "#/krissan/server";
+import { zConfig } from "#/schema";
 import { R } from "@praha/byethrow";
 import { uid } from "uid";
 import { z } from "zod/mini";
@@ -76,7 +76,7 @@ const schema = defineSocketSchema({
     "obs/connected/get": [z.undefined(), z.boolean()],
     "config/get": [z.undefined(), zConfig],
     "config/set": [zConfig, zConfig, z.literal("INVALID_CONFIG")],
-    "health/check": [z.undefined(), z.undefined()],
+    "health/check": [z.undefined(), z.null()],
   },
   serverRequests: {
     "user-agent/get": [z.undefined(), z.string()],

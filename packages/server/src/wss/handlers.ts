@@ -138,7 +138,7 @@ export class WSSHandlers {
       return state.config();
     });
 
-    api.onRequest["health/check"](() => undefined);
+    api.onRequest["health/check"](() => null);
 
     api.onPush["timer/afk/refresh"](() => {
       this.textHookerClient.setupAfkTimer();
