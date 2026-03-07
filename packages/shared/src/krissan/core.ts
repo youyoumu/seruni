@@ -150,7 +150,7 @@ type KrissanReqMiddleware<TReq = unknown, TRes = unknown, TErr = unknown> = (
 /**
  * Defines which routes a middleware should apply to.
  */
-type KrissanRequestMatcher<Route extends string> =
+type KrissanRequestMatcher<Route extends string = string> =
   | Route
   | Route[]
   | RegExp
@@ -159,7 +159,7 @@ type KrissanRequestMatcher<Route extends string> =
 /**
  * Defines which routes a push handler should apply to.
  */
-type KrissanPushMatcher<Route extends string> =
+type KrissanPushMatcher<Route extends string = string> =
   | Route
   | Route[]
   | RegExp
@@ -418,23 +418,14 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     return headers;
   }
 
-  #isReqHandler(
-    c: KrissanReqHandlerContext | KrissanPushHandlerContext,
-  ): c is KrissanReqHandlerContext {
-    return "req" in c;
-  }
-
-  #toPredicate<C extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
-    matcher: C extends KrissanReqHandlerContext
-      ? KrissanRequestMatcher<string>
-      : KrissanPushMatcher<string>,
-  ): (c: C) => boolean | Promise<boolean> {
-    const getRoute = (c: KrissanReqHandlerContext | KrissanPushHandlerContext): string =>
-      this.#isReqHandler(c) ? c.req.route : c.push.route;
+  #toPredicate<T extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
+    matcher: string | string[] | RegExp | ((c: T) => boolean | Promise<boolean>),
+    getRoute: (c: T) => string,
+  ): (c: T) => boolean | Promise<boolean> {
     if (typeof matcher === "string") return (c) => getRoute(c) === matcher;
     if (Array.isArray(matcher)) return (c) => matcher.includes(getRoute(c));
     if (matcher instanceof RegExp) return (c) => matcher.test(getRoute(c));
-    return matcher as (c: C) => boolean | Promise<boolean>;
+    return matcher;
   }
 
   #send(payload: KrissanPacket, ws?: WS) {
@@ -546,7 +537,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
       matcher: KrissanPushMatcher<string>,
       handler: (c: KrissanPushHandlerContext) => void,
     ) => {
-      const predicate = this.#toPredicate<KrissanPushHandlerContext>(matcher);
+      const predicate = this.#toPredicate(matcher, (c) => c.push.route);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
@@ -731,7 +722,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     });
 
     api.use = (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => {
-      const predicate = this.#toPredicate<KrissanReqHandlerContext>(matcher);
+      const predicate = this.#toPredicate(matcher, (c) => c.req.route);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
