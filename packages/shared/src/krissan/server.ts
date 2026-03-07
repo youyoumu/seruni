@@ -29,7 +29,6 @@ import {
   type ServerRequestTargetPicker,
   type ServerRequestTargetPickerSingle,
   type ServerRequestTargetPickerMulti,
-  noop,
 } from "./core";
 export * from "./core";
 
@@ -106,98 +105,83 @@ class KrissanServerCore<
     } catch {}
   }
 
-  createClientPushLane(events: readonly string[]) {
-    /* server doesn't push client-initiated pushes */
-    return this.createPushLane(events, this.ets.cPush, noop);
+  getPushHandler(events: readonly string[]) {
+    return this.createPushHandler(events, this.ets.cPush);
   }
 
-  createServerPushLane(events: readonly string[]) {
-    return this.createPushLane<ServerPushTargetPicker>(
-      events,
-      this.ets.sPush,
-      (route, data, target) => {
-        const exec = (ws: WS) => {
-          const headers = this.createHeaders();
-          const payload = { method: PUSH, route, body: data, headers };
-          this.send(payload, ws);
-        };
+  getPushApi(events: readonly string[]) {
+    return this.createPushApi<ServerPushTargetPicker>(events, (route, data, target) => {
+      const exec = (ws: WS) => {
+        const headers = this.createHeaders();
+        const payload = { method: PUSH, route, body: data, headers };
+        this.send(payload, ws);
+      };
 
-        const clients = Array.from(this.ws.keys());
-        if (target) {
-          if (typeof target === "function") {
-            const picked = target(clients);
-            if (Array.isArray(picked)) return picked.forEach(exec);
-            if (picked) return exec(picked);
-            return;
-          }
-          if (Array.isArray(target)) return target.forEach(exec);
-          return exec(target);
+      const clients = Array.from(this.ws.keys());
+      if (target) {
+        if (typeof target === "function") {
+          const picked = target(clients);
+          if (Array.isArray(picked)) return picked.forEach(exec);
+          if (picked) return exec(picked);
+          return;
         }
-        clients.forEach(exec);
-      },
-    );
+        if (Array.isArray(target)) return target.forEach(exec);
+        return exec(target);
+      }
+      clients.forEach(exec);
+    });
   }
 
-  createClientReqLane(events: readonly string[]) {
-    return this.createReqLane(
-      events,
-      this.ets.cReq,
-      /* server doesn't initiate client requests */
-      noop,
-      this.schemas.clientRequests,
-    );
+  getReqHandler(events: readonly string[]) {
+    return this.createRequestHandler(events, this.ets.cReq, this.schemas.clientRequests);
   }
 
-  createServerReqLane(events: readonly string[]) {
-    return this.createReqLane<ServerRequestTargetPicker>(
-      events,
-      this.ets.sReq,
-      (route, cid, data, t, target) => {
-        const exec = (ws?: WS): Promise<KrissanResponse> => {
-          return new Promise((resolve, reject) => {
-            if (!ws) return reject(new KrissanError(KrissanError.ConnectionClosed));
-            let timer: ReturnType<typeof setTimeout>;
-            // prettier-ignore
-            const clean = () => { clearTimeout(timer); off(); offErr(); };
-            const off = this.ets.cRes.on(route, (e) => {
-              if (e.headers.cid === cid && e.context.ws === ws) {
-                clean();
-                if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
-                resolve({ type: "Success", value: e.body });
-              }
-            });
-            const offErr = this.ets.cErr.on(route, async (e) => {
-              if (e.headers.cid === cid && e.context.ws === ws) {
-                clean();
-                if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
-                resolve({ type: "Failure", error: e.body });
-              }
-            });
-            timer = setTimeout(() => {
+  getReqApi(events: readonly string[]) {
+    return this.createReqApi<ServerRequestTargetPicker>(events, (route, cid, data, t, target) => {
+      const exec = (ws: WS): Promise<KrissanResponse> => {
+        const ConnectionClosed = new KrissanError(KrissanError.ConnectionClosed);
+        const RequestTimeout = new KrissanError(KrissanError.RequestTimeout);
+        const InvalidResponse = new KrissanError(KrissanError.InvalidResponse);
+        return new Promise((resolve, reject) => {
+          if (ws.readyState !== 1) return reject(ConnectionClosed);
+          let timer: ReturnType<typeof setTimeout>;
+          // prettier-ignore
+          const clean = () => { clearTimeout(timer); off(); offErr(); };
+          const off = this.ets.cRes.on(route, (e) => {
+            if (e.headers.cid === cid && e.context.ws === ws) {
               clean();
-              reject(new KrissanError(KrissanError.RequestTimeout));
-            }, t);
-
-            const headers = this.createHeaders(cid);
-            const payload = { method: REQ, route, body: data, headers };
-            this.send(payload, ws);
+              if (e.issues) return reject(InvalidResponse);
+              resolve({ type: "Success", value: e.body });
+            }
           });
-        };
+          const offErr = this.ets.cErr.on(route, async (e) => {
+            if (e.headers.cid === cid && e.context.ws === ws) {
+              clean();
+              if (e.issues) return reject(InvalidResponse);
+              resolve({ type: "Failure", error: e.body });
+            }
+          });
+          // prettier-ignore
+          timer = setTimeout(() => { clean(); reject(RequestTimeout); }, t);
 
-        const clients = Array.from(this.ws.keys());
-        if (target) {
-          if (Array.isArray(target)) return target.map(exec);
-          if (typeof target === "function") {
-            const picked = target(clients);
-            if (Array.isArray(picked)) return picked.map(exec);
-            return exec(picked);
-          }
-          return exec(target);
+          const headers = this.createHeaders(cid);
+          const payload = { method: REQ, route, body: data, headers };
+          this.send(payload, ws);
+        });
+      };
+
+      const clients = Array.from(this.ws.keys());
+      if (target) {
+        if (Array.isArray(target)) return target.map(exec);
+        if (typeof target === "function") {
+          const picked = target(clients);
+          if (Array.isArray(picked)) return picked.map(exec);
+          return exec(picked);
         }
-        return clients.map(exec);
-      },
-      this.schemas.serverRequests,
-    );
+        return exec(target);
+      }
+      return clients.map(exec);
+    });
   }
 }
 
@@ -212,10 +196,10 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
 
   const core = new KrissanServerCore<Schema, ClientState>(schemas, options);
 
-  const cPushApi = core.createClientPushLane(Object.keys(schemas.clientPushes));
-  const sPushApi = core.createServerPushLane(Object.keys(schemas.serverPushes));
-  const cReqApi = core.createClientReqLane(Object.keys(schemas.clientRequests));
-  const sReqApi = core.createServerReqLane(Object.keys(schemas.serverRequests));
+  const pushHandler = core.getPushHandler(Object.keys(schemas.clientPushes));
+  const pushApi = core.getPushApi(Object.keys(schemas.serverPushes));
+  const reqHandler = core.getReqHandler(Object.keys(schemas.clientRequests));
+  const reqApi = core.getReqApi(Object.keys(schemas.serverRequests));
 
   // prettier-ignore
   type ServerRequestFn<Req, Res, Err> = {
@@ -296,12 +280,12 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
       core.ws.delete(ws);
     },
     api: {
-      push: sPushApi.push,
-      request: sReqApi.request,
-      onPush: cPushApi.handle,
-      onRequest: cReqApi.handle,
-      useRequest: cReqApi.use,
-      usePush: cPushApi.use,
+      push: pushApi.push,
+      request: reqApi.request,
+      onPush: pushHandler.handle,
+      onRequest: reqHandler.handle,
+      useRequest: reqHandler.use,
+      usePush: pushHandler.use,
       clients: core.ws as Map<WS, { meta: KrissanClientMeta } & ClientState>,
     } as ServerApi,
   };

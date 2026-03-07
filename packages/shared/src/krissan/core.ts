@@ -495,25 +495,31 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     return { error, req, res: { method: ERR, route: req.route, headers } };
   }
 
-  protected createPushLane<TTarget = unknown>(
+  protected createPushApi<TTarget = unknown>(
     events: readonly string[],
-    reverseET: ET,
     sender: (route: string, data: unknown, target?: TTarget) => void,
   ) {
     type PushAPI = Record<string, (...args: Arg<unknown, TTarget>) => void>;
-    type Handler = (c: KrissanPushHandlerContext<unknown, State | undefined>) => void;
-    type HandleAPI = Record<string, (handler: Handler) => () => void>;
-    type Matcher = KrissanPushMatcher<string, State | undefined>;
-    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
-    type API = { push: PushAPI; handle: HandleAPI; use: UseAPI };
-    const api: API = { push: {}, handle: {}, use: () => () => undefined };
+    const api: { push: PushAPI } = { push: {} };
 
     for (const route of events) {
       api.push[route] = (...args: Arg<unknown, TTarget>) => {
         const [data, target] = args;
         sender(route, data, target);
       };
+    }
 
+    return api;
+  }
+
+  protected createPushHandler(events: readonly string[], reverseET: ET) {
+    type Handler = (c: KrissanPushHandlerContext<unknown, State | undefined>) => void;
+    type HandleAPI = Record<string, (handler: Handler) => () => void>;
+    type Matcher = KrissanPushMatcher<string, State | undefined>;
+    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
+    const api: { handle: HandleAPI; use: UseAPI } = { handle: {}, use: () => () => undefined };
+
+    for (const route of events) {
       api.handle[route] = (handler: Handler) => {
         return reverseET.on(route, (e) => {
           const c = this.createPushContext(route, e);
@@ -542,7 +548,6 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     c: KrissanReqHandlerContext,
     error: unknown,
     route: string,
-    // TODO: from constructor
     reqSchemas?: Record<string, ReqSchemaTuple>,
   ): Promise<KrissanFailure> {
     const isExpected = error instanceof KrissanFailure;
@@ -566,9 +571,8 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
     return failure;
   }
 
-  protected createReqLane<TTarget = unknown>(
+  protected createReqApi<TTarget = unknown>(
     events: readonly string[],
-    reqET: ET,
     requestSender: (
       route: string,
       cid: string,
@@ -576,26 +580,36 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       timeout: number,
       target?: TTarget,
     ) => unknown,
-    // TODO: err schema directly
-    reqSchemas?: Record<string, ReqSchemaTuple>,
   ) {
     type RequestAPI = Record<string, (...args: Arg<unknown, RequestOption, TTarget>) => unknown>;
-    type Handler = KrissanReqMiddleware<unknown, unknown, unknown, State | undefined>;
-    type HandleAPI = Record<string, (handler: Handler) => () => void>;
-    type Matcher = KrissanRequestMatcher<string, State | undefined>;
-    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
-    type API = { request: RequestAPI; handle: HandleAPI; use: UseAPI };
-    const api: API = { request: {}, handle: {}, use: () => () => undefined };
-    const middlewareMap: Partial<Record<string, Handler[]>> = {};
+    const api: { request: RequestAPI } = { request: {} };
 
     for (const route of events) {
-      middlewareMap[route] = [];
       api.request[route] = (...args: Arg<unknown, RequestOption, TTarget>) => {
         const [data, options, target] = args;
         const cid = this.uid();
         const t = options?.timeout ?? this.defaultTimeout;
         return requestSender(route, cid, data, t, target);
       };
+    }
+
+    return api;
+  }
+
+  protected createRequestHandler(
+    events: readonly string[],
+    reqET: ET,
+    reqSchemas?: Record<string, ReqSchemaTuple>,
+  ) {
+    type Handler = KrissanReqMiddleware<unknown, unknown, unknown, State | undefined>;
+    type HandleAPI = Record<string, (handler: Handler) => () => void>;
+    type Matcher = KrissanRequestMatcher<string, State | undefined>;
+    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
+    const api: { handle: HandleAPI; use: UseAPI } = { handle: {}, use: () => () => undefined };
+    const middlewareMap: Partial<Record<string, Handler[]>> = {};
+
+    for (const route of events) {
+      middlewareMap[route] = [];
 
       reqET.on(route, async (e) => {
         if (e.issues) {

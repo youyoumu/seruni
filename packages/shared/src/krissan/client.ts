@@ -24,7 +24,6 @@ import {
   type KrissanPacket,
   type KrissanHeaders,
   type KrissanContext,
-  noop,
 } from "./core";
 export * from "./core";
 
@@ -100,66 +99,54 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
     } catch {}
   }
 
-  createClientPushLane(events: readonly string[]) {
-    return this.createPushLane(events, this.ets.cPush, (route, body) => {
+  getPushApi(events: readonly string[]) {
+    return this.createPushApi(events, (route, body) => {
       const payload = { method: PUSH, route, body, headers: this.createHeaders() };
       this.send(payload);
     });
   }
 
-  createServerPushLane(events: readonly string[]) {
-    /* client doesn't push server-initiated pushes */
-    return this.createPushLane(events, this.ets.sPush, noop);
+  getPushHandler(events: readonly string[]) {
+    return this.createPushHandler(events, this.ets.sPush);
   }
 
-  createClientReqLane(events: readonly string[]) {
-    return this.createReqLane(
-      events,
-      this.ets.cReq,
-      (route, cid, body, t) => {
-        const ConnectionClosed = new KrissanError(KrissanError.ConnectionClosed);
-        const RequestTimeout = new KrissanError(KrissanError.RequestTimeout);
-        const InvalidResponse = new KrissanError(KrissanError.InvalidResponse);
-        return new Promise((resolve, reject) => {
-          if (!this.ws || this.ws.readyState !== 1) return reject(ConnectionClosed);
+  getReqApi(events: readonly string[]) {
+    return this.createReqApi(events, (route, cid, body, t) => {
+      const ConnectionClosed = new KrissanError(KrissanError.ConnectionClosed);
+      const RequestTimeout = new KrissanError(KrissanError.RequestTimeout);
+      const InvalidResponse = new KrissanError(KrissanError.InvalidResponse);
+      return new Promise((resolve, reject) => {
+        if (!this.ws || this.ws.readyState !== 1) return reject(ConnectionClosed);
 
-          let timer: ReturnType<typeof setTimeout>;
-          // prettier-ignore
-          const clean = () => { clearTimeout(timer); off(); offErr(); };
-          const off = this.ets.sRes.on(route, (e) => {
-            if (e.headers.cid === cid && e.context.ws === this.ws) {
-              clean();
-              if (e.issues) return reject(InvalidResponse);
-              resolve({ type: "Success", value: e.body });
-            }
-          });
-          const offErr = this.ets.sErr.on(route, async (e) => {
-            if (e.headers.cid === cid && e.context.ws === this.ws) {
-              clean();
-              if (e.issues) return reject(InvalidResponse);
-              resolve({ type: "Failure", error: e.body });
-            }
-          });
-          // prettier-ignore
-          timer = setTimeout(() => { clean(); reject(RequestTimeout); }, t);
-
-          const headers = this.createHeaders(cid);
-          const payload = { method: REQ, route, body, headers };
-          this.send(payload);
+        let timer: ReturnType<typeof setTimeout>;
+        // prettier-ignore
+        const clean = () => { clearTimeout(timer); off(); offErr(); };
+        const off = this.ets.sRes.on(route, (e) => {
+          if (e.headers.cid === cid && e.context.ws === this.ws) {
+            clean();
+            if (e.issues) return reject(InvalidResponse);
+            resolve({ type: "Success", value: e.body });
+          }
         });
-      },
-      this.schemas.clientRequests,
-    );
+        const offErr = this.ets.sErr.on(route, async (e) => {
+          if (e.headers.cid === cid && e.context.ws === this.ws) {
+            clean();
+            if (e.issues) return reject(InvalidResponse);
+            resolve({ type: "Failure", error: e.body });
+          }
+        });
+        // prettier-ignore
+        timer = setTimeout(() => { clean(); reject(RequestTimeout); }, t);
+
+        const headers = this.createHeaders(cid);
+        const payload = { method: REQ, route, body, headers };
+        this.send(payload);
+      });
+    });
   }
 
-  createServerReqLane(events: readonly string[]) {
-    return this.createReqLane(
-      events,
-      this.ets.sReq,
-      /* client doesn't initiate server requests */
-      noop,
-      this.schemas.serverRequests,
-    );
+  getReqHandler(events: readonly string[]) {
+    return this.createRequestHandler(events, this.ets.sReq, this.schemas.serverRequests);
   }
 }
 
@@ -174,10 +161,10 @@ function createClientRuntime<const Schema extends KrissanSchemas>(
 
   const core = new KrissanClientCore<Schema>(schemas, options);
 
-  const cPushApi = core.createClientPushLane(Object.keys(schemas.clientPushes));
-  const sPushApi = core.createServerPushLane(Object.keys(schemas.serverPushes));
-  const cReqApi = core.createClientReqLane(Object.keys(schemas.clientRequests));
-  const sReqApi = core.createServerReqLane(Object.keys(schemas.serverRequests));
+  const pushApi = core.getPushApi(Object.keys(schemas.clientPushes));
+  const pushHandler = core.getPushHandler(Object.keys(schemas.serverPushes));
+  const reqApi = core.getReqApi(Object.keys(schemas.clientRequests));
+  const reqHandler = core.getReqHandler(Object.keys(schemas.serverRequests));
 
   /**
    * API for interacting with the socket.
@@ -232,12 +219,12 @@ function createClientRuntime<const Schema extends KrissanSchemas>(
       if (core.ws === ws) core.ws = undefined;
     },
     api: {
-      push: cPushApi.push,
-      request: cReqApi.request,
-      onPush: sPushApi.handle,
-      onRequest: sReqApi.handle,
-      useRequest: sReqApi.use,
-      usePush: sPushApi.use,
+      push: pushApi.push,
+      request: reqApi.request,
+      onPush: pushHandler.handle,
+      onRequest: reqHandler.handle,
+      useRequest: reqHandler.use,
+      usePush: pushHandler.use,
     } as ClientApi,
   };
 }
