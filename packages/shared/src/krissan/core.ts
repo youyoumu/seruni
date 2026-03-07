@@ -71,9 +71,7 @@ type KrissanResponse<T = unknown, E = unknown> = [E] extends [never]
 /**
  * Container for the payload value in a socket packet.
  */
-interface KrissanBody<T = unknown> {
-  value?: T;
-}
+type KrissanBody<T = unknown> = T;
 
 /**
  * Wire-level packet exchanged between client and server.
@@ -452,7 +450,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       req: Object.freeze({
         method: "REQ" as const,
         route,
-        body: e.body.value,
+        body: e.body,
         headers: Object.freeze({ ...e.headers }),
       }),
       res,
@@ -478,7 +476,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       push: Object.freeze({
         method: "PUSH" as const,
         route,
-        body: e.body.value,
+        body: e.body,
         headers: Object.freeze({ ...e.headers }),
       }),
     };
@@ -597,7 +595,7 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
       reqET.on(route, async (e) => {
         if (e.issues) {
           const headers = this.createHeaders(e.headers.cid);
-          const payload = { method: "ERR" as const, route, body: { value: e.issues }, headers };
+          const payload = { method: "ERR" as const, route, body: e.issues, headers };
           return this.send(payload, e.context.ws);
         }
 
@@ -618,13 +616,13 @@ abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown>
           await dispatch(0);
           if (c.res.body === undefined) return;
           const headers = { ...c.res.headers, ...this.createHeaders(e.headers.cid) };
-          const payload = { method: c.res.method, route, body: { value: c.res.body }, headers };
+          const payload = { method: c.res.method, route, body: c.res.body, headers };
           this.send(payload, e.context.ws);
         } catch (error) {
           const failure = await this.decideFailure(c, error, route, reqSchemas);
           const headers = { ...c.res.headers, ...this.createHeaders(e.headers.cid) };
           this.send(
-            { method: "ERR", route: c.res.route, body: { value: failure.error }, headers },
+            { method: "ERR", route: c.res.route, body: failure.error, headers },
             e.context.ws,
           );
         }

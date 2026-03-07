@@ -66,40 +66,35 @@ class KrissanServerCore<
       meta.messageCount++;
       meta.lastMessageAt = Date.now();
 
-      const {
-        method,
-        route,
-        body: { value },
-      } = p;
+      const { method, route, body } = p;
       const headers: KrissanHeaders = p.headers ?? {};
       const context: KrissanContext = { ws };
-      const body = { value };
 
       if (method === "PUSH") {
         const schema = this.schemas.clientPushes[route] ?? undefinedSchema;
-        const res = await this.validate(schema, value, route, "PUSH");
+        const res = await this.validate(schema, body, route, "PUSH");
         if (res.success) {
-          const event = new KrissanEvent(route, { value: res.value }, headers, context);
+          const event = new KrissanEvent(route, res.value, headers, context);
           this.ets.cPush.dispatchEvent(event);
         }
       } else if (method === "REQ") {
         const schema = this.schemas.clientRequests[route]?.[0] ?? undefinedSchema;
-        const res = await this.validate(schema, value, route, "REQ");
-        const eBody = res.success ? { value: res.value } : body;
+        const res = await this.validate(schema, body, route, "REQ");
+        const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
         this.ets.cReq.dispatchEvent(event);
       } else if (method === "RES") {
         const schema = this.schemas.serverRequests[route]?.[1] ?? nullSchema;
-        const res = await this.validate(schema, value, route, "RES");
-        const eBody = res.success ? { value: res.value } : body;
+        const res = await this.validate(schema, body, route, "RES");
+        const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
         this.ets.cRes.dispatchEvent(event);
       } else if (method === "ERR") {
         const schema = this.schemas.serverRequests[route]?.[2] ?? neverSchema;
-        const res = await this.validate(schema, value, route, "ERR");
-        const eBody = res.success ? { value: res.value } : body;
+        const res = await this.validate(schema, body, route, "ERR");
+        const eBody = res.success ? res.value : body;
         const eErr = res.success ? undefined : res.error;
         const event = new KrissanEvent(route, eBody, headers, context, eErr);
         this.ets.cErr.dispatchEvent(event);
@@ -119,7 +114,7 @@ class KrissanServerCore<
       (route, data, target) => {
         const exec = (ws: WS) => {
           const headers = this.createHeaders();
-          const payload = { method: "PUSH" as const, route, body: { value: data }, headers };
+          const payload = { method: "PUSH" as const, route, body: data, headers };
           this.send(payload, ws);
         };
 
@@ -164,14 +159,14 @@ class KrissanServerCore<
               if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
-                resolve({ type: "Success", value: e.body.value });
+                resolve({ type: "Success", value: e.body });
               }
             });
             const offErr = this.ets.cErr.on(route, async (e) => {
               if (e.headers.cid === cid && e.context.ws === ws) {
                 clean();
                 if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
-                resolve({ type: "Failure", error: e.body.value });
+                resolve({ type: "Failure", error: e.body });
               }
             });
             timer = setTimeout(() => {
@@ -180,7 +175,7 @@ class KrissanServerCore<
             }, t);
 
             const headers = this.createHeaders(cid);
-            const payload = { method: "REQ" as const, route, body: { value: data }, headers };
+            const payload = { method: "REQ" as const, route, body: data, headers };
             this.send(payload, ws);
           });
         };
