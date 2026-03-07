@@ -146,7 +146,16 @@ type KrissanRequestMatcher<Route extends string> =
   | Route
   | Route[]
   | RegExp
-  | ((c: KrissanReqHandlerContext<unknown>) => boolean | Promise<boolean>);
+  | ((c: KrissanReqHandlerContext) => boolean | Promise<boolean>);
+
+/**
+ * Defines which routes a push handler should apply to.
+ */
+type KrissanPushMatcher<Route extends string> =
+  | Route
+  | Route[]
+  | RegExp
+  | ((c: KrissanPushHandlerContext) => boolean | Promise<boolean>);
 
 /**
  * Metadata tracked for each connected client.
@@ -401,13 +410,23 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     return headers;
   }
 
-  #toPredicate(
-    matcher: KrissanRequestMatcher<string>,
-  ): (c: KrissanReqHandlerContext<unknown>) => boolean | Promise<boolean> {
-    if (typeof matcher === "string") return (c) => c.req.route === matcher;
-    if (Array.isArray(matcher)) return (c) => matcher.includes(c.req.route);
-    if (matcher instanceof RegExp) return (c) => matcher.test(c.req.route);
-    return matcher;
+  #isReqHandler(
+    c: KrissanReqHandlerContext | KrissanPushHandlerContext,
+  ): c is KrissanReqHandlerContext {
+    return "req" in c;
+  }
+
+  #toPredicate<C extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
+    matcher: C extends KrissanReqHandlerContext
+      ? KrissanRequestMatcher<string>
+      : KrissanPushMatcher<string>,
+  ): (c: C) => boolean | Promise<boolean> {
+    const getRoute = (c: KrissanReqHandlerContext | KrissanPushHandlerContext): string =>
+      this.#isReqHandler(c) ? c.req.route : c.push.route;
+    if (typeof matcher === "string") return (c) => getRoute(c) === matcher;
+    if (Array.isArray(matcher)) return (c) => matcher.includes(getRoute(c));
+    if (matcher instanceof RegExp) return (c) => matcher.test(getRoute(c));
+    return matcher as (c: C) => boolean | Promise<boolean>;
   }
 
   #send(payload: KrissanPacket, ws?: WS) {
@@ -421,7 +440,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     route: string,
     e: { body: KrissanBody; headers: KrissanHeaders; context: KrissanContext; issues?: unknown },
   ) {
-    const res: KrissanReqHandlerContext<unknown>["res"] = {
+    const res: KrissanReqHandlerContext["res"] = {
       method: "RES",
       route,
       header: {},
@@ -438,7 +457,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
       enumerable: true,
       configurable: false,
     });
-    const c: KrissanReqHandlerContext<unknown> = {
+    const c: KrissanReqHandlerContext = {
       ws: e.context.ws,
       req: Object.freeze({
         method: "REQ" as const,
@@ -462,9 +481,13 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
     const api: {
       push: Partial<Record<string, (...args: Arg<unknown, ServerPushOption>) => void>>;
       handle: Partial<
-        Record<string, (handler: (c: KrissanPushHandlerContext<unknown>) => void) => () => void>
+        Record<string, (handler: (c: KrissanPushHandlerContext) => void) => () => void>
       >;
-    } = { push: {}, handle: {} };
+      use: (
+        matcher: KrissanPushMatcher<string>,
+        handler: (c: KrissanPushHandlerContext) => void,
+      ) => () => void;
+    } = { push: {}, handle: {}, use: () => () => undefined };
     events.forEach((route) => {
       api.push[route] = (...args) => {
         const data = args[0];
@@ -498,7 +521,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         }
         exec();
       };
-      api.handle[route] = (handler: (c: KrissanPushHandlerContext<unknown>) => void) =>
+      api.handle[route] = (handler: (c: KrissanPushHandlerContext) => void) =>
         reverseET.on(route, (e) =>
           handler({
             ws: e.context.ws,
@@ -511,6 +534,23 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
           }),
         );
     });
+
+    api.use = (
+      matcher: KrissanPushMatcher<string>,
+      handler: (c: KrissanPushHandlerContext) => void,
+    ) => {
+      const predicate = this.#toPredicate<KrissanPushHandlerContext>(matcher);
+      const offs = events.map((route) => {
+        const register = api.handle[route];
+        if (!register) return () => undefined;
+        return register(async (c) => {
+          if (!(await predicate(c))) return;
+          return handler(c);
+        });
+      });
+      return () => offs.forEach((off) => off());
+    };
+
     return api;
   }
 
@@ -524,19 +564,14 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
   ) {
     const api: {
       request: Partial<Record<string, (...args: Arg<unknown, ServerRequestOption>) => unknown>>;
-      handle: Partial<
-        Record<string, (handler: KrissanReqMiddleware<unknown, unknown>) => () => void>
-      >;
-      use: (
-        matcher: KrissanRequestMatcher<string>,
-        handler: KrissanReqMiddleware<unknown, unknown>,
-      ) => () => void;
+      handle: Partial<Record<string, (handler: KrissanReqMiddleware) => () => void>>;
+      use: (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => () => void;
     } = {
       request: {},
       handle: {},
       use: () => () => undefined,
     };
-    const middlewareMap: Partial<Record<string, KrissanReqMiddleware<unknown, unknown>[]>> = {};
+    const middlewareMap: Partial<Record<string, KrissanReqMiddleware[]>> = {};
 
     events.forEach((route) => {
       middlewareMap[route] = [];
@@ -545,7 +580,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         const cid = this.#uid();
         const options = args[1];
         const t = options?.timeout ?? timeout;
-        const exec = (ws?: WS): Promise<KrissanResponse<unknown>> => {
+        const exec = (ws?: WS): Promise<KrissanResponse> => {
           return new Promise((resolve, reject) => {
             if (!ws) return reject(new KrissanError(KrissanError.ConnectionClosed));
             let timer: ReturnType<typeof setTimeout>;
@@ -672,7 +707,7 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         }
       });
 
-      api.handle[route] = (handler: KrissanReqMiddleware<unknown, unknown>) => {
+      api.handle[route] = (handler: KrissanReqMiddleware) => {
         const middlewares = middlewareMap[route];
         if (!middlewares) return () => undefined;
         middlewares.push(handler);
@@ -683,11 +718,8 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
       };
     });
 
-    api.use = (
-      matcher: KrissanRequestMatcher<string>,
-      handler: KrissanReqMiddleware<unknown, unknown>,
-    ) => {
-      const predicate = this.#toPredicate(matcher);
+    api.use = (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => {
+      const predicate = this.#toPredicate<KrissanReqHandlerContext>(matcher);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
@@ -820,6 +852,7 @@ export {
   type KrissanPushHandler,
   type KrissanReqMiddleware,
   type KrissanRequestMatcher,
+  type KrissanPushMatcher,
   type KrissanBody,
   type KrissanPacket,
   type WS,

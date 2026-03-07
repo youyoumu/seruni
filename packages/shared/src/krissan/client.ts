@@ -5,6 +5,7 @@ import {
   type ReqSchemas,
   type RequestOption,
   type KrissanConstructOption,
+  type KrissanPushMatcher,
   type KrissanReqMiddleware,
   type KrissanRequestMatcher,
   type KrissanResponse,
@@ -91,7 +92,14 @@ function createClientRuntime<const Schema extends KrissanSchemas>(
      */
     useRequest: (
       matcher: KrissanRequestMatcher<keyof CReq & string>,
-      handler: KrissanReqMiddleware<unknown, unknown>,
+      handler: KrissanReqMiddleware,
+    ) => () => void;
+    /**
+     * Register a handler for push messages that matches a pattern.
+     */
+    usePush: (
+      matcher: KrissanPushMatcher<keyof SPush & string>,
+      handler: KrissanPushHandler,
     ) => () => void;
   };
 
@@ -109,6 +117,7 @@ function createClientRuntime<const Schema extends KrissanSchemas>(
       onPush: sPushApi.handle,
       onRequest: sReqApi.handle,
       useRequest: sReqApi.use,
+      usePush: sPushApi.use,
     } as ClientApi,
   };
 }

@@ -7,6 +7,7 @@ import {
   type ServerPushOption,
   type KrissanClientMeta,
   type KrissanConstructOption,
+  type KrissanPushMatcher,
   type KrissanReqMiddleware,
   type KrissanRequestMatcher,
   type KrissanResponse,
@@ -94,7 +95,14 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
      */
     useRequest: (
       matcher: KrissanRequestMatcher<keyof CReq & string>,
-      handler: KrissanReqMiddleware<unknown, unknown>,
+      handler: KrissanReqMiddleware,
+    ) => () => void;
+    /**
+     * Register a handler for push messages that matches a pattern.
+     */
+    usePush: (
+      matcher: KrissanPushMatcher<keyof CPush & string>,
+      handler: KrissanPushHandler,
     ) => () => void;
     /**
      * Map of connected clients and their state.
@@ -118,6 +126,7 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
       onPush: cPushApi.handle,
       onRequest: cReqApi.handle,
       useRequest: cReqApi.use,
+      usePush: cPushApi.use,
       clients: core.serverWS.ws,
     } as ServerApi,
   };
