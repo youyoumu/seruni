@@ -13,6 +13,7 @@ type InferRes<T extends StandardSchema | undefined> = T extends StandardSchema
 type InferErr<T extends StandardSchema | undefined> = T extends StandardSchema
   ? StandardSchemaV1.InferOutput<T>
   : never;
+
 /**
  * Tuple representing the schemas for a request-response pair: [request, response, error].
  */
@@ -58,6 +59,7 @@ class KrissanError extends Error {
 class KrissanFailure {
   constructor(public readonly error: unknown) {}
 }
+
 /**
  * Represents the response from a socket request.
  * It can either be a Success with a value or a Failure with an error.
@@ -107,7 +109,7 @@ interface KrissanReqHandlerContext<TBody = unknown, TErr = unknown, TState = unk
   res: {
     method: "RES" | "ERR";
     route: string;
-    header: KrissanHeaders;
+    headers: KrissanHeaders;
     body?: unknown;
   };
   state: TState;
@@ -244,7 +246,7 @@ type KrissanErrorHandlerContext = {
   res: {
     method: "ERR";
     route: string;
-    header: KrissanHeaders;
+    headers: KrissanHeaders;
     body?: unknown;
   };
   /** The original error that occurred */
@@ -262,7 +264,7 @@ type KrissanErrorHandler<T = unknown> = (ctx: KrissanErrorHandlerContext) => T |
 type KrissanConstructOption =
   | {
       /** Default timeout for requests in milliseconds */
-      timeout?: number;
+      defaultTimeout?: number;
       /** Function to generate unique IDs for requests */
       uid?: () => string;
       /** Global error handler */
@@ -276,6 +278,7 @@ function defineKrissanSchema<T extends KrissanSchemas>(schema: T) {
   return schema;
 }
 
+const noop = () => {};
 const uid = () => Math.random().toString(36).slice(2);
 const DEFAULT_PROTOCOL_ID = 16777619;
 const DEFAULT_TIMEOUT = 300000;
@@ -343,15 +346,12 @@ class ET extends EventTarget {
   }
 }
 
-class KrissanCore<const Schema extends KrissanSchemas> {
-  #schemas: Schema;
-  #clientCookie: { value: Record<string, string> } = { value: {} };
-  #uid: () => string;
-  #onError?: KrissanErrorHandler;
-  #protocolId: number;
-  #prefix: string;
-  readonly clientWS: { ws: WS | undefined } = { ws: undefined };
-  readonly serverWS = { ws: new Map<WS, { meta: KrissanClientMeta } & {}>() };
+abstract class KrissanBase<const Schema extends KrissanSchemas, State = unknown> {
+  protected schemas: Schema;
+  protected uid: () => string;
+  protected onError?: KrissanErrorHandler;
+  protected protocolId: number;
+  protected prefix: string;
   readonly ets = {
     cPush: new ET(),
     sPush: new ET(),
@@ -362,29 +362,26 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     cErr: new ET(),
     sErr: new ET(),
   };
-  readonly clientTimeout: number;
-  readonly serverTimeout: number;
+  protected defaultTimeout: number;
 
   constructor(
     schemas: Schema,
     options?: {
-      clientTimeout?: number;
-      serverTimeout?: number;
+      defaultTimeout?: number;
       uid?: () => string;
       onError?: KrissanErrorHandler;
       protocolId?: number;
     },
   ) {
-    this.#schemas = schemas;
-    this.#uid = options?.uid ?? uid;
-    this.#onError = options?.onError;
-    this.clientTimeout = options?.clientTimeout ?? DEFAULT_TIMEOUT;
-    this.serverTimeout = options?.serverTimeout ?? DEFAULT_TIMEOUT;
-    this.#protocolId = options?.protocolId ?? DEFAULT_PROTOCOL_ID;
-    this.#prefix = `krissan:${this.#protocolId}:`;
+    this.schemas = schemas;
+    this.uid = options?.uid ?? uid;
+    this.onError = options?.onError;
+    this.defaultTimeout = options?.defaultTimeout ?? DEFAULT_TIMEOUT;
+    this.protocolId = options?.protocolId ?? DEFAULT_PROTOCOL_ID;
+    this.prefix = `krissan:${this.protocolId}:`;
   }
 
-  #sanitizeCookie(cookie: unknown): Record<string, string> | undefined {
+  protected sanitizeCookie(cookie: unknown): Record<string, string> | undefined {
     if (!cookie || typeof cookie !== "object" || Array.isArray(cookie)) return undefined;
     const sanitized: Record<string, string> = {};
     Object.entries(cookie).forEach(([k, v]) => {
@@ -393,7 +390,7 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     return sanitized;
   }
 
-  async #validate(
+  protected async validate(
     schema: StandardSchema,
     data: unknown,
     route: string,
@@ -407,22 +404,9 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     return { success: true as const, value: res.value };
   }
 
-  #applySetCookie(setCookie: unknown) {
-    const sanitized = this.#sanitizeCookie(setCookie);
-    if (!sanitized) return;
-    this.#clientCookie.value = sanitized;
-  }
+  protected abstract createHeaders(cid?: string): KrissanHeaders;
 
-  #createHeaders(isClientSender: boolean, cid?: string): KrissanHeaders {
-    const headers: KrissanHeaders = { timestamp: Date.now() };
-    if (cid) headers.cid = cid;
-    if (isClientSender && Object.keys(this.#clientCookie.value).length > 0) {
-      headers.cookie = this.#clientCookie.value;
-    }
-    return headers;
-  }
-
-  #toPredicate<T extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
+  protected toPredicate<T extends KrissanReqHandlerContext | KrissanPushHandlerContext>(
     matcher: string | string[] | RegExp | ((c: T) => boolean | Promise<boolean>),
     getRoute: (c: T) => string,
   ): (c: T) => boolean | Promise<boolean> {
@@ -432,23 +416,20 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     return matcher;
   }
 
-  #send(payload: KrissanPacket, ws?: WS) {
-    const data = `${this.#prefix}${JSON.stringify(payload)}`;
-    if (ws) ws.send(data);
-    else if (this.clientWS.ws?.readyState === 1) this.clientWS.ws.send(data);
-    else this.serverWS.ws.forEach((_, s) => s.readyState === 1 && s.send(data));
-  }
+  protected abstract send(payload: KrissanPacket, ws?: WS): void;
 
-  createRequestContext(
+  protected abstract getState(ws: WS): State | undefined;
+
+  protected createReqContext(
     route: string,
     e: { body: KrissanBody; headers: KrissanHeaders; context: KrissanContext; issues?: unknown },
   ) {
     const ws = e.context.ws;
-    const state = this.serverWS.ws.get(ws);
+    const state = this.getState(ws);
     const res: KrissanReqHandlerContext["res"] = {
       method: "RES",
       route,
-      header: {},
+      headers: {},
     };
     Object.defineProperty(res, "method", {
       value: "RES",
@@ -462,11 +443,11 @@ class KrissanCore<const Schema extends KrissanSchemas> {
       enumerable: true,
       configurable: false,
     });
-    const c: KrissanReqHandlerContext = {
+    const c: KrissanReqHandlerContext<unknown, unknown, State | undefined> = {
       ws,
       state,
       setState: (newState: Record<string, unknown>) => {
-        if (state) Object.assign(state, newState);
+        if (state && typeof state === "object") Object.assign(state, newState);
       },
       req: Object.freeze({
         method: "REQ" as const,
@@ -482,78 +463,64 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     return c;
   }
 
-  createPushLane<IsClient extends boolean>(
+  protected createPushContext(
+    route: string,
+    e: { body: KrissanBody; headers: KrissanHeaders; context: KrissanContext; issues?: unknown },
+  ) {
+    const ws = e.context.ws;
+    const state = this.getState(ws);
+    return {
+      ws,
+      state: state,
+      setState: (newState: Record<string, unknown>) => {
+        if (state && typeof state === "object") Object.assign(state, newState);
+      },
+      push: Object.freeze({
+        method: "PUSH" as const,
+        route,
+        body: e.body.value,
+        headers: Object.freeze({ ...e.headers }),
+      }),
+    };
+  }
+
+  protected createErrContext(
+    error: unknown,
+    req: KrissanReqHandlerContext["req"],
+    headers: KrissanHeaders,
+  ): KrissanErrorHandlerContext {
+    return { error, req, res: { method: "ERR", route: req.route, headers } };
+  }
+
+  protected createPushLane<TTarget = unknown>(
     events: readonly string[],
     reverseET: ET,
-    isClient: IsClient,
+    sender: (route: string, data: unknown, target?: TTarget) => void,
   ) {
-    const api: {
-      push: Partial<Record<string, (...args: Arg<unknown, ServerPushTargetPicker>) => void>>;
-      handle: Partial<
-        Record<string, (handler: (c: KrissanPushHandlerContext) => void) => () => void>
-      >;
-      use: (
-        matcher: KrissanPushMatcher<string>,
-        handler: (c: KrissanPushHandlerContext) => void,
-      ) => () => void;
-    } = { push: {}, handle: {}, use: () => () => undefined };
-    events.forEach((route) => {
-      api.push[route] = (...args) => {
-        const data = args[0];
-        const target = args[1];
+    type PushAPI = Record<string, (...args: Arg<unknown, TTarget>) => void>;
+    type Handler = (c: KrissanPushHandlerContext<unknown, State | undefined>) => void;
+    type HandleAPI = Record<string, (handler: Handler) => () => void>;
+    type Matcher = KrissanPushMatcher<string, State | undefined>;
+    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
+    type API = { push: PushAPI; handle: HandleAPI; use: UseAPI };
+    const api: API = { push: {}, handle: {}, use: () => () => undefined };
 
-        const exec = (ws?: WS) => {
-          this.#send(
-            {
-              method: "PUSH",
-              route,
-              body: { value: data },
-              headers: this.#createHeaders(isClient),
-            },
-            ws,
-          );
-        };
-
-        if (isClient) return exec(this.clientWS.ws);
-        if (target) {
-          if (typeof target === "function") {
-            const clients = Array.from(this.serverWS.ws.keys());
-            const picked = target(clients);
-            if (Array.isArray(picked)) return picked.forEach(exec);
-            if (picked) return exec(picked);
-            return;
-          }
-          if (Array.isArray(target)) return target.forEach(exec);
-          if (target) return exec(target);
-          return;
-        }
-        exec();
+    for (const route of events) {
+      api.push[route] = (...args: Arg<unknown, TTarget>) => {
+        const [data, target] = args;
+        sender(route, data, target);
       };
-      api.handle[route] = (handler: (c: KrissanPushHandlerContext) => void) =>
-        reverseET.on(route, (e) => {
-          const ws = e.context.ws;
-          const state = this.serverWS.ws.get(ws);
-          handler({
-            ws,
-            state: state,
-            setState: (newState: Record<string, unknown>) => {
-              if (state) Object.assign(state, newState);
-            },
-            push: Object.freeze({
-              method: "PUSH" as const,
-              route,
-              body: e.body.value,
-              headers: Object.freeze({ ...e.headers }),
-            }),
-          });
-        });
-    });
 
-    api.use = (
-      matcher: KrissanPushMatcher<string>,
-      handler: (c: KrissanPushHandlerContext) => void,
-    ) => {
-      const predicate = this.#toPredicate(matcher, (c) => c.push.route);
+      api.handle[route] = (handler: Handler) => {
+        return reverseET.on(route, (e) => {
+          const c = this.createPushContext(route, e);
+          handler(c);
+        });
+      };
+    }
+
+    api.use = (matcher: Matcher, handler: Handler) => {
+      const predicate = this.toPredicate(matcher, (c) => c.push.route);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
@@ -568,108 +535,76 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     return api;
   }
 
-  createReqLane<IsClient extends boolean>(
+  protected async decideFailure(
+    c: KrissanReqHandlerContext,
+    error: unknown,
+    route: string,
+    // TODO: from constructor
+    reqSchemas?: Record<string, ReqSchemaTuple>,
+  ): Promise<KrissanFailure> {
+    const isExpected = error instanceof KrissanFailure;
+    let failure: KrissanFailure;
+    if (isExpected) failure = error;
+    else if (this.onError) {
+      const errCtx = this.createErrContext(error, c.req, c.res.headers);
+      try {
+        const errBody = await this.onError(errCtx);
+        const body = errBody !== undefined ? errBody : errCtx.res.body;
+        failure = new KrissanFailure(body);
+      } catch {
+        failure = new KrissanFailure("InternalError");
+      }
+    } else failure = new KrissanFailure("InternalError");
+    const schema = reqSchemas?.[route]?.[2] ?? neverSchema;
+    if (isExpected) {
+      const validation = await this.validate(schema, failure.error, route, "ERR");
+      if (!validation.success) failure = new KrissanFailure("InternalError");
+    }
+    return failure;
+  }
+
+  protected createReqLane<TTarget = unknown>(
     events: readonly string[],
     reqET: ET,
-    resET: ET,
-    errET: ET,
-    timeout: number,
-    isClient: IsClient,
+    requestSender: (
+      route: string,
+      cid: string,
+      data: unknown,
+      timeout: number,
+      target?: TTarget,
+    ) => unknown,
+    // TODO: err schema directly
+    reqSchemas?: Record<string, ReqSchemaTuple>,
   ) {
-    const api: {
-      request: Partial<
-        Record<string, (...args: Arg<unknown, RequestOption, ServerRequestTargetPicker>) => unknown>
-      >;
-      handle: Partial<Record<string, (handler: KrissanReqMiddleware) => () => void>>;
-      use: (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => () => void;
-    } = {
-      request: {},
-      handle: {},
-      use: () => () => undefined,
-    };
-    const middlewareMap: Partial<Record<string, KrissanReqMiddleware[]>> = {};
+    type RequestAPI = Record<string, (...args: Arg<unknown, RequestOption, TTarget>) => unknown>;
+    type Handler = KrissanReqMiddleware<unknown, unknown, unknown, State | undefined>;
+    type HandleAPI = Record<string, (handler: Handler) => () => void>;
+    type Matcher = KrissanRequestMatcher<string, State | undefined>;
+    type UseAPI = (matcher: Matcher, handler: Handler) => () => void;
+    type API = { request: RequestAPI; handle: HandleAPI; use: UseAPI };
+    const api: API = { request: {}, handle: {}, use: () => () => undefined };
+    const middlewareMap: Partial<Record<string, Handler[]>> = {};
 
-    events.forEach((route) => {
+    for (const route of events) {
       middlewareMap[route] = [];
-      api.request[route] = (...args) => {
-        const data = args[0];
-        const options = args[1];
-        const target = args[2];
-        const cid = this.#uid();
-        const t = options?.timeout ?? timeout;
-        const exec = (ws?: WS): Promise<KrissanResponse> => {
-          return new Promise((resolve, reject) => {
-            if (!ws) return reject(new KrissanError(KrissanError.ConnectionClosed));
-            let timer: ReturnType<typeof setTimeout>;
-            const clean = () => {
-              clearTimeout(timer);
-              off();
-              offErr();
-            };
-            const off = resET.on(route, (e) => {
-              if (e.headers.cid === cid && e.context.ws === ws) {
-                clean();
-                if (e.issues) {
-                  reject(new KrissanError(KrissanError.InvalidResponse));
-                  return;
-                }
-                resolve({ type: "Success", value: e.body.value });
-              }
-            });
-            const offErr = errET.on(route, async (e) => {
-              if (e.headers.cid === cid && e.context.ws === ws) {
-                clean();
-                if (e.issues) {
-                  reject(new KrissanError(KrissanError.InvalidResponse));
-                  return;
-                }
-                resolve({ type: "Failure", error: e.body.value });
-              }
-            });
-            timer = setTimeout(() => {
-              clean();
-              reject(new KrissanError(KrissanError.RequestTimeout));
-            }, t);
-            const headers = this.#createHeaders(isClient, cid);
-            if (!isClient || this.clientWS.ws?.readyState === 1) {
-              this.#send({ method: "REQ", route, body: { value: data }, headers }, ws);
-            } else {
-              clean();
-              reject(new KrissanError(KrissanError.ConnectionClosed));
-            }
-          });
-        };
-        if (isClient) return exec(this.clientWS.ws);
-        const clients = Array.from(this.serverWS.ws.keys());
-        if (target) {
-          if (Array.isArray(target)) return target.map(exec);
-          if (typeof target === "function") {
-            const picked = target(clients);
-            if (Array.isArray(picked)) return picked.map(exec);
-            return exec(picked);
-          }
-          return exec(target);
-        }
-        return clients.map(exec);
+      api.request[route] = (...args: Arg<unknown, RequestOption, TTarget>) => {
+        const [data, options, target] = args;
+        const cid = this.uid();
+        const t = options?.timeout ?? this.defaultTimeout;
+        return requestSender(route, cid, data, t, target);
       };
 
       reqET.on(route, async (e) => {
         if (e.issues) {
-          this.#send(
-            {
-              method: "ERR",
-              route,
-              body: { value: e.issues },
-              headers: this.#createHeaders(!isClient, e.headers.cid),
-            },
-            e.context.ws,
-          );
-          return;
+          const headers = this.createHeaders(e.headers.cid);
+          const payload = { method: "ERR" as const, route, body: { value: e.issues }, headers };
+          return this.send(payload, e.context.ws);
         }
+
         const middlewares = middlewareMap[route] ?? [];
         if (middlewares.length === 0) return;
 
-        const c = this.createRequestContext(route, e);
+        const c = this.createReqContext(route, e);
         try {
           let i = -1;
           const dispatch = async (idx: number): Promise<void> => {
@@ -682,51 +617,20 @@ class KrissanCore<const Schema extends KrissanSchemas> {
           };
           await dispatch(0);
           if (c.res.body === undefined) return;
-          const headers = { ...c.res.header, ...this.#createHeaders(!isClient, e.headers.cid) };
-          this.#send(
-            { method: c.res.method, route, body: { value: c.res.body }, headers },
-            e.context.ws,
-          );
+          const headers = { ...c.res.headers, ...this.createHeaders(e.headers.cid) };
+          const payload = { method: c.res.method, route, body: { value: c.res.body }, headers };
+          this.send(payload, e.context.ws);
         } catch (error) {
-          const isExpected = error instanceof KrissanFailure;
-          let failure: KrissanFailure;
-          if (isExpected) failure = error;
-          else if (this.#onError) {
-            const errCtx: KrissanErrorHandlerContext = {
-              error,
-              req: c.req,
-              res: { method: "ERR", route: c.res.route, header: c.res.header },
-            };
-            try {
-              const errBody = await this.#onError(errCtx);
-              const body = errBody !== undefined ? errBody : errCtx.res.body;
-              failure = new KrissanFailure(body);
-            } catch {
-              failure = new KrissanFailure("InternalError");
-            }
-          } else {
-            failure = new KrissanFailure("InternalError");
-          }
-          const errSchema =
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
-              route
-            ]?.[2] ?? neverSchema;
-          if (isExpected) {
-            const errValidation = await this.#validate(errSchema, failure.error, route, "ERR");
-            if (!errValidation.success) failure = new KrissanFailure("InternalError");
-          }
-          const headers = {
-            ...c.res.header,
-            ...this.#createHeaders(!isClient, e.headers.cid),
-          };
-          this.#send(
+          const failure = await this.decideFailure(c, error, route, reqSchemas);
+          const headers = { ...c.res.headers, ...this.createHeaders(e.headers.cid) };
+          this.send(
             { method: "ERR", route: c.res.route, body: { value: failure.error }, headers },
             e.context.ws,
           );
         }
       });
 
-      api.handle[route] = (handler: KrissanReqMiddleware) => {
+      api.handle[route] = (handler: Handler) => {
         const middlewares = middlewareMap[route];
         if (!middlewares) return () => undefined;
         middlewares.push(handler);
@@ -735,10 +639,10 @@ class KrissanCore<const Schema extends KrissanSchemas> {
           if (idx >= 0) middlewares.splice(idx, 1);
         };
       };
-    });
+    }
 
-    api.use = (matcher: KrissanRequestMatcher<string>, handler: KrissanReqMiddleware) => {
-      const predicate = this.#toPredicate(matcher, (c) => c.req.route);
+    api.use = (matcher: Matcher, handler: Handler) => {
+      const predicate = this.toPredicate(matcher, (c) => c.req.route);
       const offs = events.map((route) => {
         const register = api.handle[route];
         if (!register) return () => undefined;
@@ -751,108 +655,6 @@ class KrissanCore<const Schema extends KrissanSchemas> {
     };
 
     return api;
-  }
-
-  createOnMessage(isClient: boolean) {
-    return async (e: MessageEvent, ws: WS) => {
-      try {
-        if (typeof e.data !== "string" || !e.data.startsWith(this.#prefix)) return;
-        const p: KrissanPacket = JSON.parse(e.data.slice(this.#prefix.length));
-        if (isClient) this.#applySetCookie(p.headers?.["set-cookie"]);
-        const {
-          method,
-          route,
-          body: { value },
-        } = p;
-        const headers: KrissanHeaders = p.headers ?? {};
-        const cookie = this.#sanitizeCookie(headers.cookie);
-        if (cookie) headers.cookie = cookie;
-        else delete headers.cookie;
-        const setCookie = this.#sanitizeCookie(headers["set-cookie"]);
-        if (setCookie) headers["set-cookie"] = setCookie;
-        else delete headers["set-cookie"];
-        if ((method === "REQ" || method === "RES" || method === "ERR") && !headers.cid) return;
-        const context: KrissanContext = { ws };
-        const body = { value };
-
-        if (!isClient) {
-          const clientData = this.serverWS.ws.get(ws);
-          if (!clientData) return;
-          const meta = clientData.meta;
-          meta.messageCount++;
-          meta.lastMessageAt = Date.now();
-        }
-
-        if (method === "PUSH") {
-          const res = await this.#validate(
-            (isClient ? this.#schemas.serverPushes : this.#schemas.clientPushes)?.[route] ??
-              undefinedSchema,
-            value,
-            route,
-            "PUSH",
-          );
-          if (res.success) {
-            (isClient ? this.ets.sPush : this.ets.cPush).dispatchEvent(
-              new KrissanEvent(route, { value: res.value }, headers, context),
-            );
-          }
-        } else if (method === "REQ") {
-          const res = await this.#validate(
-            (isClient ? this.#schemas.serverRequests : this.#schemas.clientRequests)?.[
-              route
-            ]?.[0] ?? undefinedSchema,
-            value,
-            route,
-            "REQ",
-          );
-          (isClient ? this.ets.sReq : this.ets.cReq).dispatchEvent(
-            new KrissanEvent(
-              route,
-              res.success ? { value: res.value } : body,
-              headers,
-              context,
-              res.success ? undefined : res.error,
-            ),
-          );
-        } else if (method === "RES") {
-          const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
-              route
-            ]?.[1] ?? nullSchema,
-            value,
-            route,
-            "RES",
-          );
-          (isClient ? this.ets.sRes : this.ets.cRes).dispatchEvent(
-            new KrissanEvent(
-              route,
-              res.success ? { value: res.value } : body,
-              headers,
-              context,
-              res.success ? undefined : res.error,
-            ),
-          );
-        } else if (method === "ERR") {
-          const res = await this.#validate(
-            (isClient ? this.#schemas.clientRequests : this.#schemas.serverRequests)?.[
-              route
-            ]?.[2] ?? neverSchema,
-            value,
-            route,
-            "ERR",
-          );
-          (isClient ? this.ets.sErr : this.ets.cErr).dispatchEvent(
-            new KrissanEvent(
-              route,
-              res.success ? { value: res.value } : body,
-              headers,
-              context,
-              res.success ? undefined : res.error,
-            ),
-          );
-        }
-      } catch {}
-    };
   }
 }
 
@@ -876,6 +678,7 @@ export {
   type KrissanPacket,
   type WS,
   type KrissanClientMeta,
+  type KrissanContext,
   type KrissanSchemas,
   type KrissanErrorHandler,
   type KrissanErrorHandlerContext,
@@ -888,5 +691,11 @@ export {
   type PushSchemas,
   type ReqSchemas,
   defineKrissanSchema,
-  KrissanCore,
+  KrissanBase,
+  KrissanEvent,
+  ET,
+  noop,
+  undefinedSchema,
+  nullSchema,
+  neverSchema,
 };

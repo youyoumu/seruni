@@ -1,13 +1,14 @@
 import {
-  KrissanCore,
-  type RequestOption,
-  type ServerPushTargetPicker,
-  type ServerRequestTargetPickerMulti,
-  type ServerRequestTargetPickerSingle,
+  KrissanBase,
+  KrissanEvent,
+  undefinedSchema,
+  nullSchema,
+  neverSchema,
+  KrissanError,
   type Arg,
   type PushSchemas,
   type ReqSchemas,
-  type KrissanClientMeta,
+  type RequestOption,
   type KrissanConstructOption,
   type KrissanPushMatcher,
   type KrissanReqMiddleware,
@@ -16,8 +17,190 @@ import {
   type KrissanSchemas,
   type KrissanPushHandler,
   type WS,
+  type KrissanPacket,
+  type KrissanHeaders,
+  type KrissanContext,
+  type KrissanClientMeta,
+  type ServerPushTargetPicker,
+  type ServerRequestTargetPicker,
+  type ServerRequestTargetPickerSingle,
+  type ServerRequestTargetPickerMulti,
+  noop,
 } from "./core";
 export * from "./core";
+
+class KrissanServerCore<
+  const Schema extends KrissanSchemas,
+  ClientState extends object = {},
+> extends KrissanBase<Schema, { meta: KrissanClientMeta } & ClientState> {
+  readonly ws = new Map<WS, { meta: KrissanClientMeta } & ClientState>();
+
+  constructor(schemas: Schema, options?: KrissanConstructOption) {
+    super(schemas, options);
+  }
+
+  protected createHeaders(cid?: string): KrissanHeaders {
+    const headers: KrissanHeaders = { timestamp: Date.now() };
+    if (cid) headers.cid = cid;
+    return headers;
+  }
+
+  protected send(payload: KrissanPacket, ws: WS) {
+    const data = `${this.prefix}${JSON.stringify(payload)}`;
+    if (ws.readyState === 1) ws.send(data);
+  }
+
+  protected getState(ws: WS): ({ meta: KrissanClientMeta } & ClientState) | undefined {
+    return this.ws.get(ws);
+  }
+
+  async onMessage(e: MessageEvent, ws: WS) {
+    try {
+      if (typeof e.data !== "string" || !e.data.startsWith(this.prefix)) return;
+      const p: KrissanPacket = JSON.parse(e.data.slice(this.prefix.length));
+
+      const clientData = this.ws.get(ws);
+      if (!clientData) return;
+
+      const meta = clientData.meta;
+      meta.messageCount++;
+      meta.lastMessageAt = Date.now();
+
+      const {
+        method,
+        route,
+        body: { value },
+      } = p;
+      const headers: KrissanHeaders = p.headers ?? {};
+      const context: KrissanContext = { ws };
+      const body = { value };
+
+      if (method === "PUSH") {
+        const schema = this.schemas.clientPushes[route] ?? undefinedSchema;
+        const res = await this.validate(schema, value, route, "PUSH");
+        if (res.success) {
+          const event = new KrissanEvent(route, { value: res.value }, headers, context);
+          this.ets.cPush.dispatchEvent(event);
+        }
+      } else if (method === "REQ") {
+        const schema = this.schemas.clientRequests[route]?.[0] ?? undefinedSchema;
+        const res = await this.validate(schema, value, route, "REQ");
+        const eBody = res.success ? { value: res.value } : body;
+        const eErr = res.success ? undefined : res.error;
+        const event = new KrissanEvent(route, eBody, headers, context, eErr);
+        this.ets.cReq.dispatchEvent(event);
+      } else if (method === "RES") {
+        const schema = this.schemas.serverRequests[route]?.[1] ?? nullSchema;
+        const res = await this.validate(schema, value, route, "RES");
+        const eBody = res.success ? { value: res.value } : body;
+        const eErr = res.success ? undefined : res.error;
+        const event = new KrissanEvent(route, eBody, headers, context, eErr);
+        this.ets.cRes.dispatchEvent(event);
+      } else if (method === "ERR") {
+        const schema = this.schemas.serverRequests[route]?.[2] ?? neverSchema;
+        const res = await this.validate(schema, value, route, "ERR");
+        const eBody = res.success ? { value: res.value } : body;
+        const eErr = res.success ? undefined : res.error;
+        const event = new KrissanEvent(route, eBody, headers, context, eErr);
+        this.ets.cErr.dispatchEvent(event);
+      }
+    } catch {}
+  }
+
+  createClientPushLane(events: readonly string[]) {
+    /* server doesn't push client-initiated pushes */
+    return this.createPushLane(events, this.ets.cPush, noop);
+  }
+
+  createServerPushLane(events: readonly string[]) {
+    return this.createPushLane<ServerPushTargetPicker>(
+      events,
+      this.ets.sPush,
+      (route, data, target) => {
+        const exec = (ws: WS) => {
+          const headers = this.createHeaders();
+          const payload = { method: "PUSH" as const, route, body: { value: data }, headers };
+          this.send(payload, ws);
+        };
+
+        const clients = Array.from(this.ws.keys());
+        if (target) {
+          if (typeof target === "function") {
+            const picked = target(clients);
+            if (Array.isArray(picked)) return picked.forEach(exec);
+            if (picked) return exec(picked);
+            return;
+          }
+          if (Array.isArray(target)) return target.forEach(exec);
+          return exec(target);
+        }
+        clients.forEach(exec);
+      },
+    );
+  }
+
+  createClientReqLane(events: readonly string[]) {
+    return this.createReqLane(
+      events,
+      this.ets.cReq,
+      /* server doesn't initiate client requests */
+      noop,
+      this.schemas.clientRequests,
+    );
+  }
+
+  createServerReqLane(events: readonly string[]) {
+    return this.createReqLane<ServerRequestTargetPicker>(
+      events,
+      this.ets.sReq,
+      (route, cid, data, t, target) => {
+        const exec = (ws?: WS): Promise<KrissanResponse> => {
+          return new Promise((resolve, reject) => {
+            if (!ws) return reject(new KrissanError(KrissanError.ConnectionClosed));
+            let timer: ReturnType<typeof setTimeout>;
+            // prettier-ignore
+            const clean = () => { clearTimeout(timer); off(); offErr(); };
+            const off = this.ets.cRes.on(route, (e) => {
+              if (e.headers.cid === cid && e.context.ws === ws) {
+                clean();
+                if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
+                resolve({ type: "Success", value: e.body.value });
+              }
+            });
+            const offErr = this.ets.cErr.on(route, async (e) => {
+              if (e.headers.cid === cid && e.context.ws === ws) {
+                clean();
+                if (e.issues) return reject(new KrissanError(KrissanError.InvalidResponse));
+                resolve({ type: "Failure", error: e.body.value });
+              }
+            });
+            timer = setTimeout(() => {
+              clean();
+              reject(new KrissanError(KrissanError.RequestTimeout));
+            }, t);
+
+            const headers = this.createHeaders(cid);
+            const payload = { method: "REQ" as const, route, body: { value: data }, headers };
+            this.send(payload, ws);
+          });
+        };
+
+        const clients = Array.from(this.ws.keys());
+        if (target) {
+          if (Array.isArray(target)) return target.map(exec);
+          if (typeof target === "function") {
+            const picked = target(clients);
+            if (Array.isArray(picked)) return picked.map(exec);
+            return exec(picked);
+          }
+          return exec(target);
+        }
+        return clients.map(exec);
+      },
+      this.schemas.serverRequests,
+    );
+  }
+}
 
 function createServerRuntime<const Schema extends KrissanSchemas, ClientState extends object = {}>(
   schemas: Schema,
@@ -28,48 +211,17 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
   type CReq = ReqSchemas<NonNullable<Schema["clientRequests"]>>;
   type SReq = ReqSchemas<NonNullable<Schema["serverRequests"]>>;
 
-  const core = new KrissanCore<Schema>(schemas, {
-    serverTimeout: options?.timeout,
-    uid: options?.uid,
-    onError: options?.onError,
-    protocolId: options?.protocolId,
-  });
+  const core = new KrissanServerCore<Schema, ClientState>(schemas, options);
 
-  const cPushApi = core.createPushLane(
-    Object.keys(schemas.clientPushes ?? {}),
-    core.ets.cPush,
-    true,
-  );
-  const sPushApi = core.createPushLane(
-    Object.keys(schemas.serverPushes ?? {}),
-    core.ets.sPush,
-    false,
-  );
-  const cReqApi = core.createReqLane(
-    Object.keys(schemas.clientRequests ?? {}),
-    core.ets.cReq,
-    core.ets.sRes,
-    core.ets.sErr,
-    core.clientTimeout,
-    true,
-  );
-  const sReqApi = core.createReqLane(
-    Object.keys(schemas.serverRequests ?? {}),
-    core.ets.sReq,
-    core.ets.cRes,
-    core.ets.cErr,
-    core.serverTimeout,
-    false,
-  );
-  const serverOnMessage = core.createOnMessage(false);
+  const cPushApi = core.createClientPushLane(Object.keys(schemas.clientPushes));
+  const sPushApi = core.createServerPushLane(Object.keys(schemas.serverPushes));
+  const cReqApi = core.createClientReqLane(Object.keys(schemas.clientRequests));
+  const sReqApi = core.createServerReqLane(Object.keys(schemas.serverRequests));
 
+  // prettier-ignore
   type ServerRequestFn<Req, Res, Err> = {
-    (
-      ...args: Arg<Req, RequestOption, ServerRequestTargetPickerSingle>
-    ): Promise<KrissanResponse<Res, Err>>;
-    (
-      ...args: Arg<Req, RequestOption, ServerRequestTargetPickerMulti>
-    ): Promise<KrissanResponse<Res, Err>>[];
+    ( ...args: Arg<Req, RequestOption, ServerRequestTargetPickerSingle>): Promise<KrissanResponse<Res, Err>>;
+    ( ...args: Arg<Req, RequestOption, ServerRequestTargetPickerMulti>): Promise<KrissanResponse<Res, Err>>[];
     (...args: Arg<Req, RequestOption>): Promise<KrissanResponse<Res, Err>>[];
   };
 
@@ -135,14 +287,14 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
   };
 
   return {
-    onMessage: serverOnMessage,
+    onMessage: (e: MessageEvent, ws: WS) => core.onMessage(e, ws),
     onOpen: (ws: WS) => {
-      core.serverWS.ws.set(ws, {
+      core.ws.set(ws, {
         meta: { connectedAt: Date.now(), messageCount: 0, lastMessageAt: null },
       } as { meta: KrissanClientMeta } & ClientState);
     },
     onClose: (ws: WS) => {
-      core.serverWS.ws.delete(ws);
+      core.ws.delete(ws);
     },
     api: {
       push: sPushApi.push,
@@ -151,7 +303,7 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
       onRequest: cReqApi.handle,
       useRequest: cReqApi.use,
       usePush: cPushApi.use,
-      clients: core.serverWS.ws as Map<WS, { meta: KrissanClientMeta } & ClientState>,
+      clients: core.ws as Map<WS, { meta: KrissanClientMeta } & ClientState>,
     } as ServerApi,
   };
 }
