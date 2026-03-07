@@ -1,9 +1,12 @@
-import { KrissanCore, type RequestOption, type ServerPushTargetPicker } from "./core";
 import {
+  KrissanCore,
+  type RequestOption,
+  type ServerPushTargetPicker,
+  type ServerRequestTargetPickerMulti,
+  type ServerRequestTargetPickerSingle,
   type Arg,
   type PushSchemas,
   type ReqSchemas,
-  type ServerRequestTargetPicker,
   type KrissanClientMeta,
   type KrissanConstructOption,
   type KrissanPushMatcher,
@@ -62,8 +65,11 @@ function createServerRuntime<const Schema extends KrissanSchemas, ClientState ex
 
   type ServerRequestFn<Req, Res, Err> = {
     (
-      ...args: Arg<Req, RequestOption, NonNullable<ServerRequestTargetPicker>>
+      ...args: Arg<Req, RequestOption, ServerRequestTargetPickerSingle>
     ): Promise<KrissanResponse<Res, Err>>;
+    (
+      ...args: Arg<Req, RequestOption, ServerRequestTargetPickerMulti>
+    ): Promise<KrissanResponse<Res, Err>>[];
     (...args: Arg<Req, RequestOption>): Promise<KrissanResponse<Res, Err>>[];
   };
 

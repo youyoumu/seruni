@@ -214,7 +214,12 @@ type RequestOption = { timeout?: number } | undefined;
 /**
  * Options for a server-to-client request, allowing targeting specific clients.
  */
-type ServerRequestTargetPicker = undefined | WS | ((clients: WS[]) => WS | undefined);
+type ServerRequestTargetPicker =
+  | undefined
+  | ServerRequestTargetPickerSingle
+  | ServerRequestTargetPickerMulti;
+type ServerRequestTargetPickerSingle = WS | ((clients: WS[]) => WS);
+type ServerRequestTargetPickerMulti = WS[] | ((clients: WS[]) => WS[]);
 
 /**
  * Options for a server-to-client push, allowing targeting specific clients.
@@ -630,7 +635,12 @@ class KrissanCore<const Schema extends KrissanSchemas, ClientState extends objec
         if (isClient) return exec(this.clientWS.ws);
         const clients = Array.from(this.serverWS.ws.keys());
         if (target) {
-          if (typeof target === "function") return exec(target(clients));
+          if (Array.isArray(target)) return target.map(exec);
+          if (typeof target === "function") {
+            const picked = target(clients);
+            if (Array.isArray(picked)) return picked.map(exec);
+            return exec(picked);
+          }
           return exec(target);
         }
         return clients.map(exec);
@@ -864,6 +874,8 @@ export {
   type KrissanErrorHandlerContext,
   type RequestOption,
   type ServerRequestTargetPicker,
+  type ServerRequestTargetPickerSingle,
+  type ServerRequestTargetPickerMulti,
   type ServerPushTargetPicker,
   type KrissanConstructOption,
   type PushSchemas,
