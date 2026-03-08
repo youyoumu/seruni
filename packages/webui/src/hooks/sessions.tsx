@@ -1,6 +1,7 @@
+import { R } from "@praha/byethrow";
+import { type Session } from "@repo/shared/db";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
-import { R } from "@praha/byethrow";
 
 import { useServices } from "./services";
 
@@ -58,6 +59,10 @@ export function useDeleteSession() {
     to: "/text-hooker/$sessionId",
   });
 
+  const activeEdit = matchRoute({
+    to: "/text-hooker/$sessionId/edit",
+  });
+
   return useMutation({
     mutationFn: async (id: number) => {
       return R.unwrap(await api.request["session/delete"](id));
@@ -69,6 +74,31 @@ export function useDeleteSession() {
       if (typeof active === "object" && Number(active.sessionId) === data?.id) {
         await navigate({
           to: "/",
+        });
+      }
+      if (typeof activeEdit === "object" && Number(activeEdit.sessionId) === data?.id) {
+        await navigate({
+          to: "/",
+        });
+      }
+    },
+  });
+}
+
+export function useUpdateSession() {
+  const { api, keyring } = useServices();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<Session> & { id: number }) => {
+      return R.unwrap(await api.request["session/update"](payload));
+    },
+    onSuccess: async (data) => {
+      if (data) {
+        await queryClient.invalidateQueries({
+          queryKey: keyring.session.get(data.id).queryKey,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: keyring.session.list.queryKey,
         });
       }
     },

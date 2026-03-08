@@ -34,8 +34,8 @@ export type Session = typeof session.$inferSelect;
 
 export const zSession = z.object({
   id: z.number(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: z.coerce.date<Date>(),
+  updatedAt: z.coerce.date<Date>(),
   name: z.string(),
   duration: z.number(),
 });
@@ -54,8 +54,8 @@ export type TextHistory = typeof textHistory.$inferSelect;
 
 export const zTextHistory = z.object({
   id: z.number(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: z.coerce.date<Date>(),
+  updatedAt: z.coerce.date<Date>(),
   sessionId: z.number(),
   text: z.string(),
   japaneseCharacterCount: z.number(),

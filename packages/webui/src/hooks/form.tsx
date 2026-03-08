@@ -71,7 +71,7 @@ function TextFieldSet({
       {label && (
         <Label className="flex items-center gap-2">
           {label}
-          {!isDefaultValue && (
+          {!isDefaultValue && defaultValue !== undefined && (
             <UndoIcon
               className="size-4 cursor-pointer"
               onClick={() => {
