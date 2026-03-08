@@ -26,7 +26,7 @@ import {
 } from "./core";
 export * from "./core";
 
-class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase<Schema> {
+class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase<Schema, undefined> {
   #cookie: Record<string, string> = {};
   ws: WS | undefined;
 
@@ -44,11 +44,6 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
   protected send(payload: KrissanPacket) {
     const data = `${this.prefix}${JSON.stringify(payload)}`;
     if (this.ws?.readyState === 1) this.ws.send(data);
-  }
-
-  //TODO: client no state
-  protected getState(_ws: WS): undefined {
-    return undefined;
   }
 
   async onMessage(e: MessageEvent, ws: WS) {
@@ -121,7 +116,9 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
   }
 
   getPushHandler(events: readonly string[]) {
-    return this.createPushHandler(events, this.ets.sPush);
+    return this.createPushHandler(events, this.ets.sPush, (route, e) =>
+      this.createBasePushContext(route, e),
+    );
   }
 
   getReqApi(events: readonly string[]) {
@@ -160,7 +157,12 @@ class KrissanClientCore<const Schema extends KrissanSchemas> extends KrissanBase
   }
 
   getReqHandler(events: readonly string[]) {
-    return this.createRequestHandler(events, this.ets.sReq, this.schemas.serverRequests);
+    return this.createRequestHandler(
+      events,
+      this.ets.sReq,
+      (route, e) => this.createBaseReqContext(route, e),
+      this.schemas.serverRequests,
+    );
   }
 }
 
@@ -199,28 +201,30 @@ function createClientRuntime<const Schema extends KrissanSchemas>(
     /**
      * Listen for push messages from the server.
      */
-    onPush: { [K in keyof SPush]: (handler: KrissanPushHandler<SPush[K]["push"]>) => () => void };
+    onPush: {
+      [K in keyof SPush]: (handler: KrissanPushHandler<SPush[K]["push"], undefined>) => () => void;
+    };
     /**
      * Handle requests from the server.
      */
     onRequest: {
       [K in keyof SReq]: (
-        handler: KrissanReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"]>,
+        handler: KrissanReqMiddleware<SReq[K]["req"], SReq[K]["res"], SReq[K]["err"], undefined>,
       ) => () => void;
     };
     /**
      * Register a middleware for server requests that matches a pattern.
      */
     useRequest: (
-      matcher: KrissanRequestMatcher<keyof CReq & string>,
-      handler: KrissanReqMiddleware,
+      matcher: KrissanRequestMatcher<keyof CReq & string, undefined>,
+      handler: KrissanReqMiddleware<unknown, unknown, unknown, undefined>,
     ) => () => void;
     /**
      * Register a handler for push messages that matches a pattern.
      */
     usePush: (
-      matcher: KrissanPushMatcher<keyof SPush & string>,
-      handler: KrissanPushHandler,
+      matcher: KrissanPushMatcher<keyof SPush & string, undefined>,
+      handler: KrissanPushHandler<unknown, undefined>,
     ) => () => void;
   };
 

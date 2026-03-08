@@ -52,10 +52,6 @@ class KrissanServerCore<
     if (ws.readyState === 1) ws.send(data);
   }
 
-  protected getState(ws: WS): ({ meta: KrissanClientMeta } & ClientState) | undefined {
-    return this.ws.get(ws);
-  }
-
   async onMessage(e: MessageEvent, ws: WS) {
     try {
       const pre = this.prefix;
@@ -84,7 +80,6 @@ class KrissanServerCore<
           PUSH,
           headers,
           context,
-          true,
         );
       } else if (method === REQ) {
         await this.emit(
@@ -121,7 +116,17 @@ class KrissanServerCore<
   }
 
   getPushHandler(events: readonly string[]) {
-    return this.createPushHandler(events, this.ets.cPush);
+    return this.createPushHandler(events, this.ets.cPush, (route, e) => {
+      const base = this.createBasePushContext(route, e);
+      const state = this.ws.get(e.context.ws);
+      return {
+        ...base,
+        state,
+        setState: (newState: Record<string, unknown>) => {
+          if (state && typeof state === "object") Object.assign(state, newState);
+        },
+      };
+    });
   }
 
   getPushApi(events: readonly string[]) {
@@ -148,7 +153,22 @@ class KrissanServerCore<
   }
 
   getReqHandler(events: readonly string[]) {
-    return this.createRequestHandler(events, this.ets.cReq, this.schemas.clientRequests);
+    return this.createRequestHandler(
+      events,
+      this.ets.cReq,
+      (route, e) => {
+        const base = this.createBaseReqContext(route, e);
+        const state = this.ws.get(e.context.ws);
+        return {
+          ...base,
+          state,
+          setState: (newState: Record<string, unknown>) => {
+            if (state && typeof state === "object") Object.assign(state, newState);
+          },
+        };
+      },
+      this.schemas.clientRequests,
+    );
   }
 
   getReqApi(events: readonly string[]) {
