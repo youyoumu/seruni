@@ -6,11 +6,19 @@ import {
   useCreateNewSession,
   useDeleteSession,
 } from "#/hooks/sessions";
-import { Popover, Skeleton, cn } from "@heroui/react";
+import { Popover, Skeleton, cn, tv } from "@heroui/react";
+import { type Session } from "@repo/shared/db";
 import { Link } from "@tanstack/react-router";
-import { CircleIcon, EditIcon, TrashIcon } from "lucide-react";
+import { CircleIcon, CopyIcon, EditIcon, TrashIcon } from "lucide-react";
 import { Suspense } from "react";
 import * as z from "zod/mini";
+
+const sessionListTv = tv({
+  slots: {
+    icon: "size-4 min-w-4 cursor-pointer text-surface-foreground-soft transition-colors hover:text-surface-foreground",
+    deleteIcon: "size-4 min-w-4 cursor-pointer text-danger transition-opacity hover:opacity-80",
+  },
+});
 
 //TODO: delete
 export function TextHookerSessionListPopover(props: {
@@ -47,6 +55,7 @@ export function TextHookerSessionList() {
   const { data: activeSession } = useActiveSession$();
   const { mutateAsync: setActiveSession } = useSetActiveSession();
   const reversedSessions = [...sessions].reverse();
+  const { icon } = sessionListTv();
 
   //TODO: rename sessions
   return (
@@ -75,13 +84,33 @@ export function TextHookerSessionList() {
           <div className="flex-1"></div>
 
           <Link to="/text-hooker/$sessionId/edit" params={{ sessionId: session.id }}>
-            <EditIcon className="size-4 min-w-4 cursor-pointer text-surface-foreground-soft"></EditIcon>
+            <EditIcon className={icon()}></EditIcon>
           </Link>
-          <DeleteSessionButton sessionId={session.id} />
+          <DuplicateSessionButton session={session} />
+          {/* <DeleteSessionButton sessionId={session.id} /> */}
         </div>
       ))}
     </div>
   );
+}
+
+export function DuplicateSessionButton({ session }: { session: Session }) {
+  const { mutateAsync: createNewSession } = useCreateNewSession();
+  const { icon } = sessionListTv();
+
+  const handleDuplicate = async () => {
+    const name = session.name;
+    const match = name.match(/^(.*?)(\d+)$/);
+    let newName: string;
+    if (match && match[1] !== undefined && match[2] !== undefined) {
+      newName = `${match[1]}${parseInt(match[2]) + 1}`;
+    } else {
+      newName = `${name} 2`;
+    }
+    await createNewSession(newName);
+  };
+
+  return <CopyIcon className={icon()} onClick={handleDuplicate} />;
 }
 
 export function NewSessionForm() {
@@ -124,12 +153,14 @@ export function NewSessionForm() {
   );
 }
 
-function DeleteSessionButton({ sessionId }: { sessionId: number }) {
+// TODO: delete
+export function DeleteSessionButton({ sessionId }: { sessionId: number }) {
   const { mutateAsync: deleteSession } = useDeleteSession();
+  const { deleteIcon } = sessionListTv();
 
   return (
     <TrashIcon
-      className="size-4 min-w-4 cursor-pointer text-danger"
+      className={deleteIcon()}
       onClick={async () => {
         await deleteSession(sessionId);
       }}
