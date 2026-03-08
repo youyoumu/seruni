@@ -8,7 +8,7 @@ import {
 } from "#/hooks/sessions";
 import { Popover, Skeleton, cn, tv } from "@heroui/react";
 import { type Session } from "@repo/shared/db";
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { CircleIcon, CopyIcon, EditIcon, TrashIcon } from "lucide-react";
 import { Suspense } from "react";
 import * as z from "zod/mini";
@@ -51,45 +51,51 @@ export function TextHookerSessionListPopover(props: {
 }
 
 export function TextHookerSessionList() {
+  const { sessionId: currentSessionId } = useParams({ strict: false });
   const { data: sessions } = useSessions$();
   const { data: activeSession } = useActiveSession$();
   const { mutateAsync: setActiveSession } = useSetActiveSession();
   const reversedSessions = [...sessions].reverse();
   const { icon } = sessionListTv();
 
-  //TODO: rename sessions
   return (
     <div className="flex max-h-[50vh] flex-col gap-2 overflow-auto">
-      {reversedSessions.map((session) => (
-        <div className="flex items-center gap-2 pe-2" key={session.id}>
-          <Link
-            className={cn(
-              "text-surface-foreground-calm transition-colors hover:text-surface-foreground",
-              {
-                "text-surface-foreground": session.id === activeSession?.id,
-              },
+      {reversedSessions.map((session) => {
+        const isActive = Number(currentSessionId) === session.id;
+        return (
+          <div className="flex items-center gap-2 pe-2" key={session.id}>
+            <Link
+              className={cn(
+                "text-surface-foreground-calm transition-colors hover:text-surface-foreground",
+                { "text-surface-foreground": isActive },
+              )}
+              key={session.id}
+              to={`/text-hooker/$sessionId`}
+              params={{ sessionId: session.id }}
+              onClick={async () => {
+                await setActiveSession(session.id);
+              }}
+            >
+              {session.name}
+            </Link>
+            {session.id === activeSession?.id && (
+              <CircleIcon fill="var(--color-success)" className="size-2 text-success" />
             )}
-            key={session.id}
-            to={`/text-hooker/$sessionId`}
-            params={{ sessionId: session.id }}
-            onClick={async () => {
-              await setActiveSession(session.id);
-            }}
-          >
-            {session.name}
-          </Link>
-          {session.id === activeSession?.id && (
-            <CircleIcon size={8} fill="var(--color-success)" className="text-success" />
-          )}
-          <div className="flex-1"></div>
+            <div className="flex-1"></div>
 
-          <Link to="/text-hooker/$sessionId/edit" params={{ sessionId: session.id }}>
-            <EditIcon className={icon()}></EditIcon>
-          </Link>
-          <DuplicateSessionButton session={session} />
-          {/* <DeleteSessionButton sessionId={session.id} /> */}
-        </div>
-      ))}
+            <Link
+              to="/text-hooker/$sessionId/edit"
+              params={{ sessionId: session.id }}
+              onClick={async () => {
+                await setActiveSession(session.id);
+              }}
+            >
+              <EditIcon className={icon()}></EditIcon>
+            </Link>
+            <DuplicateSessionButton session={session} />
+          </div>
+        );
+      })}
     </div>
   );
 }
