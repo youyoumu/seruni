@@ -12,6 +12,7 @@ import { CircleIcon, TrashIcon } from "lucide-react";
 import { Suspense } from "react";
 import * as z from "zod/mini";
 
+//TODO: delete
 export function TextHookerSessionListPopover(props: {
   slot: {
     trigger: React.ReactNode;
@@ -41,7 +42,7 @@ export function TextHookerSessionListPopover(props: {
   );
 }
 
-function TextHookerSessionList() {
+export function TextHookerSessionList() {
   const { data: sessions } = useSessions$();
   const { data: activeSession } = useActiveSession$();
   const { mutateAsync: setActiveSession } = useSetActiveSession();
@@ -79,7 +80,7 @@ function TextHookerSessionList() {
   );
 }
 
-function NewSessionForm() {
+export function NewSessionForm() {
   const { mutateAsync: createNewSession } = useCreateNewSession();
 
   const form = useAppForm({
@@ -106,14 +107,14 @@ function NewSessionForm() {
         e.preventDefault();
         await form.handleSubmit();
       }}
-      className="flex gap-4"
+      className="flex flex-col gap-4"
     >
       <form.AppField
         name="name"
         children={(field) => <field.TextFieldSet placeholder="New Session" />}
       />
       <form.AppForm>
-        <form.SubmitButton>Create</form.SubmitButton>
+        <form.SubmitButton fullWidth>Create</form.SubmitButton>
       </form.AppForm>
     </form>
   );
@@ -124,8 +125,7 @@ function DeleteSessionButton({ sessionId }: { sessionId: number }) {
 
   return (
     <TrashIcon
-      className="cursor-pointer text-danger"
-      size={20}
+      className="size-4 min-w-4 cursor-pointer text-danger"
       onClick={async () => {
         await deleteSession(sessionId);
       }}

@@ -253,6 +253,9 @@ importers:
       react-error-boundary:
         specifier: ^6.1.1
         version: 6.1.1(react@19.2.4)
+      react-resizable-panels:
+        specifier: ^4.7.2
+        version: 4.7.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tailwindcss:
         specifier: ^4.0.6
         version: 4.2.1
@@ -963,23 +966,11 @@ packages:
   '@gar/promisify@1.1.3':
     resolution: {integrity: sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==}
 
-  '@heroui/react@3.0.0-beta.7':
-    resolution: {integrity: sha512-HIITfTuFW+rzf6hAm1UUZc9ZZ9mbIHo/LuYl0jfUKAi0fEKwRl775RQ2qL9YX3G1osMooS0UIQ6HHs9gKH8HTQ==}
-    peerDependencies:
-      react: '>=19.0.0'
-      react-dom: '>=19.0.0'
-      tailwindcss: '>=4.0.0'
-
   '@heroui/react@3.0.0-beta.8':
     resolution: {integrity: sha512-1wh7N689LKLgXf/FbGg2Y7fMtiwdHcANHdRKDKFly4UWsraxEXdpfJaeL788TE3rpsMmzuKl3FZBOewjBGKKLQ==}
     peerDependencies:
       react: '>=19.0.0'
       react-dom: '>=19.0.0'
-      tailwindcss: '>=4.0.0'
-
-  '@heroui/styles@3.0.0-beta.7':
-    resolution: {integrity: sha512-uFV3Q5RPANo67FZwtl1938QrdRGYxEEJV3Wso6OI08U4BXhe1KNvoAqIUOi/XdkB0cDAd9nFJwyK13jMfCqKWw==}
-    peerDependencies:
       tailwindcss: '>=4.0.0'
 
   '@heroui/styles@3.0.0-beta.8':
@@ -4072,6 +4063,12 @@ packages:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
     engines: {node: '>=0.10.0'}
 
+  react-resizable-panels@4.7.2:
+    resolution: {integrity: sha512-1L2vyeBG96hp7N6x6rzYXJ8EjYiDiffMsqj3cd+T9aOKwscvuyCn2CuZ5q3PoUSTIJUM6Q5DgXH1bdDe6uvh2w==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+
   react-stately@3.44.0:
     resolution: {integrity: sha512-Il3trIp2Mo1SSa9PhQFraqOpC74zEFmwuMAlu5Fj3qdtihJOKOFqoyDl7ALRrVfnvCkau6rui155d/NMKvd+RQ==}
     peerDependencies:
@@ -5182,27 +5179,6 @@ snapshots:
   '@gar/promisify@1.1.3':
     optional: true
 
-  '@heroui/react@3.0.0-beta.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.2.1)':
-    dependencies:
-      '@heroui/styles': 3.0.0-beta.7(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
-      '@radix-ui/react-avatar': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-aria/i18n': 3.12.15(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-aria/ssr': 3.9.10(react@19.2.4)
-      '@react-aria/utils': 3.33.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@react-stately/utils': 3.11.0(react@19.2.4)
-      '@react-types/color': 3.1.3(react@19.2.4)
-      '@react-types/shared': 3.33.0(react@19.2.4)
-      input-otp: 1.4.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react: 19.2.4
-      react-aria-components: 1.15.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-dom: 19.2.4(react@19.2.4)
-      tailwind-merge: 3.4.0
-      tailwind-variants: 3.2.2(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
-      tailwindcss: 4.2.1
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-
   '@heroui/react@3.0.0-beta.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.2.1)':
     dependencies:
       '@heroui/styles': 3.0.0-beta.8(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
@@ -5223,14 +5199,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
-
-  '@heroui/styles@3.0.0-beta.7(tailwind-merge@3.4.0)(tailwindcss@4.2.1)':
-    dependencies:
-      tailwind-variants: 3.2.2(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
-      tailwindcss: 4.2.1
-      tw-animate-css: 1.4.0
-    transitivePeerDependencies:
-      - tailwind-merge
 
   '@heroui/styles@3.0.0-beta.8(tailwind-merge@3.4.0)(tailwindcss@4.2.1)':
     dependencies:
@@ -6611,8 +6579,8 @@ snapshots:
 
   '@repo/webui@file:packages/webui(@tanstack/query-core@5.90.20)(@tanstack/router-core@1.163.3)(@types/better-sqlite3@7.6.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(better-sqlite3@12.6.2)(solid-js@1.9.11)(sqlite3@5.1.7)(tailwind-merge@3.4.0)(typescript@5.9.2)(vite@7.3.1(@types/node@20.19.35)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))':
     dependencies:
-      '@heroui/react': 3.0.0-beta.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.2.1)
-      '@heroui/styles': 3.0.0-beta.7(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
+      '@heroui/react': 3.0.0-beta.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.2.1)
+      '@heroui/styles': 3.0.0-beta.8(tailwind-merge@3.4.0)(tailwindcss@4.2.1)
       '@lukemorales/query-key-factory': 1.3.4(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.2.4))
       '@praha/byethrow': 0.10.0(typescript@5.9.2)
       '@repo/shared': file:packages/shared(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(sqlite3@5.1.7)(typescript@5.9.2)
@@ -8876,6 +8844,11 @@ snapshots:
       react: 19.2.4
 
   react-refresh@0.18.0: {}
+
+  react-resizable-panels@4.7.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   react-stately@3.44.0(react@19.2.4):
     dependencies:
