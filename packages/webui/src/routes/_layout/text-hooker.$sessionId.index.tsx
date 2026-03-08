@@ -38,7 +38,7 @@ function getTextHistoryCharCount(textHistory: TextHistory[]) {
   return textHistory.reduce((sum, item) => sum + item.japaneseCharacterCount, 0);
 }
 
-export const Route = createFileRoute("/_layout/text-hooker/$sessionId")({
+export const Route = createFileRoute("/_layout/text-hooker/$sessionId/")({
   component: TextHookerPage,
   params: {
     parse: (params) => ({

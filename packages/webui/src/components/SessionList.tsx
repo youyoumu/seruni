@@ -8,7 +8,7 @@ import {
 } from "#/hooks/sessions";
 import { Popover, Skeleton, cn } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
-import { CircleIcon, TrashIcon } from "lucide-react";
+import { CircleIcon, EditIcon, TrashIcon } from "lucide-react";
 import { Suspense } from "react";
 import * as z from "zod/mini";
 
@@ -73,6 +73,10 @@ export function TextHookerSessionList() {
             <CircleIcon size={8} fill="var(--color-success)" className="text-success" />
           )}
           <div className="flex-1"></div>
+
+          <Link to="/text-hooker/$sessionId/edit" params={{ sessionId: session.id }}>
+            <EditIcon className="size-4 min-w-4 cursor-pointer text-surface-foreground-soft"></EditIcon>
+          </Link>
           <DeleteSessionButton sessionId={session.id} />
         </div>
       ))}
