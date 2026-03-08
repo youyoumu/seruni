@@ -1,6 +1,7 @@
 import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
 import { useDeleteSession, useSession$, useUpdateSession } from "#/hooks/sessions";
+import { formatDuration } from "#/hooks/timer";
 import { Button, Separator, Skeleton, tv } from "@heroui/react";
 import { zSession } from "@repo/shared/db";
 import { createFileRoute } from "@tanstack/react-router";
@@ -83,6 +84,19 @@ function EditSessionForm() {
               name="name"
               children={(field) => (
                 <field.TextFieldSet label="Session Name" placeholder="Enter session name" />
+              )}
+            />
+
+            <form.AppField
+              name="duration"
+              children={(field) => (
+                <field.TextFieldSet
+                  label="Duration (s)"
+                  type="number"
+                  min={0}
+                  defaultValue={session.duration}
+                  description={formatDuration(field.state.value)}
+                />
               )}
             />
           </div>

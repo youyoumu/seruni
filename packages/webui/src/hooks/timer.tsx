@@ -10,7 +10,7 @@ import {
   useUpdateSessionDuration,
 } from "./sessions";
 
-function formatDuration(totalSeconds: number): string {
+export function formatDuration(totalSeconds: number): string {
   const duration = intervalToDuration({ start: 0, end: totalSeconds * 1000 });
   const totalHours = (duration.days ?? 0) * 24 + (duration.hours ?? 0);
   const m = String(duration.minutes ?? 0).padStart(2, "0");
