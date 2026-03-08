@@ -2,6 +2,7 @@ import { useAppForm } from "#/hooks/form";
 import { useServices } from "#/hooks/services";
 import { useDeleteSession, useSession$, useUpdateSession } from "#/hooks/sessions";
 import { formatDuration } from "#/hooks/timer";
+import { format } from "#/util/date";
 import { Button, Separator, Skeleton, tv } from "@heroui/react";
 import { zSession } from "@repo/shared/db";
 import { createFileRoute } from "@tanstack/react-router";
@@ -101,11 +102,18 @@ function EditSessionForm() {
             />
           </div>
 
-          <form.AppForm>
-            <div className="flex justify-start">
-              <form.SubmitButton>Save</form.SubmitButton>
+          <div className="flex justify-between gap-4">
+            <form.AppForm>
+              <div className="flex justify-start">
+                <form.SubmitButton>Save</form.SubmitButton>
+              </div>
+            </form.AppForm>
+
+            <div className="flex flex-col gap-1 text-sm text-surface-foreground-faint italic">
+              <p>Created at: {format(session.createdAt)}</p>
+              <p>Updated at: {format(session.updatedAt)}</p>
             </div>
-          </form.AppForm>
+          </div>
 
           <Separator />
         </div>
