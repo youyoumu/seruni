@@ -28,6 +28,12 @@ export type MediaList = Array<{
 export class DbService {
   static createDb = createDb;
 
+  static sanitizeTime<T extends { createdAt?: unknown; updatedAt?: unknown }>(payload: T) {
+    delete payload.createdAt;
+    delete payload.updatedAt;
+    return payload as Omit<T, "createdAt" | "updatedAt">;
+  }
+
   constructor(
     public db: DB,
     public log: Logger,

@@ -1,5 +1,5 @@
 import type { TextHookerClient } from "#/client/text-hooker.client";
-import type { DB } from "#/services/db.service";
+import { DbService, type DB } from "#/services/db.service";
 import type { State } from "#/state/state";
 import { textHistory, session } from "@repo/shared/db";
 import { zConfig } from "@repo/shared/schema";
@@ -116,12 +116,10 @@ export class WSSHandlers {
     });
 
     api.onRequest["session/update"](async (c) => {
-      const payload = c.req.body;
+      const payload = DbService.sanitizeTime(c.req.body);
       const [result] = await db
         .update(session)
-        .set({
-          ...payload,
-        })
+        .set({ ...payload })
         .where(eq(session.id, payload.id ?? 0))
         .returning();
       if (!result) return c.fail("INVALID_ID");
